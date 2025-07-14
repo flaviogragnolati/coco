@@ -55,10 +55,13 @@ model User {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    accounts  Account[]
-    sessions  Session[]
-    roles     Role[]    @relation("UserRoles")
-    addresses Address[] @relation("UserAddresses")
+    accounts      Account[]
+    sessions      Session[]
+    roles         Role[]         @relation("userRoles")
+    addresses     Address[]      @relation("userAddresses")
+    carts         Cart[]
+    notifications Notification[]
+    events        Event[]
 }
 
 model Role {
@@ -70,13 +73,15 @@ model Role {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    users User[] @relation("UserRoles")
+    userId String?
+    user   User?   @relation("userRoles", fields: [userId], references: [id])
 }
 
 enum RoleType {
     ADMIN
     USER
     ALLY
+    SUPPLIER
 }
 
 model Address {
@@ -91,6 +96,12 @@ model Address {
     country     String
     createdAt   DateTime    @default(now())
     updatedAt   DateTime    @updatedAt
+
+    userId     String?
+    user       User?      @relation("userAddresses", fields: [userId], references: [id])
+    supplierId Int?
+    supplier   Supplier?  @relation("supplierAddresses", fields: [supplierId], references: [id])
+    shipments  Shipment[]
 }
 
 enum AddressType {
@@ -98,6 +109,7 @@ enum AddressType {
     WORK
     SHIPPING
     BILLING
+    FRACTIONING
 }
 
 model Supplier {
@@ -108,8 +120,7 @@ model Supplier {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    products  Product[] @relation("SupplierProducts")
-    addresses Address[] @relation("SupplierAddresses")
+    addresses Address[] @relation("supplierAddresses")
 }
 
 model Product {
@@ -123,12 +134,34 @@ model Product {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    Order   Order? @relation(fields: [orderId], references: [id])
-    orderId Int?
-    Order   Order? @relation(fields: [orderId], references: [id])
-    orderId Int?
+    cartId Int?
+    cart   Cart? @relation(fields: [cartId], references: [id])
 }
 
+// addressId ??? como elegimos la dirección de envío? o delivery?
+model Cart {
+    id        Int        @id @default(autoincrement())
+    status    CartStatus
+    total     Float
+    createdAt DateTime   @default(now())
+    updatedAt DateTime   @updatedAt
+
+    userId   String
+    user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    orderId  Int?
+    order    Order?    @relation(fields: [orderId], references: [id])
+    products Product[]
+    payments Payment[]
+}
+
+enum CartStatus {
+    ACTIVE
+    CHECKED_OUT
+    ABANDONED
+}
+
+// denormalizar supplier?
+// asignar aliado?
 model Order {
     id        Int         @id @default(autoincrement())
     total     Float
@@ -136,9 +169,9 @@ model Order {
     createdAt DateTime    @default(now())
     updatedAt DateTime    @updatedAt
 
-    userId   Int
-    user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    products Product[] @relation("OrderProducts")
+    carts      Cart[]
+    shipmentId Int?
+    shipment   Shipment? @relation(fields: [shipmentId], references: [id])
 }
 
 enum OrderStatus {
@@ -154,13 +187,15 @@ enum OrderStatus {
 
 model Shipment {
     id         Int            @id @default(autoincrement())
-    orderId    String
     trackingId String
     carrier    String
     status     ShipmentStatus
     createdAt  DateTime       @default(now())
     updatedAt  DateTime       @updatedAt
-    order      Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+    orders    Order[]
+    addressId Int
+    address   Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
 }
 
 enum ShipmentStatus {
@@ -172,12 +207,13 @@ enum ShipmentStatus {
 
 model Payment {
     id        Int           @id @default(autoincrement())
-    orderId   String
     amount    Float
     status    PaymentStatus
     createdAt DateTime      @default(now())
     updatedAt DateTime      @updatedAt
-    order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+    cartId Int?
+    cart   Cart? @relation(fields: [cartId], references: [id])
 }
 
 enum PaymentStatus {
@@ -195,19 +231,38 @@ model Event {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    userId Int
-    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
-    id        Int      @id @default(autoincrement())
-    userId    String
-    message   String
-    read      Boolean  @default(false)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id          Int                @id @default(autoincrement())
+    message     String
+    type        NotificationType
+    status      NotificationStatus
+    scheduledAt DateTime?
+    createdAt   DateTime           @default(now())
+    updatedAt   DateTime           @updatedAt
 
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId    String
+    user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    channelId Int
+    channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+    INFO
+    WARNING
+    ERROR
+    SUCCESS
+}
+
+enum NotificationStatus {
+    PENDING
+    SENT
+    READ
+    FAILED
+    RETRY
 }
 
 model Channel {
@@ -217,6 +272,8 @@ model Channel {
     description String?
     createdAt   DateTime    @default(now())
     updatedAt   DateTime    @updatedAt
+
+    notifications Notification[]
 }
 
 enum ChannelType {
