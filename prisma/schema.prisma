@@ -1,0 +1,228 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Account {
+    id                       String  @id @default(cuid())
+    type                     String
+    provider                 String
+    providerAccountId        String
+    refresh_token            String?
+    access_token             String?
+    expires_at               Int?
+    token_type               String?
+    scope                    String?
+    id_token                 String?
+    session_state            String?
+    refresh_token_expires_in Int?
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([provider, providerAccountId])
+}
+
+model Session {
+    id           String   @id @default(cuid())
+    sessionToken String   @unique
+    userId       String
+    expires      DateTime
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+    identifier String
+    token      String   @unique
+    expires    DateTime
+
+    @@unique([identifier, token])
+}
+
+model User {
+    id            String    @id @default(cuid())
+    name          String?
+    email         String    @unique
+    emailVerified DateTime?
+    image         String?
+    isActive      Boolean   @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    accounts  Account[]
+    sessions  Session[]
+    roles     Role[]    @relation("UserRoles")
+    addresses Address[] @relation("UserAddresses")
+}
+
+model Role {
+    id          Int      @id @default(autoincrement())
+    type        RoleType
+    name        String   @unique
+    description String?
+    rules       Json?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    users User[] @relation("UserRoles")
+}
+
+enum RoleType {
+    ADMIN
+    USER
+    ALLY
+}
+
+model Address {
+    id          Int         @id @default(autoincrement())
+    type        AddressType
+    fullAddress String
+    street      String
+    number      String
+    city        String
+    state       String
+    postalCode  String
+    country     String
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+}
+
+enum AddressType {
+    HOME
+    WORK
+    SHIPPING
+    BILLING
+}
+
+model Supplier {
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String?
+    image       String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    products  Product[] @relation("SupplierProducts")
+    addresses Address[] @relation("SupplierAddresses")
+}
+
+model Product {
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String?
+    image       String?
+    price       Float
+    moq         Float
+    unit        String
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    Order   Order? @relation(fields: [orderId], references: [id])
+    orderId Int?
+    Order   Order? @relation(fields: [orderId], references: [id])
+    orderId Int?
+}
+
+model Order {
+    id        Int         @id @default(autoincrement())
+    total     Float
+    status    OrderStatus
+    createdAt DateTime    @default(now())
+    updatedAt DateTime    @updatedAt
+
+    userId   Int
+    user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    products Product[] @relation("OrderProducts")
+}
+
+enum OrderStatus {
+    DRAFT
+    PAYMENT_PENDING
+    COMPLETED
+    CANCELLED_BY_USER
+    CANCELLED_BY_ADMIN
+    CANCELLED_BY_TIMEOUT
+    PAYMENT_FAILED
+    REFUNDED
+}
+
+model Shipment {
+    id         Int            @id @default(autoincrement())
+    orderId    String
+    trackingId String
+    carrier    String
+    status     ShipmentStatus
+    createdAt  DateTime       @default(now())
+    updatedAt  DateTime       @updatedAt
+    order      Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum ShipmentStatus {
+    PENDING
+    SHIPPED
+    DELIVERED
+    RETURNED
+}
+
+model Payment {
+    id        Int           @id @default(autoincrement())
+    orderId   String
+    amount    Float
+    status    PaymentStatus
+    createdAt DateTime      @default(now())
+    updatedAt DateTime      @updatedAt
+    order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+enum PaymentStatus {
+    PENDING
+    COMPLETED
+    FAILED
+}
+
+model Event {
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String?
+    date        DateTime
+    location    String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+    id        Int      @id @default(autoincrement())
+    userId    String
+    message   String
+    read      Boolean  @default(false)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Channel {
+    id          Int         @id @default(autoincrement())
+    type        ChannelType
+    name        String
+    description String?
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+}
+
+enum ChannelType {
+    EMAIL
+    SMS
+    PUSH
+    IN_APP
+    WHATSAPP
+}
