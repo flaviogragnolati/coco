@@ -80,8 +80,11 @@ model Role {
 enum RoleType {
     ADMIN
     USER
-    ALLY
+    ALLY // FRACTIONATOR + PICKER
+    FRACTIONATOR
+    PICKER
     SUPPLIER
+    CARRIER
 }
 
 model Address {
