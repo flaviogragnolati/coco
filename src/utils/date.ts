@@ -1,15 +1,15 @@
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-import isToday from "dayjs/plugin/isToday";
-import isBetween from "dayjs/plugin/isBetween";
-import weekOfYear from "dayjs/plugin/weekOfYear";
 import arraySupport from "dayjs/plugin/arraySupport";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import isBetween from "dayjs/plugin/isBetween";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-import customParseFormat from "dayjs/plugin/customParseFormat";
+import isToday from "dayjs/plugin/isToday";
 import relativeTime from "dayjs/plugin/relativeTime";
+import timezone from "dayjs/plugin/timezone";
 import updateLocale from "dayjs/plugin/updateLocale";
+import utc from "dayjs/plugin/utc";
+import weekOfYear from "dayjs/plugin/weekOfYear";
 
 import "dayjs/locale/es";
 
