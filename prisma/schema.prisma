@@ -49,19 +49,34 @@ model User {
     name          String?
     email         String    @unique
     emailVerified DateTime?
+    phone         String?
     image         String?
+    taxId         String?
+    taxType       String?
     isActive      Boolean   @default(true)
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    deleted       Boolean   @default(false)
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
 
     accounts      Account[]
     sessions      Session[]
-    roles         Role[]         @relation("userRoles")
-    addresses     Address[]      @relation("userAddresses")
-    carts         Cart[]
+    roles         Role[]          @relation("userRoles")
+    addresses     Address[]       @relation("userAddresses")
+    carts         UserOrder[]
     notifications Notification[]
     events        Event[]
+    ProductRating ProductRating[]
+    userSettings  UserSettings[]
+}
+
+model UserSettings {
+    id                   Int      @id @default(autoincrement())
+    notificationsEnabled Boolean  @default(true)
+    createdAt            DateTime @default(now())
+    updatedAt            DateTime @updatedAt
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Role {
@@ -79,12 +94,13 @@ model Role {
 
 enum RoleType {
     ADMIN
-    USER
+    BUYER
     ALLY // FRACTIONATOR + PICKER
     FRACTIONATOR
     PICKER
     SUPPLIER
     CARRIER
+    GUEST
 }
 
 model Address {
@@ -97,6 +113,9 @@ model Address {
     state       String
     postalCode  String
     country     String
+    description String?
+    isActive    Boolean     @default(true)
+    deleted     Boolean     @default(false)
     createdAt   DateTime    @default(now())
     updatedAt   DateTime    @updatedAt
 
@@ -104,6 +123,8 @@ model Address {
     user       User?      @relation("userAddresses", fields: [userId], references: [id])
     supplierId Int?
     supplier   Supplier?  @relation("supplierAddresses", fields: [supplierId], references: [id])
+    carrierId  Int?
+    carrier    Carrier?   @relation("carrierAddresses", fields: [carrierId], references: [id])
     shipments  Shipment[]
 }
 
@@ -113,6 +134,72 @@ enum AddressType {
     SHIPPING
     BILLING
     FRACTIONING
+    SUPPLIER
+    PICKUP
+    CARRIER
+}
+
+model Carrier {
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String?
+    image       String?
+    phone       String?
+    email       String?
+    website     String?
+    taxId       String?
+    taxType     String?
+    isActive    Boolean  @default(true)
+    deleted     Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    addresses     Address[]       @relation("carrierAddresses")
+    shipments     Shipment[]
+    carrierRoutes CarrierRoutes[]
+    carrierRate   CarrierRate[]
+}
+
+model CarrierRoutes {
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String?
+    origin      String
+    destination String
+    distance    Float
+    duration    Int // in days
+    price       Float
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    carrierId Int
+    carrier   Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+}
+
+model CarrierRate {
+    id             Int      @id @default(autoincrement())
+    name           String
+    description    String?
+    volumetricMoq  Float
+    volumetricRate Float
+    weightMoq      Float
+    weightRate     Float
+    rate           Float
+    isFlatRate     Boolean  @default(false)
+    isPerKg        Boolean  @default(false)
+    isPerM3        Boolean  @default(false)
+    isPerKm        Boolean  @default(false)
+    isPerDay       Boolean  @default(false)
+    isPerRoute     Boolean  @default(false)
+    isPerShipment  Boolean  @default(false)
+    isPerOrder     Boolean  @default(false)
+    isActive       Boolean  @default(true)
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    carrierId Int
+    carrier   Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
 }
 
 model Supplier {
@@ -120,29 +207,80 @@ model Supplier {
     name        String
     description String?
     image       String?
+    phone       String?
+    email       String?
+    website     String?
+    taxId       String?
+    taxType     String?
+    isActive    Boolean  @default(true)
+    deleted     Boolean  @default(false)
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
     addresses Address[] @relation("supplierAddresses")
+    products  Product[]
 }
 
 model Product {
     id          Int      @id @default(autoincrement())
     name        String
     description String?
-    image       String?
+    tags        String[]
+    code        String?
+    image       String[]
     price       Float
+    originalQty Float
+    origin      String?
     moq         Float
     unit        String
+    minQty      Float
+    maxQty      Float
+    step        Float
+    isActive    Boolean  @default(true)
+    deleted     Boolean  @default(false)
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    cartId Int?
-    cart   Cart? @relation(fields: [cartId], references: [id])
+    cartId     Int?
+    cart       UserOrder?      @relation(fields: [cartId], references: [id])
+    supplierId Int
+    supplier   Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+    categoryId Int?
+    category   Category?       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    ratings    ProductRating[]
+}
+
+model Category {
+    id          Int      @id @default(autoincrement())
+    name        String
+    tags        String[]
+    image       String?
+    description String?
+    isActive    Boolean  @default(true)
+    deleted     Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    products Product[]
+}
+
+model ProductRating {
+    id        Int      @id @default(autoincrement())
+    rating    Int
+    comment   String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    userId    String
+    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    cartId    Int?
+    cart      UserOrder? @relation(fields: [cartId], references: [id])
+    productId Int
+    product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 // addressId ??? como elegimos la dirección de envío? o delivery?
-model Cart {
+model UserOrder {
     id        Int        @id @default(autoincrement())
     status    CartStatus
     total     Float
@@ -150,11 +288,12 @@ model Cart {
     updatedAt DateTime   @updatedAt
 
     userId   String
-    user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
     orderId  Int?
-    order    Order?    @relation(fields: [orderId], references: [id])
+    order    BulkOrder?      @relation(fields: [orderId], references: [id])
     products Product[]
     payments Payment[]
+    ratings  ProductRating[] // ????
 }
 
 enum CartStatus {
@@ -165,16 +304,16 @@ enum CartStatus {
 
 // denormalizar supplier?
 // asignar aliado?
-model Order {
+model BulkOrder {
     id        Int         @id @default(autoincrement())
     total     Float
     status    OrderStatus
     createdAt DateTime    @default(now())
     updatedAt DateTime    @updatedAt
 
-    carts      Cart[]
+    carts      UserOrder[]
     shipmentId Int?
-    shipment   Shipment? @relation(fields: [shipmentId], references: [id])
+    shipment   Shipment?   @relation(fields: [shipmentId], references: [id])
 }
 
 enum OrderStatus {
@@ -196,9 +335,11 @@ model Shipment {
     createdAt  DateTime       @default(now())
     updatedAt  DateTime       @updatedAt
 
-    orders    Order[]
+    orders    BulkOrder[]
     addressId Int
-    address   Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
+    address   Address     @relation(fields: [addressId], references: [id], onDelete: Cascade)
+    Carrier   Carrier?    @relation(fields: [carrierId], references: [id])
+    carrierId Int?
 }
 
 enum ShipmentStatus {
@@ -216,7 +357,7 @@ model Payment {
     updatedAt DateTime      @updatedAt
 
     cartId Int?
-    cart   Cart? @relation(fields: [cartId], references: [id])
+    cart   UserOrder? @relation(fields: [cartId], references: [id])
 }
 
 enum PaymentStatus {
@@ -286,3 +427,19 @@ enum ChannelType {
     IN_APP
     WHATSAPP
 }
+
+// 1. Terminar de armar db schema
+// 2. Terminar setup `base` de repo
+// 2.1 prisma
+// 2.2 tailwind + shadcn
+// 2.3 biome + turborepo
+// 2.4 autenticacion - permisos - next-auth???
+// 2.5 trpc + middlewares(?)
+// 3. admin backoffice: Alta de proveedores, productos, categorias, aliados, transportistas...
+// 4. home page: 'carrusel' de productos destacados + categorias + buscador
+// 5. detalle de producto: imagenes, descripcion, reviews, agregar al carrito
+// 6. carrito: listado de productos, checkout (direccion, pago, resumen)
+// 6.1. integracion con pasarela de pagos (mercado libre)
+// 7. tracker de pedido: detalle de pedido + estado del envio
+// 8. panel de aliado: vista de pedidos y entregas asignadas
+// 9. panel de usuario: configuracion, historial de pedidos, reviews
