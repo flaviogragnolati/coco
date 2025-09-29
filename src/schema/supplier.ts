@@ -38,7 +38,7 @@ const baseSupplierSchema = z.object({
 		.trim()
 		.optional()
 		.nullable(),
-	isActive: z.boolean().default(true),
+	isActive: z.boolean(),
 });
 
 export const createSupplierSchema = baseSupplierSchema;
