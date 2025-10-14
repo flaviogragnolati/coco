@@ -12,21 +12,21 @@ import { auth } from "~/server/auth";
 import { HydrateClient } from "~/trpc/server";
 
 export default async function Home() {
-	const session = await auth();
-	return (
-		<HydrateClient>
-			<main className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
-				<Header />
-				<Hero />
-				<HowItWorks />
-				<Benefits />
-				<ProductShowcase />
-				<FeaturedOffers />
-				<GlutenFree />
-				<Newsletter />
-				<Footer />
-				<PaymentModal />
-			</main>
-		</HydrateClient>
-	);
+  const session = await auth();
+  return (
+    <HydrateClient>
+      <main className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+        <Header />
+        <Hero />
+        <HowItWorks />
+        <Benefits />
+        <ProductShowcase />
+        <FeaturedOffers />
+        <GlutenFree />
+        <Newsletter />
+        <Footer />
+        <PaymentModal />
+      </main>
+    </HydrateClient>
+  );
 }
