@@ -12,17 +12,16 @@ import {
 } from "lucide-react";
 
 import type { RouterOutputs } from "~/trpc/react";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "~/components/ui/avatar";
+import {
+  AppTable,
+  type ColumnConfig,
+} from "~/components/ui/app-table";
 import { SupplierModal } from "~/components/admin/supplier-modal";
 import { useConfirm } from "~/ui/confirm";
 
@@ -46,14 +45,6 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
       .map((word) => word.charAt(0).toUpperCase())
       .join("")
       .substring(0, 2);
-  };
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("es-AR", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(new Date(date));
   };
 
   const handleCreateSupplier = () => {
@@ -82,45 +73,152 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
     setSelectedSupplier(undefined);
   };
 
-  if (suppliers.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg">Proveedores</h3>
-          <Button
-            onClick={handleCreateSupplier}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Agregar Proveedor
-          </Button>
+  const columns: ColumnConfig<Supplier>[] = [
+    {
+      key: "supplier",
+      title: "Proveedor",
+      type: "custom",
+      render: (supplier) => (
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={supplier.image ?? undefined} alt={supplier.name} />
+            <AvatarFallback className="text-xs">
+              {getInitials(supplier.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="font-medium">{supplier.name}</div>
+            {supplier.description && (
+              <div className="line-clamp-1 text-muted-foreground text-sm">
+                {supplier.description}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="rounded-md border border-dashed p-8 text-center">
-          <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 font-semibold text-lg">
-            No se encontraron proveedores
-          </h3>
-          <p className="text-muted-foreground">
-            Comienza agregando tu primer proveedor.
-          </p>
+      ),
+    },
+    {
+      key: "contact",
+      title: "Contacto",
+      type: "custom",
+      render: (supplier) => (
+        <div className="space-y-1">
+          {supplier.email && (
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">{supplier.email}</span>
+            </div>
+          )}
+          {supplier.phone && (
+            <div className="flex items-center gap-2 text-sm">
+              <Phone className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">{supplier.phone}</span>
+            </div>
+          )}
+          {supplier.website && (
+            <div className="flex items-center gap-2 text-sm">
+              <ExternalLink className="h-3 w-3 text-muted-foreground" />
+              <a
+                href={supplier.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                Website
+              </a>
+            </div>
+          )}
         </div>
-        <SupplierModal
-          isOpen={modalOpen}
-          onClose={handleModalClose}
-          supplier={selectedSupplier}
-        />
-      </div>
-    );
-  }
+      ),
+    },
+    {
+      key: "taxInfo",
+      title: "Tax Info",
+      type: "custom",
+      render: (supplier) =>
+        supplier.taxId && supplier.taxType ? (
+          <div className="text-sm">
+            <div className="font-medium">{supplier.taxType}</div>
+            <div className="text-muted-foreground">{supplier.taxId}</div>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-sm">N/A</span>
+        ),
+    },
+    {
+      key: "products",
+      title: "Productos",
+      type: "custom",
+      render: (supplier) => (
+        <div className="text-sm">
+          <span className="font-medium">{supplier._count.products}</span>
+          <span className="text-muted-foreground"> products</span>
+          {supplier._count.addresses > 0 && (
+            <div className="text-muted-foreground text-xs">
+              {supplier._count.addresses} addresses
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      title: "Estado",
+      type: "boolean",
+      dataKey: "isActive",
+      labels: {
+        true: "Active",
+        false: "Inactive",
+      },
+      asBadge: true,
+    },
+    {
+      key: "createdAt",
+      title: "Creado",
+      type: "text",
+      dataKey: "createdAt",
+      transform: (value) => {
+        if (!value) return "-";
 
-  const columns = [
-    "Proveedor",
-    "Contacto",
-    "Tax Info",
-    "Productos",
-    "Estado",
-    "Creado",
+        return new Intl.DateTimeFormat("es-AR", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }).format(new Date(value as string | number | Date));
+      },
+    },
+    {
+      key: "actions",
+      title: "Acciones",
+      width: "160px",
+      type: "actions",
+      actions: {
+        layout: "inline",
+        edit: {
+          label: "Edit",
+          icon: <Edit className="h-3 w-3" />,
+          onClick: (supplier) => handleEditSupplier(supplier),
+        },
+        delete: {
+          label: "Delete",
+          icon: <Trash className="h-3 w-3" />,
+          onClick: (supplier) => handleDelete(supplier.id),
+        },
+      },
+    },
   ];
+
+  const emptyState = (
+    <div className="mx-auto max-w-md rounded-md border border-dashed p-8 text-center">
+      <Package className="mx-auto h-12 w-12 text-muted-foreground" />
+      <h3 className="mt-4 font-semibold text-lg">
+        No se encontraron proveedores
+      </h3>
+      <p className="text-muted-foreground">
+        Comienza agregando tu primer proveedor.
+      </p>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -137,133 +235,12 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
         </Button>
       </div>
       <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead key={column}>{column}</TableHead>
-              ))}
-              <TableHead className="w-[100px]">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {suppliers.map((supplier) => (
-              <TableRow key={supplier.id}>
-                <TableCell>
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={supplier.image ?? undefined}
-                        alt={supplier.name}
-                      />
-                      <AvatarFallback className="text-xs">
-                        {getInitials(supplier.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{supplier.name}</div>
-                      {supplier.description && (
-                        <div className="line-clamp-1 text-muted-foreground text-sm">
-                          {supplier.description}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    {supplier.email && (
-                      <div className="flex items-center space-x-2 text-sm">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">
-                          {supplier.email}
-                        </span>
-                      </div>
-                    )}
-                    {supplier.phone && (
-                      <div className="flex items-center space-x-2 text-sm">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">
-                          {supplier.phone}
-                        </span>
-                      </div>
-                    )}
-                    {supplier.website && (
-                      <div className="flex items-center space-x-2 text-sm">
-                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                        <a
-                          href={supplier.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          Website
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {supplier.taxId && supplier.taxType ? (
-                    <div className="text-sm">
-                      <div className="font-medium">{supplier.taxType}</div>
-                      <div className="text-muted-foreground">
-                        {supplier.taxId}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">N/A</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm">
-                    <span className="font-medium">
-                      {supplier._count.products}
-                    </span>
-                    <span className="text-muted-foreground"> products</span>
-                  </div>
-                  {supplier._count.addresses > 0 && (
-                    <div className="text-muted-foreground text-xs">
-                      {supplier._count.addresses} addresses
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={supplier.isActive ? "default" : "secondary"}>
-                    {supplier.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="text-muted-foreground text-sm">
-                    {formatDate(supplier.createdAt)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditSupplier(supplier)}
-                      className="flex items-center gap-1"
-                    >
-                      <Edit className="h-3 w-3" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(supplier.id)}
-                      className="flex items-center gap-1"
-                    >
-                      <Trash className="h-3 w-3" />
-                      Delete
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <AppTable
+          columns={columns}
+          data={suppliers}
+          emptyState={emptyState}
+          emptyMessage="No se encontraron proveedores"
+        />
       </div>
       <SupplierModal
         isOpen={modalOpen}

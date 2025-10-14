@@ -128,21 +128,33 @@ export interface ActionsColumnConfig<TData = unknown>
   type: "actions";
   /** Actions to show */
   actions?: {
+    layout?: "menu" | "inline";
     edit?: {
       show?: (data: TData) => boolean;
       onClick: (data: TData, index: number) => void;
       label?: string;
+      icon?: React.ReactNode;
+      variant?: React.ComponentProps<typeof Button>["variant"];
+      size?: React.ComponentProps<typeof Button>["size"];
+      className?: string;
     };
     delete?: {
       show?: (data: TData) => boolean;
       onClick: (data: TData, index: number) => void;
       label?: string;
+      icon?: React.ReactNode;
+      variant?: React.ComponentProps<typeof Button>["variant"];
+      size?: React.ComponentProps<typeof Button>["size"];
+      className?: string;
     };
     custom?: Array<{
       label: string;
       icon?: React.ReactNode;
       show?: (data: TData) => boolean;
       onClick: (data: TData, index: number) => void;
+      variant?: React.ComponentProps<typeof Button>["variant"];
+      size?: React.ComponentProps<typeof Button>["size"];
+      className?: string;
     }>;
   };
 }
@@ -196,37 +208,130 @@ function renderCell<TData>(
 
   if (column.type === "actions") {
     const { actions = {} } = column;
-    const { edit, delete: deleteAction, custom = [] } = actions;
+    const {
+      edit,
+      delete: deleteAction,
+      custom = [],
+      layout = "menu",
+    } = actions;
 
-    const items = [];
+    const menuItems: {
+      key: string;
+      label: string;
+      icon?: React.ReactNode;
+      onClick: () => void;
+    }[] = [];
+
+    const inlineItems: {
+      key: string;
+      label: string;
+      icon?: React.ReactNode;
+      onClick: () => void;
+      variant?: React.ComponentProps<typeof Button>["variant"];
+      size?: React.ComponentProps<typeof Button>["size"];
+      className?: string;
+    }[] = [];
 
     if (edit && (!edit.show || edit.show(data))) {
-      items.push({
+      const common = {
+        key: "edit",
         label: edit.label || "Edit",
-        icon: <Edit className="h-4 w-4" />,
+        icon:
+          edit.icon ||
+          (layout === "inline" ? (
+            <Edit className="h-3 w-3" />
+          ) : (
+            <Edit className="h-4 w-4" />
+          )),
         onClick: () => edit.onClick(data, rowIndex),
-      });
-    }
+      };
 
-    if (deleteAction && (!deleteAction.show || deleteAction.show(data))) {
-      items.push({
-        label: deleteAction.label || "Delete",
-        icon: <Trash2 className="h-4 w-4" />,
-        onClick: () => deleteAction.onClick(data, rowIndex),
-      });
-    }
-
-    for (const action of custom) {
-      if (!action.show || action.show(data)) {
-        items.push({
-          label: action.label,
-          icon: action.icon,
-          onClick: () => action.onClick(data, rowIndex),
+      if (layout === "inline") {
+        inlineItems.push({
+          ...common,
+          variant: edit.variant || "ghost",
+          size: edit.size || "sm",
+          className: edit.className,
         });
+      } else {
+        menuItems.push(common);
       }
     }
 
-    if (items.length === 0) return null;
+    if (deleteAction && (!deleteAction.show || deleteAction.show(data))) {
+      const common = {
+        key: "delete",
+        label: deleteAction.label || "Delete",
+        icon:
+          deleteAction.icon ||
+          (layout === "inline" ? (
+            <Trash2 className="h-3 w-3" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )),
+        onClick: () => deleteAction.onClick(data, rowIndex),
+      };
+
+      if (layout === "inline") {
+        inlineItems.push({
+          ...common,
+          variant: deleteAction.variant || "destructive",
+          size: deleteAction.size || "sm",
+          className: deleteAction.className,
+        });
+      } else {
+        menuItems.push(common);
+      }
+    }
+
+    for (const [index, action] of custom.entries()) {
+      if (!action.show || action.show(data)) {
+        const key = `custom-${index}`;
+        const common = {
+          key,
+          label: action.label,
+          icon: action.icon,
+          onClick: () => action.onClick(data, rowIndex),
+        };
+
+        if (layout === "inline") {
+          inlineItems.push({
+            ...common,
+            variant: action.variant || "ghost",
+            size: action.size || "sm",
+            className: action.className,
+          });
+        } else {
+          menuItems.push(common);
+        }
+      }
+    }
+
+    if (layout === "inline") {
+      if (inlineItems.length === 0) return null;
+
+      return (
+        <div className="flex items-center gap-2">
+          {inlineItems.map((item) => (
+            <Button
+              key={item.key}
+              variant={item.variant}
+              size={item.size}
+              className={cn("flex items-center gap-1", item.className)}
+              onClick={(event) => {
+                event.stopPropagation();
+                item.onClick();
+              }}
+            >
+              {item.icon && <span>{item.icon}</span>}
+              {item.label}
+            </Button>
+          ))}
+        </div>
+      );
+    }
+
+    if (menuItems.length === 0) return null;
 
     return (
       <DropdownMenu>
@@ -237,8 +342,8 @@ function renderCell<TData>(
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {items.map((item) => (
-            <DropdownMenuItem key={item.label} onClick={item.onClick}>
+          {menuItems.map((item) => (
+            <DropdownMenuItem key={item.key} onClick={item.onClick}>
               {item.icon && <span className="mr-2">{item.icon}</span>}
               {item.label}
             </DropdownMenuItem>
