@@ -12,9 +12,7 @@ async function SuppliersContent() {
       {/* Header */}
       <div>
         <h1 className="font-bold text-3xl tracking-tight">Proveedores</h1>
-        <p className="text-muted-foreground">
-          Gestiona tus proveedores y su información
-        </p>
+        <p className="text-muted-foreground">Gestion de proveedores</p>
       </div>
 
       {/* Stats */}

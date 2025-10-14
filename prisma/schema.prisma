@@ -166,7 +166,7 @@ model CarrierRoutes {
     description String?
     origin      String
     destination String
-    distance    Float
+    distance    Float // in km
     duration    Int // in days
     price       Float
     isActive    Boolean  @default(true)

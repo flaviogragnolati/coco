@@ -1,3 +1,5 @@
+"use client";
+
 import { merge } from "lodash";
 import * as React from "react";
 import { ConfirmationAlertDialog, type ConfirmOptions } from "./alert-dialog";
