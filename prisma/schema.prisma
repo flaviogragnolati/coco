@@ -1,445 +1,537 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
 model Account {
-    id                       String  @id @default(cuid())
-    type                     String
-    provider                 String
-    providerAccountId        String
-    refresh_token            String?
-    access_token             String?
-    expires_at               Int?
-    token_type               String?
-    scope                    String?
-    id_token                 String?
-    session_state            String?
-    refresh_token_expires_in Int?
+  id                       String  @id @default(cuid())
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in Int?
 
-    userId String
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@unique([provider, providerAccountId])
+  @@unique([provider, providerAccountId])
 }
 
 model Session {
-    id           String   @id @default(cuid())
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
 
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
-    identifier String
-    token      String   @unique
-    expires    DateTime
+  identifier String
+  token      String   @unique
+  expires    DateTime
 
-    @@unique([identifier, token])
+  @@unique([identifier, token])
 }
 
 model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String    @unique
-    emailVerified DateTime?
-    phone         String?
-    image         String?
-    taxId         String?
-    taxType       String?
-    isActive      Boolean   @default(true)
-    deleted       Boolean   @default(false)
-    createdAt     DateTime  @default(now())
-    updatedAt     DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  phone         String?
+  image         String?
+  taxId         String?
+  taxType       String?
+  gender        String?
+  isActive      Boolean   @default(true)
+  deleted       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-    accounts      Account[]
-    sessions      Session[]
-    roles         Role[]          @relation("userRoles")
-    addresses     Address[]       @relation("userAddresses")
-    carts         UserOrder[]
-    notifications Notification[]
-    events        Event[]
-    ProductRating ProductRating[]
-    userSettings  UserSettings[]
+  accounts      Account[]
+  sessions      Session[]
+  roles         Role[]          @relation("userRoles")
+  addresses     Address[]       @relation("userAddresses")
+  notifications Notification[]
+  events        Event[]
+  ProductRating ProductRating[]
+  userSettings  UserSettings[]
 }
 
 model UserSettings {
-    id                   Int      @id @default(autoincrement())
-    notificationsEnabled Boolean  @default(true)
-    createdAt            DateTime @default(now())
-    updatedAt            DateTime @updatedAt
+  id                   Int      @id @default(autoincrement())
+  notificationsEnabled Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-    userId String
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Role {
-    id          Int      @id @default(autoincrement())
-    type        RoleType
-    name        String   @unique
-    description String?
-    rules       Json?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  type        RoleType
+  name        String   @unique
+  description String?
+  rules       Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-    userId String?
-    user   User?   @relation("userRoles", fields: [userId], references: [id])
+  userId String?
+  user   User?   @relation("userRoles", fields: [userId], references: [id])
 }
 
 enum RoleType {
-    ADMIN
-    BUYER
-    ALLY // FRACTIONATOR + PICKER
-    FRACTIONATOR
-    PICKER
-    SUPPLIER
-    CARRIER
-    GUEST
+  ADMIN
+  BUYER
+  ALLY // FRACTIONATOR + PICKER
+  FRACTIONATOR
+  PICKER
+  SUPPLIER
+  CARRIER
+  GUEST
 }
 
 model Address {
-    id          Int         @id @default(autoincrement())
-    type        AddressType
-    fullAddress String
-    street      String
-    number      String
-    city        String
-    state       String
-    postalCode  String
-    country     String
-    description String?
-    isActive    Boolean     @default(true)
-    deleted     Boolean     @default(false)
-    createdAt   DateTime    @default(now())
-    updatedAt   DateTime    @updatedAt
+  id          Int         @id @default(autoincrement())
+  type        AddressType
+  fullAddress String
+  street      String
+  number      String
+  city        String
+  state       String
+  postalCode  String
+  country     String
+  description String?
+  isActive    Boolean     @default(true)
+  deleted     Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-    userId     String?
-    user       User?      @relation("userAddresses", fields: [userId], references: [id])
-    supplierId Int?
-    supplier   Supplier?  @relation("supplierAddresses", fields: [supplierId], references: [id])
-    carrierId  Int?
-    carrier    Carrier?   @relation("carrierAddresses", fields: [carrierId], references: [id])
-    shipments  Shipment[]
+  userId     String?
+  user       User?      @relation("userAddresses", fields: [userId], references: [id])
+  supplierId Int?
+  supplier   Supplier?  @relation("supplierAddresses", fields: [supplierId], references: [id])
+  carrierId  Int?
+  carrier    Carrier?   @relation("carrierAddresses", fields: [carrierId], references: [id])
+  shipments  Shipment[]
+  carts      Cart[]
 }
 
 enum AddressType {
-    HOME
-    WORK
-    SHIPPING
-    BILLING
-    FRACTIONING
-    SUPPLIER
-    PICKUP
-    CARRIER
+  HOME
+  WORK
+  SHIPPING
+  BILLING
+  FRACTIONING
+  SUPPLIER
+  PICKUP
+  CARRIER
 }
 
 model Carrier {
-    id          Int      @id @default(autoincrement())
-    name        String
-    description String?
-    image       String?
-    phone       String?
-    email       String?
-    website     String?
-    taxId       String?
-    taxType     String?
-    isActive    Boolean  @default(true)
-    deleted     Boolean  @default(false)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  image        String?
+  phone        String?
+  email        String?
+  website      String?
+  taxId        String?
+  taxType      String?
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  isActive     Boolean  @default(true)
+  deleted      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-    addresses     Address[]       @relation("carrierAddresses")
-    shipments     Shipment[]
-    carrierRoutes CarrierRoutes[]
-    carrierRate   CarrierRate[]
+  addresses     Address[]       @relation("carrierAddresses")
+  shipments     Shipment[]
+  carrierRoutes CarrierRoutes[]
+
+  carrierRates CarrierRate[]
 }
 
 model CarrierRoutes {
-    id          Int      @id @default(autoincrement())
-    name        String
-    description String?
-    origin      String
-    destination String
-    distance    Float // in km
-    duration    Int // in days
-    price       Float
-    isActive    Boolean  @default(true)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  origin      String
+  destination String
+  distance    Float // in km
+  duration    Int // in days
+  price       Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-    carrierId Int
-    carrier   Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId Int
+  carrier   Carrier       @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  rates     CarrierRate[]
 }
 
 model CarrierRate {
-    id             Int      @id @default(autoincrement())
-    name           String
-    description    String?
-    volumetricMoq  Float
-    volumetricRate Float
-    weightMoq      Float
-    weightRate     Float
-    rate           Float
-    isFlatRate     Boolean  @default(false)
-    isPerKg        Boolean  @default(false)
-    isPerM3        Boolean  @default(false)
-    isPerKm        Boolean  @default(false)
-    isPerDay       Boolean  @default(false)
-    isPerRoute     Boolean  @default(false)
-    isPerShipment  Boolean  @default(false)
-    isPerOrder     Boolean  @default(false)
-    isActive       Boolean  @default(true)
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  name           String
+  description    String?
+  volumetricMoq  Float
+  volumetricRate Float
+  weightMoq      Float
+  weightRate     Float
+  rate           Float
+  isFlatRate     Boolean  @default(false)
+  isPerKg        Boolean  @default(false)
+  isPerM3        Boolean  @default(false)
+  isPerKm        Boolean  @default(false)
+  isPerDay       Boolean  @default(false)
+  isPerRoute     Boolean  @default(false)
+  isPerShipment  Boolean  @default(false)
+  isPerOrder     Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-    carrierId Int
-    carrier   Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  carrierId Int
+  carrier   Carrier         @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  routes    CarrierRoutes[]
 }
 
 model Supplier {
-    id          Int      @id @default(autoincrement())
-    name        String
-    description String?
-    image       String?
-    phone       String?
-    email       String?
-    website     String?
-    taxId       String?
-    taxType     String?
-    isActive    Boolean  @default(true)
-    deleted     Boolean  @default(false)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  image        String?
+  phone        String?
+  email        String?
+  website      String?
+  taxId        String?
+  taxType      String?
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  pickupPolicy String?
+  isActive     Boolean  @default(true)
+  deleted      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-    addresses Address[] @relation("supplierAddresses")
-    products  Product[]
+  addresses Address[] @relation("supplierAddresses")
+  products  Product[]
+  lots      Lot[]
 }
 
 model Product {
-    id          Int      @id @default(autoincrement())
-    name        String
-    description String?
-    tags        String[]
-    code        String?
-    image       String[]
-    price       Float
-    originalQty Float
-    origin      String?
-    moq         Float
-    unit        String
-    minQty      Float
-    maxQty      Float
-    step        Float
-    isActive    Boolean  @default(true)
-    deleted     Boolean  @default(false)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  version            Int      @default(1)
+  name               String
+  description        String?
+  searchTags         String[]
+  publicTags         String[]
+  code               String
+  supplierCode       String?
+  supplierUrl        String?
+  images             String[]
+  currency           String?
+  price              Float
+  priceUnit          String
+  supplierMoq        Float
+  supplierUnit       String
+  customerMoq        Float
+  customerUnit       String
+  publicPrice        Float
+  publicPriceUnit    String
+  minFractionPerUser Int      @default(1)
+  isActive           Boolean  @default(true)
+  deleted            Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-    cartId     Int?
-    cart       UserOrder?      @relation(fields: [cartId], references: [id])
-    supplierId Int
-    supplier   Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-    categoryId Int?
-    category   Category?       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-    ratings    ProductRating[]
+  brandId    Int?
+  brand      Brand?          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  categoryId Int?
+  category   Category?       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  supplierId Int
+  supplier   Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  ratings    ProductRating[]
+  cartItems  CartItem[]
 }
 
 model Category {
-    id          Int      @id @default(autoincrement())
-    name        String
-    tags        String[]
-    image       String?
-    description String?
-    isActive    Boolean  @default(true)
-    deleted     Boolean  @default(false)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  tags        String[]
+  image       String?
+  description String?
+  isActive    Boolean  @default(true)
+  deleted     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-    products Product[]
+  products Product[]
+}
+
+model Brand {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  image       String?
+  isActive    Boolean   @default(true)
+  deleted     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
 }
 
 model ProductRating {
-    id        Int      @id @default(autoincrement())
-    rating    Int
-    comment   String?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    userId    String
-    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-    cartId    Int?
-    cart      UserOrder? @relation(fields: [cartId], references: [id])
-    productId Int
-    product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
-// addressId ??? como elegimos la dirección de envío? o delivery?
-model UserOrder {
-    id        Int        @id @default(autoincrement())
-    status    CartStatus
-    total     Float
-    createdAt DateTime   @default(now())
-    updatedAt DateTime   @updatedAt
+model Cart {
+  id        Int        @id @default(autoincrement())
+  status    CartStatus
+  userId    String
+  addressId Int?
+  paidAt    DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-    userId   String
-    user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-    orderId  Int?
-    order    BulkOrder?      @relation(fields: [orderId], references: [id])
-    products Product[]
-    payments Payment[]
-    ratings  ProductRating[] // ????
+  items        CartItem[]
+  address      Address?      @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  userPayments UserPayment[]
 }
 
 enum CartStatus {
-    ACTIVE
-    CHECKED_OUT
-    ABANDONED
+  DRAFT
+  PENDING_PAYMENT
+  PAYMENT_FAILED
+  COMPLETED
+  CANCELLED_BY_USER
+  CANCELLED_BY_ADMIN
+  REFUNDED
+  EXPIRED
 }
 
-// denormalizar supplier?
-// asignar aliado?
-model BulkOrder {
-    id        Int         @id @default(autoincrement())
-    total     Float
-    status    OrderStatus
-    createdAt DateTime    @default(now())
-    updatedAt DateTime    @updatedAt
+model CartItem {
+  id              Int      @id @default(autoincrement())
+  quantity        Float
+  unit            String
+  price           Float
+  publicPrice     Float
+  productSnapshot String // JSON snapshot of the product at the time of adding to cart
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-    carts      UserOrder[]
-    shipmentId Int?
-    shipment   Shipment?   @relation(fields: [shipmentId], references: [id])
-}
-
-enum OrderStatus {
-    DRAFT
-    PAYMENT_PENDING
-    COMPLETED
-    CANCELLED_BY_USER
-    CANCELLED_BY_ADMIN
-    CANCELLED_BY_TIMEOUT
-    PAYMENT_FAILED
-    REFUNDED
+  cartId    Int
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  lotId     Int?
+  lot       Lot?    @relation(fields: [lotId], references: [id])
 }
 
 model Shipment {
-    id         Int            @id @default(autoincrement())
-    trackingId String
-    carrier    String
-    status     ShipmentStatus
-    createdAt  DateTime       @default(now())
-    updatedAt  DateTime       @updatedAt
+  id          Int            @id @default(autoincrement())
+  trackingId  String
+  carrierName String         @map("carrier")
+  status      ShipmentStatus
+  eta         DateTime?
+  startedAt   DateTime?
+  arrivedAt   DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
-    orders    BulkOrder[]
-    addressId Int
-    address   Address     @relation(fields: [addressId], references: [id], onDelete: Cascade)
-    Carrier   Carrier?    @relation(fields: [carrierId], references: [id])
-    carrierId Int?
+  addressId        Int
+  address          Address           @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  carrierId        Int?
+  carrier          Carrier?          @relation(fields: [carrierId], references: [id])
+  packages         ShipmentPackage[]
+  shipmentPayments ShipmentPayment[]
 }
 
 enum ShipmentStatus {
-    PENDING
-    SHIPPED
-    DELIVERED
-    RETURNED
+  ASSEMBLING
+  IN_TRANSIT
+  ARRIVED
+  CLOSED
 }
 
-model Payment {
-    id        Int           @id @default(autoincrement())
-    amount    Float
-    status    PaymentStatus
-    createdAt DateTime      @default(now())
-    updatedAt DateTime      @updatedAt
+model UserPayment {
+  id        Int           @id @default(autoincrement())
+  amount    Float
+  status    PaymentStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
-    cartId Int?
-    cart   UserOrder? @relation(fields: [cartId], references: [id])
+  cartId Int?
+  cart   Cart? @relation(fields: [cartId], references: [id])
 }
 
 enum PaymentStatus {
-    PENDING
-    COMPLETED
-    FAILED
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Lot {
+  id             Int       @id @default(autoincrement())
+  trackingNumber String
+  status         LotStatus
+  scheduledAt    DateTime
+  consolidatedAt DateTime?
+  orderSentAt    DateTime?
+  confirmedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  supplierId  Int
+  supplier    Supplier     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items       CartItem[]
+  packages    Package[]
+  lotPayments LotPayment[]
+}
+
+enum LotStatus {
+  PENDING
+  READY_TO_ORDER
+  ORDER_SENT
+  CONFIRMED_BY_PROVIDER
+  PACKAGED
+}
+
+model LotPayment {
+  id        Int           @id @default(autoincrement())
+  amount    Float
+  status    PaymentStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  lotId Int
+  lot   Lot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+}
+
+model Package {
+  id         Int           @id @default(autoincrement())
+  status     PackageStatus
+  trackingId String
+  weight     Float?
+  volume     Float?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  lotId     Int
+  lot       Lot               @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  shipments ShipmentPackage[]
+}
+
+enum PackageStatus {
+  CREATED
+  READY_FOR_PICKUP
+  IN_TRANSIT
+  DELIVERED
+}
+
+model ShipmentPackage {
+  shipmentId Int
+  packageId  Int
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  package  Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@id([shipmentId, packageId])
+}
+
+model ShipmentPayment {
+  id        Int           @id @default(autoincrement())
+  amount    Float
+  status    PaymentStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  shipmentId Int
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 }
 
 model Event {
-    id          Int      @id @default(autoincrement())
-    name        String
-    description String?
-    date        DateTime
-    location    String?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  date        DateTime
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-    userId String
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
-    id          Int                @id @default(autoincrement())
-    message     String
-    type        NotificationType
-    status      NotificationStatus
-    scheduledAt DateTime?
-    createdAt   DateTime           @default(now())
-    updatedAt   DateTime           @updatedAt
+  id          Int                @id @default(autoincrement())
+  message     String
+  type        NotificationType
+  status      NotificationStatus
+  scheduledAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
-    userId    String
-    user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-    channelId Int
-    channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelId Int
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
 }
 
 enum NotificationType {
-    INFO
-    WARNING
-    ERROR
-    SUCCESS
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
 }
 
 enum NotificationStatus {
-    PENDING
-    SENT
-    READ
-    FAILED
-    RETRY
+  PENDING
+  SENT
+  READ
+  FAILED
+  RETRY
 }
 
 model Channel {
-    id          Int         @id @default(autoincrement())
-    type        ChannelType
-    name        String
-    description String?
-    createdAt   DateTime    @default(now())
-    updatedAt   DateTime    @updatedAt
+  id          Int         @id @default(autoincrement())
+  type        ChannelType
+  name        String
+  description String?
+  token       String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-    notifications Notification[]
+  notifications Notification[]
 }
 
 enum ChannelType {
-    EMAIL
-    SMS
-    PUSH
-    IN_APP
-    WHATSAPP
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+  WHATSAPP
 }
-
-// 1. Terminar de armar db schema
-// 2. Terminar setup `base` de repo
-// 2.1 prisma
-// 2.2 tailwind + shadcn
-// 2.3 biome + turborepo
-// 2.4 autenticacion - permisos - next-auth???
-// 2.5 trpc + middlewares(?)
-// 3. admin backoffice: Alta de proveedores, productos, categorias, aliados, transportistas...
-// 4. home page: 'carrusel' de productos destacados + categorias + buscador
-// 5. detalle de producto: imagenes, descripcion, reviews, agregar al carrito
-// 6. carrito: listado de productos, checkout (direccion, pago, resumen)
-// 6.1. integracion con pasarela de pagos (mercado libre)
-// 7. tracker de pedido: detalle de pedido + estado del envio
-// 8. panel de aliado: vista de pedidos y entregas asignadas
-// 9. panel de usuario: configuracion, historial de pedidos, reviews

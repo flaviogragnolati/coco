@@ -491,7 +491,11 @@ function renderCell<TData>(
   }
 }
 
-function TableSkeleton({ columns }: { columns: ColumnConfig[] }) {
+function TableSkeleton<TData>({
+  columns,
+}: {
+  columns: ColumnConfig<TData>[];
+}) {
   return (
     <>
       {Array.from({ length: 3 }).map((_, rowIndex) => (
@@ -548,7 +552,7 @@ export function AppTable<TData = unknown>({
 
       <TableBody>
         {loading ? (
-          <TableSkeleton columns={columns} />
+          <TableSkeleton<TData> columns={columns} />
         ) : data.length === 0 ? (
           <TableRow>
             <TableCell colSpan={columns.length} className="py-8 text-center">

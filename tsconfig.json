@@ -32,6 +32,12 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
+      "~/prisma-client": [
+        "./generated/prisma/client"
+      ],
+      "~/generated/*": [
+        "./generated/prisma/*"
+      ],
       "~/ui/*": [
         "./src/components/ui/*"
       ],
@@ -43,6 +49,9 @@
       ],
       "~/lib/*": [
         "./src/lib/*"
+      ],
+      "~/store/*": [
+        "./src/store/*"
       ],
       "~/*": [
         "./src/*"

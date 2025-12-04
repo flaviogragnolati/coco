@@ -63,12 +63,24 @@ const data = {
           url: "/admin/suppliers",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Productos",
+          url: "/admin/products",
         },
         {
-          title: "Settings",
-          url: "#",
+          title: "Categorías",
+          url: "/admin/categories",
+        },
+        {
+          title: "Transportistas",
+          url: "/admin/carriers",
+        },
+        {
+          title: "Direcciones",
+          url: "/admin/addresses",
+        },
+        {
+          title: "Canales",
+          url: "/admin/channels",
         },
       ],
     },

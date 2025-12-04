@@ -22,3 +22,10 @@ export async function getURLfromHeaders(
   const fullUrl = headersList.get("x-full-url");
   return fullUrl ?? "http://localhost:3000";
 }
+
+export function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
