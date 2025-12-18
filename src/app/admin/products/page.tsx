@@ -1,38 +1,44 @@
-import { Suspense } from "react";
+"use client";
 
 import { ProductsTable } from "~/components/admin/product";
 import { ProductsPageSkeleton } from "~/components/admin/product/products-page-skeleton";
-import { api } from "~/trpc/server";
+import { api } from "~/trpc/react";
 
-async function ProductsContent() {
-  const [products, suppliers] = await Promise.all([
-    api.products.getAllProducts(),
-    api.suppliers.getAllSuppliers(),
-  ]);
+export default function ProductsPage() {
+  const { data: products, isLoading: loadingProducts } =
+    api.products.getAllProducts.useQuery();
+  const { data: suppliers, isLoading: loadingSuppliers } =
+    api.suppliers.getAllSuppliers.useQuery();
+  const { data: categories, isLoading: loadingCategories } =
+    api.categories.getAllCategories.useQuery();
 
-  const totalProducts = products.length;
-  const activeProducts = products.filter((product) => product.isActive).length;
+  const isLoading = loadingProducts || loadingSuppliers || loadingCategories;
+
+  if (isLoading) {
+    return <ProductsPageSkeleton />;
+  }
+
+  const productsList = products ?? [];
+  const suppliersList = suppliers ?? [];
+  const categoriesList = categories ?? [];
+
+  const totalProducts = productsList.length;
+  const activeProducts = productsList.filter(
+    (product) => product.isActive,
+  ).length;
   const uniqueSuppliers = new Set(
-    products.map((product) => product.supplier.id),
+    productsList.map((product) => product.supplier.id),
   ).size;
-  const categories = Array.from(
-    new Map(
-      products
-        .filter((product) => product.category)
-        .map((product) => [
-          product.category!.id,
-          {
-            id: product.category!.id,
-            name: product.category!.name,
-          },
-        ]),
-    ).values(),
-  );
 
-  const supplierSummaries = suppliers.map((supplier) => ({
+  const supplierSummaries = suppliersList.map((supplier) => ({
     id: supplier.id,
     name: supplier.name,
     image: supplier.image ?? undefined,
+  }));
+
+  const categoryList = categoriesList.map((category) => ({
+    id: category.id,
+    name: category.name,
   }));
 
   return (
@@ -62,18 +68,10 @@ async function ProductsContent() {
       </div>
 
       <ProductsTable
-        products={products}
+        products={productsList}
         suppliers={supplierSummaries}
-        categories={categories}
+        categories={categoryList}
       />
     </div>
-  );
-}
-
-export default function ProductsPage() {
-  return (
-    <Suspense fallback={<ProductsPageSkeleton />}>
-      <ProductsContent />
-    </Suspense>
   );
 }

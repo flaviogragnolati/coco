@@ -82,7 +82,7 @@ model UserSettings {
 model Role {
   id          Int      @id @default(autoincrement())
   type        RoleType
-  name        String   @unique
+  name        String
   description String?
   rules       Json?
   createdAt   DateTime @default(now())
@@ -234,30 +234,36 @@ model Supplier {
 }
 
 model Product {
-  id                 Int      @id @default(autoincrement())
-  version            Int      @default(1)
-  name               String
-  description        String?
-  searchTags         String[]
-  publicTags         String[]
-  code               String
-  supplierCode       String?
-  supplierUrl        String?
-  images             String[]
-  currency           String?
-  price              Float
-  priceUnit          String
-  supplierMoq        Float
-  supplierUnit       String
-  customerMoq        Float
-  customerUnit       String
-  publicPrice        Float
-  publicPriceUnit    String
-  minFractionPerUser Int      @default(1)
-  isActive           Boolean  @default(true)
-  deleted            Boolean  @default(false)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                     Int       @id @default(autoincrement())
+  version                Int       @default(1)
+  name                   String
+  description            String?
+  searchTags             String[]
+  publicTags             String[]
+  code                   String
+  supplierCode           String?
+  supplierUrl            String?
+  images                 String[]
+  currency               Currency? @default(ARS)
+  price                  Float
+  priceUnit              String
+  priceUnitMultiplier    Float     @default(1)
+  supplierMoq            Float
+  supplierUnit           String
+  supplierUnitMultiplier Float     @default(1)
+  customerMoq            Float
+  customerUnit           String
+  customerUnitMultiplier Float     @default(1)
+  publicPrice            Float
+  publicPriceUnit        String
+  publicPriceMultiplier  Float     @default(1)
+  minFractionPerUser     Int       @default(1)
+  volumePerUnit          Float?
+  weightPerUnit          Float?
+  isActive               Boolean   @default(true)
+  deleted                Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   brandId    Int?
   brand      Brand?          @relation(fields: [brandId], references: [id], onDelete: Cascade)
@@ -267,6 +273,27 @@ model Product {
   supplier   Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   ratings    ProductRating[]
   cartItems  CartItem[]
+}
+
+enum Currency {
+  USD
+  EUR
+  ARS
+}
+
+enum Unit {
+  KG
+  G
+  LB
+  OZ
+  L
+  ML
+  UNIT
+  BOX
+  PACK
+  M3
+  FT3
+  CM3
 }
 
 model Category {

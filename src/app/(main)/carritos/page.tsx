@@ -14,30 +14,31 @@ export default function CarritosPage() {
   const [providerId, setProviderId] = useState<number | undefined>();
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
 
-  const { data: carts = [], isLoading: cartsLoading } = api.cart.getAll.useQuery();
+  const { data: carts = [], isLoading: cartsLoading } =
+    api.cart.getAll.useQuery();
   const { data: products = [] } = api.products.getAllProducts.useQuery();
   const { data: suppliers = [] } = api.suppliers.getAllSuppliers.useQuery();
-  
+
   // Extract users from cart data
   const users = useMemo(() => {
     const userMap = new Map();
-    carts.forEach(cart => {
+    carts.forEach((cart) => {
       if (cart.user && !userMap.has(cart.user.id)) {
         userMap.set(cart.user.id, cart.user);
       }
     });
     return Array.from(userMap.values());
   }, [carts]);
-  
+
   const utils = api.useUtils();
-  
+
   const payMutation = api.cart.pay.useMutation({
     onSuccess: () => {
       // Refetch carts after payment
       void utils.cart.getAll.invalidate();
     },
   });
-  
+
   const splitMutation = api.cart.splitToLots.useMutation({
     onSuccess: () => {
       // Refetch after splitting
@@ -110,7 +111,9 @@ export default function CarritosPage() {
           {suppliers.map((supplier) => {
             const cartsForSupplier = carts.filter((cart) =>
               cart.items.some((item) => {
-                const product = products.find((prod) => prod.id === item.productId);
+                const product = products.find(
+                  (prod) => prod.id === item.productId,
+                );
                 return product?.supplier.id === supplier.id;
               }),
             );
@@ -136,11 +139,15 @@ export default function CarritosPage() {
                       className="flex items-center gap-2 rounded-full bg-white px-2 py-1"
                     >
                       <StatusBadge status={status} />
-                      <span className="font-semibold text-slate-600">{count}</span>
+                      <span className="font-semibold text-slate-600">
+                        {count}
+                      </span>
                     </div>
                   ))}
                   {Object.entries(statusCount).length === 0 ? (
-                    <span className="text-xs text-slate-400">Sin contribuciones</span>
+                    <span className="text-xs text-slate-400">
+                      Sin contribuciones
+                    </span>
                   ) : null}
                 </div>
               </div>

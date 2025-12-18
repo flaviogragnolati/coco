@@ -13,11 +13,15 @@ export type Product = {
   priceUnit: string;
   customerMoq: number;
   customerUnit: string;
+  customerUnitMultiplier?: number;
   minFractionPerUser: number;
   moqByProvider: number;
   supplierMoq: number;
   supplierUnit: string;
   supplierUrl?: string;
+  publicPrice?: number;
+  publicPriceUnit?: string;
+  publicPriceMultiplier?: number;
   categoryId: number;
 };
 

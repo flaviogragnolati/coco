@@ -5,12 +5,11 @@ import { AppLink } from "~/components/ui/app-link";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { mockCartWithTraceability } from "~/mock/cart-trace";
 import type { CartWithTraceability } from "~/types/cart-trace";
 
 async function getCartWithTraceability(): Promise<CartWithTraceability | null> {
   // TODO: Reemplazar con la carga real desde Prisma/acciones del servidor.
-  return mockCartWithTraceability;
+  return { items: [] };
 }
 
 export default async function CartPage() {
@@ -47,7 +46,7 @@ function CartPageContent({
     return <CartLoadingState />;
   }
 
-  if (!cart || cart.items.length === 0) {
+  if (!cart || cart.items?.length === 0) {
     return <EmptyCartState />;
   }
 

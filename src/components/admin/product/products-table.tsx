@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Edit, Package, Plus, Tag, Trash } from "lucide-react";
+import { Edit, Package, Plus, Tag, Trash, X } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -15,6 +15,15 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { AppTable, type ColumnConfig } from "~/components/ui/app-table";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import {
   type ProductRecord,
   type ProductSupplierSummary,
@@ -38,6 +47,12 @@ interface ProductsTableProps {
     values: ProductFormInput,
   ) => Promise<void> | void;
   onDeleteProduct?: (product: ProductRecord) => Promise<void> | void;
+}
+
+interface FilterState {
+  search: string;
+  categoryIds: number[];
+  tags: string[];
 }
 
 const currencyFormatters = new Map(
@@ -94,6 +109,99 @@ export function ProductsTable({
     null,
   );
   const [isSaving, setIsSaving] = useState(false);
+
+  // Filtering state
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    categoryIds: [],
+    tags: [],
+  });
+  const [tagInput, setTagInput] = useState("");
+
+  // Get all available tags from products
+  const availableTags = useMemo(() => {
+    const tagsSet = new Set<string>();
+    for (const product of products) {
+      for (const tag of product.tags) {
+        tagsSet.add(tag);
+      }
+    }
+    return Array.from(tagsSet).sort();
+  }, [products]);
+
+  // Filtered products based on search, categories, and tags
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesName = product.name.toLowerCase().includes(searchLower);
+        const matchesDescription = product.description
+          ?.toLowerCase()
+          .includes(searchLower);
+        if (!matchesName && !matchesDescription) return false;
+      }
+
+      // Category filter
+      if (filters.categoryIds.length > 0) {
+        if (
+          !product.category ||
+          !filters.categoryIds.includes(product.category.id)
+        ) {
+          return false;
+        }
+      }
+
+      // Tags filter
+      if (filters.tags.length > 0) {
+        const hasAllTags = filters.tags.every((tag) =>
+          product.tags.includes(tag),
+        );
+        if (!hasAllTags) return false;
+      }
+
+      return true;
+    });
+  }, [products, filters]);
+
+  const handleAddTag = useCallback(() => {
+    const trimmedTag = tagInput.trim();
+    if (trimmedTag && !filters.tags.includes(trimmedTag)) {
+      setFilters((prev) => ({
+        ...prev,
+        tags: [...prev.tags, trimmedTag],
+      }));
+      setTagInput("");
+    }
+  }, [tagInput, filters.tags]);
+
+  const handleRemoveTag = useCallback((tagToRemove: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  }, []);
+
+  const handleCategoryToggle = useCallback((categoryId: number) => {
+    setFilters((prev) => {
+      const isSelected = prev.categoryIds.includes(categoryId);
+      return {
+        ...prev,
+        categoryIds: isSelected
+          ? prev.categoryIds.filter((id) => id !== categoryId)
+          : [...prev.categoryIds, categoryId],
+      };
+    });
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setFilters({
+      search: "",
+      categoryIds: [],
+      tags: [],
+    });
+    setTagInput("");
+  }, []);
 
   const handleCreateClick = useCallback(() => {
     setEditingProduct(null);
@@ -324,12 +432,17 @@ export function ProductsTable({
     </div>
   );
 
+  const hasActiveFilters =
+    filters.search !== "" ||
+    filters.categoryIds.length > 0 ||
+    filters.tags.length > 0;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-lg">
-            Productos ({products.length})
+            Productos ({filteredProducts.length})
           </h3>
           <p className="text-muted-foreground text-sm">
             Administra el catálogo disponible para tus clientes.
@@ -341,10 +454,123 @@ export function ProductsTable({
         </Button>
       </div>
 
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label className="font-semibold text-base">Filtros</Label>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-8"
+              >
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* Search by name */}
+            <div className="space-y-2">
+              <Label htmlFor="search">Buscar por nombre</Label>
+              <Input
+                id="search"
+                type="text"
+                placeholder="Nombre del producto..."
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, search: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Category multi-select */}
+            {categories && categories.length > 0 && (
+              <div className="space-y-2">
+                <Label>Categorías</Label>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((category) => {
+                    const categoryId = "id" in category ? category.id : 0;
+                    const categoryName =
+                      "name" in category ? category.name : category.label;
+                    const isSelected = filters.categoryIds.includes(categoryId);
+
+                    return (
+                      <Badge
+                        key={categoryId}
+                        variant={isSelected ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() => handleCategoryToggle(categoryId)}
+                      >
+                        {categoryName}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Tags autocomplete with chips */}
+            <div className="space-y-2">
+              <Label htmlFor="tag-input">Etiquetas</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="tag-input"
+                    type="text"
+                    placeholder="Agregar etiqueta..."
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                    list="tags-list"
+                  />
+                  <datalist id="tags-list">
+                    {availableTags
+                      .filter((tag) => !filters.tags.includes(tag))
+                      .map((tag) => (
+                        <option key={tag} value={tag} />
+                      ))}
+                  </datalist>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAddTag}
+                  disabled={!tagInput.trim()}
+                >
+                  Agregar
+                </Button>
+              </div>
+              {filters.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {filters.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="gap-1">
+                      <Tag className="h-3 w-3" />
+                      {tag}
+                      <X
+                        className="h-3 w-3 cursor-pointer"
+                        onClick={() => handleRemoveTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <Card className="overflow-hidden">
         <AppTable
           columns={columns}
-          data={products}
+          data={filteredProducts}
           loading={isLoading}
           emptyState={emptyState}
           emptyMessage="No hay productos disponibles"
