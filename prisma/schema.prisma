@@ -359,14 +359,15 @@ model Cart {
 }
 
 enum CartStatus {
-  DRAFT
-  PENDING_PAYMENT
-  PAYMENT_FAILED
-  COMPLETED
-  CANCELLED_BY_USER
-  CANCELLED_BY_ADMIN
-  REFUNDED
-  EXPIRED
+  DRAFT // in user browser
+  PENDING_PAYMENT // saved (for logged in customers) but not paid
+  PAYMENT_FAILED // payment attempt failed
+  PAYMENT_COMPLETED // payment succeeded, pending processing
+  CANCELLED_BY_USER // user cancelled before processing
+  CANCELLED_BY_ADMIN // admin cancelled before processing
+  REFUNDED // refunded after processing
+  EXPIRED // not completed in time
+  IN_LOT // payment completed, being lotted
 }
 
 model CartItem {
@@ -407,10 +408,11 @@ model Shipment {
 }
 
 enum ShipmentStatus {
-  ASSEMBLING
-  IN_TRANSIT
-  ARRIVED
+  ASSEMBLING // shipment being assembled
+  IN_TRANSIT // shipment is in transit
+  ARRIVED // shipment has arrived at destination
   CLOSED
+  DELIVERED // shipment has been delivered
 }
 
 model UserPayment {
@@ -450,11 +452,15 @@ model Lot {
 }
 
 enum LotStatus {
-  PENDING
-  READY_TO_ORDER
-  ORDER_SENT
-  CONFIRMED_BY_PROVIDER
-  PACKAGED
+  PENDING // lot opened but MOQ not yet met
+  READY_TO_ORDER // MOQ met, ready to place order with supplier
+  ORDER_SENT // order placed with supplier, pending confirmation
+  CONFIRMED_BY_PROVIDER // supplier confirmed the order
+  PACKAGE_READY // supplier packaged the lot, pending pickup
+  IN_TRANSIT // lot in transit (when supplier ships to carrier or fractionator)
+  DELIVERED_TO_CARRIER // lot delivered to carrier warehouse
+  DELIVERED_TO_FRACTIONATOR // lot delivered to fractionator warehouse
+  IN_PACKAGE // lot being packaged into shipments
 }
 
 model LotPayment {
@@ -483,10 +489,10 @@ model Package {
 }
 
 enum PackageStatus {
-  CREATED
-  READY_FOR_PICKUP
-  IN_TRANSIT
-  DELIVERED
+  CREATED // package created but not yet bundled into a shipment
+  IN_TRANSIT // package is in transit
+  ARRIVED // package has arrived at destination
+  DELIVERED // package has been delivered
 }
 
 model ShipmentPackage {

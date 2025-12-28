@@ -1,5 +1,6 @@
 import "dotenv/config";
 import {
+  type Prisma,
   PrismaClient,
   RoleType,
   AddressType,
@@ -31,7 +32,24 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-const productTemplate = (data: Record<string, any>) => ({
+const productTemplate = (
+  data: Omit<
+    Prisma.ProductUncheckedCreateInput,
+    | "currency"
+    | "priceUnitMultiplier"
+    | "supplierUnitMultiplier"
+    | "customerUnitMultiplier"
+    | "publicPriceMultiplier"
+    | "minFractionPerUser"
+  > & {
+    currency?: Prisma.ProductUncheckedCreateInput["currency"];
+    priceUnitMultiplier?: number;
+    supplierUnitMultiplier?: number;
+    customerUnitMultiplier?: number;
+    publicPriceMultiplier?: number;
+    minFractionPerUser?: number;
+  },
+): Prisma.ProductUncheckedCreateInput => ({
   currency: "ARS",
   priceUnitMultiplier: 1,
   supplierUnitMultiplier: 1,
@@ -73,7 +91,9 @@ async function main() {
   await prisma.carrierRoutes.deleteMany();
   await prisma.carrier.deleteMany();
 
-  logStep("Cleaning addresses, cards, roles, settings, accounts, users, channels");
+  logStep(
+    "Cleaning addresses, cards, roles, settings, accounts, users, channels",
+  );
   await prisma.address.deleteMany();
   await prisma.savedPaymentCard.deleteMany();
   await prisma.role.deleteMany();
@@ -902,8 +922,7 @@ async function main() {
   const productInputs = {
     detergent5l: productTemplate({
       name: "Detergente concentrado 5L",
-      description:
-        "Detergente líquido concentrado para uso general, bidón 5L.",
+      description: "Detergente líquido concentrado para uso general, bidón 5L.",
       searchTags: ["detergente", "limpieza", "cocina"],
       publicTags: ["detergente", "concentrado"],
       code: "DET-005-UNIT",
@@ -1021,8 +1040,7 @@ async function main() {
     }),
     citrus15kg: productTemplate({
       name: "Frutas cítricas 15kg",
-      description:
-        "Caja con naranjas, mandarinas y limones. Origen: Tucumán.",
+      description: "Caja con naranjas, mandarinas y limones. Origen: Tucumán.",
       searchTags: ["frutas", "cítricos", "naranjas", "limones"],
       publicTags: ["frutas", "cítricos"],
       code: "FRUT-CIT-015",
@@ -1595,7 +1613,7 @@ async function main() {
   logStep("Creating carts and cart items");
   const cart1 = await prisma.cart.create({
     data: {
-      status: CartStatus.COMPLETED,
+      status: CartStatus.PAYMENT_COMPLETED,
       userId: buyer1.id,
       addressId: buyer1Address.id,
       paidAt: new Date(now - 2 * dayMs),
@@ -1683,7 +1701,7 @@ async function main() {
 
   const cart4 = await prisma.cart.create({
     data: {
-      status: CartStatus.COMPLETED,
+      status: CartStatus.PAYMENT_COMPLETED,
       userId: buyer1.id,
       addressId: buyer1HomeAddress.id,
       paidAt: new Date(now - 1 * dayMs),
@@ -1828,17 +1846,17 @@ async function main() {
     include: { items: true },
   });
 
-  // Dev admin carts with varied payment states
-  const devAdminCartCompleted = await prisma.cart.create({
+  // Dev admin carts - comprehensive coverage of ALL CartStatus values
+  // CartStatus.DRAFT
+  const devAdminCartDraft = await prisma.cart.create({
     data: {
-      status: CartStatus.COMPLETED,
+      status: CartStatus.DRAFT,
       userId: devAdminUser.id,
       addressId: devAdminAddress.id,
-      paidAt: new Date(now - 3 * dayMs),
       items: {
         create: [
           {
-            quantity: 2,
+            quantity: 1,
             unit: products.cafeGrano5kg.customerUnit,
             price: products.cafeGrano5kg.price,
             publicPrice: products.cafeGrano5kg.publicPrice,
@@ -1859,6 +1877,7 @@ async function main() {
     include: { items: true },
   });
 
+  // CartStatus.PENDING_PAYMENT
   const devAdminCartPending = await prisma.cart.create({
     data: {
       status: CartStatus.PENDING_PAYMENT,
@@ -1888,6 +1907,7 @@ async function main() {
     include: { items: true },
   });
 
+  // CartStatus.PAYMENT_FAILED
   const devAdminCartFailed = await prisma.cart.create({
     data: {
       status: CartStatus.PAYMENT_FAILED,
@@ -1910,6 +1930,189 @@ async function main() {
             publicPrice: products.alimentoGato10kg.publicPrice,
             productSnapshot: JSON.stringify(products.alimentoGato10kg),
             product: { connect: { id: products.alimentoGato10kg.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  // CartStatus.PAYMENT_COMPLETED
+  const devAdminCartCompleted = await prisma.cart.create({
+    data: {
+      status: CartStatus.PAYMENT_COMPLETED,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      paidAt: new Date(now - 3 * dayMs),
+      items: {
+        create: [
+          {
+            quantity: 2,
+            unit: products.cafeGrano5kg.customerUnit,
+            price: products.cafeGrano5kg.price,
+            publicPrice: products.cafeGrano5kg.publicPrice,
+            productSnapshot: JSON.stringify(products.cafeGrano5kg),
+            product: { connect: { id: products.cafeGrano5kg.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.heladoPaletaPack20.customerUnit,
+            price: products.heladoPaletaPack20.price,
+            publicPrice: products.heladoPaletaPack20.publicPrice,
+            productSnapshot: JSON.stringify(products.heladoPaletaPack20),
+            product: { connect: { id: products.heladoPaletaPack20.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  // CartStatus.CANCELLED_BY_USER
+  const devAdminCartCancelledByUser = await prisma.cart.create({
+    data: {
+      status: CartStatus.CANCELLED_BY_USER,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.detergent5l.customerUnit,
+            price: products.detergent5l.price,
+            publicPrice: products.detergent5l.publicPrice,
+            productSnapshot: JSON.stringify(products.detergent5l),
+            product: { connect: { id: products.detergent5l.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.colaPack6.customerUnit,
+            price: products.colaPack6.price,
+            publicPrice: products.colaPack6.publicPrice,
+            productSnapshot: JSON.stringify(products.colaPack6),
+            product: { connect: { id: products.colaPack6.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  // CartStatus.CANCELLED_BY_ADMIN
+  const devAdminCartCancelledByAdmin = await prisma.cart.create({
+    data: {
+      status: CartStatus.CANCELLED_BY_ADMIN,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.mixVerduras10kg.customerUnit,
+            price: products.mixVerduras10kg.price,
+            publicPrice: products.mixVerduras10kg.publicPrice,
+            productSnapshot: JSON.stringify(products.mixVerduras10kg),
+            product: { connect: { id: products.mixVerduras10kg.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.lechePack12l.customerUnit,
+            price: products.lechePack12l.price,
+            publicPrice: products.lechePack12l.publicPrice,
+            productSnapshot: JSON.stringify(products.lechePack12l),
+            product: { connect: { id: products.lechePack12l.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  // CartStatus.REFUNDED
+  const devAdminCartRefunded = await prisma.cart.create({
+    data: {
+      status: CartStatus.REFUNDED,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      paidAt: new Date(now - 5 * dayMs),
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.desinfectante20l.customerUnit,
+            price: products.desinfectante20l.price,
+            publicPrice: products.desinfectante20l.publicPrice,
+            productSnapshot: JSON.stringify(products.desinfectante20l),
+            product: { connect: { id: products.desinfectante20l.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.esponjasMultiuso20.customerUnit,
+            price: products.esponjasMultiuso20.price,
+            publicPrice: products.esponjasMultiuso20.publicPrice,
+            productSnapshot: JSON.stringify(products.esponjasMultiuso20),
+            product: { connect: { id: products.esponjasMultiuso20.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  // CartStatus.EXPIRED
+  const devAdminCartExpired = await prisma.cart.create({
+    data: {
+      status: CartStatus.EXPIRED,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.citrus15kg.customerUnit,
+            price: products.citrus15kg.price,
+            publicPrice: products.citrus15kg.publicPrice,
+            productSnapshot: JSON.stringify(products.citrus15kg),
+            product: { connect: { id: products.citrus15kg.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.mozzarella5kg.customerUnit,
+            price: products.mozzarella5kg.price,
+            publicPrice: products.mozzarella5kg.publicPrice,
+            productSnapshot: JSON.stringify(products.mozzarella5kg),
+            product: { connect: { id: products.mozzarella5kg.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  // CartStatus.IN_LOT
+  const devAdminCartInLot = await prisma.cart.create({
+    data: {
+      status: CartStatus.IN_LOT,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      paidAt: new Date(now - 2 * dayMs),
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.aguaCaja24.customerUnit,
+            price: products.aguaCaja24.price,
+            publicPrice: products.aguaCaja24.publicPrice,
+            productSnapshot: JSON.stringify(products.aguaCaja24),
+            product: { connect: { id: products.aguaCaja24.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.arroz10kg.customerUnit,
+            price: products.arroz10kg.price,
+            publicPrice: products.arroz10kg.publicPrice,
+            productSnapshot: JSON.stringify(products.arroz10kg),
+            product: { connect: { id: products.arroz10kg.id } },
           },
         ],
       },
@@ -1969,7 +2172,7 @@ async function main() {
   const lot2 = await prisma.lot.create({
     data: {
       trackingNumber: "LOT-2025-0002",
-      status: LotStatus.PACKAGED,
+      status: LotStatus.PACKAGE_READY,
       scheduledAt: scheduledAt2,
       consolidatedAt: new Date(now - 0.8 * dayMs),
       orderSentAt: new Date(now - 0.5 * dayMs),
@@ -2031,11 +2234,166 @@ async function main() {
     },
   });
 
+  // Dev admin lots - comprehensive coverage of ALL LotStatus values
+  // LotStatus.PENDING
+  const devAdminLotPending = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-PENDING",
+      status: LotStatus.PENDING,
+      scheduledAt: new Date(now + 2 * dayMs),
+      supplierId: supplier1.id,
+      items: {
+        connect: devAdminCartInLot.items.map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // LotStatus.READY_TO_ORDER
+  const devAdminLotReadyToOrder = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-READY-TO-ORDER",
+      status: LotStatus.READY_TO_ORDER,
+      scheduledAt: new Date(now + 1 * dayMs),
+      consolidatedAt: new Date(now + 1 * dayMs),
+      supplierId: supplier2.id,
+      items: {
+        connect: devAdminCartCompleted.items
+          .slice(0, 1)
+          .map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // LotStatus.ORDER_SENT
+  const devAdminLotOrderSent = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-ORDER-SENT",
+      status: LotStatus.ORDER_SENT,
+      scheduledAt: new Date(now - 0.5 * dayMs),
+      consolidatedAt: new Date(now - 0.4 * dayMs),
+      orderSentAt: new Date(now - 0.3 * dayMs),
+      supplierId: supplier1.id,
+      items: {
+        connect: devAdminCartCompleted.items
+          .slice(1, 2)
+          .map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // LotStatus.CONFIRMED_BY_PROVIDER
+  const devAdminLotConfirmed = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-CONFIRMED",
+      status: LotStatus.CONFIRMED_BY_PROVIDER,
+      scheduledAt: new Date(now - 1 * dayMs),
+      consolidatedAt: new Date(now - 0.9 * dayMs),
+      orderSentAt: new Date(now - 0.8 * dayMs),
+      confirmedAt: new Date(now - 0.7 * dayMs),
+      supplierId: supplier2.id,
+      items: {
+        connect: devAdminCartPending.items
+          .slice(0, 1)
+          .map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // LotStatus.PACKAGE_READY
+  const devAdminLotPackageReady = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-PACKAGE-READY",
+      status: LotStatus.PACKAGE_READY,
+      scheduledAt: new Date(now - 1.5 * dayMs),
+      consolidatedAt: new Date(now - 1.4 * dayMs),
+      orderSentAt: new Date(now - 1.3 * dayMs),
+      confirmedAt: new Date(now - 1.2 * dayMs),
+      supplierId: supplier1.id,
+      items: {
+        connect: devAdminCartPending.items
+          .slice(1, 2)
+          .map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // LotStatus.IN_TRANSIT
+  const devAdminLotInTransit = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-IN-TRANSIT",
+      status: LotStatus.IN_TRANSIT,
+      scheduledAt: new Date(now - 2 * dayMs),
+      consolidatedAt: new Date(now - 1.9 * dayMs),
+      orderSentAt: new Date(now - 1.8 * dayMs),
+      confirmedAt: new Date(now - 1.7 * dayMs),
+      supplierId: supplier2.id,
+      items: {
+        connect: devAdminCartFailed.items
+          .slice(0, 1)
+          .map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // LotStatus.DELIVERED_TO_CARRIER
+  const devAdminLotDeliveredToCarrier = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-DELIVERED-TO-CARRIER",
+      status: LotStatus.DELIVERED_TO_CARRIER,
+      scheduledAt: new Date(now - 2.5 * dayMs),
+      consolidatedAt: new Date(now - 2.4 * dayMs),
+      orderSentAt: new Date(now - 2.3 * dayMs),
+      confirmedAt: new Date(now - 2.2 * dayMs),
+      supplierId: supplier1.id,
+      items: {
+        connect: devAdminCartFailed.items
+          .slice(1, 2)
+          .map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // LotStatus.DELIVERED_TO_FRACTIONATOR
+  const devAdminLotDeliveredToFractionator = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-DELIVERED-TO-FRACT",
+      status: LotStatus.DELIVERED_TO_FRACTIONATOR,
+      scheduledAt: new Date(now - 3 * dayMs),
+      consolidatedAt: new Date(now - 2.9 * dayMs),
+      orderSentAt: new Date(now - 2.8 * dayMs),
+      confirmedAt: new Date(now - 2.7 * dayMs),
+      supplierId: supplier2.id,
+      items: {
+        connect: devAdminCartRefunded.items
+          .slice(0, 1)
+          .map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // LotStatus.IN_PACKAGE
+  const devAdminLotInPackage = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-DEVADMIN-IN-PACKAGE",
+      status: LotStatus.IN_PACKAGE,
+      scheduledAt: new Date(now - 3.5 * dayMs),
+      consolidatedAt: new Date(now - 3.4 * dayMs),
+      orderSentAt: new Date(now - 3.3 * dayMs),
+      confirmedAt: new Date(now - 3.2 * dayMs),
+      supplierId: supplier1.id,
+      items: {
+        connect: devAdminCartRefunded.items
+          .slice(1, 2)
+          .map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
   // 14) Packages from lots
   logStep("Creating packages");
   const pkg1 = await prisma.package.create({
     data: {
-      status: PackageStatus.READY_FOR_PICKUP,
+      status: PackageStatus.CREATED,
       trackingId: "PKG-2025-0001",
       weight: 32.5,
       volume: 0.18,
@@ -2100,6 +2458,51 @@ async function main() {
       weight: 24.0,
       volume: 0.11,
       lotId: lot6.id,
+    },
+  });
+
+  // Dev admin packages - comprehensive coverage of ALL PackageStatus values
+  // PackageStatus.CREATED
+  const devAdminPkgCreated = await prisma.package.create({
+    data: {
+      status: PackageStatus.CREATED,
+      trackingId: "PKG-DEVADMIN-CREATED",
+      weight: 15.0,
+      volume: 0.08,
+      lotId: devAdminLotPackageReady.id,
+    },
+  });
+
+  // PackageStatus.IN_TRANSIT
+  const devAdminPkgInTransit = await prisma.package.create({
+    data: {
+      status: PackageStatus.IN_TRANSIT,
+      trackingId: "PKG-DEVADMIN-IN-TRANSIT",
+      weight: 22.0,
+      volume: 0.12,
+      lotId: devAdminLotInTransit.id,
+    },
+  });
+
+  // PackageStatus.ARRIVED
+  const devAdminPkgArrived = await prisma.package.create({
+    data: {
+      status: PackageStatus.ARRIVED,
+      trackingId: "PKG-DEVADMIN-ARRIVED",
+      weight: 18.0,
+      volume: 0.1,
+      lotId: devAdminLotDeliveredToCarrier.id,
+    },
+  });
+
+  // PackageStatus.DELIVERED
+  const devAdminPkgDelivered = await prisma.package.create({
+    data: {
+      status: PackageStatus.DELIVERED,
+      trackingId: "PKG-DEVADMIN-DELIVERED",
+      weight: 20.0,
+      volume: 0.11,
+      lotId: devAdminLotInPackage.id,
     },
   });
 
@@ -2172,13 +2575,90 @@ async function main() {
     },
   });
 
+  // Dev admin shipments - comprehensive coverage of ALL ShipmentStatus values
+  // ShipmentStatus.ASSEMBLING
+  const devAdminShipmentAssembling = await prisma.shipment.create({
+    data: {
+      trackingId: "SHIP-DEVADMIN-ASSEMBLING",
+      carrierName: carrier1.name,
+      status: ShipmentStatus.ASSEMBLING,
+      eta: new Date(now + 3 * dayMs),
+      addressId: devAdminAddress.id,
+      carrierId: carrier1.id,
+      packages: {
+        create: [{ package: { connect: { id: devAdminPkgCreated.id } } }],
+      },
+    },
+  });
+
+  // ShipmentStatus.IN_TRANSIT
+  const devAdminShipmentInTransit = await prisma.shipment.create({
+    data: {
+      trackingId: "SHIP-DEVADMIN-IN-TRANSIT",
+      carrierName: carrier2.name,
+      status: ShipmentStatus.IN_TRANSIT,
+      startedAt: new Date(now - 0.5 * dayMs),
+      eta: new Date(now + 1.5 * dayMs),
+      addressId: devAdminAddress.id,
+      carrierId: carrier2.id,
+      packages: {
+        create: [{ package: { connect: { id: devAdminPkgInTransit.id } } }],
+      },
+    },
+  });
+
+  // ShipmentStatus.ARRIVED
+  const devAdminShipmentArrived = await prisma.shipment.create({
+    data: {
+      trackingId: "SHIP-DEVADMIN-ARRIVED",
+      carrierName: carrier1.name,
+      status: ShipmentStatus.ARRIVED,
+      startedAt: new Date(now - 2 * dayMs),
+      arrivedAt: new Date(now - 0.2 * dayMs),
+      eta: new Date(now - 0.2 * dayMs),
+      addressId: devAdminAddress.id,
+      carrierId: carrier1.id,
+      packages: {
+        create: [{ package: { connect: { id: devAdminPkgArrived.id } } }],
+      },
+    },
+  });
+
+  // ShipmentStatus.CLOSED
+  const devAdminShipmentClosed = await prisma.shipment.create({
+    data: {
+      trackingId: "SHIP-DEVADMIN-CLOSED",
+      carrierName: carrier2.name,
+      status: ShipmentStatus.CLOSED,
+      startedAt: new Date(now - 4 * dayMs),
+      arrivedAt: new Date(now - 1.5 * dayMs),
+      eta: new Date(now - 1.5 * dayMs),
+      addressId: devAdminAddress.id,
+      carrierId: carrier2.id,
+      packages: {
+        create: [{ package: { connect: { id: devAdminPkgDelivered.id } } }],
+      },
+    },
+  });
+
+  // ShipmentStatus.DELIVERED
+  const devAdminShipmentDelivered = await prisma.shipment.create({
+    data: {
+      trackingId: "SHIP-DEVADMIN-DELIVERED",
+      carrierName: carrier1.name,
+      status: ShipmentStatus.DELIVERED,
+      startedAt: new Date(now - 5 * dayMs),
+      arrivedAt: new Date(now - 2 * dayMs),
+      eta: new Date(now - 2 * dayMs),
+      addressId: devAdminAddress.id,
+      carrierId: carrier1.id,
+    },
+  });
+
   // 16) Payments for carts, lots, and shipments
   logStep("Creating payments for carts, lots, and shipments");
   const sumCart = (cart: typeof cart1) =>
-    cart.items.reduce(
-      (sum, item) => sum + item.publicPrice * item.quantity,
-      0,
-    );
+    cart.items.reduce((sum, item) => sum + item.publicPrice * item.quantity, 0);
 
   await Promise.all([
     prisma.userPayment.create({
@@ -2261,16 +2741,17 @@ async function main() {
         cartId: cart8.id,
       },
     }),
+    // Dev admin user payments - comprehensive coverage
     prisma.userPayment.create({
       data: {
-        amount: sumCart(devAdminCartCompleted),
-        status: PaymentStatus.COMPLETED,
+        amount: sumCart(devAdminCartDraft),
+        status: PaymentStatus.PENDING,
         transaction: {
-          id: "txn-devadmin-completed",
+          id: "txn-devadmin-draft",
           provider: "mock-pay",
-          status: "paid",
+          status: "pending",
         },
-        cartId: devAdminCartCompleted.id,
+        cartId: devAdminCartDraft.id,
       },
     }),
     prisma.userPayment.create({
@@ -2295,6 +2776,78 @@ async function main() {
           status: "failed",
         },
         cartId: devAdminCartFailed.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartCompleted),
+        status: PaymentStatus.COMPLETED,
+        transaction: {
+          id: "txn-devadmin-completed",
+          provider: "mock-pay",
+          status: "paid",
+        },
+        cartId: devAdminCartCompleted.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartCancelledByUser),
+        status: PaymentStatus.FAILED,
+        transaction: {
+          id: "txn-devadmin-cancelled-user",
+          provider: "mock-pay",
+          status: "cancelled",
+        },
+        cartId: devAdminCartCancelledByUser.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartCancelledByAdmin),
+        status: PaymentStatus.FAILED,
+        transaction: {
+          id: "txn-devadmin-cancelled-admin",
+          provider: "mock-pay",
+          status: "cancelled",
+        },
+        cartId: devAdminCartCancelledByAdmin.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartRefunded),
+        status: PaymentStatus.COMPLETED,
+        transaction: {
+          id: "txn-devadmin-refunded",
+          provider: "mock-pay",
+          status: "refunded",
+        },
+        cartId: devAdminCartRefunded.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartExpired),
+        status: PaymentStatus.FAILED,
+        transaction: {
+          id: "txn-devadmin-expired",
+          provider: "mock-pay",
+          status: "expired",
+        },
+        cartId: devAdminCartExpired.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartInLot),
+        status: PaymentStatus.COMPLETED,
+        transaction: {
+          id: "txn-devadmin-inlot",
+          provider: "mock-pay",
+          status: "paid",
+        },
+        cartId: devAdminCartInLot.id,
       },
     }),
     prisma.userPayment.create({
@@ -2370,6 +2923,89 @@ async function main() {
         lotId: lot6.id,
       },
     }),
+    // Dev admin lot payments - comprehensive coverage
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartInLot.items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        ),
+        status: PaymentStatus.PENDING,
+        lotId: devAdminLotPending.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartCompleted.items
+          .slice(0, 1)
+          .reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: PaymentStatus.COMPLETED,
+        lotId: devAdminLotReadyToOrder.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartCompleted.items
+          .slice(1, 2)
+          .reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: PaymentStatus.COMPLETED,
+        lotId: devAdminLotOrderSent.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartPending.items
+          .slice(0, 1)
+          .reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: PaymentStatus.COMPLETED,
+        lotId: devAdminLotConfirmed.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartPending.items
+          .slice(1, 2)
+          .reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: PaymentStatus.COMPLETED,
+        lotId: devAdminLotPackageReady.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartFailed.items
+          .slice(0, 1)
+          .reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: PaymentStatus.PENDING,
+        lotId: devAdminLotInTransit.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartFailed.items
+          .slice(1, 2)
+          .reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: PaymentStatus.COMPLETED,
+        lotId: devAdminLotDeliveredToCarrier.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartRefunded.items
+          .slice(0, 1)
+          .reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: PaymentStatus.COMPLETED,
+        lotId: devAdminLotDeliveredToFractionator.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: devAdminCartRefunded.items
+          .slice(1, 2)
+          .reduce((sum, item) => sum + item.price * item.quantity, 0),
+        status: PaymentStatus.COMPLETED,
+        lotId: devAdminLotInPackage.id,
+      },
+    }),
     // Shipment payments
     prisma.shipmentPayment.create({
       data: {
@@ -2397,6 +3033,42 @@ async function main() {
         amount: 18000,
         status: PaymentStatus.FAILED,
         shipmentId: shipment4.id,
+      },
+    }),
+    // Dev admin shipment payments - comprehensive coverage
+    prisma.shipmentPayment.create({
+      data: {
+        amount: 2500,
+        status: PaymentStatus.PENDING,
+        shipmentId: devAdminShipmentAssembling.id,
+      },
+    }),
+    prisma.shipmentPayment.create({
+      data: {
+        amount: 3000,
+        status: PaymentStatus.COMPLETED,
+        shipmentId: devAdminShipmentInTransit.id,
+      },
+    }),
+    prisma.shipmentPayment.create({
+      data: {
+        amount: 2800,
+        status: PaymentStatus.COMPLETED,
+        shipmentId: devAdminShipmentArrived.id,
+      },
+    }),
+    prisma.shipmentPayment.create({
+      data: {
+        amount: 3200,
+        status: PaymentStatus.COMPLETED,
+        shipmentId: devAdminShipmentClosed.id,
+      },
+    }),
+    prisma.shipmentPayment.create({
+      data: {
+        amount: 3500,
+        status: PaymentStatus.COMPLETED,
+        shipmentId: devAdminShipmentDelivered.id,
       },
     }),
   ]);
@@ -2569,7 +3241,8 @@ async function main() {
     }),
     prisma.notification.create({
       data: {
-        message: "Tu pago está pendiente. Por favor completa el pago para continuar.",
+        message:
+          "Tu pago está pendiente. Por favor completa el pago para continuar.",
         type: NotificationType.WARNING,
         status: NotificationStatus.PENDING,
         userId: buyer2.id,

@@ -5,7 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
 import { QuantityInput } from "~/components/forms/QuantityInput";
 import { OrderFlow } from "~/components/steps/OrderFlow";
 import { StatusBadge } from "~/components/badges/StatusBadge";
@@ -16,28 +23,28 @@ export default function CartDetailPage() {
   const params = useParams<{ cartId: string }>();
   const router = useRouter();
   const cartId = Number(params?.cartId);
-  
-  const { data: cart, isLoading } = api.cart.getById.useQuery({ cartId });
+
+  const { data: cart, isLoading } = api.cart.getById.useQuery({ id: cartId });
   const { data: products = [] } = api.products.getAllProducts.useQuery();
-  
+
   const utils = api.useUtils();
-  
+
   const payMutation = api.cart.pay.useMutation({
-    onSuccess: () => void utils.cart.getById.invalidate({ cartId }),
+    onSuccess: () => void utils.cart.getById.invalidate({ id: cartId }),
   });
-  
+
   const addItemMutation = api.cart.addItem.useMutation({
-    onSuccess: () => void utils.cart.getById.invalidate({ cartId }),
+    onSuccess: () => void utils.cart.getById.invalidate({ id: cartId }),
   });
-  
+
   const updateItemMutation = api.cart.updateItemQuantity.useMutation({
-    onSuccess: () => void utils.cart.getById.invalidate({ cartId }),
+    onSuccess: () => void utils.cart.getById.invalidate({ id: cartId }),
   });
-  
+
   const removeItemMutation = api.cart.removeItem.useMutation({
-    onSuccess: () => void utils.cart.getById.invalidate({ cartId }),
+    onSuccess: () => void utils.cart.getById.invalidate({ id: cartId }),
   });
-  
+
   const splitMutation = api.cart.splitToLots.useMutation({
     onSuccess: () => {
       void utils.cart.getById.invalidate({ cartId });
@@ -68,7 +75,11 @@ export default function CartDetailPage() {
     );
   }
 
-  const handleQuantityChange = (itemId: number, productId: number, nextQuantity: number) => {
+  const handleQuantityChange = (
+    itemId: number,
+    productId: number,
+    nextQuantity: number,
+  ) => {
     const item = cart.items.find((cartItem) => cartItem.id === itemId);
     const product = products.find((prod) => prod.id === productId);
     if (!item || !product) return;
@@ -93,22 +104,28 @@ export default function CartDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver
         </Button>
-        <h1 className="text-xl font-semibold text-slate-900">
-          Carrito #{cart.id} · <span className="text-slate-500">{cart.user?.name ?? "Usuario"}</span>
+        <h1 className="font-semibold text-slate-900 text-xl">
+          Carrito #{cart.id} ·{" "}
+          <span className="text-slate-500">{cart.user?.name ?? "Usuario"}</span>
         </h1>
       </div>
 
       <OrderFlow
         cartStatus={cart.status}
-        lotStatus={cart.status === "TRANSFERRED_TO_LOTS" ? "PENDING" : undefined}
+        lotStatus={
+          cart.status === "TRANSFERRED_TO_LOTS" ? "PENDING" : undefined
+        }
       />
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-800">Detalle del carrito</h2>
-            <p className="text-sm text-slate-500">
-              Ajusta cantidades respetando la fracción mínima sugerida por el distribuidor.
+            <h2 className="font-semibold text-lg text-slate-800">
+              Detalle del carrito
+            </h2>
+            <p className="text-slate-500 text-sm">
+              Ajusta cantidades respetando la fracción mínima sugerida por el
+              distribuidor.
             </p>
           </div>
           <StatusBadge status={cart.status} />
@@ -126,7 +143,9 @@ export default function CartDetailPage() {
           </TableHeader>
           <TableBody>
             {cart.items.map((item) => {
-              const product = products.find((prod) => prod.id === item.productId) ?? item.product;
+              const product =
+                products.find((prod) => prod.id === item.productId) ??
+                item.product;
               if (!product) {
                 return null;
               }
@@ -137,7 +156,7 @@ export default function CartDetailPage() {
                     <div className="font-medium text-slate-800">
                       {product.name}
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-slate-500 text-xs">
                       SKU {product.sku} · {product.unit}
                     </div>
                   </TableCell>
@@ -165,11 +184,13 @@ export default function CartDetailPage() {
         </Table>
 
         <footer className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm text-slate-500">
+          <div className="text-slate-500 text-sm">
             Total de piezas:{" "}
-            <span className="font-semibold text-slate-800">{metrics.totalItems}</span>
+            <span className="font-semibold text-slate-800">
+              {metrics.totalItems}
+            </span>
           </div>
-          <div className="text-xl font-semibold text-slate-900">
+          <div className="font-semibold text-slate-900 text-xl">
             Total: ${metrics.totalAmount.toFixed(2)}
           </div>
         </footer>
@@ -177,10 +198,15 @@ export default function CartDetailPage() {
 
       <section className="flex flex-wrap items-center gap-3">
         {cart.status === "DRAFT" ? (
-          <Button onClick={() => payMutation.mutate({ cartId: cart.id })}>Pagar carrito</Button>
+          <Button onClick={() => payMutation.mutate({ id: cart.id })}>
+            Pagar carrito
+          </Button>
         ) : null}
-        {cart.status === "PAID" ? (
-          <Button variant="secondary" onClick={() => splitMutation.mutate({ cartId: cart.id })}>
+        {cart.status === "COMPLETED" ? (
+          <Button
+            variant="secondary"
+            onClick={() => splitMutation.mutate({ id: cart.id })}
+          >
             Dividir a lotes
           </Button>
         ) : null}

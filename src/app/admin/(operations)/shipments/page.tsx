@@ -94,10 +94,10 @@ export default function EnviosPage() {
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-800">
+            <h2 className="font-semibold text-lg text-slate-800">
               Paquetes listos para envío
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-slate-500 text-sm">
               Selecciona paquetes en estado listo para retiro y arma un envío
               consolidado.
             </p>
@@ -126,7 +126,7 @@ export default function EnviosPage() {
                   <p className="font-medium text-slate-700">
                     Paquete {pkg.trackingId}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-slate-500 text-xs">
                     {provider} · Lote {pkg.lot?.id}
                   </p>
                 </div>
