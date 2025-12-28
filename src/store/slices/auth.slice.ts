@@ -1,22 +1,34 @@
 import _ from "lodash";
 import type { StateCreator } from "zustand";
 
+import type { RoleType } from "~/prisma-client";
+
 import type { RootState } from "./root";
 
+export type AuthUser = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  roles: RoleType[];
+};
+
 export interface AuthState {
-  user: any;
-  role: string;
+  user: AuthUser | null;
+  roles: RoleType[];
 }
 
 export interface AuthActions {
   isLoggedIn: () => boolean;
+  setUser: (user: AuthUser) => void;
+  clearAuth: () => void;
 }
 
 export type AuthSliceState = AuthState & AuthActions;
 
 export const defaultInitialState: AuthState = {
   user: null,
-  role: "guest",
+  roles: [],
 };
 
 /**
@@ -49,5 +61,15 @@ export const createAuthSlice: (
       const { user } = get();
       return !!user;
     },
+    setUser: (user) =>
+      set((state) => {
+        state.user = user;
+        state.roles = user.roles;
+      }),
+    clearAuth: () =>
+      set((state) => {
+        state.user = null;
+        state.roles = [];
+      }),
   });
 };

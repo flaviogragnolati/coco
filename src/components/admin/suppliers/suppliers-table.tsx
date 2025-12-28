@@ -9,21 +9,17 @@ import {
   Plus,
   Edit,
   Trash,
+  Loader2,
 } from "lucide-react";
 
+import { api } from "~/trpc/react";
 import type { RouterOutputs } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "~/components/ui/avatar";
-import {
-  AppTable,
-  type ColumnConfig,
-} from "~/components/ui/app-table";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { AppTable, type ColumnConfig } from "~/components/ui/app-table";
 import { SupplierModal } from "~/components/admin/supplier-modal";
 import { useConfirm } from "~/ui/confirm";
+import { showToast } from "~/utils/show-toast";
 
 type Supplier = RouterOutputs["suppliers"]["getAllSuppliers"][number];
 
@@ -36,8 +32,22 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
   const [selectedSupplier, setSelectedSupplier] = useState<
     Supplier | undefined
   >(undefined);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const confirm = useConfirm();
+  const utils = api.useUtils();
+
+  const deleteMutation = api.suppliers.deleteSupplier.useMutation({
+    async onSuccess() {
+      showToast("success", "Proveedor eliminado exitosamente");
+      await utils.suppliers.getAllSuppliers.invalidate();
+      setDeletingId(null);
+    },
+    onError(error) {
+      showToast("error", `Error al eliminar el proveedor: ${error.message}`);
+      setDeletingId(null);
+    },
+  });
 
   const getInitials = (name: string) => {
     return name
@@ -57,15 +67,23 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
     setModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    confirm({
-      title: "Confirm Deletion",
-      description: "Are you sure you want to delete this supplier?",
-    }).then(({ confirmed, reason }) => {
-      if (!confirmed) return null;
-
-      console.log("Deletion confirmed, reason:", reason, id);
+  const handleDelete = async (id: number) => {
+    const supplier = suppliers.find((s) => s.id === id);
+    const result = await confirm({
+      title: "Eliminar proveedor",
+      description: `¿Estás seguro de que deseas eliminar el proveedor "${supplier?.name}"?`,
+      confirmationText: "Eliminar",
+      cancellationText: "Cancelar",
     });
+
+    if (!result.confirmed) return;
+
+    setDeletingId(id);
+    try {
+      await deleteMutation.mutateAsync({ id });
+    } catch (error) {
+      showToast("error", "Error deleting supplier");
+    }
   };
 
   const handleModalClose = () => {
@@ -81,7 +99,10 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
       render: (supplier) => (
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={supplier.image ?? undefined} alt={supplier.name} />
+            <AvatarImage
+              src={supplier.image ?? undefined}
+              alt={supplier.name}
+            />
             <AvatarFallback className="text-xs">
               {getInitials(supplier.name)}
             </AvatarFallback>
@@ -191,19 +212,33 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
       key: "actions",
       title: "Acciones",
       width: "160px",
-      type: "actions",
-      actions: {
-        layout: "inline",
-        edit: {
-          label: "Edit",
-          icon: <Edit className="h-3 w-3" />,
-          onClick: (supplier) => handleEditSupplier(supplier),
-        },
-        delete: {
-          label: "Delete",
-          icon: <Trash className="h-3 w-3" />,
-          onClick: (supplier) => handleDelete(supplier.id),
-        },
+      type: "custom",
+      render: (supplier) => {
+        const isDeleting = deletingId === supplier.id;
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleEditSupplier(supplier)}
+              disabled={isDeleting}
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDelete(supplier.id)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Trash className="h-3 w-3" />
+              )}
+            </Button>
+          </div>
+        );
       },
     },
   ];

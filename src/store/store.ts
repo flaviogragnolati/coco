@@ -14,6 +14,7 @@ import { createAuthSlice } from "./slices/auth.slice";
 import { createCollabSlice } from "./slices/collab.slice";
 import { createModalSlice } from "./slices/modal.slice";
 import { createCartSlice } from "./slices/cart.slice";
+import { createCheckoutSlice } from "./slices/checkout.slice";
 
 const devtoolsOptions = { enabled: env.NEXT_PUBLIC_ENV !== "production" };
 const storeName = env.NEXT_PUBLIC_ENV === "production" ? "coco" : "coco-dev";
@@ -29,6 +30,7 @@ export const createAppStore = (initState?: RootInitialStateT) =>
             ...createCollabSlice(initState)(...args),
             ...createModalSlice(initState)(...args),
             ...createCartSlice(initState)(...args),
+            ...createCheckoutSlice(initState)(...args),
           };
         }),
         devtoolsOptions,
@@ -43,8 +45,22 @@ export const createAppStore = (initState?: RootInitialStateT) =>
         skipHydration: true,
         partialize: (state) => {
           // Exclude transient UI state from persistence
-          const { filters, ...rest } = state;
-          return rest;
+          const { filters, checkout, ...rest } = state;
+          const sanitizedCheckout = checkout
+            ? {
+                ...checkout,
+                paymentDetails: {
+                  ...checkout.paymentDetails,
+                  cardNumber: "",
+                  cvc: "",
+                },
+              }
+            : undefined;
+
+          return {
+            ...rest,
+            ...(sanitizedCheckout ? { checkout: sanitizedCheckout } : {}),
+          };
         },
         onRehydrateStorage: (state) => {
           return (state, error) => {

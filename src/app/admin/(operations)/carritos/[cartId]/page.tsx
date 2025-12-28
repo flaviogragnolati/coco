@@ -41,7 +41,7 @@ export default function CartDetailPage() {
   const splitMutation = api.cart.splitToLots.useMutation({
     onSuccess: () => {
       void utils.cart.getById.invalidate({ cartId });
-      router.push("/lotes");
+      router.push("/admin/lotes");
     },
   });
 

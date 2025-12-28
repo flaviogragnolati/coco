@@ -68,7 +68,7 @@ export default function LotesPage() {
         lots={filteredLots}
         providers={suppliers}
         products={products}
-        onView={(id) => router.push(`/lotes/${id}`)}
+        onView={(id) => router.push(`/admin/lotes/${id}`)}
         onReadyToOrder={(id) => markReadyMutation.mutate({ lotId: id })}
         onSendOrder={(id) => sendOrderMutation.mutate({ lotId: id })}
         onConfirmProvider={(id) => confirmMutation.mutate({ lotId: id })}

@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Menu, Search, ShoppingCart, User } from "lucide-react";
 import { Button } from "~/ui/button";
 import { Input } from "~/ui/input";
@@ -13,38 +11,6 @@ export default function Header() {
             <h1 className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text font-bold text-2xl text-transparent">
               BulkBuy
             </h1>
-            <nav className="hidden items-center space-x-6 md:flex">
-              <Link
-                href="/dashboard"
-                className="font-medium text-gray-700 hover:text-purple-600"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/carritos"
-                className="font-medium text-gray-700 hover:text-purple-600"
-              >
-                Carritos
-              </Link>
-              <Link
-                href="/lotes"
-                className="font-medium text-gray-700 hover:text-purple-600"
-              >
-                Lotes
-              </Link>
-              <Link
-                href="/paquetes"
-                className="font-medium text-gray-700 hover:text-purple-600"
-              >
-                Paquetes
-              </Link>
-              <Link
-                href="/envios"
-                className="font-medium text-gray-700 hover:text-purple-600"
-              >
-                Envíos
-              </Link>
-            </nav>
           </div>
 
           <div className="mx-8 max-w-md flex-1">

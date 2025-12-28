@@ -59,6 +59,7 @@ export function FormInput<
       <FormControl>
         <Input
           {...field}
+          value={field.value ?? ""}
           type={type}
           placeholder={placeholder}
           disabled={disabled}
@@ -93,6 +94,7 @@ export function FieldInput<
           <FormControl>
             <Input
               {...field}
+              value={field.value ?? ""}
               type={type}
               placeholder={placeholder}
               disabled={disabled}

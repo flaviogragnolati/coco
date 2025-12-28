@@ -41,7 +41,6 @@ import {
 } from "~/components/ui/select";
 import {
   BUNDLE_UNITS,
-  CATEGORIES,
   CURRENCIES,
   UNITS,
   type ProductCategoryOption,
@@ -50,6 +49,7 @@ import {
   type ProductSupplierSummary,
 } from "~/types";
 import { productFormSchema, type ProductFormInput } from "~/schema/product";
+import { CurrencySelect, UnitSelect, MultiplierInput } from "~/components/form";
 
 type CategoryOptionInput = ProductCategorySummary | ProductCategoryOption;
 
@@ -72,11 +72,7 @@ const normalizeCategoryOptions = (
   options?: CategoryOptionInput[],
 ): NormalizedCategoryOption[] => {
   if (!options || options.length === 0) {
-    return CATEGORIES.map((option) => ({
-      kind: "slug" as const,
-      label: option.label,
-      value: option.value,
-    }));
+    return [];
   }
 
   return options.map((option) => {
@@ -132,20 +128,33 @@ export function ProductForm({
       name: values?.name ?? "",
       description: values?.description ?? null,
       tags: values?.tags ?? [],
+
+      // Supplier pricing
       price: values?.price ?? undefined,
+      priceUnit: values?.priceUnit ?? UNITS[0]?.value ?? "UNIT",
+      priceUnitMultiplier: values?.priceUnitMultiplier ?? 1,
+
+      // Public pricing
+      publicPrice: values?.publicPrice ?? undefined,
+      publicPriceUnit: values?.publicPriceUnit ?? UNITS[0]?.value ?? "UNIT",
+      publicPriceMultiplier: values?.publicPriceMultiplier ?? 1,
+
+      // Supplier MOQ
+      supplierMoq: values?.supplierMoq ?? undefined,
+      supplierUnit: values?.supplierUnit ?? UNITS[0]?.value ?? "UNIT",
+      supplierUnitMultiplier: values?.supplierUnitMultiplier ?? 1,
+
+      // Customer MOQ
+      customerMoq: values?.customerMoq ?? undefined,
+      customerUnit: values?.customerUnit ?? UNITS[0]?.value ?? "UNIT",
+      customerUnitMultiplier: values?.customerUnitMultiplier ?? 1,
+
       currency: values?.currency ?? CURRENCIES[0]?.value ?? "ARS",
       sku: values?.sku ?? null,
       supplierSku: values?.supplierSku ?? null,
       code: values?.code ?? null,
       mainImage: values?.mainImage ?? null,
       additionalImages: values?.additionalImages ?? [],
-      moq: values?.moq ?? 1,
-      unit: values?.unit ?? UNITS[0]?.value ?? "piece",
-      step: values?.step ?? 1,
-      minQuantity: sanitizeOptionalNumber(values?.minQuantity),
-      maxQuantity: sanitizeOptionalNumber(values?.maxQuantity),
-      bundleSize: sanitizeOptionalNumber(values?.bundleSize),
-      bundleUnit: values?.bundleUnit ?? undefined,
       categoryId: values?.categoryId ?? undefined,
       categorySlug: values?.categorySlug ?? undefined,
       supplierId: values?.supplierId ?? suppliers[0]?.id ?? undefined,
@@ -236,13 +245,6 @@ export function ProductForm({
       mainImage: sanitizeString(values.mainImage),
       additionalImages:
         values.additionalImages?.map((url) => url.trim()).filter(Boolean) ?? [],
-      bundleUnit:
-        sanitizeOptionalNumber(values.bundleSize) !== undefined
-          ? sanitizeString(values.bundleUnit)
-          : undefined,
-      minQuantity: sanitizeOptionalNumber(values.minQuantity),
-      maxQuantity: sanitizeOptionalNumber(values.maxQuantity),
-      bundleSize: sanitizeOptionalNumber(values.bundleSize),
       categorySlug: sanitizeString(values.categorySlug) ?? undefined,
     };
 
@@ -370,17 +372,24 @@ export function ProductForm({
 
               <FormField
                 control={form.control}
-                name="sku"
+                name="mainImage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SKU</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Código interno del producto"
-                        value={field.value ?? ""}
-                        onChange={(event) => field.onChange(event.target.value)}
-                      />
-                    </FormControl>
+                    <FormLabel>Imagen principal</FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input
+                          placeholder="https://ejemplo.com/imagen.jpg"
+                          value={field.value ?? ""}
+                          onChange={(event) =>
+                            field.onChange(event.target.value)
+                          }
+                        />
+                      </FormControl>
+                      <Button type="button" variant="secondary" size="icon">
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -476,12 +485,42 @@ export function ProductForm({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Precios</CardTitle>
+            <CardTitle className="text-lg">Moneda</CardTitle>
             <CardDescription>
-              Define la moneda y el precio del producto.
+              Define la moneda para todos los precios.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
+          <CardContent>
+            <FormField
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Moneda
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <CurrencySelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Precio de Proveedor</CardTitle>
+            <CardDescription>
+              Define el precio de compra al proveedor y su unidad de medida.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-3">
             <FormField
               control={form.control}
               name="price"
@@ -513,27 +552,124 @@ export function ProductForm({
 
             <FormField
               control={form.control}
-              name="currency"
+              name="priceUnit"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Moneda
+                    Unidad
                     <span className="text-destructive"> *</span>
                   </FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona moneda" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {CURRENCIES.map((currency) => (
-                        <SelectItem key={currency.value} value={currency.value}>
-                          {currency.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <UnitSelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="priceUnitMultiplier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Multiplicador
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <MultiplierInput
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Ej: Para 2$/100gr ingrese 100
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Precio Público</CardTitle>
+            <CardDescription>
+              Define el precio de venta al cliente y su unidad de medida.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="publicPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Precio
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={field.value ?? ""}
+                      onChange={(event) => {
+                        const { value } = event.target;
+                        field.onChange(
+                          value === "" ? undefined : Number(value),
+                        );
+                      }}
+                      placeholder="0.00"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="publicPriceUnit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Unidad
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <UnitSelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="publicPriceMultiplier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Multiplicador
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <MultiplierInput
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Ej: Para 2$/100gr ingrese 100
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -549,6 +685,24 @@ export function ProductForm({
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="sku"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>SKU</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Código interno del producto"
+                      value={field.value ?? ""}
+                      onChange={(event) => field.onChange(event.target.value)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="supplierSku"
@@ -584,292 +738,169 @@ export function ProductForm({
                 </FormItem>
               )}
             />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">MOQ de Proveedor</CardTitle>
+            <CardDescription>
+              Cantidad mínima de pedido al proveedor.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="supplierMoq"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Cantidad
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={field.value ?? ""}
+                      onChange={(event) => {
+                        const { value } = event.target;
+                        field.onChange(
+                          value === "" ? undefined : Number(value),
+                        );
+                      }}
+                      placeholder="1"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
-              name="mainImage"
+              name="supplierUnit"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Imagen principal</FormLabel>
-                  <div className="flex gap-2">
-                    <FormControl>
-                      <Input
-                        placeholder="https://ejemplo.com/imagen.jpg"
-                        value={field.value ?? ""}
-                        onChange={(event) => field.onChange(event.target.value)}
-                      />
-                    </FormControl>
-                    <Button type="button" variant="secondary" size="icon">
-                      <Upload className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <FormLabel>
+                    Unidad
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <UnitSelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="supplierUnitMultiplier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Multiplicador
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <MultiplierInput
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Ej: Para 5 cajas de 100 unidades ingrese 100
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Configuracion proveedor</CardTitle>
-            <CardDescription>
-              Configura cantidades mínimas, máximas y unidades del producto.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <FormField
-                control={form.control}
-                name="moq"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Cantidad mínima
-                      <span className="text-destructive"> *</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={field.value ?? ""}
-                        onChange={(event) => {
-                          const { value } = event.target;
-                          field.onChange(
-                            value === "" ? undefined : Number(value),
-                          );
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="unit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Unidad
-                      <span className="text-destructive"> *</span>
-                    </FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona unidad" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {UNITS.map((unit) => (
-                          <SelectItem key={unit.value} value={unit.value}>
-                            {unit.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="bundleSize"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tamaño del paquete</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={field.value ?? ""}
-                        onChange={(event) => {
-                          const { value } = event.target;
-                          field.onChange(
-                            value === "" ? undefined : Number(value),
-                          );
-                        }}
-                        placeholder="Unidades por paquete"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="bundleUnit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unidad del paquete</FormLabel>
-                    <Select
-                      value={field.value ?? undefined}
-                      onValueChange={(value) =>
-                        field.onChange(value || undefined)
-                      }
-                      disabled={
-                        sanitizeOptionalNumber(form.getValues("bundleSize")) ===
-                        undefined
-                      }
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona unidad del paquete" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {BUNDLE_UNITS.map((unit) => (
-                          <SelectItem key={unit.value} value={unit.value}>
-                            {unit.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Disponible cuando definas un tamaño de paquete.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">
-              Configuracion lado cliente
-            </CardTitle>
+            <CardTitle className="text-lg">MOQ del Cliente</CardTitle>
             <CardDescription>
-              Configura cantidades mínimas, máximas y unidades del producto.
+              Cantidad mínima de compra para el cliente.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <FormField
-                control={form.control}
-                name="moq"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Cantidad mínima que compra el cliente
-                      <span className="text-destructive"> *</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={field.value ?? ""}
-                        onChange={(event) => {
-                          const { value } = event.target;
-                          field.onChange(
-                            value === "" ? undefined : Number(value),
-                          );
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <CardContent className="grid gap-4 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="customerMoq"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Cantidad
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={field.value ?? ""}
+                      onChange={(event) => {
+                        const { value } = event.target;
+                        field.onChange(
+                          value === "" ? undefined : Number(value),
+                        );
+                      }}
+                      placeholder="1"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="unit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Unidad
-                      <span className="text-destructive"> *</span>
-                    </FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona unidad" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {UNITS.map((unit) => (
-                          <SelectItem key={unit.value} value={unit.value}>
-                            {unit.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="customerUnit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Unidad
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <UnitSelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="bundleSize"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tamaño del paquete</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={field.value ?? ""}
-                        onChange={(event) => {
-                          const { value } = event.target;
-                          field.onChange(
-                            value === "" ? undefined : Number(value),
-                          );
-                        }}
-                        placeholder="Unidades por paquete"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="bundleUnit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unidad del paquete</FormLabel>
-                    <Select
-                      value={field.value ?? undefined}
-                      onValueChange={(value) =>
-                        field.onChange(value || undefined)
-                      }
-                      disabled={
-                        sanitizeOptionalNumber(form.getValues("bundleSize")) ===
-                        undefined
-                      }
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona unidad del paquete" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {BUNDLE_UNITS.map((unit) => (
-                          <SelectItem key={unit.value} value={unit.value}>
-                            {unit.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Disponible cuando definas un tamaño de paquete.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="customerUnitMultiplier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Multiplicador
+                    <span className="text-destructive"> *</span>
+                  </FormLabel>
+                  <FormControl>
+                    <MultiplierInput
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Ej: Para 1 paquete de 100gr ingrese 100
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 

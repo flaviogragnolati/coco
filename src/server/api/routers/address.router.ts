@@ -6,6 +6,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
+import { AddressType } from "~/prisma-client";
 
 const sanitizeString = (value?: string | null) => {
   if (value === null || value === undefined) return null;
@@ -65,6 +66,45 @@ export const addressRouter = createTRPCRouter({
       user: address.user ?? null,
     }));
   }),
+
+  getUserAddresses: protectedProcedure.query(async ({ ctx }) => {
+    const addresses = await ctx.db.address.findMany({
+      where: { userId: ctx.session.user.id, deleted: false },
+      orderBy: [{ createdAt: "desc" }],
+    });
+
+    return addresses;
+  }),
+
+  getPickupAddresses: publicProcedure
+    .input(
+      z
+        .object({
+          city: z.string().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: {
+        type: AddressType;
+        deleted: boolean;
+        city?: { contains: string; mode: "insensitive" };
+      } = {
+        type: AddressType.PICKUP,
+        deleted: false,
+      };
+
+      if (input?.city) {
+        where.city = { contains: input.city, mode: "insensitive" };
+      }
+
+      const addresses = await ctx.db.address.findMany({
+        where,
+        orderBy: [{ city: "asc" }],
+      });
+
+      return addresses;
+    }),
 
   createAddress: protectedProcedure
     .input(createAddressSchema)

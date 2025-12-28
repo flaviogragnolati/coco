@@ -1,62 +1,57 @@
 "use client";
 
 import type * as React from "react";
-import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map as MapIcon,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react";
+import { Layers, SquareTerminal } from "lucide-react";
 
 import { NavMain } from "~/ui/nav-main";
-import { NavProjects } from "~/ui/nav-projects";
 import { NavUser } from "~/ui/nav-user";
-import { TeamSwitcher } from "~/ui/team-switcher";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarProvider,
   SidebarRail,
 } from "~/ui/sidebar";
 
-// This is sample data.
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "Panel administrativo",
+    email: "Gestiona el marketplace",
+    avatar: "/favicon.ico",
   },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
-      title: "Admin",
+      title: "Operaciones",
       url: "/admin",
       icon: SquareTerminal,
       isActive: true,
+      items: [
+        {
+          title: "Dashboard",
+          url: "/admin",
+        },
+        {
+          title: "Carritos",
+          url: "/admin/carritos",
+        },
+        {
+          title: "Lotes",
+          url: "/admin/lotes",
+        },
+        {
+          title: "Paquetes",
+          url: "/admin/paquetes",
+        },
+        {
+          title: "Envíos",
+          url: "/admin/envios",
+        },
+      ],
+    },
+    {
+      title: "Catálogo",
+      url: "/admin",
+      icon: Layers,
       items: [
         {
           title: "Proveedores",
@@ -83,88 +78,6 @@ const data = {
           url: "/admin/channels",
         },
       ],
-    },
-    {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: MapIcon,
     },
   ],
 };

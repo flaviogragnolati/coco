@@ -1,11 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import {
-  useForm,
-  type DefaultValues,
-  type SubmitHandler,
-} from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { api } from "~/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "~/components/ui/button";
@@ -14,8 +11,12 @@ import { Form } from "~/ui/form";
 import { FieldInput } from "~/components/form/form-input";
 import { FieldTextarea } from "~/components/form/form-textarea";
 import { FieldSwitch } from "~/components/form/form-switch";
+import { UserSelector } from "./entity-selectors/UserSelector";
+import { SupplierSelector } from "./entity-selectors/SupplierSelector";
+import { CarrierSelector } from "./entity-selectors/CarrierSelector";
 import {
   ADDRESS_TYPES,
+  ADDRESS_TYPE_LABELS,
   createAddressSchema,
   type CreateAddressInput,
 } from "~/schema/address";
@@ -34,6 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
+import { Label } from "~/components/ui/label";
 
 interface AddressFormProps {
   defaultValues?: Partial<CreateAddressInput>;
@@ -44,19 +47,21 @@ interface AddressFormProps {
   submitLabel?: string;
   cancelLabel?: string;
   isSubmitting?: boolean;
+  hideRelations?: boolean;
+  showStatusSwitch?: boolean;
 }
 
 const buildDefaultValues = (
   values?: Partial<CreateAddressInput>,
-): DefaultValues<CreateAddressInput> => ({
+): CreateAddressInput => ({
   type: values?.type ?? ADDRESS_TYPES[0],
   fullAddress: values?.fullAddress ?? "",
   street: values?.street ?? "",
   number: values?.number ?? "",
   city: values?.city ?? "",
-  state: values?.state ?? "",
+  state: values?.state ?? "Tierra del Fuego",
   postalCode: values?.postalCode ?? "",
-  country: values?.country ?? "",
+  country: values?.country ?? "Argentina",
   description: values?.description ?? null,
   userId: values?.userId ?? null,
   supplierId: values?.supplierId ?? null,
@@ -79,19 +84,37 @@ export function AddressForm({
   submitLabel = "Guardar dirección",
   cancelLabel = "Cancelar",
   isSubmitting = false,
+  hideRelations = false,
+  showStatusSwitch = true,
 }: AddressFormProps) {
-  const form = useForm<CreateAddressInput>({
+  console.log("@AddressForm rendered", defaultValues);
+  const [linkedEntityType, setLinkedEntityType] = useState<
+    "user" | "supplier" | "carrier"
+  >("user");
+
+  const form = useForm({
     resolver: zodResolver(createAddressSchema),
-    defaultValues: useMemo(() => buildDefaultValues(defaultValues), [defaultValues]),
+    defaultValues: buildDefaultValues(defaultValues),
   });
 
   useEffect(() => {
     form.reset(buildDefaultValues(defaultValues));
+    // Always default to "user"
+    setLinkedEntityType("user");
   }, [defaultValues, form]);
 
-  const handleSubmit = form.handleSubmit((values) => {
+  const handleEntityTypeChange = (type: "user" | "supplier" | "carrier") => {
+    setLinkedEntityType(type);
+
+    // Clear all entity fields
+    form.setValue("userId", null);
+    form.setValue("supplierId", null);
+    form.setValue("carrierId", null);
+  };
+
+  const handleSubmit = form.handleSubmit((values: CreateAddressInput) => {
     const normalized: CreateAddressInput = {
-      ...values,
+      type: values.type,
       fullAddress: values.fullAddress.trim(),
       street: values.street.trim(),
       number: values.number.trim(),
@@ -119,10 +142,7 @@ export function AddressForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo *</FormLabel>
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecciona un tipo" />
@@ -131,10 +151,7 @@ export function AddressForm({
                   <SelectContent>
                     {ADDRESS_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {type
-                          .toLowerCase()
-                          .replace(/_/g, " ")
-                          .replace(/\b\w/g, (char) => char.toUpperCase())}
+                        {ADDRESS_TYPE_LABELS[type] ?? type}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -144,83 +161,132 @@ export function AddressForm({
             )}
           />
 
-          <FieldInput
-            control={form.control}
-            name="userId"
-            label="Usuario relacionado"
-            placeholder="ID de usuario (opcional)"
-          />
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="supplierId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Proveedor vinculado</FormLabel>
-                <Select
-                  value={field.value ? String(field.value) : ""}
+          {!hideRelations && (
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <Label>Vincular dirección a:</Label>
+                <RadioGroup
+                  value={linkedEntityType}
                   onValueChange={(value) =>
-                    field.onChange(value ? Number(value) : null)
+                    handleEntityTypeChange(
+                      value as "user" | "supplier" | "carrier",
+                    )
                   }
                 >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sin proveedor asociado" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="">Sin proveedor</SelectItem>
-                    {supplierOptions.map((option) => (
-                      <SelectItem key={option.id} value={String(option.id)}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Selecciona un proveedor si la dirección pertenece a uno.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="user" id="entity-user" />
+                    <Label
+                      htmlFor="entity-user"
+                      className="cursor-pointer font-normal"
+                    >
+                      Usuario
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="supplier" id="entity-supplier" />
+                    <Label
+                      htmlFor="entity-supplier"
+                      className="cursor-pointer font-normal"
+                    >
+                      Proveedor
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="carrier" id="entity-carrier" />
+                    <Label
+                      htmlFor="entity-carrier"
+                      className="cursor-pointer font-normal"
+                    >
+                      Transportista
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
 
-          <FormField
-            control={form.control}
-            name="carrierId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Transportista vinculado</FormLabel>
-                <Select
-                  value={field.value ? String(field.value) : ""}
-                  onValueChange={(value) =>
-                    field.onChange(value ? Number(value) : null)
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sin transportista asociado" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="">Sin transportista</SelectItem>
-                    {carrierOptions.map((option) => (
-                      <SelectItem key={option.id} value={String(option.id)}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  Asigna la dirección a un transportista si corresponde.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              {linkedEntityType === "user" && (
+                <UserSelector control={form.control} name="userId" />
+              )}
+              {linkedEntityType === "supplier" && (
+                <SupplierSelector control={form.control} name="supplierId" />
+              )}
+              {linkedEntityType === "carrier" && (
+                <CarrierSelector control={form.control} name="carrierId" />
+              )}
+            </div>
+          )}
         </div>
+
+        {/* {!hideRelations ? (
+          <div className="grid gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="supplierId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Proveedor vinculado</FormLabel>
+                  <Select
+                    value={field.value ? String(field.value) : "-"}
+                    onValueChange={(value) =>
+                      field.onChange(value ? Number(value) : null)
+                    }
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sin proveedor asociado" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Sin proveedor</SelectItem>
+                      {supplierOptions.map((option) => (
+                        <SelectItem key={option.id} value={String(option.id)}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Selecciona un proveedor si la dirección pertenece a uno.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="carrierId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Transportista vinculado</FormLabel>
+                  <Select
+                    value={field.value ? String(field.value) : "-"}
+                    onValueChange={(value) =>
+                      field.onChange(value ? Number(value) : null)
+                    }
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sin transportista asociado" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Sin transportista</SelectItem>
+                      {carrierOptions.map((option) => (
+                        <SelectItem key={option.id} value={String(option.id)}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Asigna la dirección a un transportista si corresponde.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        ) : null} */}
 
         <FieldTextarea
           control={form.control}
@@ -256,7 +322,8 @@ export function AddressForm({
             control={form.control}
             name="state"
             label="Provincia *"
-            placeholder="Provincia"
+            placeholder="Tierra del Fuego"
+            disabled
           />
         </div>
 
@@ -272,6 +339,7 @@ export function AddressForm({
             name="country"
             label="País *"
             placeholder="Argentina"
+            disabled
           />
         </div>
 
@@ -283,16 +351,23 @@ export function AddressForm({
           placeholder="Notas internas sobre la dirección"
         />
 
-        <FieldSwitch
-          control={form.control}
-          name="isActive"
-          label="Dirección activa"
-          description="Desactiva la dirección para ocultarla temporalmente."
-        />
+        {showStatusSwitch ? (
+          <FieldSwitch
+            control={form.control}
+            name="isActive"
+            label="Dirección activa"
+            description="Desactiva la dirección para ocultarla temporalmente."
+          />
+        ) : null}
 
         <DialogFooter className="flex items-center gap-2">
           {onCancel ? (
-            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
               {cancelLabel}
             </Button>
           ) : null}

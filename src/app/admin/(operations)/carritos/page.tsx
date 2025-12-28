@@ -96,7 +96,7 @@ export default function CarritosPage() {
           products={products}
           users={users}
           onViewCart={(id) => {
-            router.push(`/carritos/${id}`);
+            router.push(`/admin/carritos/${id}`);
           }}
           onPayCart={(id) => payMutation.mutate({ cartId: id })}
           onSplitCart={(id) => splitMutation.mutate({ cartId: id })}

@@ -123,3 +123,47 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+@keyframes cart-bump {
+	0% {
+		transform: scale(1);
+	}
+	40% {
+		transform: scale(1.15);
+	}
+	65% {
+		transform: scale(0.96);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+@keyframes cart-shake {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	20% {
+		transform: translateX(-2px);
+	}
+	40% {
+		transform: translateX(2px);
+	}
+	60% {
+		transform: translateX(-1px);
+	}
+	80% {
+		transform: translateX(1px);
+	}
+}
+
+@layer utilities {
+	.animate-cart-bump {
+		animation: cart-bump 320ms ease-out;
+	}
+
+	.animate-cart-shake {
+		animation: cart-shake 320ms ease-in-out;
+	}
+}

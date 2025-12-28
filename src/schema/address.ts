@@ -11,12 +11,21 @@ export const ADDRESS_TYPES = [
   "CARRIER",
 ] as const;
 
-const relationNumberField = z
-  .number()
-  .int()
-  .positive()
-  .optional()
-  .nullable();
+export const ADDRESS_TYPE_LABELS: Record<
+  (typeof ADDRESS_TYPES)[number],
+  string
+> = {
+  HOME: "Hogar",
+  WORK: "Trabajo",
+  SHIPPING: "Envío",
+  BILLING: "Facturación",
+  FRACTIONING: "Fraccionamiento",
+  SUPPLIER: "Proveedor",
+  PICKUP: "Punto de retiro",
+  CARRIER: "Transportista",
+};
+
+const relationNumberField = z.number().int().positive().optional().nullable();
 
 const relationStringField = z
   .string()

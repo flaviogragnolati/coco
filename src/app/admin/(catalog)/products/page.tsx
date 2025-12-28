@@ -3,14 +3,35 @@
 import { ProductsTable } from "~/components/admin/product";
 import { ProductsPageSkeleton } from "~/components/admin/product/products-page-skeleton";
 import { api } from "~/trpc/react";
+import type { ProductFormInput } from "~/schema/product";
 
 export default function ProductsPage() {
+  const utils = api.useUtils();
+
   const { data: products, isLoading: loadingProducts } =
     api.products.getAllProducts.useQuery();
   const { data: suppliers, isLoading: loadingSuppliers } =
     api.suppliers.getAllSuppliers.useQuery();
   const { data: categories, isLoading: loadingCategories } =
     api.categories.getAllCategories.useQuery();
+
+  const createProduct = api.products.createProduct.useMutation({
+    onSuccess: () => {
+      void utils.products.getAllProducts.invalidate();
+    },
+  });
+
+  const updateProduct = api.products.updateProduct.useMutation({
+    onSuccess: () => {
+      void utils.products.getAllProducts.invalidate();
+    },
+  });
+
+  const deleteProduct = api.products.deleteProduct.useMutation({
+    onSuccess: () => {
+      void utils.products.getAllProducts.invalidate();
+    },
+  });
 
   const isLoading = loadingProducts || loadingSuppliers || loadingCategories;
 
@@ -40,6 +61,18 @@ export default function ProductsPage() {
     id: category.id,
     name: category.name,
   }));
+
+  const handleCreateProduct = async (values: ProductFormInput) => {
+    await createProduct.mutateAsync(values);
+  };
+
+  const handleUpdateProduct = async (id: number, values: ProductFormInput) => {
+    await updateProduct.mutateAsync({ ...values, id });
+  };
+
+  const handleDeleteProduct = async (product: { id: number }) => {
+    await deleteProduct.mutateAsync({ id: product.id });
+  };
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -71,6 +104,9 @@ export default function ProductsPage() {
         products={productsList}
         suppliers={supplierSummaries}
         categories={categoryList}
+        onCreateProduct={handleCreateProduct}
+        onUpdateProduct={handleUpdateProduct}
+        onDeleteProduct={handleDeleteProduct}
       />
     </div>
   );

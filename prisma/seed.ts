@@ -11,6 +11,7 @@ import {
   NotificationType,
   NotificationStatus,
   ChannelType,
+  Unit,
 } from "../generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -19,6 +20,10 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
+let stepCounter = 0;
+const logStep = (message: string) =>
+  console.log(`➡️ [seed:${++stepCounter}] ${message}`);
+
 console.log("@@@@@@@@@@ Connecting to database...", process.env.DATABASE_URL);
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -26,16 +31,31 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
+const productTemplate = (data: Record<string, any>) => ({
+  currency: "ARS",
+  priceUnitMultiplier: 1,
+  supplierUnitMultiplier: 1,
+  customerUnitMultiplier: 1,
+  publicPriceMultiplier: 1,
+  minFractionPerUser: 1,
+  ...data,
+});
+
 async function main() {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
   // Clean database in FK-safe order before seeding
   console.log("🧹 Cleaning database...");
 
+  logStep("Cleaning notifications, events, payments, shipments, lots, carts");
   await prisma.notification.deleteMany();
   await prisma.event.deleteMany();
 
   await prisma.shipmentPayment.deleteMany();
   await prisma.shipmentPackage.deleteMany();
   await prisma.package.deleteMany();
+  await prisma.shipment.deleteMany();
   await prisma.lotPayment.deleteMany();
   await prisma.lot.deleteMany();
   await prisma.userPayment.deleteMany();
@@ -48,141 +68,241 @@ async function main() {
   await prisma.category.deleteMany();
   await prisma.supplier.deleteMany();
 
+  logStep("Cleaning carriers and related rates/routes");
   await prisma.carrierRate.deleteMany();
   await prisma.carrierRoutes.deleteMany();
   await prisma.carrier.deleteMany();
 
+  logStep("Cleaning addresses, cards, roles, settings, accounts, users, channels");
   await prisma.address.deleteMany();
+  await prisma.savedPaymentCard.deleteMany();
   await prisma.role.deleteMany();
   await prisma.userSettings.deleteMany();
   await prisma.account.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.verificationToken.deleteMany();
   await prisma.user.deleteMany();
   await prisma.channel.deleteMany();
 
   console.log("✅ Database cleaned");
 
   // 1) Channels
-  const [whatsappChannel, emailChannel] = await Promise.all([
-    prisma.channel.create({
-      data: {
-        type: ChannelType.WHATSAPP,
-        name: "WhatsApp default",
-        description: "Primary WhatsApp channel",
-        token: "whatsapp-api-token-dev",
-      },
-    }),
-    prisma.channel.create({
-      data: {
-        type: ChannelType.EMAIL,
-        name: "Email default",
-        description: "Transactional email channel",
-        token: "email-api-token-dev",
-      },
-    }),
-  ]);
-
-  // 2) Users
-  const [buyer1, buyer2, buyer3, supplierUser1, supplierUser2, carrierUser] =
+  logStep("Creating channels");
+  const [whatsappChannel, emailChannel, smsChannel, pushChannel] =
     await Promise.all([
-      prisma.user.create({
+      prisma.channel.create({
         data: {
-          name: "Juan Pérez",
-          email: "buyer1@example.com",
-          phone: "+54 9 2901 111111",
-          taxId: "20-11111111-3",
-          taxType: "CUIT",
+          type: ChannelType.WHATSAPP,
+          name: "WhatsApp default",
+          description: "Primary WhatsApp channel",
+          token: "whatsapp-api-token-dev",
         },
       }),
-      prisma.user.create({
+      prisma.channel.create({
         data: {
-          name: "María González",
-          email: "buyer2@example.com",
-          phone: "+54 9 2901 222222",
-          taxId: "27-22222222-4",
-          taxType: "CUIT",
+          type: ChannelType.EMAIL,
+          name: "Email default",
+          description: "Transactional email channel",
+          token: "email-api-token-dev",
         },
       }),
-      prisma.user.create({
+      prisma.channel.create({
         data: {
-          name: "Carlos Rodríguez",
-          email: "buyer3@example.com",
-          phone: "+54 9 2901 333333",
-          taxId: "20-33333333-5",
-          taxType: "CUIT",
+          type: ChannelType.SMS,
+          name: "SMS fallback",
+          description: "Low priority SMS channel",
+          token: "sms-api-token-dev",
         },
       }),
-      prisma.user.create({
+      prisma.channel.create({
         data: {
-          name: "Supplier Admin - Mayorista Sur",
-          email: "supplier1@example.com",
-          phone: "+54 9 2901 444444",
-          taxId: "30-44444444-6",
-          taxType: "CUIT",
-        },
-      }),
-      prisma.user.create({
-        data: {
-          name: "Supplier Admin - Fresh Valley",
-          email: "supplier2@example.com",
-          phone: "+54 9 2901 555555",
-          taxId: "30-55555555-7",
-          taxType: "CUIT",
-        },
-      }),
-      prisma.user.create({
-        data: {
-          name: "Carrier Admin",
-          email: "carrier@example.com",
-          phone: "+54 9 2901 666666",
-          taxId: "30-66666666-8",
-          taxType: "CUIT",
+          type: ChannelType.PUSH,
+          name: "Push notifications",
+          description: "Mobile push channel",
+          token: "push-api-token-dev",
         },
       }),
     ]);
 
-  // 3) User settings
-  await Promise.all([
-    prisma.userSettings.create({
+  // 2) Users
+  logStep("Creating users");
+  const [
+    adminUser,
+    devAdminUser,
+    cocoAdminUser,
+    buyer1,
+    buyer2,
+    buyer3,
+    supplierUser1,
+    supplierUser2,
+    carrierUser,
+    allyUser,
+    fractionatorUser,
+    pickerUser,
+  ] = await Promise.all([
+    prisma.user.create({
       data: {
-        userId: buyer1.id,
-        notificationsEnabled: true,
+        name: "Admin User",
+        email: "admin@example.com",
+        phone: "+54 9 2901 000000",
+        taxId: "27-00000000-9",
+        taxType: "CUIT",
       },
     }),
-    prisma.userSettings.create({
+    prisma.user.create({
       data: {
-        userId: buyer2.id,
-        notificationsEnabled: true,
+        name: "Flavio Gragnolati",
+        email: "gragnolatif@gmail.com",
+        phone: "+54 9 11 1234 5678",
+        taxId: "20-55559999-7",
+        taxType: "CUIT",
       },
     }),
-    prisma.userSettings.create({
+    prisma.user.create({
       data: {
-        userId: buyer3.id,
-        notificationsEnabled: true,
+        name: "Coco Dev Admin",
+        email: "coco.dev@gmail.com",
+        phone: "+54 9 11 0000 0000",
+        taxId: "27-44443333-0",
+        taxType: "CUIT",
       },
     }),
-    prisma.userSettings.create({
+    prisma.user.create({
       data: {
-        userId: supplierUser1.id,
-        notificationsEnabled: true,
+        name: "Juan Pérez",
+        email: "buyer1@example.com",
+        phone: "+54 9 2901 111111",
+        taxId: "20-11111111-3",
+        taxType: "CUIT",
       },
     }),
-    prisma.userSettings.create({
+    prisma.user.create({
       data: {
-        userId: supplierUser2.id,
-        notificationsEnabled: true,
+        name: "María González",
+        email: "buyer2@example.com",
+        phone: "+54 9 2901 222222",
+        taxId: "27-22222222-4",
+        taxType: "CUIT",
       },
     }),
-    prisma.userSettings.create({
+    prisma.user.create({
       data: {
-        userId: carrierUser.id,
-        notificationsEnabled: true,
+        name: "Carlos Rodríguez",
+        email: "buyer3@example.com",
+        phone: "+54 9 2901 333333",
+        taxId: "20-33333333-5",
+        taxType: "CUIT",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Supplier Admin - Mayorista Sur",
+        email: "supplier1@example.com",
+        phone: "+54 9 2901 444444",
+        taxId: "30-44444444-6",
+        taxType: "CUIT",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Supplier Admin - Fresh Valley",
+        email: "supplier2@example.com",
+        phone: "+54 9 2901 555555",
+        taxId: "30-55555555-7",
+        taxType: "CUIT",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Carrier Admin",
+        email: "carrier@example.com",
+        phone: "+54 9 2901 666666",
+        taxId: "30-66666666-8",
+        taxType: "CUIT",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Alianza Comunitaria",
+        email: "ally@example.com",
+        phone: "+54 9 2901 777777",
+        taxId: "20-77777777-1",
+        taxType: "CUIT",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Fraccionadora Sur",
+        email: "fractionator@example.com",
+        phone: "+54 9 2901 888888",
+        taxId: "27-88888888-2",
+        taxType: "CUIT",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Picker Express",
+        email: "picker@example.com",
+        phone: "+54 9 2901 999999",
+        taxId: "27-99999999-3",
+        taxType: "CUIT",
       },
     }),
   ]);
 
+  // 3) User settings
+  logStep("Creating user settings");
+  await Promise.all(
+    [
+      adminUser,
+      devAdminUser,
+      cocoAdminUser,
+      buyer1,
+      buyer2,
+      buyer3,
+      supplierUser1,
+      supplierUser2,
+      carrierUser,
+      allyUser,
+      fractionatorUser,
+      pickerUser,
+    ].map((user) =>
+      prisma.userSettings.create({
+        data: {
+          userId: user.id,
+          notificationsEnabled: true,
+        },
+      }),
+    ),
+  );
+
   // 4) Roles
+  logStep("Creating roles");
   await Promise.all([
+    prisma.role.create({
+      data: {
+        type: RoleType.ADMIN,
+        name: "admin",
+        description: "Platform administrator",
+        userId: adminUser.id,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        type: RoleType.ADMIN,
+        name: "admin",
+        description: "Platform administrator (dev)",
+        userId: devAdminUser.id,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        type: RoleType.ADMIN,
+        name: "admin",
+        description: "Platform administrator (coco dev)",
+        userId: cocoAdminUser.id,
+      },
+    }),
     prisma.role.create({
       data: {
         type: RoleType.BUYER,
@@ -231,10 +351,46 @@ async function main() {
         userId: carrierUser.id,
       },
     }),
+    prisma.role.create({
+      data: {
+        type: RoleType.ALLY,
+        name: "ally",
+        description: "Community ally to support logistics",
+        userId: allyUser.id,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        type: RoleType.FRACTIONATOR,
+        name: "fractionator",
+        description: "Handles bulk fractioning",
+        userId: fractionatorUser.id,
+      },
+    }),
+    prisma.role.create({
+      data: {
+        type: RoleType.PICKER,
+        name: "picker",
+        description: "Prepares orders for shipment",
+        userId: pickerUser.id,
+      },
+    }),
   ]);
 
-  // 5) Addresses (user, supplier, carrier)
-  const [buyer1Address, buyer2Address, buyer3Address] = await Promise.all([
+  // 5) Addresses (user)
+  logStep("Creating addresses");
+  const [
+    buyer1Address,
+    buyer2Address,
+    buyer3Address,
+    buyer1HomeAddress,
+    buyer1BillingAddress,
+    buyer2WorkAddress,
+    adminWorkAddress,
+    devAdminAddress,
+    cocoAdminAddress,
+    allyFractioningAddress,
+  ] = await Promise.all([
     prisma.address.create({
       data: {
         type: AddressType.SHIPPING,
@@ -279,9 +435,109 @@ async function main() {
         userId: buyer3.id,
       },
     }),
+    prisma.address.create({
+      data: {
+        type: AddressType.HOME,
+        fullAddress: "B° Andes 120, Ushuaia, Tierra del Fuego, Argentina",
+        street: "B° Andes",
+        number: "120",
+        city: "Ushuaia",
+        state: "Tierra del Fuego",
+        postalCode: "9410",
+        country: "AR",
+        description: "Buyer 1 home address",
+        userId: buyer1.id,
+      },
+    }),
+    prisma.address.create({
+      data: {
+        type: AddressType.BILLING,
+        fullAddress: "Oficina Centro 230, Ushuaia, Tierra del Fuego",
+        street: "Oficina Centro",
+        number: "230",
+        city: "Ushuaia",
+        state: "Tierra del Fuego",
+        postalCode: "9410",
+        country: "AR",
+        description: "Buyer 1 billing address",
+        userId: buyer1.id,
+      },
+    }),
+    prisma.address.create({
+      data: {
+        type: AddressType.WORK,
+        fullAddress:
+          "Parque Industrial Nave 5, Ushuaia, Tierra del Fuego, Argentina",
+        street: "Parque Industrial",
+        number: "Nave 5",
+        city: "Ushuaia",
+        state: "Tierra del Fuego",
+        postalCode: "9410",
+        country: "AR",
+        description: "Buyer 2 work address",
+        userId: buyer2.id,
+      },
+    }),
+    prisma.address.create({
+      data: {
+        type: AddressType.WORK,
+        fullAddress: "Centro Cívico 1500, Ushuaia, Tierra del Fuego",
+        street: "Centro Cívico",
+        number: "1500",
+        city: "Ushuaia",
+        state: "Tierra del Fuego",
+        postalCode: "9410",
+        country: "AR",
+        description: "Admin office",
+        userId: adminUser.id,
+      },
+    }),
+    prisma.address.create({
+      data: {
+        type: AddressType.SHIPPING,
+        fullAddress: "Test Admin Base, Av. Dev 999, Ushuaia, Tierra del Fuego",
+        street: "Av. Dev",
+        number: "999",
+        city: "Ushuaia",
+        state: "Tierra del Fuego",
+        postalCode: "9410",
+        country: "AR",
+        description: "Dev admin shipping address",
+        userId: devAdminUser.id,
+      },
+    }),
+    prisma.address.create({
+      data: {
+        type: AddressType.WORK,
+        fullAddress: "Coco Dev Hub, Calle Tech 500, Ushuaia, Tierra del Fuego",
+        street: "Calle Tech",
+        number: "500",
+        city: "Ushuaia",
+        state: "Tierra del Fuego",
+        postalCode: "9410",
+        country: "AR",
+        description: "Coco dev admin office",
+        userId: cocoAdminUser.id,
+      },
+    }),
+    prisma.address.create({
+      data: {
+        type: AddressType.FRACTIONING,
+        fullAddress: "Deposito Comunitario 12, Ushuaia",
+        street: "Deposito Comunitario",
+        number: "12",
+        city: "Ushuaia",
+        state: "Tierra del Fuego",
+        postalCode: "9410",
+        country: "AR",
+        description: "Ally / fractioning hub",
+        userId: allyUser.id,
+      },
+    }),
   ]);
 
   // 6) Carrier + routes + rates
+  logStep("Creating carriers");
   const [carrier1, carrier2] = await Promise.all([
     prisma.carrier.create({
       data: {
@@ -343,6 +599,7 @@ async function main() {
     }),
   ]);
 
+  logStep("Creating carrier routes");
   const [route1, route2] = await Promise.all([
     prisma.carrierRoutes.create({
       data: {
@@ -351,7 +608,7 @@ async function main() {
         origin: "Deposito Ushuaia",
         destination: "Zona urbana Ushuaia",
         distance: 25,
-        duration: 1, // days
+        duration: 1,
         price: 3500,
         carrierId: carrier1.id,
       },
@@ -363,13 +620,14 @@ async function main() {
         origin: "Buenos Aires Hub",
         destination: "Ushuaia",
         distance: 3100,
-        duration: 5, // days
+        duration: 5,
         price: 25000,
         carrierId: carrier2.id,
       },
     }),
   ]);
 
+  logStep("Creating carrier rates");
   await Promise.all([
     prisma.carrierRate.create({
       data: {
@@ -410,6 +668,7 @@ async function main() {
   ]);
 
   // 7) Suppliers
+  logStep("Creating suppliers");
   const [supplier1, supplier2] = await Promise.all([
     prisma.supplier.create({
       data: {
@@ -478,315 +737,885 @@ async function main() {
   ]);
 
   // 8) Categories & brands
-  const [categoryCleaning, categoryBeverages, categoryFresh, categoryDairy] =
-    await Promise.all([
-      prisma.category.create({
-        data: {
-          name: "Limpieza",
-          tags: ["limpieza", "hogar", "higiene"],
-          description: "Productos de limpieza y desinfección",
-        },
-      }),
-      prisma.category.create({
-        data: {
-          name: "Bebidas",
-          tags: ["bebidas", "gaseosas", "jugos"],
-          description: "Bebidas varias en formato mayorista",
-        },
-      }),
-      prisma.category.create({
-        data: {
-          name: "Frescos",
-          tags: ["frescos", "verduras", "frutas", "carnes"],
-          description: "Productos frescos refrigerados",
-        },
-      }),
-      prisma.category.create({
-        data: {
-          name: "Lácteos",
-          tags: ["lácteos", "leche", "quesos", "yogurt"],
-          description: "Productos lácteos refrigerados",
-        },
-      }),
-    ]);
-
-  const [brandGeneric, brandSpark, brandFreshValley, brandDairyPremium] =
-    await Promise.all([
-      prisma.brand.create({
-        data: {
-          name: "Genérico Mayorista",
-          description: "Marca blanca para productos de limpieza",
-        },
-      }),
-      prisma.brand.create({
-        data: {
-          name: "Spark Cola",
-          description: "Marca de gaseosas cola",
-        },
-      }),
-      prisma.brand.create({
-        data: {
-          name: "Fresh Valley",
-          description: "Marca de productos frescos orgánicos",
-        },
-      }),
-      prisma.brand.create({
-        data: {
-          name: "Dairy Premium",
-          description: "Lácteos premium",
-        },
-      }),
-    ]);
-
-  // 9) Products
+  logStep("Creating categories");
   const [
-    cleaningProduct1,
-    cleaningProduct2,
-    beverageProduct1,
-    beverageProduct2,
-    freshProduct1,
-    freshProduct2,
-    dairyProduct1,
-    dairyProduct2,
+    categoryCleaning,
+    categoryBeverages,
+    categoryFresh,
+    categoryDairy,
+    categoryPantry,
+    categorySnacks,
+    categoryPersonalCare,
+    categoryFrozen,
+    categoryPets,
+    categoryHome,
   ] = await Promise.all([
-    // Cleaning products from Mayorista Sur
-    prisma.product.create({
+    prisma.category.create({
       data: {
-        name: "Detergente concentrado x5L",
-        description:
-          "Detergente líquido concentrado para uso general, bidón 5L.",
-        searchTags: ["detergente", "limpieza", "cocina"],
-        publicTags: ["detergente", "concentrado"],
-        code: "DET-5L-001",
-        supplierCode: "MS-DET-5L-001",
-        supplierUrl: "https://mayoristasur.example.com/detergente-5l",
-        images: [
-          "https://dummyimage.com/600x400/00a/ffffff&text=Detergente+5L",
-        ],
-        currency: "ARS",
-        price: 4500,
-        priceUnit: "BIDON_5L",
-        supplierMoq: 20,
-        supplierUnit: "BIDON_5L",
-        customerMoq: 1,
-        customerUnit: "BIDON_5L",
-        publicPrice: 5500,
-        publicPriceUnit: "BIDON_5L",
-        minFractionPerUser: 1,
-        brandId: brandGeneric.id,
-        categoryId: categoryCleaning.id,
-        supplierId: supplier1.id,
+        name: "Limpieza",
+        tags: ["limpieza", "hogar", "higiene"],
+        description: "Productos de limpieza y desinfección",
       },
     }),
-    prisma.product.create({
+    prisma.category.create({
       data: {
-        name: "Desinfectante multiusos x20L",
-        description: "Desinfectante industrial en bidón de 20 litros.",
-        searchTags: ["desinfectante", "limpieza", "industrial"],
-        publicTags: ["desinfectante", "industrial"],
-        code: "DES-20L-001",
-        supplierCode: "MS-DES-20L-001",
-        supplierUrl: "https://mayoristasur.example.com/desinfectante-20l",
-        images: [
-          "https://dummyimage.com/600x400/0a0/ffffff&text=Desinfectante+20L",
-        ],
-        currency: "ARS",
-        price: 15000,
-        priceUnit: "BIDON_20L",
-        supplierMoq: 10,
-        supplierUnit: "BIDON_20L",
-        customerMoq: 1,
-        customerUnit: "BIDON_20L",
-        publicPrice: 18000,
-        publicPriceUnit: "BIDON_20L",
-        minFractionPerUser: 1,
-        brandId: brandGeneric.id,
-        categoryId: categoryCleaning.id,
-        supplierId: supplier1.id,
+        name: "Bebidas",
+        tags: ["bebidas", "gaseosas", "jugos"],
+        description: "Bebidas varias en formato mayorista",
       },
     }),
-    // Beverage products from Mayorista Sur
-    prisma.product.create({
+    prisma.category.create({
       data: {
-        name: "Gaseosa cola x2.25L (pack x6)",
-        description: "Pack mayorista de 6 botellas de 2.25L de cola.",
-        searchTags: ["gaseosa", "cola", "bebidas"],
-        publicTags: ["pack", "gaseosa"],
-        code: "COLA-2.25-006",
-        supplierCode: "MS-COLA-2.25-006",
-        supplierUrl: "https://mayoristasur.example.com/cola-pack",
-        images: ["https://dummyimage.com/600x400/a00/ffffff&text=Cola+Pack+6"],
-        currency: "ARS",
-        price: 7200,
-        priceUnit: "PACK_6",
-        supplierMoq: 10,
-        supplierUnit: "PACK_6",
-        customerMoq: 1,
-        customerUnit: "PACK_6",
-        publicPrice: 8600,
-        publicPriceUnit: "PACK_6",
-        minFractionPerUser: 1,
-        brandId: brandSpark.id,
-        categoryId: categoryBeverages.id,
-        supplierId: supplier1.id,
+        name: "Frescos",
+        tags: ["frescos", "verduras", "frutas", "carnes"],
+        description: "Productos frescos refrigerados",
       },
     }),
-    prisma.product.create({
+    prisma.category.create({
       data: {
-        name: "Agua mineral x500ml (pack x24)",
-        description: "Caja con 24 botellas de agua mineral sin gas.",
-        searchTags: ["agua", "mineral", "bebidas"],
-        publicTags: ["agua", "pack"],
-        code: "AGUA-500-024",
-        supplierCode: "MS-AGUA-500-024",
-        supplierUrl: "https://mayoristasur.example.com/agua-pack",
-        images: ["https://dummyimage.com/600x400/00f/ffffff&text=Agua+24+Pack"],
-        currency: "ARS",
-        price: 6500,
-        priceUnit: "CAJA_24",
-        supplierMoq: 15,
-        supplierUnit: "CAJA_24",
-        customerMoq: 1,
-        customerUnit: "CAJA_24",
-        publicPrice: 7800,
-        publicPriceUnit: "CAJA_24",
-        minFractionPerUser: 1,
-        brandId: brandGeneric.id,
-        categoryId: categoryBeverages.id,
-        supplierId: supplier1.id,
+        name: "Lácteos",
+        tags: ["lácteos", "leche", "quesos", "yogurt"],
+        description: "Productos lácteos refrigerados",
       },
     }),
-    // Fresh products from Fresh Valley Farms
-    prisma.product.create({
+    prisma.category.create({
       data: {
-        name: "Mix verduras estacionales x10kg",
-        description:
-          "Caja de verduras orgánicas de estación. Variedad según disponibilidad.",
-        searchTags: ["verduras", "orgánico", "fresh"],
-        publicTags: ["orgánico", "verduras"],
-        code: "VERD-MIX-010",
-        supplierCode: "FV-VERD-MIX-010",
-        supplierUrl: "https://freshvalley.example.com/verduras-mix",
-        images: ["https://dummyimage.com/600x400/0a0/ffffff&text=Verduras+Mix"],
-        currency: "ARS",
-        price: 12000,
-        priceUnit: "CAJA_10KG",
-        supplierMoq: 8,
-        supplierUnit: "CAJA_10KG",
-        customerMoq: 1,
-        customerUnit: "CAJA_10KG",
-        publicPrice: 15000,
-        publicPriceUnit: "CAJA_10KG",
-        minFractionPerUser: 1,
-        brandId: brandFreshValley.id,
-        categoryId: categoryFresh.id,
-        supplierId: supplier2.id,
+        name: "Despensa",
+        tags: ["despensa", "almacén", "secos"],
+        description: "Almacén seco y básicos de cocina",
       },
     }),
-    prisma.product.create({
+    prisma.category.create({
       data: {
-        name: "Frutas cítricas x15kg",
-        description:
-          "Caja con naranjas, mandarinas y limones. Origen: Tucumán.",
-        searchTags: ["frutas", "cítricos", "naranjas", "limones"],
-        publicTags: ["frutas", "cítricos"],
-        code: "FRUT-CIT-015",
-        supplierCode: "FV-FRUT-CIT-015",
-        supplierUrl: "https://freshvalley.example.com/citricos",
-        images: ["https://dummyimage.com/600x400/fa0/ffffff&text=Citricos"],
-        currency: "ARS",
-        price: 18000,
-        priceUnit: "CAJA_15KG",
-        supplierMoq: 6,
-        supplierUnit: "CAJA_15KG",
-        customerMoq: 1,
-        customerUnit: "CAJA_15KG",
-        publicPrice: 22000,
-        publicPriceUnit: "CAJA_15KG",
-        minFractionPerUser: 1,
-        brandId: brandFreshValley.id,
-        categoryId: categoryFresh.id,
-        supplierId: supplier2.id,
+        name: "Snacks",
+        tags: ["snacks", "golosinas", "merienda"],
+        description: "Snacks y golosinas para consumo masivo",
       },
     }),
-    // Dairy products from Fresh Valley Farms
-    prisma.product.create({
+    prisma.category.create({
       data: {
-        name: "Leche entera x12L (pack x12 de 1L)",
-        description: "Pack de 12 litros de leche entera pasteurizada.",
-        searchTags: ["leche", "lácteos", "entera"],
-        publicTags: ["leche", "pack"],
-        code: "LECH-ENT-012",
-        supplierCode: "FV-LECH-ENT-012",
-        supplierUrl: "https://freshvalley.example.com/leche",
-        images: ["https://dummyimage.com/600x400/fff/000&text=Leche+Pack"],
-        currency: "ARS",
-        price: 9600,
-        priceUnit: "PACK_12L",
-        supplierMoq: 12,
-        supplierUnit: "PACK_12L",
-        customerMoq: 1,
-        customerUnit: "PACK_12L",
-        publicPrice: 11500,
-        publicPriceUnit: "PACK_12L",
-        minFractionPerUser: 1,
-        brandId: brandDairyPremium.id,
-        categoryId: categoryDairy.id,
-        supplierId: supplier2.id,
+        name: "Cuidado personal",
+        tags: ["higiene", "baño", "perfumería"],
+        description: "Artículos de cuidado y perfumería",
       },
     }),
-    prisma.product.create({
+    prisma.category.create({
       data: {
-        name: "Queso mozzarella x5kg (barra)",
-        description: "Barra de queso mozzarella para pizzería.",
-        searchTags: ["queso", "mozzarella", "lácteos"],
-        publicTags: ["queso", "mozzarella"],
-        code: "QUES-MOZ-005",
-        supplierCode: "FV-QUES-MOZ-005",
-        supplierUrl: "https://freshvalley.example.com/queso-mozzarella",
-        images: ["https://dummyimage.com/600x400/ff0/000&text=Mozzarella"],
-        currency: "ARS",
-        price: 25000,
-        priceUnit: "BARRA_5KG",
-        supplierMoq: 4,
-        supplierUnit: "BARRA_5KG",
-        customerMoq: 1,
-        customerUnit: "BARRA_5KG",
-        publicPrice: 30000,
-        publicPriceUnit: "BARRA_5KG",
-        minFractionPerUser: 1,
-        brandId: brandDairyPremium.id,
-        categoryId: categoryDairy.id,
-        supplierId: supplier2.id,
+        name: "Congelados",
+        tags: ["frio", "freezer", "congelados"],
+        description: "Productos congelados listos para consumo",
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: "Mascotas",
+        tags: ["perros", "gatos", "alimento"],
+        description: "Productos y alimentos para mascotas",
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: "Hogar y cocina",
+        tags: ["hogar", "cocina", "utiles"],
+        description: "Accesorios y descartables de cocina",
       },
     }),
   ]);
 
-  // 10) Multiple carts with different statuses demonstrating full workflow
+  logStep("Creating brands");
+  const [
+    brandGeneric,
+    brandSpark,
+    brandFreshValley,
+    brandDairyPremium,
+    brandAndesPantry,
+    brandPatagoniaSnacks,
+    brandCarePlus,
+    brandFrost,
+    brandPetCare,
+    brandCasaPro,
+  ] = await Promise.all([
+    prisma.brand.create({
+      data: {
+        name: "Genérico Mayorista",
+        description: "Marca blanca para productos de limpieza",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "Spark Cola",
+        description: "Marca de gaseosas cola",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "Fresh Valley",
+        description: "Marca de productos frescos orgánicos",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "Dairy Premium",
+        description: "Lácteos premium",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "Andes Pantry",
+        description: "Productos secos patagónicos",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "Patagonia Snacks",
+        description: "Snacks regionales",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "CarePlus",
+        description: "Cuidado personal diario",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "Frost Bite",
+        description: "Congelados listos para usar",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "PetCare",
+        description: "Alimentos para mascotas de calidad",
+      },
+    }),
+    prisma.brand.create({
+      data: {
+        name: "CasaPro",
+        description: "Accesorios y descartables de hogar",
+      },
+    }),
+  ]);
 
-  // Cart 1: COMPLETED (buyer1) - Full flow completed
+  // 9) Products (units aligned to Unit enum)
+  logStep("Creating products");
+  const productInputs = {
+    detergent5l: productTemplate({
+      name: "Detergente concentrado 5L",
+      description:
+        "Detergente líquido concentrado para uso general, bidón 5L.",
+      searchTags: ["detergente", "limpieza", "cocina"],
+      publicTags: ["detergente", "concentrado"],
+      code: "DET-005-UNIT",
+      supplierCode: "MS-DET-005",
+      supplierUrl: "https://mayoristasur.example.com/detergente-5l",
+      images: ["https://dummyimage.com/600x400/00a/ffffff&text=Detergente+5L"],
+      price: 4500,
+      priceUnit: Unit.UNIT,
+      supplierMoqQty: 4,
+      supplierMoqQtyUnit: Unit.UNIT,
+      supplierMultiplierUnit: Unit.UNIT,
+      customerMoq: 1,
+      customerUnit: Unit.UNIT,
+      publicPrice: 5200,
+      publicPriceUnit: Unit.UNIT,
+      minFractionPerUser: 1,
+      brandId: brandGeneric.id,
+      categoryId: categoryCleaning.id,
+      supplierId: supplier1.id,
+    }),
+    desinfectante20l: productTemplate({
+      name: "Desinfectante multiusos 20L",
+      description: "Desinfectante industrial en bidón de 20 litros.",
+      searchTags: ["desinfectante", "limpieza", "industrial"],
+      publicTags: ["desinfectante", "industrial"],
+      code: "DES-020-UNIT",
+      supplierCode: "MS-DES-020",
+      supplierUrl: "https://mayoristasur.example.com/desinfectante-20l",
+      images: ["https://dummyimage.com/600x400/0a0/ffffff&text=Desinfectante"],
+      price: 15000,
+      priceUnit: Unit.UNIT,
+      supplierMoqQty: 2,
+      supplierMoqQtyUnit: Unit.UNIT,
+      supplierMultiplierUnit: Unit.UNIT,
+      customerMoq: 1,
+      customerUnit: Unit.UNIT,
+      publicPrice: 18000,
+      publicPriceUnit: Unit.UNIT,
+      brandId: brandGeneric.id,
+      categoryId: categoryCleaning.id,
+      supplierId: supplier1.id,
+    }),
+    colaPack6: productTemplate({
+      name: "Gaseosa cola pack x6",
+      description: "Pack mayorista de 6 botellas de 2.25L de cola.",
+      searchTags: ["gaseosa", "cola", "bebidas"],
+      publicTags: ["pack", "gaseosa"],
+      code: "COLA-PACK-006",
+      supplierCode: "MS-COLA-006",
+      supplierUrl: "https://mayoristasur.example.com/cola-pack",
+      images: ["https://dummyimage.com/600x400/a00/ffffff&text=Cola+Pack+6"],
+      price: 7200,
+      priceUnit: Unit.PACK,
+      priceUnitMultiplier: 6,
+      supplierMoqQty: 5,
+      supplierMoqQtyUnit: Unit.PACK,
+      supplierMultiplierUnit: Unit.PACK,
+      customerMoq: 1,
+      customerUnit: Unit.PACK,
+      publicPrice: 8600,
+      publicPriceUnit: Unit.PACK,
+      publicPriceMultiplier: 6,
+      brandId: brandSpark.id,
+      categoryId: categoryBeverages.id,
+      supplierId: supplier1.id,
+    }),
+    aguaCaja24: productTemplate({
+      name: "Agua mineral x500ml (caja x24)",
+      description: "Caja con 24 botellas de agua mineral sin gas.",
+      searchTags: ["agua", "mineral", "bebidas"],
+      publicTags: ["agua", "pack"],
+      code: "AGUA-BOX-024",
+      supplierCode: "MS-AGUA-024",
+      supplierUrl: "https://mayoristasur.example.com/agua-pack",
+      images: ["https://dummyimage.com/600x400/00f/ffffff&text=Agua+24+Pack"],
+      price: 6500,
+      priceUnit: Unit.BOX,
+      priceUnitMultiplier: 24,
+      supplierMoqQty: 3,
+      supplierMoqQtyUnit: Unit.BOX,
+      supplierMultiplierUnit: Unit.BOX,
+      customerMoq: 1,
+      customerUnit: Unit.BOX,
+      publicPrice: 7800,
+      publicPriceUnit: Unit.BOX,
+      publicPriceMultiplier: 24,
+      brandId: brandGeneric.id,
+      categoryId: categoryBeverages.id,
+      supplierId: supplier1.id,
+    }),
+    mixVerduras10kg: productTemplate({
+      name: "Mix verduras estacionales 10kg",
+      description:
+        "Caja de verduras orgánicas de estación. Variedad según disponibilidad.",
+      searchTags: ["verduras", "orgánico", "fresh"],
+      publicTags: ["orgánico", "verduras"],
+      code: "VERD-MIX-010",
+      supplierCode: "FV-VERD-MIX-010",
+      supplierUrl: "https://freshvalley.example.com/verduras-mix",
+      images: ["https://dummyimage.com/600x400/0a0/ffffff&text=Verduras+Mix"],
+      price: 12000,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 10,
+      supplierMoqQty: 10,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 5,
+      customerUnit: Unit.KG,
+      publicPrice: 15000,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 10,
+      brandId: brandFreshValley.id,
+      categoryId: categoryFresh.id,
+      supplierId: supplier2.id,
+    }),
+    citrus15kg: productTemplate({
+      name: "Frutas cítricas 15kg",
+      description:
+        "Caja con naranjas, mandarinas y limones. Origen: Tucumán.",
+      searchTags: ["frutas", "cítricos", "naranjas", "limones"],
+      publicTags: ["frutas", "cítricos"],
+      code: "FRUT-CIT-015",
+      supplierCode: "FV-FRUT-CIT-015",
+      supplierUrl: "https://freshvalley.example.com/citricos",
+      images: ["https://dummyimage.com/600x400/fa0/ffffff&text=Citricos"],
+      price: 18000,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 15,
+      supplierMoqQty: 15,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 5,
+      customerUnit: Unit.KG,
+      publicPrice: 22000,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 15,
+      brandId: brandFreshValley.id,
+      categoryId: categoryFresh.id,
+      supplierId: supplier2.id,
+    }),
+    lechePack12l: productTemplate({
+      name: "Leche entera pack x12",
+      description: "Pack de 12 litros de leche entera pasteurizada.",
+      searchTags: ["leche", "lácteos", "entera"],
+      publicTags: ["leche", "pack"],
+      code: "LECH-ENT-012",
+      supplierCode: "FV-LECH-ENT-012",
+      supplierUrl: "https://freshvalley.example.com/leche",
+      images: ["https://dummyimage.com/600x400/fff/000&text=Leche+Pack"],
+      price: 9600,
+      priceUnit: Unit.PACK,
+      priceUnitMultiplier: 12,
+      supplierMoqQty: 2,
+      supplierMoqQtyUnit: Unit.PACK,
+      supplierMultiplierUnit: Unit.PACK,
+      customerMoq: 1,
+      customerUnit: Unit.PACK,
+      publicPrice: 11500,
+      publicPriceUnit: Unit.PACK,
+      publicPriceMultiplier: 12,
+      brandId: brandDairyPremium.id,
+      categoryId: categoryDairy.id,
+      supplierId: supplier2.id,
+    }),
+    mozzarella5kg: productTemplate({
+      name: "Queso mozzarella barra 5kg",
+      description: "Barra de queso mozzarella para pizzería.",
+      searchTags: ["queso", "mozzarella", "lácteos"],
+      publicTags: ["queso", "mozzarella"],
+      code: "QUES-MOZ-005",
+      supplierCode: "FV-QUES-MOZ-005",
+      supplierUrl: "https://freshvalley.example.com/queso-mozzarella",
+      images: ["https://dummyimage.com/600x400/ff0/000&text=Mozzarella"],
+      price: 25000,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 5,
+      supplierMoqQty: 2,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 2.5,
+      customerUnit: Unit.KG,
+      publicPrice: 30000,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 5,
+      brandId: brandDairyPremium.id,
+      categoryId: categoryDairy.id,
+      supplierId: supplier2.id,
+    }),
+    yogurtGriegoPack: productTemplate({
+      name: "Yogurt griego natural pack x8",
+      description: "Pack de 8 unidades de yogurt griego descremado.",
+      searchTags: ["yogurt", "griego", "pack"],
+      publicTags: ["yogurt", "griego"],
+      code: "YOG-GRIEGO-008",
+      supplierCode: "FV-YOG-GRIEGO-008",
+      supplierUrl: "https://freshvalley.example.com/yogurt-griego",
+      images: ["https://dummyimage.com/600x400/dff/000&text=Yogurt+Griego"],
+      price: 14000,
+      priceUnit: Unit.PACK,
+      priceUnitMultiplier: 8,
+      supplierMoqQty: 3,
+      supplierMoqQtyUnit: Unit.PACK,
+      supplierMultiplierUnit: Unit.PACK,
+      customerMoq: 1,
+      customerUnit: Unit.PACK,
+      publicPrice: 16500,
+      publicPriceUnit: Unit.PACK,
+      publicPriceMultiplier: 8,
+      brandId: brandDairyPremium.id,
+      categoryId: categoryDairy.id,
+      supplierId: supplier2.id,
+    }),
+    mantecaCaja: productTemplate({
+      name: "Manteca 200g caja x20",
+      description: "Caja cerrada con 20 unidades de manteca 200g.",
+      searchTags: ["manteca", "lácteos", "caja"],
+      publicTags: ["manteca", "caja"],
+      code: "MANT-BOX-020",
+      supplierCode: "FV-MANT-020",
+      images: ["https://dummyimage.com/600x400/f8e/000&text=Manteca+20"],
+      price: 11000,
+      priceUnit: Unit.BOX,
+      priceUnitMultiplier: 20,
+      supplierMoqQty: 2,
+      supplierMoqQtyUnit: Unit.BOX,
+      supplierMultiplierUnit: Unit.BOX,
+      customerMoq: 1,
+      customerUnit: Unit.BOX,
+      publicPrice: 13200,
+      publicPriceUnit: Unit.BOX,
+      publicPriceMultiplier: 20,
+      brandId: brandDairyPremium.id,
+      categoryId: categoryDairy.id,
+      supplierId: supplier2.id,
+    }),
+    arroz10kg: productTemplate({
+      name: "Arroz largo fino 10kg",
+      description: "Bolsa de arroz largo fino premium de 10kg.",
+      searchTags: ["arroz", "despensa", "grano"],
+      publicTags: ["arroz", "bolsa"],
+      code: "ARR-010-KG",
+      supplierCode: "MS-ARR-010",
+      images: ["https://dummyimage.com/600x400/efe/000&text=Arroz+10kg"],
+      price: 7800,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 10,
+      supplierMoqQty: 10,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 5,
+      customerUnit: Unit.KG,
+      publicPrice: 9200,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 10,
+      brandId: brandAndesPantry.id,
+      categoryId: categoryPantry.id,
+      supplierId: supplier1.id,
+    }),
+    harina25kg: productTemplate({
+      name: "Harina 000 bolsa 25kg",
+      description: "Bolsa industrial de harina 000 para panificación.",
+      searchTags: ["harina", "pan", "despensa"],
+      publicTags: ["harina", "industrial"],
+      code: "HAR-025-KG",
+      supplierCode: "MS-HAR-025",
+      images: ["https://dummyimage.com/600x400/ddd/000&text=Harina+25kg"],
+      price: 12500,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 25,
+      supplierMoqQty: 25,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 12.5,
+      customerUnit: Unit.KG,
+      publicPrice: 14900,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 25,
+      brandId: brandAndesPantry.id,
+      categoryId: categoryPantry.id,
+      supplierId: supplier1.id,
+    }),
+    aceite15lPack: productTemplate({
+      name: "Aceite de girasol 1.5L pack x12",
+      description: "Pack de 12 botellas PET de aceite de girasol 1.5L.",
+      searchTags: ["aceite", "girasol", "despensa"],
+      publicTags: ["aceite", "pack"],
+      code: "ACE-1.5L-012",
+      supplierCode: "MS-ACE-012",
+      images: ["https://dummyimage.com/600x400/fc0/000&text=Aceite+1.5L"],
+      price: 26000,
+      priceUnit: Unit.PACK,
+      priceUnitMultiplier: 12,
+      supplierMoqQty: 2,
+      supplierMoqQtyUnit: Unit.PACK,
+      supplierMultiplierUnit: Unit.PACK,
+      customerMoq: 1,
+      customerUnit: Unit.PACK,
+      publicPrice: 30500,
+      publicPriceUnit: Unit.PACK,
+      publicPriceMultiplier: 12,
+      brandId: brandAndesPantry.id,
+      categoryId: categoryPantry.id,
+      supplierId: supplier1.id,
+    }),
+    papasFritas24: productTemplate({
+      name: "Papas fritas sabor queso pack x24",
+      description: "Caja con 24 paquetes de papas fritas sabor queso.",
+      searchTags: ["papas", "snacks", "queso"],
+      publicTags: ["snack", "caja"],
+      code: "PAP-QUESO-024",
+      supplierCode: "MS-PAP-024",
+      images: ["https://dummyimage.com/600x400/f90/fff&text=Papas+24"],
+      price: 19000,
+      priceUnit: Unit.BOX,
+      priceUnitMultiplier: 24,
+      supplierMoqQty: 1,
+      supplierMoqQtyUnit: Unit.BOX,
+      supplierMultiplierUnit: Unit.BOX,
+      customerMoq: 1,
+      customerUnit: Unit.BOX,
+      publicPrice: 22500,
+      publicPriceUnit: Unit.BOX,
+      publicPriceMultiplier: 24,
+      brandId: brandPatagoniaSnacks.id,
+      categoryId: categorySnacks.id,
+      supplierId: supplier1.id,
+    }),
+    galletitasIntegrales: productTemplate({
+      name: "Galletitas integrales surtidas caja x12",
+      description: "Caja cerrada de 12 paquetes de galletitas integrales.",
+      searchTags: ["galletitas", "snack", "integral"],
+      publicTags: ["integral", "caja"],
+      code: "GAL-INT-012",
+      supplierCode: "MS-GAL-012",
+      images: ["https://dummyimage.com/600x400/c90/fff&text=Galletitas"],
+      price: 15000,
+      priceUnit: Unit.BOX,
+      priceUnitMultiplier: 12,
+      supplierMoqQty: 1,
+      supplierMoqQtyUnit: Unit.BOX,
+      supplierMultiplierUnit: Unit.BOX,
+      customerMoq: 1,
+      customerUnit: Unit.BOX,
+      publicPrice: 17800,
+      publicPriceUnit: Unit.BOX,
+      publicPriceMultiplier: 12,
+      brandId: brandPatagoniaSnacks.id,
+      categoryId: categorySnacks.id,
+      supplierId: supplier1.id,
+    }),
+    shampooHidratante: productTemplate({
+      name: "Shampoo hidratante 750ml pack x6",
+      description: "Pack de 6 botellas de shampoo hidratante de 750ml.",
+      searchTags: ["shampoo", "cuidado", "cabello"],
+      publicTags: ["shampoo", "pack"],
+      code: "SHA-HID-006",
+      supplierCode: "MS-SHA-006",
+      images: ["https://dummyimage.com/600x400/9cf/000&text=Shampoo"],
+      price: 13500,
+      priceUnit: Unit.PACK,
+      priceUnitMultiplier: 6,
+      supplierMoqQty: 2,
+      supplierMoqQtyUnit: Unit.PACK,
+      supplierMultiplierUnit: Unit.PACK,
+      customerMoq: 1,
+      customerUnit: Unit.PACK,
+      publicPrice: 16000,
+      publicPriceUnit: Unit.PACK,
+      publicPriceMultiplier: 6,
+      brandId: brandCarePlus.id,
+      categoryId: categoryPersonalCare.id,
+      supplierId: supplier1.id,
+    }),
+    jabonLiquido5l: productTemplate({
+      name: "Jabón líquido para manos 5L",
+      description: "Bidón de jabón líquido antibacterial de 5L.",
+      searchTags: ["jabón", "higiene", "manos"],
+      publicTags: ["jabón", "antibacterial"],
+      code: "JAB-LIQ-005",
+      supplierCode: "MS-JAB-005",
+      images: ["https://dummyimage.com/600x400/39f/fff&text=Jabon+5L"],
+      price: 7200,
+      priceUnit: Unit.UNIT,
+      supplierMoqQty: 3,
+      supplierMoqQtyUnit: Unit.UNIT,
+      supplierMultiplierUnit: Unit.UNIT,
+      customerMoq: 1,
+      customerUnit: Unit.UNIT,
+      publicPrice: 8800,
+      publicPriceUnit: Unit.UNIT,
+      brandId: brandCarePlus.id,
+      categoryId: categoryPersonalCare.id,
+      supplierId: supplier1.id,
+    }),
+    alimentoPerro20kg: productTemplate({
+      name: "Alimento premium perro 20kg",
+      description: "Alimento balanceado premium para perros adultos.",
+      searchTags: ["perro", "mascotas", "alimento"],
+      publicTags: ["mascotas", "perro"],
+      code: "DOG-FOOD-020",
+      supplierCode: "MS-DOG-020",
+      images: ["https://dummyimage.com/600x400/aaf/000&text=Perro+20kg"],
+      price: 23000,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 20,
+      supplierMoqQty: 20,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 10,
+      customerUnit: Unit.KG,
+      publicPrice: 26500,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 20,
+      brandId: brandPetCare.id,
+      categoryId: categoryPets.id,
+      supplierId: supplier1.id,
+    }),
+    alimentoGato10kg: productTemplate({
+      name: "Alimento gato 10kg",
+      description: "Alimento para gatos adultos sabor pollo.",
+      searchTags: ["gato", "mascotas", "alimento"],
+      publicTags: ["mascotas", "gato"],
+      code: "CAT-FOOD-010",
+      supplierCode: "MS-CAT-010",
+      images: ["https://dummyimage.com/600x400/ccf/000&text=Gato+10kg"],
+      price: 14500,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 10,
+      supplierMoqQty: 10,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 5,
+      customerUnit: Unit.KG,
+      publicPrice: 17200,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 10,
+      brandId: brandPetCare.id,
+      categoryId: categoryPets.id,
+      supplierId: supplier1.id,
+    }),
+    vegetalesCongelados5kg: productTemplate({
+      name: "Mix vegetales congelados 5kg",
+      description: "Bolsa de vegetales congelados listos para cocinar.",
+      searchTags: ["congelados", "vegetales", "freezer"],
+      publicTags: ["congelados", "mix"],
+      code: "CONG-VEG-005",
+      supplierCode: "FV-CONG-VEG-005",
+      images: ["https://dummyimage.com/600x400/0cf/000&text=Veg+Cong"],
+      price: 12500,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 5,
+      supplierMoqQty: 2.5,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 2.5,
+      customerUnit: Unit.KG,
+      publicPrice: 15000,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 5,
+      brandId: brandFrost.id,
+      categoryId: categoryFrozen.id,
+      supplierId: supplier2.id,
+    }),
+    pizzaCongeladaCaja12: productTemplate({
+      name: "Pizza congelada muzzarella caja x12",
+      description: "Caja con 12 pizzas congeladas listas para hornear.",
+      searchTags: ["pizza", "congelados", "hornear"],
+      publicTags: ["pizza", "caja"],
+      code: "PIZ-CON-012",
+      supplierCode: "FV-PIZ-012",
+      images: ["https://dummyimage.com/600x400/0af/fff&text=Pizza+12"],
+      price: 28000,
+      priceUnit: Unit.BOX,
+      priceUnitMultiplier: 12,
+      supplierMoqQty: 1,
+      supplierMoqQtyUnit: Unit.BOX,
+      supplierMultiplierUnit: Unit.BOX,
+      customerMoq: 1,
+      customerUnit: Unit.BOX,
+      publicPrice: 32000,
+      publicPriceUnit: Unit.BOX,
+      publicPriceMultiplier: 12,
+      brandId: brandFrost.id,
+      categoryId: categoryFrozen.id,
+      supplierId: supplier2.id,
+    }),
+    esponjasMultiuso20: productTemplate({
+      name: "Esponjas multiuso pack x20",
+      description: "Pack industrial de esponjas multiuso.",
+      searchTags: ["esponja", "limpieza", "hogar"],
+      publicTags: ["pack", "limpieza"],
+      code: "ESP-MULTI-020",
+      supplierCode: "MS-ESP-020",
+      images: ["https://dummyimage.com/600x400/cc0/fff&text=Esponjas"],
+      price: 4200,
+      priceUnit: Unit.PACK,
+      priceUnitMultiplier: 20,
+      supplierMoqQty: 2,
+      supplierMoqQtyUnit: Unit.PACK,
+      supplierMultiplierUnit: Unit.PACK,
+      customerMoq: 1,
+      customerUnit: Unit.PACK,
+      publicPrice: 5200,
+      publicPriceUnit: Unit.PACK,
+      publicPriceMultiplier: 20,
+      brandId: brandCasaPro.id,
+      categoryId: categoryHome.id,
+      supplierId: supplier1.id,
+    }),
+    filmPlasticoRollo: productTemplate({
+      name: "Film plástico industrial 45cm",
+      description: "Rollo de film plástico para cocina industrial.",
+      searchTags: ["film", "cocina", "descartable"],
+      publicTags: ["film", "cocina"],
+      code: "FILM-045-ROL",
+      supplierCode: "MS-FILM-045",
+      images: ["https://dummyimage.com/600x400/ccc/000&text=Film"],
+      price: 3800,
+      priceUnit: Unit.UNIT,
+      supplierMoqQty: 5,
+      supplierMoqQtyUnit: Unit.UNIT,
+      supplierMultiplierUnit: Unit.UNIT,
+      customerMoq: 1,
+      customerUnit: Unit.UNIT,
+      publicPrice: 4500,
+      publicPriceUnit: Unit.UNIT,
+      brandId: brandCasaPro.id,
+      categoryId: categoryHome.id,
+      supplierId: supplier1.id,
+    }),
+    cafeGrano5kg: productTemplate({
+      name: "Café en grano 5kg",
+      description: "Café en grano tostado para cafeterías.",
+      searchTags: ["cafe", "despensa", "grano"],
+      publicTags: ["cafe", "grano"],
+      code: "CAF-GRAN-005",
+      supplierCode: "MS-CAF-005",
+      images: ["https://dummyimage.com/600x400/6a4/fff&text=Cafe+5kg"],
+      price: 17500,
+      priceUnit: Unit.KG,
+      priceUnitMultiplier: 5,
+      supplierMoqQty: 5,
+      supplierMoqQtyUnit: Unit.KG,
+      supplierMultiplierUnit: Unit.KG,
+      customerMoq: 2.5,
+      customerUnit: Unit.KG,
+      publicPrice: 20500,
+      publicPriceUnit: Unit.KG,
+      publicPriceMultiplier: 5,
+      brandId: brandAndesPantry.id,
+      categoryId: categoryPantry.id,
+      supplierId: supplier1.id,
+    }),
+    heladoPaletaPack20: productTemplate({
+      name: "Paletas heladas pack x20",
+      description: "Pack de 20 paletas heladas surtidas.",
+      searchTags: ["helado", "paleta", "congelados"],
+      publicTags: ["helado", "pack"],
+      code: "HEL-PALE-020",
+      supplierCode: "FV-HEL-020",
+      images: ["https://dummyimage.com/600x400/08a/fff&text=Helado+20"],
+      price: 32000,
+      priceUnit: Unit.PACK,
+      priceUnitMultiplier: 20,
+      supplierMoqQty: 1,
+      supplierMoqQtyUnit: Unit.PACK,
+      supplierMultiplierUnit: Unit.PACK,
+      customerMoq: 1,
+      customerUnit: Unit.PACK,
+      publicPrice: 37000,
+      publicPriceUnit: Unit.PACK,
+      publicPriceMultiplier: 20,
+      brandId: brandFrost.id,
+      categoryId: categoryFrozen.id,
+      supplierId: supplier2.id,
+    }),
+  };
+
+  const productEntries = await Promise.all(
+    Object.entries(productInputs).map(async ([key, data]) => {
+      const product = await prisma.product.create({ data });
+      return [key, product] as const;
+    }),
+  );
+  type SeedProduct = Awaited<ReturnType<typeof prisma.product.create>>;
+  const products = Object.fromEntries(productEntries) as Record<
+    keyof typeof productInputs,
+    SeedProduct
+  >;
+
+  // 10) Saved payment cards
+  logStep("Creating saved payment cards");
+  await prisma.savedPaymentCard.createMany({
+    data: [
+      {
+        cardholderName: "Juan Pérez",
+        cardLast4: "4242",
+        expiryMonth: 12,
+        expiryYear: 2026,
+        cardBrand: "Visa",
+        isDefault: true,
+        isActive: true,
+        userId: buyer1.id,
+      },
+      {
+        cardholderName: "Juan Pérez",
+        cardLast4: "1881",
+        expiryMonth: 3,
+        expiryYear: 2025,
+        cardBrand: "Mastercard",
+        isDefault: false,
+        isActive: true,
+        userId: buyer1.id,
+      },
+      {
+        cardholderName: "María González",
+        cardLast4: "3782",
+        expiryMonth: 7,
+        expiryYear: 2027,
+        cardBrand: "Amex",
+        isDefault: true,
+        isActive: true,
+        userId: buyer2.id,
+      },
+      {
+        cardholderName: "Carlos Rodríguez",
+        cardLast4: "9995",
+        expiryMonth: 1,
+        expiryYear: 2026,
+        cardBrand: "Visa",
+        isDefault: true,
+        isActive: false,
+        userId: buyer3.id,
+      },
+      {
+        cardholderName: "Admin User",
+        cardLast4: "5100",
+        expiryMonth: 10,
+        expiryYear: 2028,
+        cardBrand: "Mastercard",
+        isDefault: true,
+        isActive: true,
+        userId: adminUser.id,
+      },
+      {
+        cardholderName: "Flavio Gragnolati",
+        cardLast4: "4243",
+        expiryMonth: 11,
+        expiryYear: 2027,
+        cardBrand: "Visa",
+        isDefault: true,
+        isActive: true,
+        userId: devAdminUser.id,
+      },
+      {
+        cardholderName: "Flavio Gragnolati",
+        cardLast4: "1234",
+        expiryMonth: 6,
+        expiryYear: 2026,
+        cardBrand: "Amex",
+        isDefault: false,
+        isActive: false,
+        userId: devAdminUser.id,
+      },
+      {
+        cardholderName: "Coco Dev Admin",
+        cardLast4: "8888",
+        expiryMonth: 9,
+        expiryYear: 2026,
+        cardBrand: "Visa",
+        isDefault: true,
+        isActive: true,
+        userId: cocoAdminUser.id,
+      },
+      {
+        cardholderName: "Alianza Comunitaria",
+        cardLast4: "7001",
+        expiryMonth: 5,
+        expiryYear: 2025,
+        cardBrand: "Visa",
+        isDefault: false,
+        isActive: true,
+        userId: allyUser.id,
+      },
+    ],
+  });
+
+  // 11) Carts with diverse statuses
+  logStep("Creating carts and cart items");
   const cart1 = await prisma.cart.create({
     data: {
       status: CartStatus.COMPLETED,
       userId: buyer1.id,
       addressId: buyer1Address.id,
+      paidAt: new Date(now - 2 * dayMs),
       items: {
         create: [
           {
             quantity: 3,
-            unit: cleaningProduct1.customerUnit,
-            price: cleaningProduct1.price,
-            publicPrice: cleaningProduct1.publicPrice,
-            productSnapshot: JSON.stringify(cleaningProduct1),
-            product: { connect: { id: cleaningProduct1.id } },
+            unit: products.detergent5l.customerUnit,
+            price: products.detergent5l.price,
+            publicPrice: products.detergent5l.publicPrice,
+            productSnapshot: JSON.stringify(products.detergent5l),
+            product: { connect: { id: products.detergent5l.id } },
           },
           {
             quantity: 2,
-            unit: beverageProduct1.customerUnit,
-            price: beverageProduct1.price,
-            publicPrice: beverageProduct1.publicPrice,
-            productSnapshot: JSON.stringify(beverageProduct1),
-            product: { connect: { id: beverageProduct1.id } },
+            unit: products.colaPack6.customerUnit,
+            price: products.colaPack6.price,
+            publicPrice: products.colaPack6.publicPrice,
+            productSnapshot: JSON.stringify(products.colaPack6),
+            product: { connect: { id: products.colaPack6.id } },
           },
         ],
       },
@@ -794,7 +1623,6 @@ async function main() {
     include: { items: true },
   });
 
-  // Cart 2: PENDING_PAYMENT (buyer2) - Awaiting payment
   const cart2 = await prisma.cart.create({
     data: {
       status: CartStatus.PENDING_PAYMENT,
@@ -803,20 +1631,20 @@ async function main() {
       items: {
         create: [
           {
-            quantity: 5,
-            unit: freshProduct1.customerUnit,
-            price: freshProduct1.price,
-            publicPrice: freshProduct1.publicPrice,
-            productSnapshot: JSON.stringify(freshProduct1),
-            product: { connect: { id: freshProduct1.id } },
+            quantity: 1,
+            unit: products.mixVerduras10kg.customerUnit,
+            price: products.mixVerduras10kg.price,
+            publicPrice: products.mixVerduras10kg.publicPrice,
+            productSnapshot: JSON.stringify(products.mixVerduras10kg),
+            product: { connect: { id: products.mixVerduras10kg.id } },
           },
           {
             quantity: 2,
-            unit: dairyProduct1.customerUnit,
-            price: dairyProduct1.price,
-            publicPrice: dairyProduct1.publicPrice,
-            productSnapshot: JSON.stringify(dairyProduct1),
-            product: { connect: { id: dairyProduct1.id } },
+            unit: products.lechePack12l.customerUnit,
+            price: products.lechePack12l.price,
+            publicPrice: products.lechePack12l.publicPrice,
+            productSnapshot: JSON.stringify(products.lechePack12l),
+            product: { connect: { id: products.lechePack12l.id } },
           },
         ],
       },
@@ -824,7 +1652,6 @@ async function main() {
     include: { items: true },
   });
 
-  // Cart 3: DRAFT (buyer3) - Still being built
   const cart3 = await prisma.cart.create({
     data: {
       status: CartStatus.DRAFT,
@@ -834,11 +1661,19 @@ async function main() {
         create: [
           {
             quantity: 1,
-            unit: cleaningProduct2.customerUnit,
-            price: cleaningProduct2.price,
-            publicPrice: cleaningProduct2.publicPrice,
-            productSnapshot: JSON.stringify(cleaningProduct2),
-            product: { connect: { id: cleaningProduct2.id } },
+            unit: products.desinfectante20l.customerUnit,
+            price: products.desinfectante20l.price,
+            publicPrice: products.desinfectante20l.publicPrice,
+            productSnapshot: JSON.stringify(products.desinfectante20l),
+            product: { connect: { id: products.desinfectante20l.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.esponjasMultiuso20.customerUnit,
+            price: products.esponjasMultiuso20.price,
+            publicPrice: products.esponjasMultiuso20.publicPrice,
+            productSnapshot: JSON.stringify(products.esponjasMultiuso20),
+            product: { connect: { id: products.esponjasMultiuso20.id } },
           },
         ],
       },
@@ -846,29 +1681,29 @@ async function main() {
     include: { items: true },
   });
 
-  // Cart 4: COMPLETED (buyer1) - Another cart from different supplier
   const cart4 = await prisma.cart.create({
     data: {
       status: CartStatus.COMPLETED,
       userId: buyer1.id,
-      addressId: buyer1Address.id,
+      addressId: buyer1HomeAddress.id,
+      paidAt: new Date(now - 1 * dayMs),
       items: {
         create: [
           {
             quantity: 4,
-            unit: freshProduct2.customerUnit,
-            price: freshProduct2.price,
-            publicPrice: freshProduct2.publicPrice,
-            productSnapshot: JSON.stringify(freshProduct2),
-            product: { connect: { id: freshProduct2.id } },
+            unit: products.citrus15kg.customerUnit,
+            price: products.citrus15kg.price,
+            publicPrice: products.citrus15kg.publicPrice,
+            productSnapshot: JSON.stringify(products.citrus15kg),
+            product: { connect: { id: products.citrus15kg.id } },
           },
           {
             quantity: 2,
-            unit: dairyProduct2.customerUnit,
-            price: dairyProduct2.price,
-            publicPrice: dairyProduct2.publicPrice,
-            productSnapshot: JSON.stringify(dairyProduct2),
-            product: { connect: { id: dairyProduct2.id } },
+            unit: products.mozzarella5kg.customerUnit,
+            price: products.mozzarella5kg.price,
+            publicPrice: products.mozzarella5kg.publicPrice,
+            productSnapshot: JSON.stringify(products.mozzarella5kg),
+            product: { connect: { id: products.mozzarella5kg.id } },
           },
         ],
       },
@@ -876,29 +1711,86 @@ async function main() {
     include: { items: true },
   });
 
-  // Cart 5: PENDING_PAYMENT (buyer2) - Mixed products from supplier1
   const cart5 = await prisma.cart.create({
     data: {
       status: CartStatus.PENDING_PAYMENT,
+      userId: buyer2.id,
+      addressId: buyer2WorkAddress.id,
+      items: {
+        create: [
+          {
+            quantity: 2,
+            unit: products.aguaCaja24.customerUnit,
+            price: products.aguaCaja24.price,
+            publicPrice: products.aguaCaja24.publicPrice,
+            productSnapshot: JSON.stringify(products.aguaCaja24),
+            product: { connect: { id: products.aguaCaja24.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.arroz10kg.customerUnit,
+            price: products.arroz10kg.price,
+            publicPrice: products.arroz10kg.publicPrice,
+            productSnapshot: JSON.stringify(products.arroz10kg),
+            product: { connect: { id: products.arroz10kg.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  const cart6 = await prisma.cart.create({
+    data: {
+      status: CartStatus.PAYMENT_FAILED,
+      userId: buyer3.id,
+      addressId: buyer3Address.id,
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.vegetalesCongelados5kg.customerUnit,
+            price: products.vegetalesCongelados5kg.price,
+            publicPrice: products.vegetalesCongelados5kg.publicPrice,
+            productSnapshot: JSON.stringify(products.vegetalesCongelados5kg),
+            product: { connect: { id: products.vegetalesCongelados5kg.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.pizzaCongeladaCaja12.customerUnit,
+            price: products.pizzaCongeladaCaja12.price,
+            publicPrice: products.pizzaCongeladaCaja12.publicPrice,
+            productSnapshot: JSON.stringify(products.pizzaCongeladaCaja12),
+            product: { connect: { id: products.pizzaCongeladaCaja12.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  const cart7 = await prisma.cart.create({
+    data: {
+      status: CartStatus.CANCELLED_BY_USER,
       userId: buyer2.id,
       addressId: buyer2Address.id,
       items: {
         create: [
           {
-            quantity: 2,
-            unit: beverageProduct2.customerUnit,
-            price: beverageProduct2.price,
-            publicPrice: beverageProduct2.publicPrice,
-            productSnapshot: JSON.stringify(beverageProduct2),
-            product: { connect: { id: beverageProduct2.id } },
+            quantity: 1,
+            unit: products.shampooHidratante.customerUnit,
+            price: products.shampooHidratante.price,
+            publicPrice: products.shampooHidratante.publicPrice,
+            productSnapshot: JSON.stringify(products.shampooHidratante),
+            product: { connect: { id: products.shampooHidratante.id } },
           },
           {
-            quantity: 3,
-            unit: cleaningProduct1.customerUnit,
-            price: cleaningProduct1.price,
-            publicPrice: cleaningProduct1.publicPrice,
-            productSnapshot: JSON.stringify(cleaningProduct1),
-            product: { connect: { id: cleaningProduct1.id } },
+            quantity: 1,
+            unit: products.jabonLiquido5l.customerUnit,
+            price: products.jabonLiquido5l.price,
+            publicPrice: products.jabonLiquido5l.publicPrice,
+            productSnapshot: JSON.stringify(products.jabonLiquido5l),
+            product: { connect: { id: products.jabonLiquido5l.id } },
           },
         ],
       },
@@ -906,19 +1798,167 @@ async function main() {
     include: { items: true },
   });
 
-  // 11) Lots from completed carts - grouping by supplier
-  const scheduledAt1 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
-  const scheduledAt2 = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000); // 1 day ago
+  const cart8 = await prisma.cart.create({
+    data: {
+      status: CartStatus.REFUNDED,
+      userId: buyer1.id,
+      addressId: buyer1BillingAddress.id,
+      paidAt: new Date(now - 4 * dayMs),
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.alimentoPerro20kg.customerUnit,
+            price: products.alimentoPerro20kg.price,
+            publicPrice: products.alimentoPerro20kg.publicPrice,
+            productSnapshot: JSON.stringify(products.alimentoPerro20kg),
+            product: { connect: { id: products.alimentoPerro20kg.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.filmPlasticoRollo.customerUnit,
+            price: products.filmPlasticoRollo.price,
+            publicPrice: products.filmPlasticoRollo.publicPrice,
+            productSnapshot: JSON.stringify(products.filmPlasticoRollo),
+            product: { connect: { id: products.filmPlasticoRollo.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
 
-  // Lot 1: CONFIRMED_BY_PROVIDER (from cart1 - supplier1)
+  // Dev admin carts with varied payment states
+  const devAdminCartCompleted = await prisma.cart.create({
+    data: {
+      status: CartStatus.COMPLETED,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      paidAt: new Date(now - 3 * dayMs),
+      items: {
+        create: [
+          {
+            quantity: 2,
+            unit: products.cafeGrano5kg.customerUnit,
+            price: products.cafeGrano5kg.price,
+            publicPrice: products.cafeGrano5kg.publicPrice,
+            productSnapshot: JSON.stringify(products.cafeGrano5kg),
+            product: { connect: { id: products.cafeGrano5kg.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.heladoPaletaPack20.customerUnit,
+            price: products.heladoPaletaPack20.price,
+            publicPrice: products.heladoPaletaPack20.publicPrice,
+            productSnapshot: JSON.stringify(products.heladoPaletaPack20),
+            product: { connect: { id: products.heladoPaletaPack20.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  const devAdminCartPending = await prisma.cart.create({
+    data: {
+      status: CartStatus.PENDING_PAYMENT,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.aceite15lPack.customerUnit,
+            price: products.aceite15lPack.price,
+            publicPrice: products.aceite15lPack.publicPrice,
+            productSnapshot: JSON.stringify(products.aceite15lPack),
+            product: { connect: { id: products.aceite15lPack.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.jabonLiquido5l.customerUnit,
+            price: products.jabonLiquido5l.price,
+            publicPrice: products.jabonLiquido5l.publicPrice,
+            productSnapshot: JSON.stringify(products.jabonLiquido5l),
+            product: { connect: { id: products.jabonLiquido5l.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  const devAdminCartFailed = await prisma.cart.create({
+    data: {
+      status: CartStatus.PAYMENT_FAILED,
+      userId: devAdminUser.id,
+      addressId: devAdminAddress.id,
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.mantecaCaja.customerUnit,
+            price: products.mantecaCaja.price,
+            publicPrice: products.mantecaCaja.publicPrice,
+            productSnapshot: JSON.stringify(products.mantecaCaja),
+            product: { connect: { id: products.mantecaCaja.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.alimentoGato10kg.customerUnit,
+            price: products.alimentoGato10kg.price,
+            publicPrice: products.alimentoGato10kg.publicPrice,
+            productSnapshot: JSON.stringify(products.alimentoGato10kg),
+            product: { connect: { id: products.alimentoGato10kg.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  const cocoAdminCart = await prisma.cart.create({
+    data: {
+      status: CartStatus.PENDING_PAYMENT,
+      userId: cocoAdminUser.id,
+      addressId: cocoAdminAddress.id,
+      items: {
+        create: [
+          {
+            quantity: 1,
+            unit: products.citrus15kg.customerUnit,
+            price: products.citrus15kg.price,
+            publicPrice: products.citrus15kg.publicPrice,
+            productSnapshot: JSON.stringify(products.citrus15kg),
+            product: { connect: { id: products.citrus15kg.id } },
+          },
+          {
+            quantity: 1,
+            unit: products.galletitasIntegrales.customerUnit,
+            price: products.galletitasIntegrales.price,
+            publicPrice: products.galletitasIntegrales.publicPrice,
+            productSnapshot: JSON.stringify(products.galletitasIntegrales),
+            product: { connect: { id: products.galletitasIntegrales.id } },
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  // 13) Lots from carts
+  logStep("Creating lots");
+  const scheduledAt1 = new Date(now - 2 * dayMs);
+  const scheduledAt2 = new Date(now - 1 * dayMs);
+
   const lot1 = await prisma.lot.create({
     data: {
       trackingNumber: "LOT-2025-0001",
       status: LotStatus.CONFIRMED_BY_PROVIDER,
       scheduledAt: scheduledAt1,
-      consolidatedAt: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000),
-      orderSentAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      confirmedAt: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000),
+      consolidatedAt: new Date(now - 1.5 * dayMs),
+      orderSentAt: new Date(now - 1 * dayMs),
+      confirmedAt: new Date(now - 0.5 * dayMs),
       supplierId: supplier1.id,
       items: {
         connect: cart1.items.map((item) => ({ id: item.id })),
@@ -926,15 +1966,14 @@ async function main() {
     },
   });
 
-  // Lot 2: PACKAGED (from cart4 - supplier2)
   const lot2 = await prisma.lot.create({
     data: {
       trackingNumber: "LOT-2025-0002",
       status: LotStatus.PACKAGED,
       scheduledAt: scheduledAt2,
-      consolidatedAt: new Date(Date.now() - 0.8 * 24 * 60 * 60 * 1000),
-      orderSentAt: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000),
-      confirmedAt: new Date(Date.now() - 0.2 * 24 * 60 * 60 * 1000),
+      consolidatedAt: new Date(now - 0.8 * dayMs),
+      orderSentAt: new Date(now - 0.5 * dayMs),
+      confirmedAt: new Date(now - 0.2 * dayMs),
       supplierId: supplier2.id,
       items: {
         connect: cart4.items.map((item) => ({ id: item.id })),
@@ -942,13 +1981,12 @@ async function main() {
     },
   });
 
-  // Lot 3: READY_TO_ORDER (pending lots from cart2 items - supplier2)
   const lot3 = await prisma.lot.create({
     data: {
       trackingNumber: "LOT-2025-0003",
       status: LotStatus.READY_TO_ORDER,
-      scheduledAt: new Date(),
-      consolidatedAt: new Date(),
+      scheduledAt: new Date(now + dayMs),
+      consolidatedAt: new Date(now + dayMs),
       supplierId: supplier2.id,
       items: {
         connect: cart2.items.map((item) => ({ id: item.id })),
@@ -956,12 +1994,11 @@ async function main() {
     },
   });
 
-  // Lot 4: PENDING (from cart5 - supplier1)
   const lot4 = await prisma.lot.create({
     data: {
       trackingNumber: "LOT-2025-0004",
       status: LotStatus.PENDING,
-      scheduledAt: new Date(),
+      scheduledAt: new Date(now + 2 * dayMs),
       supplierId: supplier1.id,
       items: {
         connect: cart5.items.map((item) => ({ id: item.id })),
@@ -969,8 +2006,33 @@ async function main() {
     },
   });
 
-  // 12) Packages from lots
-  // Packages from lot1 (CONFIRMED) - ready for pickup
+  const lot5 = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-2025-0005",
+      status: LotStatus.ORDER_SENT,
+      scheduledAt: new Date(now - 0.5 * dayMs),
+      orderSentAt: new Date(now - 0.4 * dayMs),
+      supplierId: supplier2.id,
+      items: {
+        connect: cart6.items.map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  const lot6 = await prisma.lot.create({
+    data: {
+      trackingNumber: "LOT-2025-0006",
+      status: LotStatus.READY_TO_ORDER,
+      scheduledAt: new Date(now - dayMs),
+      supplierId: supplier1.id,
+      items: {
+        connect: cart8.items.map((item) => ({ id: item.id })),
+      },
+    },
+  });
+
+  // 14) Packages from lots
+  logStep("Creating packages");
   const pkg1 = await prisma.package.create({
     data: {
       status: PackageStatus.READY_FOR_PICKUP,
@@ -983,7 +2045,7 @@ async function main() {
 
   const pkg2 = await prisma.package.create({
     data: {
-      status: PackageStatus.READY_FOR_PICKUP,
+      status: PackageStatus.IN_TRANSIT,
       trackingId: "PKG-2025-0002",
       weight: 18.0,
       volume: 0.12,
@@ -991,10 +2053,9 @@ async function main() {
     },
   });
 
-  // Packages from lot2 (PACKAGED) - in transit
   const pkg3 = await prisma.package.create({
     data: {
-      status: PackageStatus.IN_TRANSIT,
+      status: PackageStatus.DELIVERED,
       trackingId: "PKG-2025-0003",
       weight: 45.0,
       volume: 0.25,
@@ -1004,7 +2065,7 @@ async function main() {
 
   const pkg4 = await prisma.package.create({
     data: {
-      status: PackageStatus.IN_TRANSIT,
+      status: PackageStatus.DELIVERED,
       trackingId: "PKG-2025-0004",
       weight: 30.0,
       volume: 0.15,
@@ -1012,7 +2073,6 @@ async function main() {
     },
   });
 
-  // Package from lot3 - just created
   const pkg5 = await prisma.package.create({
     data: {
       status: PackageStatus.CREATED,
@@ -1023,15 +2083,35 @@ async function main() {
     },
   });
 
-  // 13) Shipments carrying packages
-  // Shipment 1: IN_TRANSIT with packages from lot1
+  const pkg6 = await prisma.package.create({
+    data: {
+      status: PackageStatus.IN_TRANSIT,
+      trackingId: "PKG-2025-0006",
+      weight: 20.0,
+      volume: 0.09,
+      lotId: lot5.id,
+    },
+  });
+
+  const pkg7 = await prisma.package.create({
+    data: {
+      status: PackageStatus.DELIVERED,
+      trackingId: "PKG-2025-0007",
+      weight: 24.0,
+      volume: 0.11,
+      lotId: lot6.id,
+    },
+  });
+
+  // 15) Shipments carrying packages
+  logStep("Creating shipments");
   const shipment1 = await prisma.shipment.create({
     data: {
       trackingId: "SHIP-2025-0001",
       carrierName: carrier1.name,
       status: ShipmentStatus.IN_TRANSIT,
-      startedAt: new Date(Date.now() - 0.3 * 24 * 60 * 60 * 1000),
-      eta: new Date(Date.now() + 0.5 * 24 * 60 * 60 * 1000),
+      startedAt: new Date(now - 0.3 * dayMs),
+      eta: new Date(now + 0.5 * dayMs),
       addressId: buyer1Address.id,
       carrierId: carrier1.id,
       packages: {
@@ -1043,16 +2123,15 @@ async function main() {
     },
   });
 
-  // Shipment 2: ARRIVED with packages from lot2
   const shipment2 = await prisma.shipment.create({
     data: {
       trackingId: "SHIP-2025-0002",
       carrierName: carrier2.name,
-      status: ShipmentStatus.ARRIVED,
-      startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      arrivedAt: new Date(Date.now() - 0.1 * 24 * 60 * 60 * 1000),
-      eta: new Date(Date.now() - 0.1 * 24 * 60 * 60 * 1000),
-      addressId: buyer1Address.id,
+      status: ShipmentStatus.CLOSED,
+      startedAt: new Date(now - 1 * dayMs),
+      arrivedAt: new Date(now - 0.1 * dayMs),
+      eta: new Date(now - 0.1 * dayMs),
+      addressId: buyer1HomeAddress.id,
       carrierId: carrier2.id,
       packages: {
         create: [
@@ -1063,13 +2142,12 @@ async function main() {
     },
   });
 
-  // Shipment 3: ASSEMBLING (ready to ship pkg5)
   const shipment3 = await prisma.shipment.create({
     data: {
       trackingId: "SHIP-2025-0003",
       carrierName: carrier1.name,
       status: ShipmentStatus.ASSEMBLING,
-      eta: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      eta: new Date(now + 3 * dayMs),
       addressId: buyer2Address.id,
       carrierId: carrier1.id,
       packages: {
@@ -1078,47 +2156,157 @@ async function main() {
     },
   });
 
-  // 14) Payments for carts, lots, and shipments
+  const shipment4 = await prisma.shipment.create({
+    data: {
+      trackingId: "SHIP-2025-0004",
+      carrierName: carrier2.name,
+      status: ShipmentStatus.CLOSED,
+      startedAt: new Date(now - 3 * dayMs),
+      arrivedAt: new Date(now - 1 * dayMs),
+      eta: new Date(now - 1 * dayMs),
+      addressId: buyer1BillingAddress.id,
+      carrierId: carrier2.id,
+      packages: {
+        create: [{ package: { connect: { id: pkg7.id } } }],
+      },
+    },
+  });
+
+  // 16) Payments for carts, lots, and shipments
+  logStep("Creating payments for carts, lots, and shipments");
+  const sumCart = (cart: typeof cart1) =>
+    cart.items.reduce(
+      (sum, item) => sum + item.publicPrice * item.quantity,
+      0,
+    );
+
   await Promise.all([
-    // Cart payments
     prisma.userPayment.create({
       data: {
-        amount: cart1.items.reduce(
-          (sum, item) => sum + item.publicPrice * item.quantity,
-          0,
-        ),
+        amount: sumCart(cart1),
         status: PaymentStatus.COMPLETED,
+        transaction: { id: "txn-cart1", provider: "mock-pay", status: "paid" },
         cartId: cart1.id,
       },
     }),
     prisma.userPayment.create({
       data: {
-        amount: cart2.items.reduce(
-          (sum, item) => sum + item.publicPrice * item.quantity,
-          0,
-        ),
+        amount: sumCart(cart2),
         status: PaymentStatus.PENDING,
+        transaction: {
+          id: "txn-cart2",
+          provider: "mock-pay",
+          status: "pending",
+        },
         cartId: cart2.id,
       },
     }),
     prisma.userPayment.create({
       data: {
-        amount: cart4.items.reduce(
-          (sum, item) => sum + item.publicPrice * item.quantity,
-          0,
-        ),
+        amount: sumCart(cart4),
         status: PaymentStatus.COMPLETED,
+        transaction: {
+          id: "txn-cart4",
+          provider: "mock-pay",
+          status: "paid",
+        },
         cartId: cart4.id,
       },
     }),
     prisma.userPayment.create({
       data: {
-        amount: cart5.items.reduce(
-          (sum, item) => sum + item.publicPrice * item.quantity,
-          0,
-        ),
+        amount: sumCart(cart5),
         status: PaymentStatus.PENDING,
+        transaction: {
+          id: "txn-cart5",
+          provider: "mock-pay",
+          status: "pending",
+        },
         cartId: cart5.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(cart6),
+        status: PaymentStatus.FAILED,
+        transaction: {
+          id: "txn-cart6",
+          provider: "mock-pay",
+          status: "failed",
+        },
+        cartId: cart6.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(cart7),
+        status: PaymentStatus.FAILED,
+        transaction: {
+          id: "txn-cart7",
+          provider: "mock-pay",
+          status: "cancelled",
+        },
+        cartId: cart7.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(cart8),
+        status: PaymentStatus.COMPLETED,
+        transaction: {
+          id: "txn-cart8",
+          provider: "mock-pay",
+          status: "refunded",
+        },
+        cartId: cart8.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartCompleted),
+        status: PaymentStatus.COMPLETED,
+        transaction: {
+          id: "txn-devadmin-completed",
+          provider: "mock-pay",
+          status: "paid",
+        },
+        cartId: devAdminCartCompleted.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartPending),
+        status: PaymentStatus.PENDING,
+        transaction: {
+          id: "txn-devadmin-pending",
+          provider: "mock-pay",
+          status: "pending",
+        },
+        cartId: devAdminCartPending.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(devAdminCartFailed),
+        status: PaymentStatus.FAILED,
+        transaction: {
+          id: "txn-devadmin-failed",
+          provider: "mock-pay",
+          status: "failed",
+        },
+        cartId: devAdminCartFailed.id,
+      },
+    }),
+    prisma.userPayment.create({
+      data: {
+        amount: sumCart(cocoAdminCart),
+        status: PaymentStatus.PENDING,
+        transaction: {
+          id: "txn-cocoadmin-pending",
+          provider: "mock-pay",
+          status: "pending",
+        },
+        cartId: cocoAdminCart.id,
       },
     }),
     // Lot payments
@@ -1162,6 +2350,26 @@ async function main() {
         lotId: lot4.id,
       },
     }),
+    prisma.lotPayment.create({
+      data: {
+        amount: cart6.items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        ),
+        status: PaymentStatus.FAILED,
+        lotId: lot5.id,
+      },
+    }),
+    prisma.lotPayment.create({
+      data: {
+        amount: cart8.items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        ),
+        status: PaymentStatus.COMPLETED,
+        lotId: lot6.id,
+      },
+    }),
     // Shipment payments
     prisma.shipmentPayment.create({
       data: {
@@ -1184,9 +2392,17 @@ async function main() {
         shipmentId: shipment3.id,
       },
     }),
+    prisma.shipmentPayment.create({
+      data: {
+        amount: 18000,
+        status: PaymentStatus.FAILED,
+        shipmentId: shipment4.id,
+      },
+    }),
   ]);
 
-  // 15) Product ratings, events, and notifications
+  // 17) Product ratings, events, and notifications
+  logStep("Creating product ratings");
   await Promise.all([
     prisma.productRating.create({
       data: {
@@ -1194,7 +2410,7 @@ async function main() {
         comment:
           "Muy buen detergente, rinde bastante y excelente precio mayorista.",
         userId: buyer1.id,
-        productId: cleaningProduct1.id,
+        productId: products.detergent5l.id,
       },
     }),
     prisma.productRating.create({
@@ -1202,26 +2418,35 @@ async function main() {
         rating: 4,
         comment: "Buenas verduras, frescas. Llegaron en perfecto estado.",
         userId: buyer2.id,
-        productId: freshProduct1.id,
+        productId: products.mixVerduras10kg.id,
       },
     }),
     prisma.productRating.create({
       data: {
         rating: 5,
-        comment: "Excelentes cítricos, muy jugosos.",
-        userId: buyer1.id,
-        productId: freshProduct2.id,
+        comment: "Pizza muy rica y práctica de preparar.",
+        userId: buyer3.id,
+        productId: products.pizzaCongeladaCaja12.id,
+      },
+    }),
+    prisma.productRating.create({
+      data: {
+        rating: 5,
+        comment: "Excelente pack para las pruebas completas.",
+        userId: devAdminUser.id,
+        productId: products.cafeGrano5kg.id,
       },
     }),
   ]);
 
+  logStep("Creating events");
   await Promise.all([
     prisma.event.create({
       data: {
         name: "Primera compra colaborativa",
         description:
           "Primera compra mayorista colaborativa completada con éxito.",
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        date: new Date(now - 2 * dayMs),
         location: "Ushuaia",
         userId: buyer1.id,
       },
@@ -1230,22 +2455,95 @@ async function main() {
       data: {
         name: "Segundo pedido",
         description: "Segundo pedido de productos frescos.",
-        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        date: new Date(now - 1 * dayMs),
         location: "Ushuaia",
         userId: buyer1.id,
       },
     }),
     prisma.event.create({
       data: {
-        name: "Primera compra",
-        description: "Primera compra en la plataforma.",
-        date: new Date(),
+        name: "Entrega a sucursal",
+        description: "Entrega cerrada en ruta logística.",
+        date: new Date(now - 0.5 * dayMs),
         location: "Ushuaia",
         userId: buyer2.id,
       },
     }),
+    prisma.event.create({
+      data: {
+        name: "Admin audit",
+        description: "Revisión de logs y configuraciones.",
+        date: new Date(now - 0.2 * dayMs),
+        location: "Ushuaia",
+        userId: adminUser.id,
+      },
+    }),
+    prisma.event.create({
+      data: {
+        name: "Full system seed",
+        description: "Operación completa para usuario gragnolatif.",
+        date: new Date(now - 0.1 * dayMs),
+        location: "Ushuaia",
+        userId: devAdminUser.id,
+      },
+    }),
+    prisma.event.create({
+      data: {
+        name: "Coco admin review",
+        description: "Chequeo de datos de coco.dev.",
+        date: new Date(now - 0.15 * dayMs),
+        location: "Ushuaia",
+        userId: cocoAdminUser.id,
+      },
+    }),
+    prisma.event.create({
+      data: {
+        name: "Supplier catalog sync",
+        description: "Actualización de catálogo del proveedor.",
+        date: new Date(now - 0.4 * dayMs),
+        location: "Ushuaia",
+        userId: supplierUser1.id,
+      },
+    }),
+    prisma.event.create({
+      data: {
+        name: "Carrier schedule update",
+        description: "Nuevo horario de rutas cargado.",
+        date: new Date(now - 0.6 * dayMs),
+        location: "Buenos Aires",
+        userId: carrierUser.id,
+      },
+    }),
+    prisma.event.create({
+      data: {
+        name: "Ally support shift",
+        description: "Soporte comunitario en marcha.",
+        date: new Date(now - 0.7 * dayMs),
+        location: "Ushuaia",
+        userId: allyUser.id,
+      },
+    }),
+    prisma.event.create({
+      data: {
+        name: "Fractionation batch",
+        description: "Lote fraccionado para pedidos.",
+        date: new Date(now - 0.8 * dayMs),
+        location: "Ushuaia",
+        userId: fractionatorUser.id,
+      },
+    }),
+    prisma.event.create({
+      data: {
+        name: "Picker start",
+        description: "Inicio de preparación de pedidos.",
+        date: new Date(now - 0.9 * dayMs),
+        location: "Ushuaia",
+        userId: pickerUser.id,
+      },
+    }),
   ]);
 
+  logStep("Creating notifications");
   await Promise.all([
     prisma.notification.create({
       data: {
@@ -1255,7 +2553,7 @@ async function main() {
         status: NotificationStatus.SENT,
         userId: buyer1.id,
         channelId: whatsappChannel.id,
-        scheduledAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        scheduledAt: new Date(now - 2 * dayMs),
       },
     }),
     prisma.notification.create({
@@ -1266,29 +2564,78 @@ async function main() {
         status: NotificationStatus.SENT,
         userId: buyer1.id,
         channelId: emailChannel.id,
-        scheduledAt: new Date(Date.now() - 0.3 * 24 * 60 * 60 * 1000),
+        scheduledAt: new Date(now - 0.3 * dayMs),
       },
     }),
     prisma.notification.create({
       data: {
-        message:
-          "Tu envío ha llegado al depósito local. Pronto estará en camino.",
-        type: NotificationType.INFO,
-        status: NotificationStatus.SENT,
-        userId: buyer1.id,
-        channelId: whatsappChannel.id,
-        scheduledAt: new Date(Date.now() - 0.1 * 24 * 60 * 60 * 1000),
-      },
-    }),
-    prisma.notification.create({
-      data: {
-        message:
-          "Tu pago está pendiente. Por favor completa el pago para continuar.",
+        message: "Tu pago está pendiente. Por favor completa el pago para continuar.",
         type: NotificationType.WARNING,
         status: NotificationStatus.PENDING,
         userId: buyer2.id,
         channelId: emailChannel.id,
-        scheduledAt: new Date(),
+        scheduledAt: new Date(now),
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        message: "Error al procesar el pago. Intenta con otro medio.",
+        type: NotificationType.ERROR,
+        status: NotificationStatus.FAILED,
+        userId: buyer3.id,
+        channelId: smsChannel.id,
+        scheduledAt: new Date(now - 0.1 * dayMs),
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        message:
+          "Reintentaremos el envío de notificaciones push para tu pedido.",
+        type: NotificationType.ERROR,
+        status: NotificationStatus.RETRY,
+        userId: buyer1.id,
+        channelId: pushChannel.id,
+        scheduledAt: new Date(now - 0.05 * dayMs),
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        message: "Pago aprobado para tu compra de prueba.",
+        type: NotificationType.SUCCESS,
+        status: NotificationStatus.SENT,
+        userId: devAdminUser.id,
+        channelId: emailChannel.id,
+        scheduledAt: new Date(now - 0.2 * dayMs),
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        message: "Hubo un problema con tu tarjeta en el último intento.",
+        type: NotificationType.ERROR,
+        status: NotificationStatus.FAILED,
+        userId: devAdminUser.id,
+        channelId: smsChannel.id,
+        scheduledAt: new Date(now - 0.1 * dayMs),
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        message: "Operación completa de pruebas para gragnolatif.",
+        type: NotificationType.SUCCESS,
+        status: NotificationStatus.SENT,
+        userId: devAdminUser.id,
+        channelId: emailChannel.id,
+        scheduledAt: new Date(now - 0.02 * dayMs),
+      },
+    }),
+    prisma.notification.create({
+      data: {
+        message: "Revisión pendiente de rutas y roles.",
+        type: NotificationType.INFO,
+        status: NotificationStatus.SENT,
+        userId: cocoAdminUser.id,
+        channelId: pushChannel.id,
+        scheduledAt: new Date(now - 0.03 * dayMs),
       },
     }),
   ]);

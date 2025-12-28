@@ -9,6 +9,11 @@ import SuperJSON from "superjson";
 
 import type { AppRouter } from "~/server/api/root";
 import { createQueryClient } from "./query-client";
+declare global {
+  interface Window {
+    __TANSTACK_QUERY_CLIENT__: import("@tanstack/query-core").QueryClient;
+  }
+}
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
 const getQueryClient = () => {
@@ -18,6 +23,7 @@ const getQueryClient = () => {
   }
   // Browser: use singleton pattern to keep the same query client
   clientQueryClientSingleton ??= createQueryClient();
+  window.__TANSTACK_QUERY_CLIENT__ = clientQueryClientSingleton;
 
   return clientQueryClientSingleton;
 };

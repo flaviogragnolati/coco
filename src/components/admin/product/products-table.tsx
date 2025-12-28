@@ -18,19 +18,12 @@ import { AppTable, type ColumnConfig } from "~/components/ui/app-table";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import {
   type ProductRecord,
   type ProductSupplierSummary,
   type ProductCategorySummary,
   type ProductCategoryOption,
-  BUNDLE_UNITS,
   CURRENCIES,
+  UNITS,
 } from "~/types";
 import type { ProductFormInput } from "~/schema/product";
 import { useConfirm } from "~/components/ui/confirm";
@@ -52,7 +45,6 @@ interface ProductsTableProps {
 interface FilterState {
   search: string;
   categoryIds: number[];
-  tags: string[];
 }
 
 const currencyFormatters = new Map(
@@ -72,20 +64,33 @@ const toFormDefaults = (product: ProductRecord): Partial<ProductFormInput> => {
     name: product.name,
     description: product.description ?? null,
     tags: product.tags ?? [],
+
+    // Supplier pricing
     price: product.price,
+    priceUnit: product.priceUnit,
+    priceUnitMultiplier: product.priceUnitMultiplier,
+
+    // Public pricing
+    publicPrice: product.publicPrice,
+    publicPriceUnit: product.publicPriceUnit,
+    publicPriceMultiplier: product.publicPriceMultiplier,
+
+    // Supplier MOQ
+    supplierMoq: product.supplierMoq,
+    supplierUnit: product.supplierUnit,
+    supplierUnitMultiplier: product.supplierUnitMultiplier,
+
+    // Customer MOQ
+    customerMoq: product.customerMoq,
+    customerUnit: product.customerUnit,
+    customerUnitMultiplier: product.customerUnitMultiplier,
+
     currency: product.currency,
     sku: product.sku ?? null,
     supplierSku: product.supplierSku ?? null,
     code: product.code ?? null,
     mainImage: mainImage ?? null,
     additionalImages,
-    moq: product.moq,
-    unit: product.unit,
-    step: product.step,
-    minQuantity: product.minQuantity ?? undefined,
-    maxQuantity: product.maxQuantity ?? undefined,
-    bundleSize: product.bundleSize ?? undefined,
-    bundleUnit: product.bundleUnit ?? undefined,
     supplierId: product.supplier.id,
     categoryId: product.category?.id ?? undefined,
     categorySlug: undefined,
@@ -114,20 +119,7 @@ export function ProductsTable({
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     categoryIds: [],
-    tags: [],
   });
-  const [tagInput, setTagInput] = useState("");
-
-  // Get all available tags from products
-  const availableTags = useMemo(() => {
-    const tagsSet = new Set<string>();
-    for (const product of products) {
-      for (const tag of product.tags) {
-        tagsSet.add(tag);
-      }
-    }
-    return Array.from(tagsSet).sort();
-  }, [products]);
 
   // Filtered products based on search, categories, and tags
   const filteredProducts = useMemo(() => {
@@ -152,35 +144,9 @@ export function ProductsTable({
         }
       }
 
-      // Tags filter
-      if (filters.tags.length > 0) {
-        const hasAllTags = filters.tags.every((tag) =>
-          product.tags.includes(tag),
-        );
-        if (!hasAllTags) return false;
-      }
-
       return true;
     });
   }, [products, filters]);
-
-  const handleAddTag = useCallback(() => {
-    const trimmedTag = tagInput.trim();
-    if (trimmedTag && !filters.tags.includes(trimmedTag)) {
-      setFilters((prev) => ({
-        ...prev,
-        tags: [...prev.tags, trimmedTag],
-      }));
-      setTagInput("");
-    }
-  }, [tagInput, filters.tags]);
-
-  const handleRemoveTag = useCallback((tagToRemove: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((tag) => tag !== tagToRemove),
-    }));
-  }, []);
 
   const handleCategoryToggle = useCallback((categoryId: number) => {
     setFilters((prev) => {
@@ -198,9 +164,7 @@ export function ProductsTable({
     setFilters({
       search: "",
       categoryIds: [],
-      tags: [],
     });
-    setTagInput("");
   }, []);
 
   const handleCreateClick = useCallback(() => {
@@ -312,7 +276,7 @@ export function ProductsTable({
       },
       {
         key: "pricing",
-        title: "Precio",
+        title: "Precios",
         type: "custom",
         render: (product) => {
           const formatter =
@@ -322,46 +286,53 @@ export function ProductsTable({
               currency: product.currency,
             });
 
+          const getUnitLabel = (unitValue: string) => {
+            return UNITS.find((u) => u.value === unitValue)?.label ?? unitValue;
+          };
+
+          const supplierPrice = product.price / product.priceUnitMultiplier;
+          const publicPrice =
+            product.publicPrice / product.publicPriceMultiplier;
+
           return (
             <div className="space-y-1 text-sm">
               <div className="font-medium">
-                {formatter.format(product.price)}
+                Público: {formatter.format(publicPrice)}/
+                {getUnitLabel(product.publicPriceUnit)}
               </div>
               <div className="text-muted-foreground">
-                MOQ: {product.moq} {product.unit}
+                Proveedor: {formatter.format(supplierPrice)}/
+                {getUnitLabel(product.priceUnit)}
               </div>
             </div>
           );
         },
       },
       {
-        key: "inventory",
-        title: "Inventario",
+        key: "moq",
+        title: "MOQ",
         type: "custom",
-        render: (product) => (
-          <div className="space-y-1 text-sm">
-            <div>
-              Paso: {product.step} {product.unit}
+        render: (product) => {
+          const getUnitLabel = (unitValue: string) => {
+            return UNITS.find((u) => u.value === unitValue)?.label ?? unitValue;
+          };
+
+          const supplierMoq =
+            product.supplierMoq * product.supplierUnitMultiplier;
+          const customerMoq =
+            product.customerMoq * product.customerUnitMultiplier;
+
+          return (
+            <div className="space-y-1 text-sm">
+              <div>
+                Cliente: {customerMoq} {getUnitLabel(product.customerUnit)}
+              </div>
+              <div className="text-muted-foreground">
+                Proveedor: {supplierMoq} {getUnitLabel(product.supplierUnit)}
+              </div>
             </div>
-            {product.maxQuantity && (
-              <div className="text-muted-foreground">
-                Máx: {product.maxQuantity} {product.unit}
-              </div>
-            )}
-            {product.bundleSize && (
-              <div className="text-muted-foreground">
-                Pack: {product.bundleSize}
-                {product.bundleUnit
-                  ? ` ${
-                      BUNDLE_UNITS.find(
-                        (unit) => unit.value === product.bundleUnit,
-                      )?.label ?? product.bundleUnit
-                    }`
-                  : ""}
-              </div>
-            )}
-          </div>
-        ),
+          );
+        },
       },
       {
         key: "supplier",
@@ -433,9 +404,7 @@ export function ProductsTable({
   );
 
   const hasActiveFilters =
-    filters.search !== "" ||
-    filters.categoryIds.length > 0 ||
-    filters.tags.length > 0;
+    filters.search !== "" || filters.categoryIds.length > 0;
 
   return (
     <div className="space-y-4">
@@ -471,7 +440,7 @@ export function ProductsTable({
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             {/* Search by name */}
             <div className="space-y-2">
               <Label htmlFor="search">Buscar por nombre</Label>
@@ -511,58 +480,6 @@ export function ProductsTable({
                 </div>
               </div>
             )}
-
-            {/* Tags autocomplete with chips */}
-            <div className="space-y-2">
-              <Label htmlFor="tag-input">Etiquetas</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="tag-input"
-                    type="text"
-                    placeholder="Agregar etiqueta..."
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                    list="tags-list"
-                  />
-                  <datalist id="tags-list">
-                    {availableTags
-                      .filter((tag) => !filters.tags.includes(tag))
-                      .map((tag) => (
-                        <option key={tag} value={tag} />
-                      ))}
-                  </datalist>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleAddTag}
-                  disabled={!tagInput.trim()}
-                >
-                  Agregar
-                </Button>
-              </div>
-              {filters.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {filters.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="gap-1">
-                      <Tag className="h-3 w-3" />
-                      {tag}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => handleRemoveTag(tag)}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </Card>

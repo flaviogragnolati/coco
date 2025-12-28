@@ -18,3 +18,6 @@ export {
   type FormComboboxProps,
   type ComboboxOption,
 } from "./form-combobox";
+export { CurrencySelect } from "./currency-select";
+export { UnitSelect } from "./unit-select";
+export { MultiplierInput } from "./multiplier-input";

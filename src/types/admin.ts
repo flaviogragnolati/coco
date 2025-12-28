@@ -50,12 +50,18 @@ export const CURRENCIES = [
 ] as const;
 
 export const UNITS = [
-  { label: "Unidad", value: "piece" },
-  { label: "Kilogramo", value: "kg" },
-  { label: "Litro", value: "liter" },
-  { label: "Metro", value: "meter" },
-  { label: "Caja", value: "box" },
-  { label: "Paquete", value: "pack" },
+  { label: "Unidad", value: "UNIT" },
+  { label: "Kilogramo", value: "KG" },
+  { label: "Gramo", value: "G" },
+  { label: "Libra", value: "LB" },
+  { label: "Onza", value: "OZ" },
+  { label: "Litro", value: "L" },
+  { label: "Mililitro", value: "ML" },
+  { label: "Caja", value: "BOX" },
+  { label: "Paquete", value: "PACK" },
+  { label: "Metro cúbico", value: "M3" },
+  { label: "Pie cúbico", value: "FT3" },
+  { label: "Centímetro cúbico", value: "CM3" },
 ] as const;
 
 export const BUNDLE_UNITS = [
@@ -64,13 +70,4 @@ export const BUNDLE_UNITS = [
   { label: "Pallet", value: "pallet" },
   { label: "Bulto", value: "bundle" },
   { label: "Display", value: "display" },
-] as const;
-
-export const CATEGORIES = [
-  { label: "Alimentos", value: "alimentos" },
-  { label: "Bebidas", value: "bebidas" },
-  { label: "Lácteos", value: "lacteos" },
-  { label: "Snacks", value: "snacks" },
-  { label: "Limpieza", value: "limpieza" },
-  { label: "Cuidado Personal", value: "cuidado-personal" },
 ] as const;

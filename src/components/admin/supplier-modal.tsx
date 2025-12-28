@@ -27,6 +27,7 @@ import { Form } from "~/ui/form";
 import { FieldInput } from "../form/form-input";
 import { FieldSwitch } from "../form/form-switch";
 import { FieldTextarea } from "../form/form-textarea";
+import { showToast } from "~/utils/show-toast";
 
 type Supplier = RouterOutputs["suppliers"]["getAllSuppliers"][number];
 
@@ -95,26 +96,26 @@ export function SupplierModal({
   }, [isOpen, supplier, form]);
 
   const createMutation = api.suppliers.createSupplier.useMutation({
-    onSuccess: () => {
-      alert("Supplier created successfully!");
-      utils.suppliers.getAllSuppliers.invalidate();
+    onSuccess: async () => {
+      showToast("success", "Supplier created successfully!");
+      await utils.suppliers.getAllSuppliers.invalidate();
       onSuccess?.();
       onClose();
     },
     onError: (error) => {
-      alert(error.message || "Failed to create supplier");
+      showToast("error", error.message || "Failed to create supplier");
     },
   });
 
   const updateMutation = api.suppliers.updateSupplier.useMutation({
-    onSuccess: () => {
-      alert("Supplier updated successfully!");
-      utils.suppliers.getAllSuppliers.invalidate();
+    onSuccess: async () => {
+      showToast("success", "Supplier updated successfully!");
+      await utils.suppliers.getAllSuppliers.invalidate();
       onSuccess?.();
       onClose();
     },
     onError: (error) => {
-      alert(error.message || "Failed to update supplier");
+      showToast("error", error.message || "Failed to update supplier");
     },
   });
 

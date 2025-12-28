@@ -21,17 +21,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import {
-  AppTable,
-  type ColumnConfig,
-} from "~/components/ui/app-table";
+import { AppTable, type ColumnConfig } from "~/components/ui/app-table";
 import { Badge } from "~/components/ui/badge";
 import { useConfirm } from "~/components/ui/confirm";
 import { AddressForm } from "./address-form";
 import { api } from "~/trpc/react";
-import {
-  ADDRESS_TYPES,
-} from "~/schema/address";
+import type { ADDRESS_TYPES } from "~/schema/address";
 
 type AddressRecord = RouterOutputs["addresses"]["getAllAddresses"][number];
 
@@ -242,8 +237,10 @@ export function AddressesTable({
         country: editingAddress.country,
         description: editingAddress.description ?? null,
         userId: editingAddress.user?.id ?? editingAddress.userId ?? null,
-        supplierId: editingAddress.supplier?.id ?? editingAddress.supplierId ?? null,
-        carrierId: editingAddress.carrier?.id ?? editingAddress.carrierId ?? null,
+        supplierId:
+          editingAddress.supplier?.id ?? editingAddress.supplierId ?? null,
+        carrierId:
+          editingAddress.carrier?.id ?? editingAddress.carrierId ?? null,
         isActive: editingAddress.isActive,
       }
     : undefined;
@@ -256,7 +253,8 @@ export function AddressesTable({
             Direcciones ({addresses.length})
           </h3>
           <p className="text-muted-foreground text-sm">
-            Gestiona las direcciones vinculadas a proveedores, transportistas y usuarios.
+            Gestiona las direcciones vinculadas a proveedores, transportistas y
+            usuarios.
           </p>
         </div>
         <Button onClick={handleCreate} className="flex items-center gap-2">
@@ -277,7 +275,9 @@ export function AddressesTable({
 
       <Dialog
         open={isModalOpen}
-        onOpenChange={(open) => (open ? setIsModalOpen(true) : handleModalClose())}
+        onOpenChange={(open) =>
+          open ? setIsModalOpen(true) : handleModalClose()
+        }
       >
         <DialogContent className="max-w-3xl">
           <DialogHeader>

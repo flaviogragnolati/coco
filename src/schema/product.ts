@@ -21,16 +21,56 @@ export const productFormSchema = z.object({
     .optional()
     .nullable(),
   categoryId: z.number().int().positive().optional().nullable(),
-  categorySlug: z
+  categorySlug: z.string().trim().min(1).optional().nullable(),
+  tags: z.array(z.string().trim()).default([]),
+
+  // Supplier pricing
+  price: z
+    .number({ invalid_type_error: "El precio de proveedor es requerido" })
+    .gt(0, "El precio debe ser mayor a 0"),
+  priceUnit: z.string().trim().min(1, "Seleccione una unidad de precio"),
+  priceUnitMultiplier: z
+    .number({ invalid_type_error: "El multiplicador es requerido" })
+    .gt(0, "El multiplicador debe ser mayor a 0")
+    .default(1),
+
+  // Public pricing
+  publicPrice: z
+    .number({ invalid_type_error: "El precio público es requerido" })
+    .gt(0, "El precio debe ser mayor a 0"),
+  publicPriceUnit: z
     .string()
     .trim()
-    .min(1)
-    .optional()
-    .nullable(),
-  tags: z.array(z.string().trim()).default([]),
-  price: z
-    .number({ invalid_type_error: "El precio es requerido" })
-    .gt(0, "El precio debe ser mayor a 0"),
+    .min(1, "Seleccione una unidad de precio público"),
+  publicPriceMultiplier: z
+    .number({ invalid_type_error: "El multiplicador es requerido" })
+    .gt(0, "El multiplicador debe ser mayor a 0")
+    .default(1),
+
+  // Supplier MOQ
+  supplierMoq: z
+    .number({
+      invalid_type_error: "La cantidad mínima del proveedor es requerida",
+    })
+    .gt(0, "La cantidad mínima debe ser mayor a 0"),
+  supplierUnit: z.string().trim().min(1, "Seleccione una unidad"),
+  supplierUnitMultiplier: z
+    .number({ invalid_type_error: "El multiplicador es requerido" })
+    .gt(0, "El multiplicador debe ser mayor a 0")
+    .default(1),
+
+  // Customer MOQ
+  customerMoq: z
+    .number({
+      invalid_type_error: "La cantidad mínima del cliente es requerida",
+    })
+    .gt(0, "La cantidad mínima debe ser mayor a 0"),
+  customerUnit: z.string().trim().min(1, "Seleccione una unidad"),
+  customerUnitMultiplier: z
+    .number({ invalid_type_error: "El multiplicador es requerido" })
+    .gt(0, "El multiplicador debe ser mayor a 0")
+    .default(1),
+
   currency: z.string().trim().min(1, "Seleccione una moneda"),
   sku: z.string().trim().max(100).optional().nullable(),
   supplierSku: z.string().trim().max(100).optional().nullable(),
@@ -42,22 +82,9 @@ export const productFormSchema = z.object({
     .optional()
     .nullable(),
   additionalImages: z
-    .array(
-      z.string().trim().url("Cada imagen debe ser una URL válida"),
-    )
+    .array(z.string().trim().url("Cada imagen debe ser una URL válida"))
     .optional()
     .default([]),
-  moq: z
-    .number({ invalid_type_error: "La cantidad mínima es requerida" })
-    .gte(1, "La cantidad mínima debe ser al menos 1"),
-  unit: z.string().trim().min(1, "Seleccione una unidad"),
-  step: z
-    .number({ invalid_type_error: "El incremento es requerido" })
-    .gte(1, "El incremento debe ser al menos 1"),
-  minQuantity: optionalPositiveNumber,
-  maxQuantity: optionalPositiveNumber,
-  bundleSize: optionalPositiveNumber,
-  bundleUnit: z.string().trim().optional().nullable(),
   supplierId: z
     .number({ invalid_type_error: "Seleccione un proveedor" })
     .int()

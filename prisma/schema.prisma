@@ -59,14 +59,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  roles         Role[]          @relation("userRoles")
-  addresses     Address[]       @relation("userAddresses")
-  notifications Notification[]
-  events        Event[]
-  ProductRating ProductRating[]
-  userSettings  UserSettings[]
+  accounts          Account[]
+  sessions          Session[]
+  roles             Role[]             @relation("userRoles")
+  addresses         Address[]          @relation("userAddresses")
+  savedPaymentCards SavedPaymentCard[]
+  notifications     Notification[]
+  events            Event[]
+  ProductRating     ProductRating[]
+  userSettings      UserSettings[]
 }
 
 model UserSettings {
@@ -245,12 +246,15 @@ model Product {
   supplierUrl            String?
   images                 String[]
   currency               Currency? @default(ARS)
+  // supplier side info
   price                  Float
   priceUnit              String
   priceUnitMultiplier    Float     @default(1)
-  supplierMoq            Float
-  supplierUnit           String
+  supplierMoqQty         Float
+  supplierMoqQtyUnit     String
+  supplierMultiplierUnit String
   supplierUnitMultiplier Float     @default(1)
+  // customer side info
   customerMoq            Float
   customerUnit           String
   customerUnitMultiplier Float     @default(1)
@@ -347,6 +351,11 @@ model Cart {
   items        CartItem[]
   address      Address?      @relation(fields: [addressId], references: [id], onDelete: Cascade)
   userPayments UserPayment[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
 }
 
 enum CartStatus {
@@ -405,11 +414,12 @@ enum ShipmentStatus {
 }
 
 model UserPayment {
-  id        Int           @id @default(autoincrement())
-  amount    Float
-  status    PaymentStatus
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id          Int           @id @default(autoincrement())
+  amount      Float
+  status      PaymentStatus
+  transaction Json
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   cartId Int?
   cart   Cart? @relation(fields: [cartId], references: [id])
@@ -553,6 +563,25 @@ model Channel {
   updatedAt   DateTime    @updatedAt
 
   notifications Notification[]
+}
+
+model SavedPaymentCard {
+  id             Int      @id @default(autoincrement())
+  cardholderName String
+  cardLast4      String
+  expiryMonth    Int
+  expiryYear     Int
+  cardBrand      String
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  deleted        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum ChannelType {

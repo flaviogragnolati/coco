@@ -1,14 +1,24 @@
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AdminNav } from "~/components/admin/admin-nav";
-import { TRPCReactProvider } from "~/trpc/react";
-import { ConfirmProvider } from "~/ui/confirm";
+import { auth } from "~/server/auth";
+import { api } from "~/trpc/server";
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <ConfirmProvider>
-      <AdminNav>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
-      </AdminNav>
-    </ConfirmProvider>
-  );
+export default async function AdminLayout({
+  children,
+}: { children: ReactNode }) {
+  const session = await auth();
+
+  const userId = session?.user?.id;
+  if (!userId) {
+    return redirect("/401");
+  }
+
+  const user = await api.user.me();
+
+  if (!user.roles.includes("ADMIN")) {
+    return redirect("/403");
+  }
+
+  return <AdminNav>{children}</AdminNav>;
 }

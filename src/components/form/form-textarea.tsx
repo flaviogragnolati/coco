@@ -57,6 +57,7 @@ export function FormTextarea<
       <FormControl>
         <Textarea
           {...field}
+          value={field.value ?? ""}
           placeholder={placeholder}
           rows={rows}
           disabled={disabled}
@@ -92,6 +93,7 @@ export function FieldTextarea<
           <FormControl>
             <Textarea
               {...field}
+              value={field.value ?? ""}
               placeholder={placeholder}
               rows={rows}
               disabled={disabled}

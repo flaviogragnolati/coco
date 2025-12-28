@@ -21,11 +21,6 @@ type UseCartResult = {
 
 export type CartItem = CartLine;
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  // Kept for compatibility with existing usage; StoreProvider already initializes the store.
-  return <>{children}</>;
-}
-
 export function useCart(): UseCartResult {
   const items = useAppStore((state) => state.cartLines);
   const addItem = useAppStore((state) => state.addItem);
