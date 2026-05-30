@@ -1,0 +1,939 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id
+  name          String    @db.Text
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?   @db.Text
+  role          UserRole  @default(user)
+  document      String?
+  taxId         String?
+  dob           DateTime?
+  active        Boolean   @default(true)
+  deleted       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  sessions       Session[]
+  accounts       Account[]
+  carts          Cart[]
+  userOrders     UserOrder[]
+  paymentMethods PaymentMethod[]
+  addresses      Address[]
+  auditLogs      AuditLog[]
+  trackingEvents CartItemTrackingEvent[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+enum UserRole {
+  user
+  admin
+  superadmin
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?  @db.Text
+  userAgent String?  @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @db.Text
+  providerId            String    @db.Text
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String   @db.Text
+  value      String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
+}
+
+model PaymentMethod {
+  id        Int               @id @default(autoincrement())
+  userId    String
+  type      PaymentMethodType
+  details   String            @db.Text
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @default(now()) @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userTransactions UserTransaction[]
+
+  @@index([userId])
+  @@map("payment_method")
+}
+
+enum PaymentMethodType {
+  credit_card
+  mercadopago
+  bank_transfer
+  google_pay
+  cash
+  other
+}
+
+// User address book entries. Historical checkout and shipment addresses must be copied into snapshots.
+model Address {
+  id         Int         @id @default(autoincrement())
+  userId     String
+  type       AddressType @default(all)
+  line1      String      @db.Text
+  line2      String?     @db.Text
+  city       String      @db.Text
+  state      String      @db.Text
+  postalCode String      @db.Text
+  country    String      @db.Text
+  active     Boolean     @default(true)
+  deleted    Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@map("address")
+}
+
+enum AddressType {
+  all
+  billing
+  shipping
+  other
+}
+
+model Brand {
+  id          Int      @id @default(autoincrement())
+  name        String
+  active      Boolean  @default(true)
+  deleted     Boolean  @default(false)
+  description String?  @db.Text
+  logoUrl     String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  products Product[]
+
+  @@map("brand")
+}
+
+model Product {
+  id                Int         @id @default(autoincrement())
+  name              String
+  description       String?     @db.Text
+  cartImageUrl      String?     @db.Text
+  cardImageUrl      String?     @db.Text
+  images            String[]    @db.Text
+  active            Boolean     @default(true)
+  deleted           Boolean     @default(false)
+  unit              ProductUnit
+  brandId           Int?
+  defaultSupplierId Int?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @default(now()) @updatedAt
+
+  brand                   Brand?                    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  defaultSupplier         Supplier?                 @relation(fields: [defaultSupplierId], references: [id], onDelete: SetNull)
+  productClientTerms      ProductClientTerms[]
+  productSupplierTerms    ProductSupplierTerms[]
+  productLocalConstraints ProductLocalConstraints[]
+
+  @@index([brandId])
+  @@index([defaultSupplierId])
+  @@map("product")
+}
+
+enum ProductUnit {
+  kg
+  lb
+  piece
+  box
+  gr
+  other
+}
+
+model Supplier {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  deleted     Boolean  @default(false)
+  address     Json     @db.JsonB // TODO: create schema for supplier address
+  contactInfo Json     @db.JsonB // TODO: create schema for supplier contact info (ex: phone number, email, etc.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  products             Product[]
+  productSupplierTerms ProductSupplierTerms[]
+  lots                 Lot[]
+  supplierOrders       SupplierOrder[]
+
+  @@map("supplier")
+}
+
+model Carrier {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.Text
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  deleted     Boolean  @default(false)
+  address     Json     @db.JsonB // TODO: create schema for carrier address
+  contactInfo Json     @db.JsonB // TODO: create schema for carrier contact info (ex: phone number, email, etc.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  carrierOrders CarrierOrder[]
+
+  @@map("carrier")
+}
+
+// Internal warehouse. Used for delivery that is not directly sent to the customer.
+model Destination {
+  id            Int      @id @default(autoincrement())
+  name          String
+  description   String?  @db.Text
+  googleMapsUrl String?  @db.Text
+  active        Boolean  @default(true)
+  deleted       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  lotItems LotItem[]
+
+  @@map("destination")
+}
+
+model ProductClientTerms {
+  id        Int       @id @default(autoincrement())
+  productId Int
+  moq       Decimal   @db.Decimal(18, 4) // minimum order quantity for the product
+  moqPrice  Decimal   @db.Decimal(18, 2) // price for the minimum order quantity
+  step      Decimal?  @db.Decimal(18, 4) // step quantity for the product, increase over the moq (ex: if moq is 10 and step is 5, the allowed order quantities are 10, 15, 20, etc.)
+  stepPrice Decimal?  @db.Decimal(18, 2) // price for the step quantity
+  max       Decimal?  @db.Decimal(18, 4) // maximum order quantity for the product, null means no maximum
+  refPrice  Decimal?  @db.Decimal(18, 2) // calculated reference price for the product, used for display purposes (ex: "$10/kg")
+  currency  Currency  @default(ARS)
+  active    Boolean   @default(true)
+  deleted   Boolean   @default(false)
+  fromDate  DateTime  @default(now())
+  toDate    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  cartItems CartItem[]
+
+  @@index([productId])
+  @@map("product_client_terms")
+}
+
+model ProductSupplierTerms {
+  id         Int       @id @default(autoincrement())
+  productId  Int
+  supplierId Int
+  moq        Decimal   @db.Decimal(18, 4)
+  moqPrice   Decimal   @db.Decimal(18, 2)
+  step       Decimal?  @db.Decimal(18, 4)
+  stepPrice  Decimal?  @db.Decimal(18, 2)
+  max        Decimal?  @db.Decimal(18, 4)
+  refPrice   Decimal?  @db.Decimal(18, 2) // calculated reference price for the product, used for display purposes (ex: "$10/kg")
+  currency   Currency  @default(ARS)
+  active     Boolean   @default(true)
+  deleted    Boolean   @default(false)
+  fromDate   DateTime  @default(now())
+  toDate     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+
+  product  Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  supplier Supplier  @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  lotItems LotItem[]
+
+  @@unique([id, supplierId])
+  @@index([productId])
+  @@index([supplierId])
+  @@map("product_supplier_terms")
+}
+
+model ProductLocalConstraints {
+  id             Int                         @id @default(autoincrement())
+  productId      Int
+  constraintType ProductLocalConstraintType?
+  value          Json?                       @db.JsonB
+  scope          Json?                       @db.JsonB
+  reason         String?                     @db.Text
+  active         Boolean                     @default(true)
+  deleted        Boolean                     @default(false)
+  fromDate       DateTime                    @default(now())
+  toDate         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@map("product_local_constraints")
+}
+
+enum ProductLocalConstraintType {
+  max_quantity
+  restricted_destination
+  requires_internal_delivery
+  minimum_stock
+  legal_restriction
+  seasonal_availability
+}
+
+enum Currency {
+  ARS
+  USD
+  EUR
+  BRL
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  code      String     @unique @db.Text
+  status    CartStatus @default(draft)
+  deleted   Boolean    @default(false)
+  userId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @default(now()) @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  cartItems  CartItem[]
+  userOrders UserOrder[]
+
+  @@index([userId])
+  @@index([userId, status, deleted])
+  @@index([status, deleted])
+  @@map("cart")
+}
+
+// Cart lifecycle only. Downstream fulfillment is tracked on the user order and cart items.
+enum CartStatus {
+  draft // The cart is being created and items are being added. Typically used before the cart is tied to a durable user session.
+  pending // The cart is associated with a user and is still editable, but checkout has not started.
+  atCheckout // The user has started checkout and the cart is being validated and confirmed.
+  submitted // Checkout was confirmed and the cart has been converted into an order request.
+  abandoned // The cart was left inactive and is no longer expected to continue through checkout.
+  cancelled // The cart was cancelled before becoming an order request.
+  aborted // Checkout was forcefully stopped by an admin or by the system.
+}
+
+model CartItem {
+  id                   Int                       @id @default(autoincrement())
+  code                 String                    @unique @db.Text
+  quantity             Decimal                   @db.Decimal(18, 4)
+  // Request lifecycle only. Fulfillment progress is tracked separately in `fulfillmentStatus`.
+  status               CartItemStatus            @default(inCart)
+  fulfillmentStatus    CartItemFulfillmentStatus @default(awaitingAggregation)
+  deleted              Boolean                   @default(false)
+  cartId               Int
+  productClientTermsId Int
+  productSnapshot      Json                      @db.JsonB // snapshot of the product details at the time of adding to cart, used for display purposes and to keep track of price changes
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @default(now()) @updatedAt
+
+  cart               Cart                    @relation(fields: [cartId], references: [id], onDelete: Restrict)
+  productClientTerms ProductClientTerms      @relation(fields: [productClientTermsId], references: [id], onDelete: Restrict)
+  rollOvers          RollOver[]
+  cartItemLotItems   CartItemLotItem[]
+  trackingEvents     CartItemTrackingEvent[]
+  userOrderItems     UserOrderItem[]
+
+  @@index([cartId])
+  @@index([productClientTermsId])
+  @@index([fulfillmentStatus])
+  @@index([cartId, productClientTermsId, status, fulfillmentStatus, deleted])
+  @@index([status, fulfillmentStatus, deleted])
+  @@map("cart_item")
+}
+
+// Request lifecycle only. Operational progress is tracked separately in `fulfillmentStatus` and tracking events.
+enum CartItemStatus {
+  inCart // The item is still mutable in the cart and has not yet been submitted as a request.
+  submitted // The user request is locked in and should now be traced operationally through fulfillmentStatus and tracking events.
+  dropped // The item was removed before it became a submitted request.
+  cancelled // The submitted request was cancelled by the user or an admin.
+}
+
+// User-facing fulfillment summary. This should represent the current overall state shown to admins and end users.
+enum CartItemFulfillmentStatus {
+  awaitingAggregation
+  includedInOperation
+  allocatedToSupplierItem
+  requestedFromSupplier
+  supplierConfirmed
+  packaged
+  inInternalShipment
+  atWarehouse
+  inEndUserShipment
+  delivered
+  partiallyRolledOver
+  rolledOver
+  cancelled
+  exception
+}
+
+model CartItemTrackingEvent {
+  id                  Int                       @id @default(autoincrement())
+  cartItemId          Int
+  eventType           CartItemTrackingEventType
+  source              TrackingEventSource       @default(system)
+  actorUserId         String?
+  actorReference      String?                   @db.Text
+  operationId         Int?
+  cartItemLotItemId   Int?
+  packageAllocationId Int?
+  lotId               Int?
+  lotItemId           Int?
+  packageId           Int?
+  shipmentId          Int?
+  rollOverId          Int?
+  quantity            Decimal?                  @db.Decimal(18, 4)
+  metadata            Json?                     @db.JsonB
+  createdAt           DateTime                  @default(now())
+
+  cartItem          CartItem           @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  actorUser         User?              @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  operation         Operation?         @relation(fields: [operationId], references: [id])
+  cartItemLotItem   CartItemLotItem?   @relation(fields: [cartItemLotItemId], references: [id])
+  packageAllocation PackageAllocation? @relation(fields: [packageAllocationId], references: [id])
+  lot               Lot?               @relation(fields: [lotId], references: [id])
+  lotItem           LotItem?           @relation(fields: [lotItemId], references: [id])
+  package           Package?           @relation(fields: [packageId], references: [id])
+  shipment          Shipment?          @relation(fields: [shipmentId], references: [id])
+  rollOver          RollOver?          @relation(fields: [rollOverId], references: [id])
+
+  @@index([cartItemId])
+  @@index([actorUserId])
+  @@index([operationId])
+  @@index([cartItemLotItemId])
+  @@index([packageAllocationId])
+  @@index([lotId])
+  @@index([lotItemId])
+  @@index([packageId])
+  @@index([shipmentId])
+  @@index([rollOverId])
+  @@index([eventType])
+  @@index([source])
+  @@map("cart_item_tracking_event")
+}
+
+enum CartItemTrackingEventType {
+  addedToCart
+  includedInOperation
+  rolledOverPreAllocation
+  allocatedToLotItem
+  includedInSupplierOrder
+  supplierConfirmed
+  packaged
+  movedInInternalShipment
+  receivedAtWarehouse
+  movedInEndUserShipment
+  delivered
+  rolledOverPostAllocation
+  exceptionResolved
+}
+
+enum TrackingEventSource {
+  user
+  admin
+  system
+  supplier
+  carrier
+  external_api
+}
+
+model UserOrder {
+  id                      Int             @id @default(autoincrement())
+  status                  UserOrderStatus @default(pending)
+  userId                  String
+  cartId                  Int
+  billingAddressSnapshot  Json?           @db.JsonB
+  shippingAddressSnapshot Json?           @db.JsonB
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  cart         Cart              @relation(fields: [cartId], references: [id], onDelete: Restrict)
+  items        UserOrderItem[]
+  transactions UserTransaction[]
+
+  @@index([userId])
+  @@index([cartId])
+  @@map("user_order")
+}
+
+// High-level commercial state for the user order. Detailed operational progress belongs on cart items and tracking events.
+enum UserOrderStatus {
+  pending // The order record exists but has not yet moved into active operational handling.
+  processing // The order has active payment and/or fulfillment work in progress.
+  completed // The order is commercially closed and all requested items have reached a successful terminal state.
+  cancelled // The order was cancelled before successful completion.
+  failed // The order failed due to payment or orchestration issues.
+  refunded // The order has been refunded after cancellation or post-delivery issues.
+}
+
+model UserOrderItem {
+  id               Int      @id @default(autoincrement())
+  userOrderId      Int
+  sourceCartItemId Int
+  quantity         Decimal  @db.Decimal(18, 4)
+  productSnapshot  Json     @db.JsonB
+  priceSnapshot    Json     @db.JsonB
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
+
+  userOrder      UserOrder @relation(fields: [userOrderId], references: [id], onDelete: Cascade)
+  sourceCartItem CartItem  @relation(fields: [sourceCartItemId], references: [id], onDelete: Restrict)
+
+  @@unique([userOrderId, sourceCartItemId])
+  @@index([userOrderId])
+  @@index([sourceCartItemId])
+  @@map("user_order_item")
+}
+
+model UserTransaction {
+  id              Int                   @id @default(autoincrement())
+  amount          Decimal               @db.Decimal(18, 2)
+  currency        Currency              @default(ARS)
+  status          UserTransactionStatus @default(pending)
+  paymentMethodId Int
+  userOrderId     Int
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @default(now()) @updatedAt
+
+  userOrder     UserOrder     @relation(fields: [userOrderId], references: [id])
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
+
+  @@index([userOrderId])
+  @@index([paymentMethodId])
+  @@map("user_transaction")
+}
+
+// Payment lifecycle only.
+enum UserTransactionStatus {
+  pending // The transaction has been created but not yet processed.
+  completed // The payment was captured successfully.
+  failed // The payment attempt failed.
+  refunded // The payment was refunded after a previous successful capture.
+}
+
+model Operation {
+  id             Int                     @id @default(autoincrement())
+  code           String                  @unique @db.Text
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @default(now()) @updatedAt
+  lots           Lot[]
+  rollOvers      RollOver[]
+  trackingEvents CartItemTrackingEvent[]
+
+  @@map("operation")
+}
+
+model Lot {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique @db.Text
+  status      LotStatus @default(pending)
+  operationId Int
+  supplierId  Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  operation       Operation               @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  supplier        Supplier                @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  lotItems        LotItem[]
+  supplierOrder   SupplierOrder?          @relation(fields: [supplierOrderId, supplierId], references: [id, supplierId])
+  supplierOrderId Int?
+  trackingEvents  CartItemTrackingEvent[]
+
+  @@unique([id, supplierId])
+  @@index([operationId])
+  @@index([supplierId])
+  @@index([supplierOrderId])
+  @@map("lot")
+}
+
+// Aggregate operational state for a supplier-scoped lot inside one operation.
+enum LotStatus {
+  pending // The lot exists but qualifying demand has not yet been fully assembled.
+  assembling // The system is aggregating and validating demand into this lot.
+  requested // The lot has been turned into a supplier request and is awaiting confirmation.
+  confirmed // The supplier confirmed the lot contents.
+  readyForPackaging // The lot is ready to be split into packageable fulfillment units.
+  completed // The lot has reached its terminal successful state.
+  cancelled // The lot was cancelled and will not continue through fulfillment.
+}
+
+model LotItem {
+  id                     Int           @id @default(autoincrement())
+  code                   String        @unique @db.Text
+  status                 LotItemStatus @default(pending)
+  lotId                  Int
+  supplierId             Int
+  destinationId          Int
+  productSupplierTermsId Int
+  quantity               Decimal       @db.Decimal(18, 4)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @default(now()) @updatedAt
+
+  lot                  Lot                     @relation(fields: [lotId, supplierId], references: [id, supplierId], onDelete: Restrict)
+  destination          Destination             @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+  productSupplierTerms ProductSupplierTerms    @relation(fields: [productSupplierTermsId, supplierId], references: [id, supplierId], onDelete: Restrict)
+  packageLotItems      PackageLotItem[]
+  cartItemLotItems     CartItemLotItem[]
+  trackingEvents       CartItemTrackingEvent[]
+
+  @@index([lotId])
+  @@index([supplierId])
+  @@index([destinationId])
+  @@index([productSupplierTermsId])
+  @@map("lot_item")
+}
+
+// Operational state for one supplier-facing requested item.
+enum LotItemStatus {
+  pending // The lot item exists but has not yet been included in an outbound supplier request.
+  requested // The supplier-facing item has been requested.
+  confirmed // The supplier confirmed this requested item.
+  readyForPackaging // The quantity is available to be assigned into packages and shipments.
+  completed // The lot item has been fully fulfilled or otherwise closed successfully.
+  cancelled // The lot item was cancelled and will not continue through fulfillment.
+}
+
+model CartItemLotItem {
+  id         Int      @id @default(autoincrement())
+  cartItemId Int
+  lotItemId  Int
+  quantity   Decimal  @db.Decimal(18, 4)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  cartItem           CartItem                @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  lotItem            LotItem                 @relation(fields: [lotItemId], references: [id], onDelete: Cascade)
+  packageAllocations PackageAllocation[]
+  trackingEvents     CartItemTrackingEvent[]
+
+  @@unique([cartItemId, lotItemId])
+  @@index([cartItemId])
+  @@index([lotItemId])
+  @@map("cart_item_lot_item")
+}
+
+model PackageAllocation {
+  id                Int      @id @default(autoincrement())
+  cartItemLotItemId Int
+  packageLotItemId  Int
+  quantity          Decimal  @db.Decimal(18, 4)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  cartItemLotItem CartItemLotItem         @relation(fields: [cartItemLotItemId], references: [id], onDelete: Cascade)
+  packageLotItem  PackageLotItem          @relation(fields: [packageLotItemId], references: [id], onDelete: Cascade)
+  trackingEvents  CartItemTrackingEvent[]
+
+  @@unique([cartItemLotItemId, packageLotItemId])
+  @@index([cartItemLotItemId])
+  @@index([packageLotItemId])
+  @@map("package_allocation")
+}
+
+model RollOver {
+  id          Int            @id @default(autoincrement())
+  cartItemId  Int
+  operationId Int
+  stage       RollOverStage
+  status      RollOverStatus @default(open)
+  quantity    Decimal        @db.Decimal(18, 4)
+  reason      String         @db.Text
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @default(now()) @updatedAt
+
+  cartItem       CartItem                @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  operation      Operation               @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  trackingEvents CartItemTrackingEvent[]
+
+  @@index([cartItemId])
+  @@index([operationId])
+  @@map("roll_over")
+}
+
+// Indicates whether the quantity dropped out before or after supplier-facing allocation.
+enum RollOverStage {
+  preAllocation
+  postAllocation
+}
+
+// Lifecycle of the rollover record itself.
+enum RollOverStatus {
+  open
+  rebatched
+  resolved
+  cancelled
+}
+
+model SupplierOrder {
+  id                Int                 @id @default(autoincrement())
+  supplierId        Int
+  code              String              @unique @db.Text
+  externalReference String?             @db.Text
+  status            SupplierOrderStatus @default(pending)
+  requestedAt       DateTime?
+  confirmedAt       DateTime?
+  cancelledAt       DateTime?
+  metadata          Json?               @db.JsonB
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now()) @updatedAt
+
+  supplier             Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  lots                 Lot[]
+  supplierTransactions SupplierTransaction[]
+
+  @@unique([id, supplierId])
+  @@index([supplierId])
+  @@map("supplier_order")
+}
+
+// Supplier-order level state. This should not be used as a substitute for item-level or shipment-level status.
+enum SupplierOrderStatus {
+  pending // The supplier order record exists but has not yet been sent.
+  requested // The supplier order was sent and is awaiting supplier confirmation.
+  confirmed // The supplier accepted the order contents.
+  readyForReceipt // The supplier has the order ready for pickup, dispatch, or warehouse receipt.
+  completed // The supplier order is closed successfully.
+  cancelled // The supplier order was cancelled before successful completion.
+}
+
+model SupplierTransaction {
+  id              Int                       @id @default(autoincrement())
+  supplierOrderId Int
+  amount          Decimal                   @db.Decimal(18, 2)
+  currency        Currency                  @default(ARS)
+  status          SupplierTransactionStatus @default(pending)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @default(now()) @updatedAt
+
+  supplierOrder SupplierOrder @relation(fields: [supplierOrderId], references: [id], onDelete: Restrict)
+
+  @@index([supplierOrderId])
+  @@map("supplier_transaction")
+}
+
+// Supplier payment lifecycle only.
+enum SupplierTransactionStatus {
+  pending // The supplier payment record exists but has not yet been processed.
+  completed // The supplier payment was completed successfully.
+  failed // The supplier payment failed.
+  refunded // The supplier payment was refunded or reversed after completion.
+}
+
+model Package {
+  id              Int                     @id @default(autoincrement())
+  name            String                  @db.Text
+  trackingCode    String?                 @db.Text
+  status          PackageStatus           @default(pending)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @default(now()) @updatedAt
+  packageLotItems PackageLotItem[]
+  shipment        Shipment?               @relation(fields: [shipmentId], references: [id])
+  shipmentId      Int?
+  trackingEvents  CartItemTrackingEvent[]
+
+  @@index([shipmentId])
+  @@map("package")
+}
+
+model PackageLotItem {
+  id        Int                  @id @default(autoincrement())
+  packageId Int
+  lotItemId Int
+  quantity  Decimal              @db.Decimal(18, 4)
+  status    PackageLotItemStatus @default(pending)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @default(now()) @updatedAt
+
+  package            Package             @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  lotItem            LotItem             @relation(fields: [lotItemId], references: [id], onDelete: Cascade)
+  packageAllocations PackageAllocation[]
+
+  @@unique([packageId, lotItemId])
+  @@index([packageId])
+  @@index([lotItemId])
+  @@map("package_lot_item")
+}
+
+// Aggregate operational state for one package, regardless of whether it moves internally or to an end user.
+enum PackageStatus {
+  pending // The package record exists but packing has not started.
+  packing // Contents are being prepared and assigned into the package.
+  readyForShipment // The package is packed and waiting to be placed on a shipment.
+  inTransit // The package is currently moving toward its destination.
+  received // The package reached its destination and was received.
+  delayed // The package is delayed in transit or dispatch.
+  failed // The package failed to reach its destination.
+  cancelled // The package was cancelled before successful completion.
+}
+
+// Line-level status for one lot-item allocation inside a package.
+enum PackageLotItemStatus {
+  pending
+  packing
+  packed
+  shipped
+  received
+  cancelled
+}
+
+model Shipment {
+  id                         Int            @id @default(autoincrement())
+  name                       String         @db.Text
+  internalCode               String         @unique @db.Text
+  trackingCode               String?        @db.Text
+  type                       ShipmentType   @default(internalTransfer)
+  status                     ShipmentStatus @default(pending)
+  destinationAddressSnapshot Json?          @db.JsonB
+  destinationContactSnapshot Json?          @db.JsonB
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @default(now()) @updatedAt
+
+  packages       Package[]
+  carrierOrder   CarrierOrder?           @relation(fields: [carrierOrderId], references: [id])
+  carrierOrderId Int?
+  trackingEvents CartItemTrackingEvent[]
+
+  @@index([carrierOrderId])
+  @@map("shipment")
+}
+
+enum ShipmentType {
+  internalTransfer
+  endUserDelivery
+}
+
+// Shipment state shared by both internal transfers and end-user deliveries.
+enum ShipmentStatus {
+  pending // The shipment record exists but preparation has not started.
+  preparing // The shipment is being assembled and documented.
+  readyForDispatch // The shipment is ready to leave with the assigned carrier or internal transport.
+  inTransit // The shipment is currently moving toward its destination.
+  received // The shipment reached its destination and was received.
+  delayed // The shipment is delayed before or during transit.
+  failed // The shipment failed to reach its destination.
+  cancelled // The shipment was cancelled before successful completion.
+}
+
+model CarrierOrder {
+  id                Int                @id @default(autoincrement())
+  carrierId         Int
+  code              String             @unique @db.Text
+  externalReference String?            @db.Text
+  status            CarrierOrderStatus @default(pending)
+  requestedAt       DateTime?
+  confirmedAt       DateTime?
+  cancelledAt       DateTime?
+  metadata          Json?              @db.JsonB
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @default(now()) @updatedAt
+
+  carrier   Carrier    @relation(fields: [carrierId], references: [id], onDelete: Restrict)
+  shipments Shipment[]
+
+  @@index([carrierId])
+  @@map("carrier_order")
+}
+
+enum CarrierOrderStatus {
+  pending
+  requested
+  confirmed
+  inTransit
+  completed
+  cancelled
+  failed
+}
+
+model Channel {
+  id          Int         @id @default(autoincrement())
+  name        String      @db.Text
+  description String?     @db.Text
+  type        ChannelType
+  token       String      @db.Text
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
+
+  @@map("channel")
+}
+
+enum ChannelType {
+  email
+  sms
+  whatsapp
+  push_notification
+  other
+}
+
+model AuditLog {
+  id             Int                 @id @default(autoincrement())
+  action         String              @db.Text
+  userId         String?
+  source         TrackingEventSource @default(system)
+  actorReference String?             @db.Text
+  entityType     String?             @db.Text
+  entityId       String?             @db.Text
+  before         Json?               @db.JsonB
+  after          Json?               @db.JsonB
+  metadata       Json?               @db.JsonB
+  ipAddress      String?             @db.Text
+  userAgent      String?             @db.Text
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_log")
+}
