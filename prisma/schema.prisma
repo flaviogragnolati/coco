@@ -89,17 +89,25 @@ model Verification {
 }
 
 model PaymentMethod {
-  id        Int               @id @default(autoincrement())
-  userId    String
-  type      PaymentMethodType
-  details   String            @db.Text
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @default(now()) @updatedAt
+  id                      Int               @id @default(autoincrement())
+  userId                  String
+  type                    PaymentMethodType
+  label                   String            @default("") @db.Text
+  details                 String            @db.Text
+  provider                String            @default("mock") @db.Text
+  externalPaymentMethodId String?           @db.Text
+  active                  Boolean           @default(true)
+  deleted                 Boolean           @default(false)
+  metadata                Json?             @db.JsonB
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @default(now()) @updatedAt
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   userTransactions UserTransaction[]
 
   @@index([userId])
+  @@index([userId, active, deleted])
+  @@index([externalPaymentMethodId])
   @@map("payment_method")
 }
 
@@ -463,6 +471,7 @@ model CartItemTrackingEvent {
 
 enum CartItemTrackingEventType {
   addedToCart
+  submittedToOrder
   includedInOperation
   rolledOverPreAllocation
   allocatedToLotItem
@@ -488,11 +497,14 @@ enum TrackingEventSource {
 
 model UserOrder {
   id                      Int             @id @default(autoincrement())
+  code                    String          @unique @db.Text
   status                  UserOrderStatus @default(pending)
   userId                  String
   cartId                  Int
   billingAddressSnapshot  Json?           @db.JsonB
   shippingAddressSnapshot Json?           @db.JsonB
+  termsSnapshot           Json?           @db.JsonB
+  acceptedTermsAt         DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -504,6 +516,7 @@ model UserOrder {
 
   @@index([userId])
   @@index([cartId])
+  @@index([userId, status])
   @@map("user_order")
 }
 
@@ -537,20 +550,29 @@ model UserOrderItem {
 }
 
 model UserTransaction {
-  id              Int                   @id @default(autoincrement())
-  amount          Decimal               @db.Decimal(18, 2)
-  currency        Currency              @default(ARS)
-  status          UserTransactionStatus @default(pending)
-  paymentMethodId Int
-  userOrderId     Int
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @default(now()) @updatedAt
+  id                    Int                   @id @default(autoincrement())
+  amount                Decimal               @db.Decimal(18, 2)
+  currency              Currency              @default(ARS)
+  status                UserTransactionStatus @default(pending)
+  provider              String                @default("mock") @db.Text
+  externalTransactionId String?               @db.Text
+  idempotencyKey        String                @unique @db.Text
+  providerStatus        String?               @db.Text
+  failureCode           String?               @db.Text
+  failureMessage        String?               @db.Text
+  requestSnapshot       Json?                 @db.JsonB
+  responseSnapshot      Json?                 @db.JsonB
+  paymentMethodId       Int
+  userOrderId           Int
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @default(now()) @updatedAt
 
   userOrder     UserOrder     @relation(fields: [userOrderId], references: [id])
   paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
 
   @@index([userOrderId])
   @@index([paymentMethodId])
+  @@index([externalTransactionId])
   @@map("user_transaction")
 }
 

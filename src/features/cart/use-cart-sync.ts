@@ -96,9 +96,16 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 		await utils.cart.getCurrent.invalidate();
 	}, [utils]);
 
+	const needsBootstrap =
+		hasHydrated &&
+		isAuthenticated &&
+		Boolean(userId) &&
+		!bootstrapCompleted.current;
+
 	return {
 		hasHydrated,
-		isSyncing: syncMutation.isPending || currentCartQuery.isFetching,
+		isSyncing:
+			needsBootstrap || syncMutation.isPending || currentCartQuery.isFetching,
 		invalidateServerCart,
 	};
 }

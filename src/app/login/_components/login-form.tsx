@@ -14,9 +14,16 @@ import {
 } from "~/components/ui/card";
 import { authClient } from "~/server/better-auth/client";
 
-export function LoginForm() {
+function getSafeCallbackURL(value: string) {
+	if (!value.startsWith("/") || value.startsWith("//")) return "/";
+	if (value.includes("://")) return "/";
+	return value;
+}
+
+export function LoginForm({ callbackURL = "/" }: { callbackURL?: string }) {
 	const [error, setError] = useState<string | null>(null);
 	const [isPending, setIsPending] = useState(false);
+	const safeCallbackURL = getSafeCallbackURL(callbackURL);
 
 	const handleGoogleSignIn = async () => {
 		setError(null);
@@ -25,7 +32,7 @@ export function LoginForm() {
 		try {
 			const response = await authClient.signIn.social({
 				provider: "google",
-				callbackURL: "/",
+				callbackURL: safeCallbackURL,
 			});
 
 			if (response?.error) {

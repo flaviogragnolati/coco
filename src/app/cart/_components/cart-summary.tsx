@@ -99,10 +99,10 @@ export function CartSummary({
 				{isAuthenticated ? (
 					<Alert>
 						<ShoppingBagIcon />
-						<AlertTitle>Checkout proximamente</AlertTitle>
+						<AlertTitle>Listo para checkout</AlertTitle>
 						<AlertDescription>
-							El carrito ya queda preparado para conectar confirmacion, pago y
-							entrega en la siguiente etapa.
+							Confirmá dirección, método de pago y resumen final antes de enviar
+							el pedido.
 						</AlertDescription>
 					</Alert>
 				) : (
@@ -118,15 +118,17 @@ export function CartSummary({
 			</CardContent>
 			<CardFooter className="flex flex-col gap-2">
 				{isAuthenticated ? (
-					<Button className="w-full" disabled type="button">
-						<ShoppingBagIcon data-icon="inline-start" />
-						Iniciar checkout
+					<Button asChild className="w-full">
+						<Link href="/checkout">
+							<ShoppingBagIcon data-icon="inline-start" />
+							Iniciar checkout
+						</Link>
 					</Button>
 				) : (
 					<Button asChild className="w-full">
-						<Link href="/login">
+						<Link href="/login?callbackURL=/checkout">
 							<LogInIcon data-icon="inline-start" />
-							Iniciar sesion
+							Registrarme o iniciar sesion
 						</Link>
 					</Button>
 				)}
