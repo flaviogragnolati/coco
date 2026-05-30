@@ -2,7 +2,7 @@
 
 import { MoreHorizontalIcon } from "lucide-react";
 
-import { Button } from "~/components/ui/button";
+import { buttonVariants } from "~/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -28,10 +28,14 @@ export function CrudRowActions<TItem>({
 		<DropdownMenu>
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<DropdownMenuTrigger asChild>
-						<Button aria-label="Abrir acciones" size="icon-sm" variant="ghost">
-							<MoreHorizontalIcon />
-						</Button>
+					<DropdownMenuTrigger
+						aria-label="Abrir acciones"
+						className={buttonVariants({ size: "icon-sm", variant: "ghost" })}
+						data-size="icon-sm"
+						data-slot="button"
+						data-variant="ghost"
+					>
+						<MoreHorizontalIcon />
 					</DropdownMenuTrigger>
 				</TooltipTrigger>
 				<TooltipContent>Acciones</TooltipContent>

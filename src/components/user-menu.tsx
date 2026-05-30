@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import { Button } from "~/components/ui/button";
+import { buttonVariants } from "~/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -55,15 +55,17 @@ export function UserMenu({ user }: UserMenuProps) {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button aria-label="Abrir menu de usuario" size="icon" variant="ghost">
-					<Avatar size="sm">
-						{user.image ? (
-							<AvatarImage alt={user.name} src={user.image} />
-						) : null}
-						<AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-					</Avatar>
-				</Button>
+			<DropdownMenuTrigger
+				aria-label="Abrir menu de usuario"
+				className={buttonVariants({ size: "icon", variant: "ghost" })}
+				data-size="icon"
+				data-slot="button"
+				data-variant="ghost"
+			>
+				<Avatar size="sm">
+					{user.image ? <AvatarImage alt={user.name} src={user.image} /> : null}
+					<AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+				</Avatar>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-56">
 				<DropdownMenuLabel>

@@ -7,7 +7,8 @@ import {
 	WrenchIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "~/components/ui/button";
+import { CartNavButton } from "~/components/cart-nav-button";
+import { Button, buttonVariants } from "~/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -59,6 +60,12 @@ export function AppNavbar({ session }: AppNavbarProps) {
 							Home
 						</Link>
 					</Button>
+					<Button asChild size="sm" variant="ghost">
+						<Link href="/products">
+							<ShoppingBagIcon data-icon="inline-start" />
+							Productos
+						</Link>
+					</Button>
 					{isActiveUser ? (
 						<Button asChild size="sm" variant="ghost">
 							<Link href="/my-operations">
@@ -69,12 +76,15 @@ export function AppNavbar({ session }: AppNavbarProps) {
 					) : null}
 					{canAccessAdmin ? (
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button size="sm" variant="ghost">
-									<ShieldIcon data-icon="inline-start" />
-									Administrador
-									<ChevronDownIcon data-icon="inline-end" />
-								</Button>
+							<DropdownMenuTrigger
+								className={buttonVariants({ size: "sm", variant: "ghost" })}
+								data-size="sm"
+								data-slot="button"
+								data-variant="ghost"
+							>
+								<ShieldIcon data-icon="inline-start" />
+								Administrador
+								<ChevronDownIcon data-icon="inline-end" />
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="start" className="w-48">
 								<DropdownMenuGroup>
@@ -93,6 +103,10 @@ export function AppNavbar({ session }: AppNavbarProps) {
 				</div>
 
 				<div className="flex items-center gap-2">
+					<CartNavButton
+						isAuthenticated={Boolean(user)}
+						userId={user?.id ?? null}
+					/>
 					{user ? (
 						<UserMenu
 							user={{
