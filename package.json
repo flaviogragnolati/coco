@@ -1,5 +1,5 @@
 {
-	"name": "flow",
+	"name": "coco-bulk",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -76,8 +76,8 @@
 	"ct3aMetadata": {
 		"initVersion": "7.40.0"
 	},
-	"packageManager": "pnpm@9.5.0",
+	"packageManager": "pnpm@11.5.2",
 	"engines": {
-		"node": "24.14.0"
+		"node": "24.15.0"
 	}
 }
