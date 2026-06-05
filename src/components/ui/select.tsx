@@ -2,13 +2,50 @@
 
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { Select as SelectPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
 import { cn } from "~/lib/utils";
 
-function Select({
+const selectControlClassName =
+	"rounded-3xl border border-transparent bg-input/50 text-sm outline-none transition-[color,box-shadow,background-color] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40";
+
+const selectTriggerClassName = cn(
+	selectControlClassName,
+	"flex w-fit items-center justify-between gap-1.5 whitespace-nowrap px-3 py-2 data-[size=default]:h-9 data-[size=sm]:h-8 data-placeholder:text-muted-foreground *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+);
+
+const nativeSelectClassName = cn(
+	selectControlClassName,
+	"h-9 w-full appearance-none px-3 py-2 pr-9",
+);
+
+const Select = React.forwardRef<
+	HTMLSelectElement,
+	React.ComponentProps<"select">
+>(({ className, children, ...props }, ref) => {
+	return (
+		<div
+			className={cn("relative w-full", className)}
+			data-slot="select-wrapper"
+		>
+			<select
+				className={nativeSelectClassName}
+				data-slot="select"
+				ref={ref}
+				{...props}
+			>
+				{children}
+			</select>
+			<ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+		</div>
+	);
+});
+
+Select.displayName = "Select";
+
+function SelectRoot({
 	...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-	return <SelectPrimitive.Root data-slot="select" {...props} />;
+	return <SelectPrimitive.Root data-slot="select-root" {...props} />;
 }
 
 function SelectGroup({
@@ -40,10 +77,7 @@ function SelectTrigger({
 }) {
 	return (
 		<SelectPrimitive.Trigger
-			className={cn(
-				"flex w-fit items-center justify-between gap-1.5 whitespace-nowrap rounded-3xl border border-transparent bg-input/50 px-3 py-2 text-sm outline-none transition-[color,box-shadow,background-color] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=default]:h-9 data-[size=sm]:h-8 data-placeholder:text-muted-foreground *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
-				className,
-			)}
+			className={cn(selectTriggerClassName, className)}
 			data-size={size}
 			data-slot="select-trigger"
 			{...props}
@@ -189,6 +223,7 @@ export {
 	SelectGroup,
 	SelectItem,
 	SelectLabel,
+	SelectRoot,
 	SelectScrollDownButton,
 	SelectScrollUpButton,
 	SelectSeparator,
