@@ -1,7 +1,7 @@
 import "~/styles/globals.css";
 
 import type { Metadata } from "next";
-import { Geist, Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, Inter, JetBrains_Mono, Nunito_Sans } from "next/font/google";
 
 import { AppNavbar } from "~/components/app-navbar";
 import { Toaster } from "~/components/ui/sonner";
@@ -12,7 +12,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 
 const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const nunitoSans = Nunito_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 const jetbrainsMono = JetBrains_Mono({
 	subsets: ["latin"],
@@ -41,7 +41,7 @@ export default async function RootLayout({
 				geist.variable,
 				jetbrainsMono.variable,
 				"font-sans",
-				inter.variable,
+				nunitoSans.variable,
 				geistHeading.variable,
 			)}
 			lang="es"

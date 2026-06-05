@@ -66,7 +66,7 @@ importers:
         specifier: ^4.17.23
         version: 4.18.1
       lucide-react:
-        specifier: ^1.7.0
+        specifier: ^1.17.0
         version: 1.17.0(react@19.2.7)
       next:
         specifier: ^16.2.2
@@ -96,7 +96,7 @@ importers:
         specifier: ^0.0.1
         version: 0.0.1
       shadcn:
-        specifier: ^4.1.0
+        specifier: ^4.10.0
         version: 4.10.0(@types/node@20.19.41)(typescript@5.9.3)
       sonner:
         specifier: ^2.0.7
@@ -105,7 +105,7 @@ importers:
         specifier: ^2.2.1
         version: 2.2.6
       tailwind-merge:
-        specifier: ^3.5.0
+        specifier: ^3.6.0
         version: 3.6.0
       tw-animate-css:
         specifier: ^1.4.0
