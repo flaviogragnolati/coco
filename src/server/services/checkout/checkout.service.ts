@@ -11,6 +11,8 @@ import {
 	orderListOutputSchema,
 } from "~/schemas/checkout.schemas";
 import { db } from "~/server/db";
+import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
+import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
 import type { CartItem, CartSnapshot } from "~/shared/common/cart.types";
 import type { CatalogClientTerms } from "~/shared/common/catalog.types";
 import type {
@@ -40,7 +42,6 @@ import {
 	createCheckoutAddress,
 	createCheckoutPaymentMethod,
 	createPendingTransaction,
-	createSubmissionTrackingEvents,
 	createUserOrder,
 	findCheckoutAddressById,
 	findCheckoutCartByUserId,
@@ -414,6 +415,14 @@ function buildPaymentRequest(input: {
 	};
 }
 
+function buildSubmittedToOrderEventKey(input: {
+	orderId: number;
+	transactionId: number;
+	cartItemId: number;
+}) {
+	return `checkout:order:${input.orderId}:transaction:${input.transactionId}:cartItem:${input.cartItemId}:submittedToOrder`;
+}
+
 export async function start(userId: string): Promise<CheckoutState> {
 	return db.$transaction(async (tx) => {
 		const cart = await getRequiredCheckoutCart(tx, userId);
@@ -631,25 +640,65 @@ export async function confirmAndPay(
 				prepared.order.id,
 				"processing",
 			);
-			await createSubmissionTrackingEvents(tx, {
-				cartItems: prepared.cart.cartItems.map((item) => ({
-					id: item.id,
-					quantity: item.quantity,
-				})),
-				userId,
-				orderId: order.id,
-				transactionId: transaction.id,
-			});
-			return { order, transaction };
+			const orderItemsByCartItemId = new Map(
+				order.items.map((item) => [item.sourceCartItemId, item]),
+			);
+
+			await DomainEventPublisher.publishMany(
+				tx,
+				prepared.cart.cartItems.map((item) => {
+					const orderItem = orderItemsByCartItemId.get(item.id);
+					if (!orderItem) {
+						throw new TRPCError({
+							code: "INTERNAL_SERVER_ERROR",
+							message:
+								"No se pudo vincular un item del carrito con el pedido creado.",
+						});
+					}
+
+					return {
+						type: "cart.item.submittedToOrder",
+						eventKey: buildSubmittedToOrderEventKey({
+							orderId: order.id,
+							transactionId: transaction.id,
+							cartItemId: item.id,
+						}),
+						aggregateType: "CartItem",
+						aggregateId: String(item.id),
+						actor: {
+							source: "user",
+							actorId: userId,
+						},
+						payload: {
+							cartItemId: String(item.id),
+							cartId: String(prepared.cart.id),
+							orderId: String(order.id),
+							userOrderItemId: String(orderItem.id),
+							transactionId: String(transaction.id),
+							quantity: item.quantity.toString(),
+						},
+					};
+				}),
+			);
+
+			return { order, transaction, shouldDispatchDomainEvents: true };
 		}
 
 		if (gatewayResponse.status === "failed") {
 			const order = await updateOrderStatus(tx, prepared.order.id, "failed");
-			return { order, transaction };
+			return { order, transaction, shouldDispatchDomainEvents: false };
 		}
 
-		return { order: prepared.order, transaction };
+		return {
+			order: prepared.order,
+			transaction,
+			shouldDispatchDomainEvents: false,
+		};
 	});
+
+	if (finalized.shouldDispatchDomainEvents) {
+		await DomainEventDispatcher.wake();
+	}
 
 	return buildPaymentResult({
 		order: finalized.order,

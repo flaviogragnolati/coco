@@ -4,6 +4,7 @@ import {
 	operationsCartStatsSchema,
 } from "~/schemas/admin/operations-cart.schemas";
 import type { db } from "~/server/db";
+import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
 import { writeAdminAuditLog } from "~/server/services/admin/_base/admin-audit";
 import type {
@@ -256,7 +257,7 @@ export async function update(
 ) {
 	assertUniqueExistingItemIds(input);
 
-	return database.$transaction(async (tx) => {
+	const result = await database.$transaction(async (tx) => {
 		const beforeRecord = await findOperationCartById(tx, input.id);
 		if (!beforeRecord) throwNotFound("Carrito");
 		const before = parseDetail(beforeRecord);
@@ -317,6 +318,9 @@ export async function update(
 
 		return after;
 	});
+
+	await DomainEventDispatcher.wake();
+	return result;
 }
 
 export async function quickUpdateStatus(
@@ -324,7 +328,7 @@ export async function quickUpdateStatus(
 	actor: AdminMutationActor,
 	database: AdminDb,
 ) {
-	return database.$transaction(async (tx) => {
+	const result = await database.$transaction(async (tx) => {
 		const beforeRecord = await findOperationCartById(tx, input.id);
 		if (!beforeRecord) throwNotFound("Carrito");
 		const before = parseDetail(beforeRecord);
@@ -359,6 +363,9 @@ export async function quickUpdateStatus(
 
 		return after;
 	});
+
+	await DomainEventDispatcher.wake();
+	return result;
 }
 
 export async function softDelete(
@@ -366,7 +373,7 @@ export async function softDelete(
 	actor: AdminMutationActor,
 	database: AdminDb,
 ) {
-	return database.$transaction(async (tx) => {
+	const result = await database.$transaction(async (tx) => {
 		const beforeRecord = await findOperationCartById(tx, input.id);
 		if (!beforeRecord) throwNotFound("Carrito");
 		const before = parseDetail(beforeRecord);
@@ -390,6 +397,9 @@ export async function softDelete(
 
 		return { id: after.id };
 	});
+
+	await DomainEventDispatcher.wake();
+	return result;
 }
 
 export async function hardDelete(
@@ -397,7 +407,7 @@ export async function hardDelete(
 	actor: AdminMutationActor,
 	database: AdminDb,
 ) {
-	return database.$transaction(async (tx) => {
+	const result = await database.$transaction(async (tx) => {
 		const relationRecord = await getOperationCartRelationCounts(tx, input.id);
 		if (!relationRecord) throwNotFound("Carrito");
 
@@ -430,4 +440,7 @@ export async function hardDelete(
 
 		return { id: deleted.id };
 	});
+
+	await DomainEventDispatcher.wake();
+	return result;
 }

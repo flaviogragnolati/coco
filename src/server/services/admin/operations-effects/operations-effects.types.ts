@@ -1,4 +1,5 @@
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
+import type { OperationsCartDetail } from "~/shared/common/admin-crud/operations-cart.types";
 import type { Prisma } from "../../../../../generated/prisma/client";
 
 export type AdminOperationsMutationSource =
@@ -23,8 +24,8 @@ export type AdminOperationsEffectSummary = {
 
 export type AdminOperationsCartChangeSet = {
 	cartId: number;
-	before: unknown;
-	after: unknown;
+	before: OperationsCartDetail;
+	after: OperationsCartDetail | null;
 	changedItemIds?: number[];
 	removedItemIds?: number[];
 	addedItemIds?: number[];

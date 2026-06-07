@@ -190,32 +190,6 @@ export async function submitCartItems(db: CheckoutDbClient, cartId: number) {
 	});
 }
 
-export async function createSubmissionTrackingEvents(
-	db: CheckoutDbClient,
-	input: {
-		cartItems: Array<{ id: number; quantity: Prisma.Decimal }>;
-		userId: string;
-		orderId: number;
-		transactionId: number;
-	},
-) {
-	if (input.cartItems.length === 0) return;
-
-	await db.cartItemTrackingEvent.createMany({
-		data: input.cartItems.map((item) => ({
-			cartItemId: item.id,
-			eventType: "submittedToOrder",
-			source: "user",
-			actorUserId: input.userId,
-			quantity: item.quantity,
-			metadata: toPrismaInputJson({
-				orderId: input.orderId,
-				transactionId: input.transactionId,
-			}),
-		})),
-	});
-}
-
 export async function listCheckoutAddresses(
 	db: CheckoutDbClient,
 	userId: string,

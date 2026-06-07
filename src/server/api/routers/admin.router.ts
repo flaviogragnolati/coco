@@ -9,6 +9,7 @@ import { productClientTermsRouter } from "./admin/product-client-terms.router";
 import { productLocalConstraintsRouter } from "./admin/product-local-constraints.router";
 import { productSupplierTermsRouter } from "./admin/product-supplier-terms.router";
 import { supplierRouter } from "./admin/supplier.router";
+import { adminTrackingRouter } from "./admin/tracking.router";
 import { userRouter } from "./admin/user.router";
 
 export const adminRouter = createTRPCRouter({
@@ -22,5 +23,6 @@ export const adminRouter = createTRPCRouter({
 	productLocalConstraints: productLocalConstraintsRouter,
 	productSupplierTerms: productSupplierTermsRouter,
 	supplier: supplierRouter,
+	tracking: adminTrackingRouter,
 	user: userRouter,
 });

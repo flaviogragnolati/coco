@@ -53,6 +53,7 @@ const requiredTables = [
 	"carrier_order",
 	"roll_over",
 	"cart_item_tracking_event",
+	"domain_event_outbox",
 	"audit_log",
 ] as const;
 
@@ -1905,10 +1906,18 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 	});
 
 	const operationMain = await tx.operation.create({
-		data: { code: "OP-SEED-2026-05-AGG" },
+		data: {
+			code: "OP-SEED-2026-05-AGG",
+			from: CURRENT_FROM_DATE,
+			strategy: "fifo",
+		},
 	});
 	const operationRebatch = await tx.operation.create({
-		data: { code: "OP-SEED-2026-06-REBATCH" },
+		data: {
+			code: "OP-SEED-2026-06-REBATCH",
+			from: SEED_DATE,
+			strategy: "fifo",
+		},
 	});
 
 	const supplierOrderVeg = await tx.supplierOrder.create({
