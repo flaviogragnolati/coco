@@ -203,11 +203,14 @@ export function OperationsCartTable({
 				</div>
 			)}
 			columns={operationsCartColumns}
+			getRowAriaLabel={(cart) => `Ver y editar carrito ${cart.code}`}
 			getRowClassName={(cart) =>
 				cart.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(cart) => cart.id}
+			isRowClickDisabled={(cart) => cart.deleted}
 			items={carts}
+			onRowClick={onEdit}
 		/>
 	);
 }

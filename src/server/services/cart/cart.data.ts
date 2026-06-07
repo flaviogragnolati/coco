@@ -49,6 +49,22 @@ const cartItemSelect = {
 	},
 } satisfies Prisma.CartItemSelect;
 
+const cartMutationSelect = {
+	id: true,
+	code: true,
+	status: true,
+	deleted: true,
+} satisfies Prisma.CartSelect;
+
+const cartItemMutationSelect = {
+	id: true,
+	cartId: true,
+	productClientTermsId: true,
+	quantity: true,
+	status: true,
+	deleted: true,
+} satisfies Prisma.CartItemSelect;
+
 const cartSelect = {
 	id: true,
 	code: true,
@@ -62,6 +78,10 @@ const cartSelect = {
 } satisfies Prisma.CartSelect;
 
 export type CartRecord = Prisma.CartGetPayload<{ select: typeof cartSelect }>;
+
+export type CartMutationRecord = Prisma.CartGetPayload<{
+	select: typeof cartMutationSelect;
+}>;
 
 export type CartProductClientTermsRecord = Prisma.ProductClientTermsGetPayload<{
 	select: typeof cartProductClientTermsSelect;
@@ -82,6 +102,21 @@ export async function findCurrentCartByUserId(
 	});
 }
 
+export async function findCurrentCartForMutationByUserId(
+	database: CartDbClient,
+	userId: string,
+) {
+	return database.cart.findFirst({
+		where: {
+			deleted: false,
+			status: { in: ["draft", "pending", "atCheckout"] },
+			userId,
+		},
+		select: cartMutationSelect,
+		orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+	});
+}
+
 export async function createCurrentCart(
 	database: CartDbClient,
 	userId: string,
@@ -93,7 +128,7 @@ export async function createCurrentCart(
 			status: "pending",
 			userId,
 		},
-		select: cartSelect,
+		select: cartMutationSelect,
 	});
 }
 
@@ -119,7 +154,7 @@ export async function findActiveCartItemByTerms(
 			productClientTermsId,
 			status: "inCart",
 		},
-		select: cartItemSelect,
+		select: cartItemMutationSelect,
 	});
 }
 
@@ -143,7 +178,7 @@ export async function createCartItem(
 			quantity: input.quantity,
 			status: "inCart",
 		},
-		select: cartItemSelect,
+		select: cartItemMutationSelect,
 	});
 }
 
@@ -155,7 +190,7 @@ export async function updateCartItemQuantity(
 	return database.cartItem.update({
 		where: { id },
 		data: { quantity },
-		select: cartItemSelect,
+		select: cartItemMutationSelect,
 	});
 }
 
@@ -166,7 +201,7 @@ export async function softDeleteCartItem(database: CartDbClient, id: number) {
 			deleted: true,
 			status: "dropped",
 		},
-		select: cartItemSelect,
+		select: cartItemMutationSelect,
 	});
 }
 

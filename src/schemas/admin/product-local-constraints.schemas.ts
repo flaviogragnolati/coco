@@ -7,8 +7,8 @@ import {
 import {
 	dateInputSchema,
 	jsonTextareaSchema,
+	nullishText,
 	optionalDateInputSchema,
-	optionalText,
 	validateDateRange,
 } from "./_crud-schema-helpers";
 
@@ -43,7 +43,7 @@ const productLocalConstraintsInputFieldsSchema = z.object({
 	constraintType: optionalConstraintTypeSchema.optional(),
 	value: jsonTextareaSchema,
 	scope: jsonTextareaSchema,
-	reason: optionalText,
+	reason: nullishText,
 	active: z.boolean().default(true),
 	fromDate: dateInputSchema.default(() => new Date().toISOString()),
 	toDate: optionalDateInputSchema,

@@ -116,11 +116,14 @@ export function AddressTable({
 		<CrudTable
 			actions={(address) => <CrudRowActions actions={actions} item={address} />}
 			columns={addressColumns}
+			getRowAriaLabel={(address) => `Editar dirección ${address.line1}`}
 			getRowClassName={(address) =>
 				address.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(address) => address.id}
+			isRowClickDisabled={(address) => address.deleted}
 			items={addresses}
+			onRowClick={onEdit}
 		/>
 	);
 }

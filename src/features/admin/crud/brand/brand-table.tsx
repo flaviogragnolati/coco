@@ -107,11 +107,14 @@ export function BrandTable({
 		<CrudTable
 			actions={(brand) => <CrudRowActions actions={actions} item={brand} />}
 			columns={brandColumns}
+			getRowAriaLabel={(brand) => `Editar marca ${brand.name}`}
 			getRowClassName={(brand) =>
 				brand.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(brand) => brand.id}
+			isRowClickDisabled={(brand) => brand.deleted}
 			items={brands}
+			onRowClick={onEdit}
 		/>
 	);
 }

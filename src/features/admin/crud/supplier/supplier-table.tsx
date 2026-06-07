@@ -1,10 +1,6 @@
 "use client";
 
-import {
-	ArchiveXIcon,
-	PencilIcon,
-	Trash2Icon,
-} from "lucide-react";
+import { ArchiveXIcon, PencilIcon, Trash2Icon } from "lucide-react";
 
 import { CrudRowActions } from "~/features/admin/crud/_components/crud-row-actions";
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
@@ -100,11 +96,14 @@ export function SupplierTable({
 				<CrudRowActions actions={actions} item={supplier} />
 			)}
 			columns={supplierColumns}
+			getRowAriaLabel={(supplier) => `Editar proveedor ${supplier.name}`}
 			getRowClassName={(supplier) =>
 				supplier.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(supplier) => supplier.id}
+			isRowClickDisabled={(supplier) => supplier.deleted}
 			items={suppliers}
+			onRowClick={onEdit}
 		/>
 	);
 }

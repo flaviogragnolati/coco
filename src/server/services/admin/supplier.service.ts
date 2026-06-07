@@ -1,9 +1,17 @@
-import type { db } from "~/server/db";
 import {
 	supplierDetailSchema,
 	supplierListOutputSchema,
 	supplierStatsSchema,
 } from "~/schemas/admin/supplier.schemas";
+import type { db } from "~/server/db";
+import type {
+	SupplierCreateInput,
+	SupplierDeleteInput,
+	SupplierDetail,
+	SupplierListInput,
+	SupplierStats,
+	SupplierUpdateInput,
+} from "~/shared/common/admin-crud/supplier.types";
 import type { AdminMutationActor } from "./_base/admin-audit";
 import { writeAdminAuditLog } from "./_base/admin-audit";
 import { AdminCrudError, throwNotFound } from "./_base/admin-crud.errors";
@@ -14,19 +22,11 @@ import {
 	getSupplierStats,
 	hardDeleteSupplier,
 	listSuppliers,
-	softDeleteSupplier,
-	updateSupplier,
 	type SupplierDetailRecord,
 	type SupplierRelationCountRecord,
+	softDeleteSupplier,
+	updateSupplier,
 } from "./supplier.data";
-import type {
-	SupplierCreateInput,
-	SupplierDeleteInput,
-	SupplierDetail,
-	SupplierListInput,
-	SupplierStats,
-	SupplierUpdateInput,
-} from "~/shared/common/admin-crud/supplier.types";
 
 type AdminDb = typeof db;
 
@@ -57,6 +57,7 @@ export async function list(input: SupplierListInput, database: AdminDb) {
 
 export async function getById(id: number, database: AdminDb) {
 	const supplier = await findSupplierById(database, id);
+	console.log("supplier service getById result:", supplier);
 	if (!supplier) throwNotFound("Proveedor");
 	return parseDetail(supplier);
 }

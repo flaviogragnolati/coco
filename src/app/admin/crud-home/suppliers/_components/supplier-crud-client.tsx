@@ -1,9 +1,6 @@
 "use client";
 
-import {
-	PlusIcon,
-	SearchIcon,
-} from "lucide-react";
+import { PlusIcon, SearchIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -19,8 +16,12 @@ import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { CrudDeleteDialog } from "~/features/admin/crud/_components/crud-delete-dialog";
-import { CrudEmptyState, CrudErrorState, CrudLoadingState } from "~/features/admin/crud/_components/crud-state";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
+import {
+	CrudEmptyState,
+	CrudErrorState,
+	CrudLoadingState,
+} from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
 import {
 	matchesCrudStatus,
@@ -227,8 +228,7 @@ export function SupplierCrudClient() {
 			) : statsQuery.isError ? (
 				<CrudErrorState
 					message={
-						statsQuery.error.message ||
-						"No se pudieron cargar los indicadores"
+						statsQuery.error.message || "No se pudieron cargar los indicadores"
 					}
 				/>
 			) : stats ? (
@@ -309,7 +309,9 @@ export function SupplierCrudClient() {
 			</section>
 
 			<SupplierFormDialog
-				isLoadingSupplier={formMode === "edit" && supplierDetailQuery.isFetching}
+				isLoadingSupplier={
+					formMode === "edit" && supplierDetailQuery.isFetching
+				}
 				isSubmitting={isFormSubmitting}
 				mode={formMode}
 				onOpenChange={(open) => {
@@ -341,13 +343,13 @@ export function SupplierCrudClient() {
 			/>
 
 			<CrudDeleteDialog
-				confirmLabel="Eliminar definitivamente"
 				confirmationLabel={
 					hardDeleteTarget
 						? `Escribí "${hardDeleteTarget.name}" para confirmar`
 						: "Confirmación"
 				}
 				confirmationValue={hardDeleteTarget?.name}
+				confirmLabel="Eliminar definitivamente"
 				description={
 					hardDeleteTarget
 						? "Esta acción intenta borrar el proveedor de la base de datos. Si tiene lotes, términos u órdenes de proveedor relacionadas, el servidor la va a bloquear."

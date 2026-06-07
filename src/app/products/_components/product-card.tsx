@@ -63,6 +63,7 @@ export function ProductCard({
 				<div className="flex w-full items-center gap-2">
 					<Button
 						className="flex-1"
+						disabled={disabled}
 						onClick={() =>
 							cartItem
 								? onQuantityCommit(cartItem, cartItem.quantity)
@@ -75,6 +76,7 @@ export function ProductCard({
 					</Button>
 					<Button
 						aria-label="Ver detalles"
+						disabled={disabled}
 						onClick={() => onDetails(product.id)}
 						size="icon"
 						type="button"

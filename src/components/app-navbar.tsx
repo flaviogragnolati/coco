@@ -2,8 +2,13 @@ import {
 	ChevronDownIcon,
 	HomeIcon,
 	LayoutDashboardIcon,
+	MapPinIcon,
+	PackageIcon,
 	ShieldIcon,
 	ShoppingBagIcon,
+	TagsIcon,
+	TruckIcon,
+	UsersIcon,
 	WrenchIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -14,27 +19,75 @@ import {
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { UserMenu } from "~/components/user-menu";
 import { isAdminRole } from "~/server/auth/auth.utils";
 import type { Session } from "~/server/better-auth";
 
-const adminLinks = [
+const adminDashboardLink = {
+	href: "/admin",
+	label: "Dashboard",
+	Icon: LayoutDashboardIcon,
+};
+
+const adminCrudLinks = [
 	{
-		href: "/admin",
-		label: "Dashboard",
-		Icon: LayoutDashboardIcon,
+		href: "/admin/crud-home/suppliers",
+		label: "Proveedores",
+		Icon: TruckIcon,
 	},
 	{
+		href: "/admin/crud-home/brands",
+		label: "Marcas",
+		Icon: TagsIcon,
+	},
+	{
+		href: "/admin/crud-home/products",
+		label: "Productos",
+		Icon: PackageIcon,
+	},
+	{
+		href: "/admin/crud-home/product-terms",
+		label: "Términos y restricciones",
+		Icon: PackageIcon,
+	},
+	{
+		href: "/admin/crud-home/carriers",
+		label: "Carriers",
+		Icon: TruckIcon,
+	},
+	{
+		href: "/admin/crud-home/destinations",
+		label: "Destinos",
+		Icon: MapPinIcon,
+	},
+	{
+		href: "/admin/crud-home/users",
+		label: "Usuarios",
+		Icon: UsersIcon,
+	},
+	{
+		href: "/admin/crud-home/addresses",
+		label: "Direcciones",
+		Icon: MapPinIcon,
+	},
+];
+
+const adminOperationsLinks = [
+	{
 		href: "/admin/operations",
-		label: "Operacion",
+		label: "Inicio operaciones",
 		Icon: ShoppingBagIcon,
 	},
 	{
-		href: "/admin/crud-home",
-		label: "Administracion",
-		Icon: WrenchIcon,
+		href: "/admin/operations/user-carts",
+		label: "Carritos de usuarios",
+		Icon: ShoppingBagIcon,
 	},
 ];
 
@@ -46,6 +99,7 @@ export function AppNavbar({ session }: AppNavbarProps) {
 	const user = session?.user;
 	const isActiveUser = user?.active === true && user.deleted === false;
 	const canAccessAdmin = isActiveUser && isAdminRole(user.role);
+	const DashboardIcon = adminDashboardLink.Icon;
 
 	return (
 		<header className="sticky top-0 border-b bg-background/95 backdrop-blur">
@@ -86,16 +140,47 @@ export function AppNavbar({ session }: AppNavbarProps) {
 								Administrador
 								<ChevronDownIcon data-icon="inline-end" />
 							</DropdownMenuTrigger>
-							<DropdownMenuContent align="start" className="w-48">
+							<DropdownMenuContent align="start" className="w-60">
 								<DropdownMenuGroup>
-									{adminLinks.map(({ href, label, Icon }) => (
-										<DropdownMenuItem asChild key={href}>
-											<Link href={href}>
-												<Icon />
-												{label}
-											</Link>
-										</DropdownMenuItem>
-									))}
+									<DropdownMenuItem asChild>
+										<Link href={adminDashboardLink.href}>
+											<DashboardIcon />
+											{adminDashboardLink.label}
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+									<DropdownMenuSub>
+										<DropdownMenuSubTrigger>
+											<WrenchIcon />
+											Administración
+										</DropdownMenuSubTrigger>
+										<DropdownMenuSubContent className="w-64">
+											{adminCrudLinks.map(({ href, label, Icon }) => (
+												<DropdownMenuItem asChild key={href}>
+													<Link href={href}>
+														<Icon />
+														{label}
+													</Link>
+												</DropdownMenuItem>
+											))}
+										</DropdownMenuSubContent>
+									</DropdownMenuSub>
+									<DropdownMenuSub>
+										<DropdownMenuSubTrigger>
+											<ShoppingBagIcon />
+											Operaciones
+										</DropdownMenuSubTrigger>
+										<DropdownMenuSubContent className="w-56">
+											{adminOperationsLinks.map(({ href, label, Icon }) => (
+												<DropdownMenuItem asChild key={href}>
+													<Link href={href}>
+														<Icon />
+														{label}
+													</Link>
+												</DropdownMenuItem>
+											))}
+										</DropdownMenuSubContent>
+									</DropdownMenuSub>
 								</DropdownMenuGroup>
 							</DropdownMenuContent>
 						</DropdownMenu>

@@ -105,11 +105,14 @@ export function UserTable({
 		<CrudTable
 			actions={(user) => <CrudRowActions actions={actions} item={user} />}
 			columns={userColumns}
+			getRowAriaLabel={(user) => `Editar usuario ${user.name}`}
 			getRowClassName={(user) =>
 				user.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(user) => user.id}
+			isRowClickDisabled={(user) => user.deleted}
 			items={users}
+			onRowClick={onEdit}
 		/>
 	);
 }

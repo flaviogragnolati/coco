@@ -87,6 +87,9 @@
 	--sidebar-ring: oklch(0.705 0.015 286.067);
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.141 0.005 285.823);
+	--toast-loading-bg: oklch(0.97 0.025 232);
+	--toast-loading-border: oklch(0.86 0.07 232);
+	--toast-loading-text: oklch(0.38 0.12 232);
 }
 
 .dark {
@@ -121,6 +124,9 @@
 	--sidebar-accent-foreground: oklch(0.985 0 0);
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.552 0.016 285.938);
+	--toast-loading-bg: oklch(0.2 0.04 232);
+	--toast-loading-border: oklch(0.34 0.08 232);
+	--toast-loading-text: oklch(0.78 0.11 232);
 }
 
 @layer base {
@@ -132,5 +138,17 @@
 	}
 	html {
 		@apply font-sans;
+	}
+}
+
+@layer components {
+	.cn-toast-loading[data-sonner-toast] {
+		background: var(--toast-loading-bg);
+		border-color: var(--toast-loading-border);
+		color: var(--toast-loading-text);
+	}
+
+	.cn-toast-loading[data-sonner-toast] [data-icon] {
+		color: var(--toast-loading-text);
 	}
 }

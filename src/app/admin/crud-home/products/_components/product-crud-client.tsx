@@ -29,6 +29,7 @@ import {
 	normalizeSearch,
 } from "~/features/admin/crud/_lib/filter-helpers";
 import { ProductFormDialog } from "~/features/admin/crud/product/product-form-dialog";
+import { ProductPreviewDialog } from "~/features/admin/crud/product/product-preview-dialog";
 import { ProductTable } from "~/features/admin/crud/product/product-table";
 import type {
 	CrudModalState,
@@ -57,6 +58,7 @@ export function ProductCrudClient() {
 		useState<ProductListItem | null>(null);
 	const [hardDeleteTarget, setHardDeleteTarget] =
 		useState<ProductListItem | null>(null);
+	const [previewProductId, setPreviewProductId] = useState<number | null>(null);
 
 	const selectedProductId =
 		formState.open && formState.mode === "edit" ? formState.entityId : null;
@@ -72,12 +74,17 @@ export function ProductCrudClient() {
 		{ id: selectedProductId ?? 0 },
 		{ enabled: selectedProductId !== null },
 	);
+	const productPreviewQuery = api.admin.product.getPreview.useQuery(
+		{ id: previewProductId ?? 0 },
+		{ enabled: previewProductId !== null },
+	);
 
 	const invalidateProductQueries = async () => {
 		await Promise.all([
 			utils.admin.product.list.invalidate(),
 			utils.admin.product.getStats.invalidate(),
 			utils.admin.product.getById.invalidate(),
+			utils.admin.product.getPreview.invalidate(),
 			utils.admin.brand.list.invalidate(),
 			utils.admin.brand.getStats.invalidate(),
 		]);
@@ -210,6 +217,7 @@ export function ProductCrudClient() {
 					})
 				}
 				onHardDelete={setHardDeleteTarget}
+				onPreview={(product) => setPreviewProductId(product.id)}
 				onSoftDelete={setSoftDeleteTarget}
 				products={filteredProducts}
 			/>
@@ -330,6 +338,21 @@ export function ProductCrudClient() {
 				open={formState.open}
 				product={formMode === "edit" ? productDetailQuery.data : undefined}
 				suppliers={suppliersQuery.data ?? []}
+			/>
+
+			<ProductPreviewDialog
+				errorMessage={
+					productPreviewQuery.isError
+						? productPreviewQuery.error.message ||
+							"No se pudo cargar el preview"
+						: undefined
+				}
+				isLoading={productPreviewQuery.isFetching}
+				onOpenChange={(open) => {
+					if (!open) setPreviewProductId(null);
+				}}
+				open={previewProductId !== null}
+				preview={productPreviewQuery.data}
 			/>
 
 			<CrudDeleteDialog

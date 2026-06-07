@@ -85,7 +85,7 @@ export async function listCurrentHomeOffers(
 	now: Date,
 	limit: number,
 ) {
-	return database.productClientTerms.findMany({
+	return await database.productClientTerms.findMany({
 		where: currentOffersWhere(now),
 		select: currentTermsSelect,
 		orderBy: [{ fromDate: "desc" }, { updatedAt: "desc" }, { id: "desc" }],

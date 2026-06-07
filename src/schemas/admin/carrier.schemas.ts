@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { optionalText, requiredText } from "./_crud-schema-helpers";
+import { nullishText, requiredText } from "./_crud-schema-helpers";
 
 const optionalEmail = z
 	.string()
@@ -16,7 +16,7 @@ export const carrierIdSchema = z
 
 export const carrierAddressSchema = z.object({
 	line1: requiredText("La direccion es obligatoria"),
-	line2: optionalText,
+	line2: nullishText,
 	city: requiredText("La ciudad es obligatoria"),
 	state: requiredText("La provincia o estado es obligatorio"),
 	postalCode: requiredText("El codigo postal es obligatorio"),
@@ -27,8 +27,8 @@ export const carrierContactInfoSchema = z
 	.object({
 		contactName: requiredText("El nombre de contacto es obligatorio"),
 		email: optionalEmail,
-		phone: optionalText,
-		whatsapp: optionalText,
+		phone: nullishText,
+		whatsapp: nullishText,
 	})
 	.superRefine((value, ctx) => {
 		if (!value.email && !value.phone && !value.whatsapp) {
@@ -42,7 +42,7 @@ export const carrierContactInfoSchema = z
 
 export const carrierCreateInputSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
-	description: optionalText,
+	description: nullishText,
 	active: z.boolean().default(true),
 	address: carrierAddressSchema,
 	contactInfo: carrierContactInfoSchema,

@@ -135,11 +135,16 @@ export function ProductLocalConstraintsTable({
 		<CrudTable
 			actions={(item) => <CrudRowActions actions={actions} item={item} />}
 			columns={productLocalConstraintsColumns}
+			getRowAriaLabel={(item) =>
+				`Editar restricción local de ${item.product.name}`
+			}
 			getRowClassName={(item) =>
 				item.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(item) => item.id}
+			isRowClickDisabled={(item) => item.deleted}
 			items={constraints}
+			onRowClick={onEdit}
 		/>
 	);
 }

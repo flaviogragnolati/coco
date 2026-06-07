@@ -8,6 +8,7 @@ import type {
 	productIdSchema,
 	productListInputSchema,
 	productListItemSchema,
+	productPreviewSchema,
 	productStatsSchema,
 	productUnitSchema,
 	productUpdateInputSchema,
@@ -21,6 +22,7 @@ export type ProductBrandAssignment = z.output<
 export type ProductListInput = z.output<typeof productListInputSchema>;
 export type ProductListItem = z.output<typeof productListItemSchema>;
 export type ProductDetail = z.output<typeof productDetailSchema>;
+export type ProductPreview = z.output<typeof productPreviewSchema>;
 export type ProductStats = z.output<typeof productStatsSchema>;
 export type ProductCreateInput = z.output<typeof productCreateInputSchema>;
 export type ProductUpdateInput = z.output<typeof productUpdateInputSchema>;

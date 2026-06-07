@@ -109,11 +109,14 @@ export function DestinationTable({
 				<CrudRowActions actions={actions} item={destination} />
 			)}
 			columns={destinationColumns}
+			getRowAriaLabel={(destination) => `Editar destino ${destination.name}`}
 			getRowClassName={(destination) =>
 				destination.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(destination) => destination.id}
+			isRowClickDisabled={(destination) => destination.deleted}
 			items={destinations}
+			onRowClick={onEdit}
 		/>
 	);
 }

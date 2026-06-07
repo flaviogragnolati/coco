@@ -1,15 +1,11 @@
 import { z } from "zod";
 
-const requiredText = (message: string) =>
-	z
-		.string()
-		.trim()
-		.min(1, message);
+const requiredText = (message: string) => z.string().trim().min(1, message);
 
-const optionalText = z
+const nullishText = z
 	.string()
 	.trim()
-	.optional()
+	.nullish()
 	.transform((value) => (value && value.length > 0 ? value : undefined));
 
 const optionalEmail = z
@@ -26,7 +22,7 @@ export const supplierIdSchema = z
 
 export const supplierAddressSchema = z.object({
 	line1: requiredText("La dirección es obligatoria"),
-	line2: optionalText,
+	line2: nullishText,
 	city: requiredText("La ciudad es obligatoria"),
 	state: requiredText("La provincia o estado es obligatorio"),
 	postalCode: requiredText("El código postal es obligatorio"),
@@ -37,8 +33,8 @@ export const supplierContactInfoSchema = z
 	.object({
 		contactName: requiredText("El nombre de contacto es obligatorio"),
 		email: optionalEmail,
-		phone: optionalText,
-		whatsapp: optionalText,
+		phone: nullishText,
+		whatsapp: nullishText,
 	})
 	.superRefine((value, ctx) => {
 		if (!value.email && !value.phone && !value.whatsapp) {
@@ -52,7 +48,7 @@ export const supplierContactInfoSchema = z
 
 export const supplierCreateInputSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
-	description: optionalText,
+	description: nullishText,
 	active: z.boolean().default(true),
 	address: supplierAddressSchema,
 	contactInfo: supplierContactInfoSchema,

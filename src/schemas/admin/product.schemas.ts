@@ -5,6 +5,9 @@ import {
 	brandInlineCreateInputSchema,
 } from "~/schemas/admin/brand.schemas";
 import { supplierIdSchema } from "~/schemas/admin/supplier.schemas";
+import { cartItemSchema } from "~/schemas/cart.schemas";
+import { catalogProductDetailSchema } from "~/schemas/catalog.schemas";
+import { homeFeaturedProductSchema } from "~/schemas/home.schemas";
 
 const requiredText = (message: string) => z.string().trim().min(1, message);
 
@@ -119,6 +122,14 @@ export const productStatsSchema = z.object({
 	active: z.number().int().nonnegative(),
 	inactive: z.number().int().nonnegative(),
 	deleted: z.number().int().nonnegative(),
+});
+
+export const productPreviewSchema = z.object({
+	adminProduct: productDetailSchema,
+	catalogProduct: catalogProductDetailSchema.nullable(),
+	cartItem: cartItemSchema.nullable(),
+	featuredProduct: homeFeaturedProductSchema.nullable(),
+	warnings: z.array(z.string()),
 });
 
 export const productListOutputSchema = z.array(productListItemSchema);

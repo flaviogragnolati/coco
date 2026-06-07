@@ -90,11 +90,14 @@ export function CarrierTable({
 		<CrudTable
 			actions={(carrier) => <CrudRowActions actions={actions} item={carrier} />}
 			columns={carrierColumns}
+			getRowAriaLabel={(carrier) => `Editar carrier ${carrier.name}`}
 			getRowClassName={(carrier) =>
 				carrier.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(carrier) => carrier.id}
+			isRowClickDisabled={(carrier) => carrier.deleted}
 			items={carriers}
+			onRowClick={onEdit}
 		/>
 	);
 }

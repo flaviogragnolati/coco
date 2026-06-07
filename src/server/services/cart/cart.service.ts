@@ -31,6 +31,7 @@ import {
 	findActiveCartItemByTerms,
 	findCartById,
 	findCurrentCartByUserId,
+	findCurrentCartForMutationByUserId,
 	findProductClientTermsForCart,
 	softDeleteCartItem,
 	softDeleteCartItemsByCartId,
@@ -161,7 +162,7 @@ async function getOrCreateCurrentCart(
 		: never,
 	userId: string,
 ) {
-	const existing = await findCurrentCartByUserId(database, userId);
+	const existing = await findCurrentCartForMutationByUserId(database, userId);
 	return existing ?? createCurrentCart(database, userId);
 }
 
@@ -220,7 +221,6 @@ async function upsertCartItem(
 	quantity: string,
 ) {
 	const existing = await findActiveCartItemByTerms(database, cartId, terms.id);
-
 	if (existing) {
 		return updateCartItemQuantity(database, existing.id, quantity);
 	}
@@ -233,15 +233,8 @@ async function upsertCartItem(
 	});
 }
 
-async function getCartAfterMutation(
-	database: Parameters<CartDb["$transaction"]>[0] extends (
-		tx: infer T,
-	) => unknown
-		? T
-		: never,
-	cartId: number,
-) {
-	const record = await findCartById(database, cartId);
+async function getCartSnapshot(cartId: number) {
+	const record = await findCartById(db, cartId);
 	return mapCart(record);
 }
 
@@ -254,11 +247,11 @@ export async function syncLocal(
 	userId: string,
 	items: CartLocalItemInput[],
 ): Promise<CartMutationOutput> {
-	const output = await db.$transaction(async (tx) => {
-		const existingCart = await findCurrentCartByUserId(tx, userId);
+	const mutation = await db.$transaction(async (tx) => {
+		const existingCart = await findCurrentCartForMutationByUserId(tx, userId);
 
 		if (items.length === 0 && !existingCart) {
-			return { cart: emptyCart(), warnings: [] };
+			return { cartId: null, warnings: [] };
 		}
 
 		const cart = existingCart ?? (await createCurrentCart(tx, userId));
@@ -306,10 +299,17 @@ export async function syncLocal(
 		}
 
 		return {
-			cart: await getCartAfterMutation(tx, cart.id),
+			cartId: cart.id,
 			warnings,
 		};
 	});
+
+	const output = {
+		cart: mutation.cartId
+			? await getCartSnapshot(mutation.cartId)
+			: emptyCart(),
+		warnings: mutation.warnings,
+	};
 
 	return cartMutationOutputSchema.parse(output);
 }
@@ -318,7 +318,7 @@ export async function setItemQuantity(
 	userId: string,
 	input: CartLocalItemInput,
 ): Promise<CartMutationOutput> {
-	const output = await db.$transaction(async (tx) => {
+	const mutation = await db.$transaction(async (tx) => {
 		const cart = await getOrCreateCurrentCart(tx, userId);
 		const terms = await assertUsableTerms(tx, input.productClientTermsId);
 		const normalized = normalizeWithWarning(
@@ -330,10 +330,15 @@ export async function setItemQuantity(
 		await upsertCartItem(tx, cart.id, terms, normalized.quantity);
 
 		return {
-			cart: await getCartAfterMutation(tx, cart.id),
-			warnings: normalized.warning ? [normalized.warning] : [],
+			cartId: cart.id,
+			warning: normalized.warning,
 		};
 	});
+
+	const output = {
+		cart: await getCartSnapshot(mutation.cartId),
+		warnings: mutation.warning ? [mutation.warning] : [],
+	};
 
 	return cartMutationOutputSchema.parse(output);
 }
@@ -342,9 +347,9 @@ export async function removeItem(
 	userId: string,
 	productClientTermsId: number,
 ): Promise<CartMutationOutput> {
-	const output = await db.$transaction(async (tx) => {
-		const cart = await findCurrentCartByUserId(tx, userId);
-		if (!cart) return { cart: emptyCart(), warnings: [] };
+	const mutation = await db.$transaction(async (tx) => {
+		const cart = await findCurrentCartForMutationByUserId(tx, userId);
+		if (!cart) return { cartId: null };
 
 		const item = await findActiveCartItemByTerms(
 			tx,
@@ -353,27 +358,35 @@ export async function removeItem(
 		);
 		if (item) await softDeleteCartItem(tx, item.id);
 
-		return {
-			cart: await getCartAfterMutation(tx, cart.id),
-			warnings: [],
-		};
+		return { cartId: cart.id };
 	});
+
+	const output = {
+		cart: mutation.cartId
+			? await getCartSnapshot(mutation.cartId)
+			: emptyCart(),
+		warnings: [],
+	};
 
 	return cartMutationOutputSchema.parse(output);
 }
 
 export async function clear(userId: string): Promise<CartMutationOutput> {
-	const output = await db.$transaction(async (tx) => {
-		const cart = await findCurrentCartByUserId(tx, userId);
-		if (!cart) return { cart: emptyCart(), warnings: [] };
+	const mutation = await db.$transaction(async (tx) => {
+		const cart = await findCurrentCartForMutationByUserId(tx, userId);
+		if (!cart) return { cartId: null };
 
 		await softDeleteCartItemsByCartId(tx, cart.id);
 
-		return {
-			cart: await getCartAfterMutation(tx, cart.id),
-			warnings: [],
-		};
+		return { cartId: cart.id };
 	});
+
+	const output = {
+		cart: mutation.cartId
+			? await getCartSnapshot(mutation.cartId)
+			: emptyCart(),
+		warnings: [],
+	};
 
 	return cartMutationOutputSchema.parse(output);
 }

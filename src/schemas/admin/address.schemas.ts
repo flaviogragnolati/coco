@@ -2,10 +2,10 @@ import { z } from "zod";
 
 const requiredText = (message: string) => z.string().trim().min(1, message);
 
-const optionalText = z
+const nullishText = z
 	.string()
 	.trim()
-	.optional()
+	.nullish()
 	.transform((value) => (value && value.length > 0 ? value : undefined));
 
 export const userIdSchema = z.string().trim().min(1, "Seleccioná un usuario");
@@ -25,7 +25,7 @@ export const addressTypeSchema = z.enum([
 export const addressFieldsSchema = z.object({
 	type: addressTypeSchema.default("all"),
 	line1: requiredText("La dirección es obligatoria"),
-	line2: optionalText,
+	line2: nullishText,
 	city: requiredText("La ciudad es obligatoria"),
 	state: requiredText("La provincia o estado es obligatorio"),
 	postalCode: requiredText("El código postal es obligatorio"),
@@ -37,8 +37,16 @@ export const addressEmbeddedInputSchema = addressFieldsSchema.extend({
 	id: addressIdSchema.optional(),
 });
 
-export const addressEmbeddedDetailSchema = addressFieldsSchema.extend({
+export const addressEmbeddedDetailSchema = z.object({
 	id: addressIdSchema,
+	type: addressTypeSchema,
+	line1: z.string(),
+	line2: z.string().nullable(),
+	city: z.string(),
+	state: z.string(),
+	postalCode: z.string(),
+	country: z.string(),
+	active: z.boolean(),
 	deleted: z.boolean(),
 });
 

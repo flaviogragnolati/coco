@@ -1,6 +1,6 @@
 "use client";
 
-import { ArchiveXIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { ArchiveXIcon, EyeIcon, PencilIcon, Trash2Icon } from "lucide-react";
 
 import { CrudRowActions } from "~/features/admin/crud/_components/crud-row-actions";
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
@@ -84,15 +84,22 @@ const productColumns: CrudColumn<ProductListItem>[] = [
 export function ProductTable({
 	products,
 	onEdit,
+	onPreview,
 	onSoftDelete,
 	onHardDelete,
 }: {
 	products: ProductListItem[];
 	onEdit: (product: ProductListItem) => void;
+	onPreview: (product: ProductListItem) => void;
 	onSoftDelete: (product: ProductListItem) => void;
 	onHardDelete: (product: ProductListItem) => void;
 }) {
 	const actions: CrudRowAction<ProductListItem>[] = [
+		{
+			label: "Preview",
+			icon: EyeIcon,
+			onSelect: onPreview,
+		},
 		{
 			label: "Editar",
 			icon: PencilIcon,
@@ -117,11 +124,14 @@ export function ProductTable({
 		<CrudTable
 			actions={(product) => <CrudRowActions actions={actions} item={product} />}
 			columns={productColumns}
+			getRowAriaLabel={(product) => `Editar producto ${product.name}`}
 			getRowClassName={(product) =>
 				product.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(product) => product.id}
+			isRowClickDisabled={(product) => product.deleted}
 			items={products}
+			onRowClick={onEdit}
 		/>
 	);
 }

@@ -220,7 +220,7 @@ export function useCartActions({
 			removeLocalItem(productClientTermsId);
 
 			if (!isAuthenticated || !userId) {
-				toast.warning("Producto quitado del carrito");
+				toast.info("Producto quitado del carrito");
 				return;
 			}
 
@@ -233,7 +233,7 @@ export function useCartActions({
 		clearLocalCart();
 
 		if (!isAuthenticated || !userId) {
-			toast.warning("Carrito vaciado");
+			toast.info("Carrito vaciado");
 			return;
 		}
 

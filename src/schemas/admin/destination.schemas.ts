@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-import {
-	optionalText,
-	optionalUrl,
-	requiredText,
-} from "./_crud-schema-helpers";
+import { nullishText, optionalUrl, requiredText } from "./_crud-schema-helpers";
 
 export const destinationIdSchema = z
 	.number()
@@ -13,7 +9,7 @@ export const destinationIdSchema = z
 
 export const destinationCreateInputSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
-	description: optionalText,
+	description: nullishText,
 	googleMapsUrl: optionalUrl,
 	active: z.boolean().default(true),
 });

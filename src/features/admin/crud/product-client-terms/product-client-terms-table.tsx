@@ -118,11 +118,16 @@ export function ProductClientTermsTable({
 		<CrudTable
 			actions={(item) => <CrudRowActions actions={actions} item={item} />}
 			columns={productClientTermsColumns}
+			getRowAriaLabel={(item) =>
+				`Editar términos de cliente de ${item.product.name}`
+			}
 			getRowClassName={(item) =>
 				item.deleted ? "bg-muted/30 text-muted-foreground" : undefined
 			}
 			getRowKey={(item) => item.id}
+			isRowClickDisabled={(item) => item.deleted}
 			items={terms}
+			onRowClick={onEdit}
 		/>
 	);
 }

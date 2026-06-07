@@ -7,6 +7,7 @@ import {
 	productDetailSchema,
 	productListInputSchema,
 	productListOutputSchema,
+	productPreviewSchema,
 	productStatsSchema,
 	productUpdateInputSchema,
 } from "~/schemas/admin/product.schemas";
@@ -43,6 +44,17 @@ export const productRouter = createTRPCRouter({
 		.query(async ({ ctx, input }) => {
 			try {
 				return await productService.getById(input.id, ctx.db);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	getPreview: adminProcedure
+		.input(productDeleteInputSchema)
+		.output(productPreviewSchema)
+		.query(async ({ ctx, input }) => {
+			try {
+				return await productService.getPreview(input.id, ctx.db);
 			} catch (error) {
 				mapServiceError(error);
 			}

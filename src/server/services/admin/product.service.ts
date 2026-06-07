@@ -2,18 +2,34 @@ import { brandDetailSchema } from "~/schemas/admin/brand.schemas";
 import {
 	productDetailSchema,
 	productListOutputSchema,
+	productPreviewSchema,
 	productStatsSchema,
 } from "~/schemas/admin/product.schemas";
 import type { db } from "~/server/db";
+import {
+	type CatalogProductDetailRecord,
+	findCatalogProductDetail,
+} from "~/server/services/catalog/catalog.data";
 import type {
 	ProductBrandAssignment,
 	ProductCreateInput,
 	ProductDeleteInput,
 	ProductDetail,
 	ProductListInput,
+	ProductPreview,
 	ProductStats,
 	ProductUpdateInput,
 } from "~/shared/common/admin-crud/product.types";
+import type { CartItem } from "~/shared/common/cart.types";
+import type {
+	CatalogClientTerms,
+	CatalogProductDetail,
+} from "~/shared/common/catalog.types";
+import {
+	calculateLineTotal,
+	normalizeCartQuantity,
+} from "~/shared/common/commerce.helpers";
+import type { HomeFeaturedProduct } from "~/shared/common/home.types";
 import type { AdminMutationActor } from "./_base/admin-audit";
 import { writeAdminAuditLog } from "./_base/admin-audit";
 import { AdminCrudError, throwNotFound } from "./_base/admin-crud.errors";
@@ -41,6 +57,111 @@ const BRAND_ENTITY = "brand";
 
 function parseDetail(record: ProductDetailRecord): ProductDetail {
 	return productDetailSchema.parse(record);
+}
+
+function selectProductImage(product: {
+	cardImageUrl: string | null;
+	cartImageUrl: string | null;
+}) {
+	return product.cardImageUrl ?? product.cartImageUrl;
+}
+
+function mapPreviewTerms(
+	terms: CatalogProductDetailRecord["productClientTerms"][number],
+): CatalogClientTerms {
+	return {
+		id: terms.id,
+		moq: terms.moq.toString(),
+		moqPrice: terms.moqPrice.toString(),
+		step: terms.step?.toString() ?? null,
+		stepPrice: terms.stepPrice?.toString() ?? null,
+		max: terms.max?.toString() ?? null,
+		refPrice: terms.refPrice?.toString() ?? null,
+		currency: terms.currency,
+		fromDate: terms.fromDate,
+		toDate: terms.toDate,
+	};
+}
+
+function mapPreviewCatalogProduct(
+	record: CatalogProductDetailRecord,
+): CatalogProductDetail | null {
+	const terms = record.productClientTerms[0];
+	if (!terms) return null;
+
+	return {
+		id: record.id,
+		name: record.name,
+		description: record.description,
+		unit: record.unit,
+		brand: record.brand,
+		imageUrl: selectProductImage(record),
+		terms: mapPreviewTerms(terms),
+		cardImageUrl: record.cardImageUrl,
+		cartImageUrl: record.cartImageUrl,
+		images: record.images,
+	};
+}
+
+function mapPreviewCartItem(product: CatalogProductDetail): CartItem {
+	const quantity = normalizeCartQuantity(product.terms.moq, product.terms);
+
+	return {
+		productClientTermsId: product.terms.id,
+		quantity,
+		lineTotal: calculateLineTotal(product.terms, quantity),
+		product: {
+			id: product.id,
+			name: product.name,
+			description: product.description,
+			unit: product.unit,
+			brandName: product.brand?.name ?? null,
+			imageUrl: product.imageUrl,
+		},
+		terms: product.terms,
+	};
+}
+
+function mapPreviewFeaturedProduct(
+	product: CatalogProductDetail,
+): HomeFeaturedProduct {
+	return {
+		id: product.id,
+		productName: product.name,
+		productDescription: product.description,
+		unit: product.unit,
+		brandName: product.brand?.name ?? null,
+		imageUrl: product.imageUrl,
+		refPrice: product.terms.refPrice,
+		currency: product.terms.currency,
+	};
+}
+
+function buildPreviewWarnings(
+	adminProduct: ProductDetail,
+	catalogProduct: CatalogProductDetail | null,
+) {
+	const warnings: string[] = [];
+
+	if (adminProduct.deleted) {
+		warnings.push("El producto está eliminado y no se muestra públicamente.");
+	} else if (!adminProduct.active) {
+		warnings.push("El producto está inactivo y no se muestra públicamente.");
+	}
+
+	if (!catalogProduct) {
+		warnings.push(
+			"No hay términos de cliente vigentes para mostrar precio, carrito o publicación pública.",
+		);
+	}
+
+	if (!adminProduct.cardImageUrl && !adminProduct.cartImageUrl) {
+		warnings.push(
+			"El producto no tiene imagen principal; las vistas usan el placeholder visual.",
+		);
+	}
+
+	return warnings;
 }
 
 function buildRelationBlockMessage(record: ProductRelationCountRecord) {
@@ -153,6 +274,34 @@ export async function getById(id: number, database: AdminDb) {
 	const product = await findProductById(database, id);
 	if (!product) throwNotFound("Producto");
 	return parseDetail(product);
+}
+
+export async function getPreview(
+	id: number,
+	database: AdminDb,
+): Promise<ProductPreview> {
+	const product = await findProductById(database, id);
+	if (!product) throwNotFound("Producto");
+
+	const adminProduct = parseDetail(product);
+	const catalogRecord = await findCatalogProductDetail(
+		database,
+		id,
+		new Date(),
+	);
+	const catalogProduct = catalogRecord
+		? mapPreviewCatalogProduct(catalogRecord)
+		: null;
+
+	return productPreviewSchema.parse({
+		adminProduct,
+		catalogProduct,
+		cartItem: catalogProduct ? mapPreviewCartItem(catalogProduct) : null,
+		featuredProduct: catalogProduct
+			? mapPreviewFeaturedProduct(catalogProduct)
+			: null,
+		warnings: buildPreviewWarnings(adminProduct, catalogProduct),
+	});
 }
 
 export async function getStats(database: AdminDb): Promise<ProductStats> {

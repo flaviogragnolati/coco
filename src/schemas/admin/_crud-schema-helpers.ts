@@ -3,10 +3,10 @@ import { z } from "zod";
 export const requiredText = (message: string) =>
 	z.string().trim().min(1, message);
 
-export const optionalText = z
+export const nullishText = z
 	.string()
 	.trim()
-	.optional()
+	.nullish()
 	.transform((value) => (value && value.length > 0 ? value : undefined));
 
 export const optionalUrl = z
