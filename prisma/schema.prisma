@@ -470,6 +470,7 @@ model CartItemTrackingEvent {
   @@index([source])
   @@index([cartItemId, createdAt])
   @@index([eventType, createdAt])
+  @@index([createdAt, id])
   @@map("cart_item_tracking_event")
 }
 
@@ -597,10 +598,10 @@ model Operation {
   code              String            @unique @db.Text
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @default(now()) @updatedAt
-  from              DateTime
+  from              DateTime          @default(now())
   to                DateTime          @default(now())
   includeRollOver   Boolean           @default(false) // indicates whether this operation should include items that were rolled over from a previous operation
-  strategy          OperationStrategy
+  strategy          OperationStrategy @default(fifo)
   notes             String?           @db.Text
   triggeredByUserId String? // if null the operation was triggered by the system, otherwise it references the user that triggered the operation
 

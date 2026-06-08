@@ -506,6 +506,7 @@ User endpoint:
 
 ```txt
 tracking.getOrderTimeline({ orderId })
+tracking.getOrderItemTimelines({ orderId })
 ```
 
 Rules:
@@ -515,13 +516,20 @@ Rules:
 - Resolves source cart item ids from `UserOrderItem`.
 - Returns redacted timeline rows: event type, source, quantity, created time,
   and label.
+- `getOrderItemTimelines` returns one redacted timeline per source cart item,
+  using a simplified six-stage customer view: pedido confirmado, preparacion,
+  proveedor, empaque, envio, and entrega.
+- Customer notices are separated from the main six stages for exceptions,
+  rollovers, cancellations/removals, and quantity changes.
 - Does not expose internal refs or full metadata.
 
 Admin endpoints:
 
 ```txt
+admin.tracking.listEvents({ page, pageSize, filters })
 admin.tracking.getCartTimeline({ cartId })
 admin.tracking.getCartItemTimeline({ cartItemId })
+admin.tracking.getCartItemTimelineDetail({ cartItemId })
 ```
 
 Rules:
@@ -529,7 +537,25 @@ Rules:
 - Require admin access through `adminProcedure`.
 - Return full timeline rows including event id, event key, cart item id, actor,
   refs, metadata, quantity, and timestamp.
-- Use stable ordering: `createdAt asc, id asc`.
+- `listEvents` is paginated server-side, ordered by `createdAt desc, id desc`,
+  and supports filters for search text, event type, source, actor, user, cart,
+  cart item, order, operation, lot, lot item, package, shipment, roll over, and
+  created-at range.
+- `getCartItemTimelineDetail` returns the complete cart-item timeline ordered by
+  `createdAt asc, id asc`, plus key related entity summaries for admin
+  diagnosis.
+- Timeline detail endpoints use stable ordering: `createdAt asc, id asc`.
+
+Admin UI:
+
+```txt
+/admin/operations/tracking
+```
+
+The v1 admin tracking page is read-only. It lists `CartItemTrackingEvent` rows
+with server-side pagination and opens a modal with the complete cart-item
+timeline. Future correction/edit flows must add explicit mutation contracts;
+this UI must not write `CartItemTrackingEvent` rows directly.
 
 ## Idempotency
 

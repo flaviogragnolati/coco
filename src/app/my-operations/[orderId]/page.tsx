@@ -12,12 +12,14 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
+import { CustomerCartItemTimeline } from "~/features/tracking/customer-cart-item-timeline";
 import { requireUser } from "~/server/auth/route-guards";
 import type { OrderDetail } from "~/shared/common/checkout.types";
 import {
 	formatCurrency,
 	formatQuantity,
 } from "~/shared/common/commerce.helpers";
+import type { UserOrderItemTimeline } from "~/shared/common/tracking.types";
 import { api } from "~/trpc/server";
 
 function orderStatusLabel(status: OrderDetail["status"]) {
@@ -115,13 +117,20 @@ export default async function OrderDetailPage({
 	if (!Number.isInteger(id) || id <= 0) notFound();
 
 	let order: OrderDetail;
+	let itemTimelines: UserOrderItemTimeline[];
 	try {
-		order = await api.orders.getMine({ id });
+		[order, itemTimelines] = await Promise.all([
+			api.orders.getMine({ id }),
+			api.tracking.getOrderItemTimelines({ orderId: id }),
+		]);
 	} catch {
 		notFound();
 	}
 
 	const latestTransaction = order.transactions[0];
+	const timelineByCartItemId = new Map(
+		itemTimelines.map((timeline) => [timeline.cartItemId, timeline]),
+	);
 
 	return (
 		<main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
@@ -176,6 +185,11 @@ export default async function OrderDetailPage({
 								<span className="font-heading font-semibold">
 									{formatCurrency(getLineTotal(item), getCurrency(item))}
 								</span>
+								<div className="sm:col-span-2">
+									<CustomerCartItemTimeline
+										timeline={timelineByCartItemId.get(item.sourceCartItemId)}
+									/>
+								</div>
 							</div>
 						))}
 					</CardContent>

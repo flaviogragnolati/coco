@@ -1,5 +1,6 @@
 import {
 	trackingOrderTimelineInputSchema,
+	userOrderItemTimelinesOutputSchema,
 	userTrackingTimelineOutputSchema,
 } from "~/schemas/tracking.schemas";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
@@ -11,6 +12,16 @@ export const trackingRouter = createTRPCRouter({
 		.output(userTrackingTimelineOutputSchema)
 		.query(({ ctx, input }) => {
 			return TrackingEventService.getUserOrderTimeline(
+				ctx.session.user.id,
+				input.orderId,
+			);
+		}),
+
+	getOrderItemTimelines: protectedProcedure
+		.input(trackingOrderTimelineInputSchema)
+		.output(userOrderItemTimelinesOutputSchema)
+		.query(({ ctx, input }) => {
+			return TrackingEventService.getUserOrderItemTimelines(
 				ctx.session.user.id,
 				input.orderId,
 			);

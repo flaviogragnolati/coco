@@ -1,6 +1,7 @@
 import {
 	ArrowRightIcon,
 	BoxesIcon,
+	HistoryIcon,
 	PackageIcon,
 	PackageSearchIcon,
 	ShoppingCartIcon,
@@ -27,6 +28,14 @@ const operationsEntries = [
 		description: "Revision y ajuste operacional de carritos, items y ordenes.",
 		body: "Filtra por usuario, producto, estado, fulfillment, orden y pagos relacionados.",
 		Icon: ShoppingCartIcon,
+		enabled: true,
+	},
+	{
+		href: "/admin/operations/tracking",
+		title: "Tracking",
+		description: "Timeline completo de eventos por item de carrito.",
+		body: "Filtra eventos, revisa referencias operativas y abre el historial completo del cart item.",
+		Icon: HistoryIcon,
 		enabled: true,
 	},
 	{
