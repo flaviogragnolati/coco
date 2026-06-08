@@ -7,10 +7,52 @@
       "skillPath": "better-auth/best-practices/SKILL.md",
       "computedHash": "a4c830509e85557b59339d8d93a4e243e9e59c686e7678854d39230e12c2a6dc"
     },
+    "caching": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/caching/SKILL.md",
+      "computedHash": "c4f3f4bb6b04529e85705dc9c64043caf92818226fae7a95eeba28da79a6b45e"
+    },
+    "error-handling": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/error-handling/SKILL.md",
+      "computedHash": "5816a0b5e2e7a33b2bf5b130201bba4251b0865688f4c647a780f39af277c6b8"
+    },
+    "links": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/client/skills/links/SKILL.md",
+      "computedHash": "1a3b8d6ebed34539510683825ce88372b0bec28f01a75456c60bdc79568d41ec"
+    },
+    "middlewares": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/middlewares/SKILL.md",
+      "computedHash": "f6e57c21ef44f645b7cb3f144901497631abb6dbe8aa37a0bfcce48459b274b3"
+    },
     "neon-postgres": {
       "source": "neondatabase/agent-skills",
       "sourceType": "github",
       "computedHash": "391693eee67001639ab65474df185da3ea5cf9ee4b99badecfd64561113edbb4"
+    },
+    "nextjs-app-router": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/next/skills/nextjs-app-router/SKILL.md",
+      "computedHash": "4590350d634d82de296ac22c62791a207b8b823d75bc2ec2af535b84abba20ab"
+    },
+    "nextjs-app-router-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/SKILL.md",
+      "computedHash": "b4fea42eecf1f803155ef7fa133d5286ee8f2dbba3e616954e9e43c6f0ffc144"
+    },
+    "nextjs-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-best-practices/SKILL.md",
+      "computedHash": "5344522f15f544513456e77b858377368f24e680732af5efeb5a67bbab021bc1"
     },
     "postgres-best-practices": {
       "source": "neondatabase/postgres-skills",
@@ -52,10 +94,40 @@
       "sourceType": "github",
       "computedHash": "405ab7dc1b9d6266e403cba581da563597a1ca8e6e203d8cfe85ddccd1621f19"
     },
+    "server-side-calls": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/server-side-calls/SKILL.md",
+      "computedHash": "c6b3a9b12a4eaf8c7411cdf1b4858eb26321fa64ce9d61872190e69e0dd15b22"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
       "computedHash": "507f011a70e8b3ae242bdc0bb5b39fd91a1d4049a0f3c281991ccf84973d591c"
+    },
+    "subscriptions": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/subscriptions/SKILL.md",
+      "computedHash": "9da7fc9d98616564a67d7ff567641b517cb321fefc281ac6ca245517a2ef71ad"
+    },
+    "trpc": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "trpc/SKILL.md",
+      "computedHash": "c806ba379dcdbf2020d02ad36f24811d8b7435f34338d896a0fcb91db03ab0b5"
+    },
+    "trpc-router": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/trpc-router/SKILL.md",
+      "computedHash": "dd22c754d042bbc48826d7289463e5cfc40725899c576e25bf9766706a4b2850"
+    },
+    "validators": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/validators/SKILL.md",
+      "computedHash": "2bd2393213400f414b3592b3ca6369177fb17229076fa6c4435578410b28607b"
     },
     "zustand-state-management": {
       "source": "jackspace/ClaudeSkillz",
