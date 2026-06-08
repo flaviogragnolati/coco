@@ -1,9 +1,9 @@
 import "server-only";
 
+import type { Prisma } from "~/prisma/client";
 import { domainEventSchema } from "~/schemas/domain-events.schemas";
 import { appLogger } from "~/server/services/logging/app-logger.service";
 import type { DomainEventInput } from "~/shared/common/domain-events.types";
-import type { Prisma } from "../../../generated/prisma/client";
 import { toPrismaInputJson } from "../services/admin/_base/prisma-json";
 
 export class DomainEventPublisher {

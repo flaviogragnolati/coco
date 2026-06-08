@@ -21,7 +21,7 @@ import {
 	userTrackingStageByEventType,
 	userTrackingStageDefinitions,
 } from "~/shared/common/tracking-display";
-import type { Prisma } from "../../../../generated/prisma/client";
+import type { Prisma } from "../~/prisma/client";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import type { TrackingCommand } from "./tracking-event-mapper";
 import { TrackingStatusProjector } from "./tracking-status-projector";

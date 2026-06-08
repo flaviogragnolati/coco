@@ -3,7 +3,7 @@ import type {
 	DestinationListInput,
 	DestinationUpdateInput,
 } from "~/shared/common/admin-crud/destination.types";
-import type { Prisma } from "../../../../generated/prisma/client";
+import type { Prisma } from "../~/prisma/client";
 
 type AdminDbClient = Prisma.TransactionClient;
 

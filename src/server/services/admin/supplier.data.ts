@@ -1,10 +1,9 @@
-import type { Prisma } from "../../../../generated/prisma/client";
-
 import type {
 	SupplierCreateInput,
 	SupplierListInput,
 	SupplierUpdateInput,
 } from "~/shared/common/admin-crud/supplier.types";
+import type { Prisma } from "../~/prisma/client";
 import { toPrismaInputJson } from "./_base/prisma-json";
 
 type AdminDbClient = Prisma.TransactionClient;
@@ -138,10 +137,7 @@ export async function hardDeleteSupplier(db: AdminDbClient, id: number) {
 	});
 }
 
-export async function getSupplierRelationCounts(
-	db: AdminDbClient,
-	id: number,
-) {
+export async function getSupplierRelationCounts(db: AdminDbClient, id: number) {
 	return db.supplier.findUnique({
 		where: { id },
 		select: supplierRelationCountSelect,

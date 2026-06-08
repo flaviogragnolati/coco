@@ -6,7 +6,7 @@ import type {
 	CheckoutPaymentMethodCreateInput,
 	CheckoutPaymentMethodUpdateInput,
 } from "~/shared/common/checkout.types";
-import type { Prisma } from "../../../../generated/prisma/client";
+import type { Prisma } from "../~/prisma/client";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import { cartProductClientTermsSelect } from "../cart/cart.data";
 

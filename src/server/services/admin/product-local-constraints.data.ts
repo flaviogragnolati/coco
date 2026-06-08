@@ -1,9 +1,9 @@
+import { Prisma } from "~/prisma/client";
 import type {
 	ProductLocalConstraintsCreateInput,
 	ProductLocalConstraintsListInput,
 	ProductLocalConstraintsUpdateInput,
 } from "~/shared/common/admin-crud/product-local-constraints.types";
-import { Prisma } from "../../../../generated/prisma/client";
 import { toPrismaInputJson } from "./_base/prisma-json";
 
 type AdminDbClient = Prisma.TransactionClient;

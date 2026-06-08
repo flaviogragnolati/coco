@@ -1,6 +1,6 @@
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
 import type { OperationsCartDetail } from "~/shared/common/admin-crud/operations-cart.types";
-import type { Prisma } from "../../../../../generated/prisma/client";
+import type { Prisma } from "../../~/prisma/client";
 
 export type AdminOperationsMutationSource =
 	| "cart"

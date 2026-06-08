@@ -3,7 +3,7 @@ import type {
 	AddressListInput,
 	AddressUpdateInput,
 } from "~/shared/common/admin-crud/address.types";
-import type { Prisma } from "../../../../generated/prisma/client";
+import type { Prisma } from "../~/prisma/client";
 
 type AdminDbClient = Prisma.TransactionClient;
 

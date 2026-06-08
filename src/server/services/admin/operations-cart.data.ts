@@ -1,9 +1,9 @@
+import { Prisma } from "~/prisma/client";
 import type {
 	OperationsCartItemInput,
 	OperationsCartListInput,
 	OperationsCartStatus,
 } from "~/shared/common/admin-crud/operations-cart.types";
-import { Prisma } from "../../../../generated/prisma/client";
 import { toPrismaInputJson } from "./_base/prisma-json";
 
 type AdminDbClient = Prisma.TransactionClient;

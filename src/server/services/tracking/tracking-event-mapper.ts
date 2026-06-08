@@ -4,7 +4,7 @@ import type { DomainEventInput } from "~/shared/common/domain-events.types";
 import type {
 	CartItemTrackingEventType,
 	TrackingEventSource,
-} from "../../../../generated/prisma/client";
+} from "../~/prisma/client";
 
 export type TrackingCommand = {
 	eventKey: string;

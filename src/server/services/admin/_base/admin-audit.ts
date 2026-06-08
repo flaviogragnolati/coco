@@ -1,4 +1,4 @@
-import type { Prisma } from "../../../../../generated/prisma/client";
+import type { Prisma } from "../../~/prisma/client";
 
 import { toPrismaInputJson } from "./prisma-json";
 
@@ -29,8 +29,11 @@ export async function writeAdminAuditLog(
 			entityType: input.entityType,
 			entityId: input.entityId,
 			before:
-				input.before === undefined ? undefined : toPrismaInputJson(input.before),
-			after: input.after === undefined ? undefined : toPrismaInputJson(input.after),
+				input.before === undefined
+					? undefined
+					: toPrismaInputJson(input.before),
+			after:
+				input.after === undefined ? undefined : toPrismaInputJson(input.after),
 			metadata:
 				input.metadata === undefined
 					? undefined
