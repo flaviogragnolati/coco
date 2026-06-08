@@ -21,8 +21,6 @@ const fulfillmentStatusByTrackingEvent: Partial<
 	receivedAtWarehouse: "atWarehouse",
 	movedInEndUserShipment: "inEndUserShipment",
 	delivered: "delivered",
-	rolledOverPreAllocation: "partiallyRolledOver",
-	rolledOverPostAllocation: "partiallyRolledOver",
 	cartItemCancelled: "cancelled",
 	fulfillmentException: "exception",
 };
@@ -194,13 +192,32 @@ async function canProjectStatus(
 	}
 }
 
+async function targetStatusForCommand(
+	tx: Prisma.TransactionClient,
+	command: TrackingCommand,
+): Promise<CartItemFulfillmentStatus | undefined> {
+	if (
+		command.eventType === "rolledOverPreAllocation" ||
+		command.eventType === "rolledOverPostAllocation"
+	) {
+		const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
+		const allocatedCount = await tx.cartItemLotItem.count({
+			where: { cartItemId },
+		});
+
+		return allocatedCount > 0 ? "partiallyRolledOver" : "rolledOver";
+	}
+
+	return fulfillmentStatusByTrackingEvent[command.eventType];
+}
+
 // biome-ignore lint/complexity/noStaticOnlyClass: This class is a logical grouping of related functionality and is not expected to be instantiated or extended.
 export class TrackingStatusProjector {
 	static async project(
 		tx: Prisma.TransactionClient,
 		command: TrackingCommand,
 	): Promise<void> {
-		const targetStatus = fulfillmentStatusByTrackingEvent[command.eventType];
+		const targetStatus = await targetStatusForCommand(tx, command);
 		if (!targetStatus) return;
 
 		const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");

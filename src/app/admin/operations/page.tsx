@@ -50,9 +50,9 @@ const operationsEntries = [
 		href: "/admin/operations/operations",
 		title: "Operaciones",
 		description: "Coordinacion de ciclos operativos y demanda agregada.",
-		body: "Pendiente para la siguiente version del modulo de operaciones.",
+		body: "Ejecuta asignaciones FIFO sobre demanda pagada y prepara lotes por proveedor.",
 		Icon: PackageSearchIcon,
-		enabled: false,
+		enabled: true,
 	},
 	{
 		href: "/admin/operations/packages",

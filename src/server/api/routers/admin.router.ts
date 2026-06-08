@@ -3,6 +3,7 @@ import { addressRouter } from "./admin/address.router";
 import { brandRouter } from "./admin/brand.router";
 import { carrierRouter } from "./admin/carrier.router";
 import { destinationRouter } from "./admin/destination.router";
+import { operationRouter } from "./admin/operation.router";
 import { operationsCartRouter } from "./admin/operations-cart.router";
 import { productRouter } from "./admin/product.router";
 import { productClientTermsRouter } from "./admin/product-client-terms.router";
@@ -17,6 +18,7 @@ export const adminRouter = createTRPCRouter({
 	brand: brandRouter,
 	carrier: carrierRouter,
 	destination: destinationRouter,
+	operation: operationRouter,
 	operationsCart: operationsCartRouter,
 	product: productRouter,
 	productClientTerms: productClientTermsRouter,

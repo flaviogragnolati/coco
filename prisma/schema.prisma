@@ -246,7 +246,8 @@ model Destination {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now()) @updatedAt
 
-  lotItems LotItem[]
+  lotItems   LotItem[]
+  operations Operation[]
 
   @@map("destination")
 }
@@ -573,6 +574,7 @@ model UserTransaction {
   responseSnapshot      Json?                 @db.JsonB
   paymentMethodId       Int
   userOrderId           Int
+  completedAt           DateTime?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @default(now()) @updatedAt
 
@@ -582,6 +584,7 @@ model UserTransaction {
   @@index([userOrderId])
   @@index([paymentMethodId])
   @@index([externalTransactionId])
+  @@index([status, completedAt])
   @@map("user_transaction")
 }
 
@@ -594,28 +597,50 @@ enum UserTransactionStatus {
 }
 
 model Operation {
-  id                Int               @id @default(autoincrement())
-  code              String            @unique @db.Text
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @default(now()) @updatedAt
-  from              DateTime          @default(now())
-  to                DateTime          @default(now())
-  includeRollOver   Boolean           @default(false) // indicates whether this operation should include items that were rolled over from a previous operation
-  strategy          OperationStrategy @default(fifo)
-  notes             String?           @db.Text
-  triggeredByUserId String? // if null the operation was triggered by the system, otherwise it references the user that triggered the operation
+  id                 Int               @id @default(autoincrement())
+  code               String            @unique @db.Text
+  status             OperationStatus   @default(running)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+  finishedAt         DateTime?
+  from               DateTime          @default(now())
+  to                 DateTime          @default(now())
+  includeRollOver    Boolean           @default(false) // indicates whether this operation should include items that were rolled over from a previous operation
+  strategy           OperationStrategy @default(fifo)
+  notes              String?           @db.Text
+  failureReason      String?           @db.Text
+  eligibleQuantity   Decimal           @default(0) @db.Decimal(18, 4)
+  assignedQuantity   Decimal           @default(0) @db.Decimal(18, 4)
+  rollOverQuantity   Decimal           @default(0) @db.Decimal(18, 4)
+  eligibleItemCount  Int               @default(0)
+  assignedItemCount  Int               @default(0)
+  rollOverItemCount  Int               @default(0)
+  lotCount           Int               @default(0)
+  supplierOrderCount Int               @default(0)
+  summary            Json?             @db.JsonB
+  triggeredByUserId  String? // if null the operation was triggered by the system, otherwise it references the user that triggered the operation
+  destinationId      Int?
 
   triggeredByUser User?                   @relation(fields: [triggeredByUserId], references: [id], onDelete: SetNull)
+  destination     Destination?            @relation(fields: [destinationId], references: [id], onDelete: Restrict)
   lots            Lot[]
   rollOvers       RollOver[]
   trackingEvents  CartItemTrackingEvent[]
 
+  @@index([status, createdAt])
+  @@index([destinationId])
   @@map("operation")
 }
 
 enum OperationStrategy {
   fifo // first-in-first-out, items are allocated into the operation in the order they were added to the cart
   other // placeholder for future strategies, ex: prioritizing items that are close to exceeding client terms, etc.
+}
+
+enum OperationStatus {
+  running
+  completed
+  failed
 }
 
 model Lot {

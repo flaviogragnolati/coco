@@ -63,6 +63,7 @@ const orderTransactionSelect = {
 	amount: true,
 	currency: true,
 	status: true,
+	completedAt: true,
 	provider: true,
 	externalTransactionId: true,
 	providerStatus: true,
@@ -430,10 +431,13 @@ export async function updateTransactionFromGateway(
 		responseSnapshot: unknown;
 	},
 ) {
+	const completedAt = input.status === "completed" ? new Date() : null;
+
 	return db.userTransaction.update({
 		where: { id: input.id },
 		data: {
 			status: input.status,
+			completedAt,
 			provider: input.provider,
 			externalTransactionId: input.externalTransactionId,
 			providerStatus: input.providerStatus,
