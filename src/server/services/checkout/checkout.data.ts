@@ -1,12 +1,12 @@
 import "server-only";
 
+import type { Prisma } from "~/prisma/client";
 import type {
 	CheckoutAddressCreateInput,
 	CheckoutAddressUpdateInput,
 	CheckoutPaymentMethodCreateInput,
 	CheckoutPaymentMethodUpdateInput,
 } from "~/shared/common/checkout.types";
-import type { Prisma } from "../~/prisma/client";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import { cartProductClientTermsSelect } from "../cart/cart.data";
 

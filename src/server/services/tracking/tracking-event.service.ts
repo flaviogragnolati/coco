@@ -1,7 +1,7 @@
 import "server-only";
 
 import { TRPCError } from "@trpc/server";
-
+import type { Prisma } from "~/prisma/client";
 import { db } from "~/server/db";
 import { appLogger } from "~/server/services/logging/app-logger.service";
 import type {
@@ -21,7 +21,6 @@ import {
 	userTrackingStageByEventType,
 	userTrackingStageDefinitions,
 } from "~/shared/common/tracking-display";
-import type { Prisma } from "../~/prisma/client";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import type { TrackingCommand } from "./tracking-event-mapper";
 import { TrackingStatusProjector } from "./tracking-status-projector";

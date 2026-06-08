@@ -1,9 +1,9 @@
+import type { Prisma } from "~/prisma/client";
 import type {
 	CarrierCreateInput,
 	CarrierListInput,
 	CarrierUpdateInput,
 } from "~/shared/common/admin-crud/carrier.types";
-import type { Prisma } from "../~/prisma/client";
 import { toPrismaInputJson } from "./_base/prisma-json";
 
 type AdminDbClient = Prisma.TransactionClient;

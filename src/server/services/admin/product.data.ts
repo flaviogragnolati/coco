@@ -1,8 +1,8 @@
+import type { Prisma } from "~/prisma/client";
 import type {
 	ProductListInput,
 	ProductUnit,
 } from "~/shared/common/admin-crud/product.types";
-import type { Prisma } from "../~/prisma/client";
 
 type AdminDbClient = Prisma.TransactionClient;
 

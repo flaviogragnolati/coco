@@ -1,9 +1,9 @@
+import type { Prisma } from "~/prisma/client";
 import type {
 	ProductSupplierTermsCreateInput,
 	ProductSupplierTermsListInput,
 	ProductSupplierTermsUpdateInput,
 } from "~/shared/common/admin-crud/product-supplier-terms.types";
-import type { Prisma } from "../~/prisma/client";
 
 type AdminDbClient = Prisma.TransactionClient;
 

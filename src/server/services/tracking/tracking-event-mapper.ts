@@ -1,10 +1,10 @@
 import "server-only";
 
-import type { DomainEventInput } from "~/shared/common/domain-events.types";
 import type {
 	CartItemTrackingEventType,
 	TrackingEventSource,
-} from "../~/prisma/client";
+} from "~/prisma/client";
+import type { DomainEventInput } from "~/shared/common/domain-events.types";
 
 export type TrackingCommand = {
 	eventKey: string;

@@ -1,7 +1,7 @@
 import "server-only";
 
+import type { Prisma } from "~/prisma/client";
 import type { DomainActor } from "~/shared/common/domain-events.types";
-import type { Prisma } from "../~/prisma/client";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 
 type AuditLogWriteInput = {

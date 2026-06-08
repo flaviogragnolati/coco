@@ -1,7 +1,7 @@
 import "server-only";
 
+import type { Prisma } from "~/prisma/client";
 import type { db } from "~/server/db";
-import type { Prisma } from "../~/prisma/client";
 
 type HomeDb = typeof db;
 

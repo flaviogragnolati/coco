@@ -1,9 +1,9 @@
+import type { Prisma } from "~/prisma/client";
 import type {
 	DestinationCreateInput,
 	DestinationListInput,
 	DestinationUpdateInput,
 } from "~/shared/common/admin-crud/destination.types";
-import type { Prisma } from "../~/prisma/client";
 
 type AdminDbClient = Prisma.TransactionClient;
 
