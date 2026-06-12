@@ -43,7 +43,23 @@ function positiveIntOrUndefined(value: string) {
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-export function TrackingClient() {
+type TrackingInitialFilters = {
+	cartId?: string;
+	cartItemId?: string;
+	orderId?: string;
+	operationId?: string;
+	lotId?: string;
+	lotItemId?: string;
+	packageId?: string;
+	shipmentId?: string;
+	rollOverId?: string;
+};
+
+export function TrackingClient({
+	initialFilters = {},
+}: {
+	initialFilters?: TrackingInitialFilters;
+}) {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] =
 		useState<(typeof pageSizeOptions)[number]>(25);
@@ -52,15 +68,27 @@ export function TrackingClient() {
 	const [source, setSource] = useState<TrackingEventSource | "all">("all");
 	const [userId, setUserId] = useState("all");
 	const [actorUserId, setActorUserId] = useState("all");
-	const [cartId, setCartId] = useState("");
-	const [cartItemId, setCartItemId] = useState("");
-	const [orderId, setOrderId] = useState("");
-	const [operationId, setOperationId] = useState("");
-	const [lotId, setLotId] = useState("");
-	const [lotItemId, setLotItemId] = useState("");
-	const [packageId, setPackageId] = useState("");
-	const [shipmentId, setShipmentId] = useState("");
-	const [rollOverId, setRollOverId] = useState("");
+	const [cartId, setCartId] = useState(() => initialFilters.cartId ?? "");
+	const [cartItemId, setCartItemId] = useState(
+		() => initialFilters.cartItemId ?? "",
+	);
+	const [orderId, setOrderId] = useState(() => initialFilters.orderId ?? "");
+	const [operationId, setOperationId] = useState(
+		() => initialFilters.operationId ?? "",
+	);
+	const [lotId, setLotId] = useState(() => initialFilters.lotId ?? "");
+	const [lotItemId, setLotItemId] = useState(
+		() => initialFilters.lotItemId ?? "",
+	);
+	const [packageId, setPackageId] = useState(
+		() => initialFilters.packageId ?? "",
+	);
+	const [shipmentId, setShipmentId] = useState(
+		() => initialFilters.shipmentId ?? "",
+	);
+	const [rollOverId, setRollOverId] = useState(
+		() => initialFilters.rollOverId ?? "",
+	);
 	const [createdFrom, setCreatedFrom] = useState("");
 	const [createdTo, setCreatedTo] = useState("");
 	const [selectedCartItemId, setSelectedCartItemId] = useState<number | null>(

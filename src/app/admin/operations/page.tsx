@@ -42,9 +42,9 @@ const operationsEntries = [
 		href: "/admin/operations/lots",
 		title: "Lotes",
 		description: "Agrupacion operacional de demanda por proveedor.",
-		body: "Pendiente para la siguiente version del modulo de operaciones.",
+		body: "Revisa lineas de lote, demanda asignada, ordenes de proveedor y diagnosticos operativos.",
 		Icon: BoxesIcon,
-		enabled: false,
+		enabled: true,
 	},
 	{
 		href: "/admin/operations/operations",
@@ -58,17 +58,17 @@ const operationsEntries = [
 		href: "/admin/operations/packages",
 		title: "Paquetes",
 		description: "Preparacion y asignacion de items a paquetes.",
-		body: "Pendiente para la siguiente version del modulo de operaciones.",
+		body: "Controla lineas de paquete, asignaciones empaquetadas, envios relacionados y diagnosticos.",
 		Icon: PackageIcon,
-		enabled: false,
+		enabled: true,
 	},
 	{
 		href: "/admin/operations/shipments",
 		title: "Envios",
 		description: "Movimiento interno y entrega final de paquetes.",
-		body: "Pendiente para la siguiente version del modulo de operaciones.",
+		body: "Revisa paquetes transportados, carrier orders, tracking y consistencia operacional.",
 		Icon: TruckIcon,
-		enabled: false,
+		enabled: true,
 	},
 ];
 
