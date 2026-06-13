@@ -34,6 +34,8 @@ import {
 	toNumber,
 	toQuantityString,
 } from "~/shared/common/commerce.helpers";
+import { getMercadoPagoConfig } from "../payments/mercadopago/mercadopago-config.service";
+import { createMercadoPagoPreference } from "../payments/mercadopago/mercadopago-preference.service";
 import {
 	type CheckoutAddressRecord,
 	type CheckoutCartRecord,
@@ -46,6 +48,8 @@ import {
 	findCheckoutAddressById,
 	findCheckoutCartByUserId,
 	findCheckoutPaymentMethodById,
+	findMercadoPagoPaymentMethod,
+	findOrCreateMercadoPagoPaymentMethod,
 	findOrderByUserId,
 	findTransactionByIdempotencyKey,
 	listCheckoutAddresses,
@@ -59,6 +63,7 @@ import {
 	updateCheckoutPaymentMethod,
 	updateOrderStatus,
 	updateTransactionFromGateway,
+	updateTransactionWithMercadoPagoPreference,
 } from "./checkout.data";
 import {
 	type PaymentGatewayRequest,
@@ -339,10 +344,17 @@ function mapGatewayStatusToTransactionStatus(
 }
 
 function mapTransactionStatusToPaymentStatus(
-	status: "pending" | "completed" | "failed" | "refunded",
+	status:
+		| "pending"
+		| "inProcess"
+		| "completed"
+		| "failed"
+		| "cancelled"
+		| "refunded"
+		| "chargedBack",
 ) {
 	if (status === "completed") return "succeeded" as const;
-	if (status === "failed") return "failed" as const;
+	if (status === "failed" || status === "cancelled") return "failed" as const;
 	return "pending" as const;
 }
 
@@ -379,7 +391,17 @@ function buildPaymentResult(input: {
 			externalTransactionId: input.transaction.externalTransactionId,
 			failureCode: input.transaction.failureCode,
 			failureMessage: input.transaction.failureMessage,
+			checkoutUrl: input.transaction.checkoutUrl,
+			sandboxCheckoutUrl: input.transaction.sandboxCheckoutUrl,
 		},
+		redirectUrl:
+			input.transaction.provider === "mercadopago"
+				? input.transaction.providerMode === "sandbox"
+					? (input.transaction.sandboxCheckoutUrl ??
+						input.transaction.checkoutUrl)
+					: (input.transaction.checkoutUrl ??
+						input.transaction.sandboxCheckoutUrl)
+				: null,
 		shippingAddress: input.shippingAddress,
 		paymentMethod: input.paymentMethod,
 	});
@@ -434,11 +456,23 @@ export async function start(userId: string): Promise<CheckoutState> {
 			listCheckoutAddresses(tx, userId),
 			listCheckoutPaymentMethods(tx, userId),
 		]);
+		const mercadoPagoConfig = await getMercadoPagoConfig(tx);
+		const mercadoPagoMethod = mercadoPagoConfig.enabled
+			? await findOrCreateMercadoPagoPaymentMethod(tx, userId)
+			: null;
+		const checkoutPaymentMethods = mercadoPagoConfig.enabled
+			? [
+					...(mercadoPagoMethod ? [mercadoPagoMethod] : []),
+					...paymentMethods.filter(
+						(method) => method.provider !== "mercadopago",
+					),
+				]
+			: paymentMethods;
 
 		return checkoutStateSchema.parse({
 			cart: mapCart(checkoutCart),
 			addresses: addresses.map(toCheckoutAddress),
-			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
+			paymentMethods: checkoutPaymentMethods.map(toCheckoutPaymentMethod),
 			termsText: TERMS_TEXT,
 		});
 	});
@@ -451,11 +485,23 @@ export async function getState(userId: string): Promise<CheckoutState> {
 			listCheckoutAddresses(tx, userId),
 			listCheckoutPaymentMethods(tx, userId),
 		]);
+		const mercadoPagoConfig = await getMercadoPagoConfig(tx);
+		const mercadoPagoMethod = mercadoPagoConfig.enabled
+			? await findMercadoPagoPaymentMethod(tx, userId)
+			: null;
+		const checkoutPaymentMethods = mercadoPagoConfig.enabled
+			? [
+					...(mercadoPagoMethod ? [mercadoPagoMethod] : []),
+					...paymentMethods.filter(
+						(method) => method.provider !== "mercadopago",
+					),
+				]
+			: paymentMethods;
 
 		return checkoutStateSchema.parse({
 			cart: mapCart(cart),
 			addresses: addresses.map(toCheckoutAddress),
-			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
+			paymentMethods: checkoutPaymentMethods.map(toCheckoutPaymentMethod),
 			termsText: TERMS_TEXT,
 		});
 	});
@@ -565,6 +611,19 @@ export async function confirmAndPay(
 
 		const address = toCheckoutAddress(addressRecord);
 		const paymentMethod = toCheckoutPaymentMethod(paymentRecord);
+		const mercadoPagoConfig =
+			paymentMethod.provider === "mercadopago" ||
+			paymentMethod.type === "mercadopago"
+				? await getMercadoPagoConfig(tx)
+				: null;
+
+		if (mercadoPagoConfig && !mercadoPagoConfig.enabled) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message: "Mercado Pago no está habilitado para checkout.",
+			});
+		}
+
 		const acceptedAt = new Date();
 		const order = await createUserOrder(tx, {
 			code: buildOrderCode(),
@@ -593,18 +652,49 @@ export async function confirmAndPay(
 				amount: total.amount,
 				currency: total.currency,
 				paymentMethod,
+				provider: mercadoPagoConfig ? "mercadopago" : "mock",
 			},
+			provider: mercadoPagoConfig ? "mercadopago" : "mock",
+			providerMode: mercadoPagoConfig?.mode ?? null,
 		});
 
 		return {
 			address,
 			cart,
+			mercadoPagoConfig,
 			order,
 			paymentMethod,
 			total,
 			transaction,
 		};
 	});
+
+	if (prepared.mercadoPagoConfig) {
+		const preference = await createMercadoPagoPreference({
+			cart: prepared.cart,
+			order: {
+				id: prepared.order.id,
+				code: prepared.order.code,
+				user: prepared.order.user,
+			},
+			transaction: prepared.transaction,
+			config: prepared.mercadoPagoConfig,
+		});
+		const transaction = await updateTransactionWithMercadoPagoPreference(db, {
+			id: prepared.transaction.id,
+			providerMode: prepared.mercadoPagoConfig.mode,
+			...preference,
+		});
+
+		return buildPaymentResult({
+			order: prepared.order,
+			transaction,
+			shippingAddress: prepared.address,
+			paymentMethod: prepared.paymentMethod,
+			message:
+				"Te redirigimos a Mercado Pago. El pedido se confirma cuando el proveedor aprueba el pago.",
+		});
+	}
 
 	const gatewayRequest = buildPaymentRequest({
 		cart: prepared.cart,

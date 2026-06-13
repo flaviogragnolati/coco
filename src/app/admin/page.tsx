@@ -1,4 +1,9 @@
-import { ArrowRightIcon, ShoppingBagIcon, WrenchIcon } from "lucide-react";
+import {
+	ArrowRightIcon,
+	CreditCardIcon,
+	ShoppingBagIcon,
+	WrenchIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "~/components/ui/button";
@@ -17,6 +22,12 @@ const adminSections = [
 		title: "Operacion",
 		description: "Herramientas operativas para carritos, lotes y envios.",
 		Icon: ShoppingBagIcon,
+	},
+	{
+		href: "/admin/payments",
+		title: "Pagos",
+		description: "Intentos de pago, eventos de proveedor y configuración.",
+		Icon: CreditCardIcon,
 	},
 	{
 		href: "/admin/crud-home",

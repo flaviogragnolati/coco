@@ -259,7 +259,7 @@ function PaymentStep({
 					<div className="flex flex-col gap-1">
 						<CardTitle>Método de pago</CardTitle>
 						<CardDescription>
-							El pago se procesa con un proveedor externo simulado.
+							Elegí cómo iniciar el intento de pago para este pedido.
 						</CardDescription>
 					</div>
 					<Button onClick={onAdd} type="button" variant="outline">
@@ -271,10 +271,10 @@ function PaymentStep({
 			<CardContent className="flex flex-col gap-3">
 				<Alert>
 					<ShieldCheckIcon />
-					<AlertTitle>Proveedor mock</AlertTitle>
+					<AlertTitle>Pago externo</AlertTitle>
 					<AlertDescription>
-						La arquitectura ya llama a un gateway, pero en desarrollo responde
-						un adaptador local.
+						Mercado Pago usa Checkout Pro y confirma el pedido después de la
+						aprobación del proveedor.
 					</AlertDescription>
 				</Alert>
 				{paymentMethods.length === 0 ? (
@@ -732,6 +732,12 @@ export function CheckoutClient({ userId }: { userId: string }) {
 			toast.error(error.message || "No se pudo confirmar el pago");
 		},
 		async onSuccess(output) {
+			if (output.redirectUrl) {
+				toast.message("Redirigiendo a Mercado Pago");
+				window.location.assign(output.redirectUrl);
+				return;
+			}
+
 			setResult(output);
 			if (output.status === "succeeded") {
 				clearCart();

@@ -176,6 +176,7 @@ const adminTrackingOrderSummarySchema = z.object({
 		"cancelled",
 		"failed",
 		"refunded",
+		"chargedBack",
 	]),
 });
 

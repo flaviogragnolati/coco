@@ -15,10 +15,16 @@ export const env = createEnv({
 		BETTER_AUTH_GOOGLE_CLIENT_ID: z.string(),
 		BETTER_AUTH_GOOGLE_CLIENT_SECRET: z.string(),
 		DATABASE_URL: z.string().url(),
+		APP_ENV: z
+			.enum(["development", "test", "production"])
+			.default("development"),
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),
 		DEV_USER_ROLE: z.enum(["superadmin", "admin", "user"]).default("user"),
+		MERCADOPAGO_ACCESS_TOKEN: z.string().optional(),
+		MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
+		MERCADOPAGO_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
 	},
 
 	/**
@@ -41,8 +47,12 @@ export const env = createEnv({
 		BETTER_AUTH_GOOGLE_CLIENT_SECRET:
 			process.env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
 		DATABASE_URL: process.env.DATABASE_URL,
+		APP_ENV: process.env.APP_ENV,
 		NODE_ENV: process.env.NODE_ENV,
 		DEV_USER_ROLE: process.env.DEV_USER_ROLE,
+		MERCADOPAGO_ACCESS_TOKEN: process.env.MERCADOPAGO_ACCESS_TOKEN,
+		MERCADOPAGO_WEBHOOK_SECRET: process.env.MERCADOPAGO_WEBHOOK_SECRET,
+		MERCADOPAGO_TIMEOUT_MS: process.env.MERCADOPAGO_TIMEOUT_MS,
 	},
 	/**
 	 * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

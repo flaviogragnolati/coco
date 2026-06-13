@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Prisma } from "~/prisma/client";
+import type { db as prismaDb } from "~/server/db";
 import type {
 	CheckoutAddressCreateInput,
 	CheckoutAddressUpdateInput,
@@ -10,7 +11,7 @@ import type {
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import { cartProductClientTermsSelect } from "../cart/cart.data";
 
-export type CheckoutDbClient = Prisma.TransactionClient;
+export type CheckoutDbClient = typeof prismaDb | Prisma.TransactionClient;
 
 const checkoutCartItemSelect = {
 	id: true,
@@ -65,10 +66,17 @@ const orderTransactionSelect = {
 	status: true,
 	completedAt: true,
 	provider: true,
+	providerMode: true,
 	externalTransactionId: true,
+	providerPreferenceId: true,
+	providerPaymentId: true,
 	providerStatus: true,
+	providerStatusDetail: true,
 	failureCode: true,
 	failureMessage: true,
+	checkoutUrl: true,
+	sandboxCheckoutUrl: true,
+	expiresAt: true,
 	createdAt: true,
 	paymentMethod: {
 		select: checkoutPaymentMethodSelect,
@@ -89,6 +97,11 @@ const orderDetailSelect = {
 	cart: {
 		select: {
 			code: true,
+		},
+	},
+	user: {
+		select: {
+			email: true,
 		},
 	},
 	items: {
@@ -401,6 +414,8 @@ export async function createPendingTransaction(
 		paymentMethodId: number;
 		userOrderId: number;
 		requestSnapshot: unknown;
+		provider?: string;
+		providerMode?: "sandbox" | "production" | null;
 	},
 ) {
 	return db.userTransaction.create({
@@ -408,7 +423,8 @@ export async function createPendingTransaction(
 			amount: input.amount,
 			currency: input.currency as never,
 			status: "pending",
-			provider: "mock",
+			provider: input.provider ?? "mock",
+			providerMode: input.providerMode,
 			idempotencyKey: input.idempotencyKey,
 			paymentMethodId: input.paymentMethodId,
 			userOrderId: input.userOrderId,
@@ -446,6 +462,92 @@ export async function updateTransactionFromGateway(
 			responseSnapshot: toPrismaInputJson(input.responseSnapshot),
 		},
 		select: orderTransactionSelect,
+	});
+}
+
+export async function updateTransactionWithMercadoPagoPreference(
+	db: CheckoutDbClient,
+	input: {
+		id: number;
+		providerMode: "sandbox" | "production";
+		providerPreferenceId: string;
+		checkoutUrl: string | null;
+		sandboxCheckoutUrl: string | null;
+		expiresAt: Date;
+		externalReference: string;
+		requestSnapshot: unknown;
+		responseSnapshot: unknown;
+	},
+) {
+	return db.userTransaction.update({
+		where: { id: input.id },
+		data: {
+			provider: "mercadopago",
+			providerMode: input.providerMode,
+			providerPreferenceId: input.providerPreferenceId,
+			checkoutUrl: input.checkoutUrl,
+			sandboxCheckoutUrl: input.sandboxCheckoutUrl,
+			expiresAt: input.expiresAt,
+			externalTransactionId: input.externalReference,
+			providerStatus: "preference_created",
+			requestSnapshot: toPrismaInputJson(input.requestSnapshot),
+			responseSnapshot: toPrismaInputJson(input.responseSnapshot),
+		},
+		select: orderTransactionSelect,
+	});
+}
+
+export async function findOrCreateMercadoPagoPaymentMethod(
+	db: CheckoutDbClient,
+	userId: string,
+) {
+	const existing = await db.paymentMethod.findFirst({
+		where: {
+			userId,
+			type: "mercadopago",
+			provider: "mercadopago",
+			active: true,
+			deleted: false,
+		},
+		select: checkoutPaymentMethodSelect,
+		orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+	});
+
+	if (existing) return existing;
+
+	return db.paymentMethod.create({
+		data: {
+			userId,
+			type: "mercadopago",
+			label: "Mercado Pago",
+			details: "Checkout Pro",
+			provider: "mercadopago",
+			externalPaymentMethodId: "mercadopago_checkout_pro",
+			active: true,
+			deleted: false,
+			metadata: toPrismaInputJson({
+				source: "checkout",
+				checkout: "pro",
+			}),
+		},
+		select: checkoutPaymentMethodSelect,
+	});
+}
+
+export async function findMercadoPagoPaymentMethod(
+	db: CheckoutDbClient,
+	userId: string,
+) {
+	return db.paymentMethod.findFirst({
+		where: {
+			userId,
+			type: "mercadopago",
+			provider: "mercadopago",
+			active: true,
+			deleted: false,
+		},
+		select: checkoutPaymentMethodSelect,
+		orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
 	});
 }
 

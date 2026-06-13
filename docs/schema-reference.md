@@ -28,7 +28,7 @@ It does not define:
 ## Glossary
 
 - Customer request: the user-facing demand captured by `Cart`, `CartItem`, `UserOrder`, and `UserOrderItem`
-- Commercial state: the status that answers whether the customer order and payment lifecycle is pending, processing, completed, failed, cancelled, or refunded
+- Commercial state: the status that answers whether the customer order and payment lifecycle is pending, processing, completed, failed, cancelled, refunded, or charged back
 - Operational state: the status that answers where demand is inside sourcing, packaging, shipment, and delivery
 - Aggregate status: a summary status intended for user or admin display, not the only detailed operational source of truth
 - Snapshot: JSON data copied at the time of a meaningful business event so later mutations do not rewrite history
@@ -205,7 +205,7 @@ Supporting relationships that shape behavior around that chain are:
 | `CartStatus` | Cart | Request lifecycle from drafting through checkout submission | Aggregate commercial/request summary | Checkout application layer |
 | `CartItemStatus` | Cart item | Whether the request line is still mutable, submitted, dropped, or cancelled | Detailed request state | Cart and checkout application layer |
 | `CartItemFulfillmentStatus` | Cart item | User/admin-facing fulfillment summary after submission | Aggregate fulfillment summary | Fulfillment orchestration layer |
-| `UserOrderStatus` | User order | Commercial summary across payment and fulfillment | Aggregate commercial summary | Order orchestration layer |
+| `UserOrderStatus` | User order | Commercial summary across payment and fulfillment, including chargebacks | Aggregate commercial summary | Order orchestration layer |
 | `UserTransactionStatus` | User payment | Payment processing lifecycle | Detailed payment state | Payments integration layer |
 | `LotStatus` | Lot | Aggregate sourcing progress for a supplier-scoped lot | Aggregate operational summary | Sourcing orchestration layer |
 | `LotItemStatus` | Lot item | Supplier-facing line progress | Detailed operational state | Sourcing orchestration layer |
@@ -269,6 +269,7 @@ Required rule:
 - `cancelled`: the order was cancelled before successful completion
 - `failed`: the order failed because commercial or orchestration prerequisites were not satisfied
 - `refunded`: money was refunded after a prior commercial attempt
+- `chargedBack`: a previously completed payment was disputed or externally reversed by the provider
 
 Required rule:
 
@@ -399,7 +400,7 @@ Records created or updated:
 
 Expected status changes:
 
-- `UserTransaction.status` moves through `pending`, `completed`, `failed`, or `refunded`
+- `UserTransaction.status` moves through `pending`, `inProcess`, `completed`, `failed`, `cancelled`, `refunded`, or `chargedBack`
 - `UserOrder.status` typically moves from `pending` to `processing` once payment or fulfillment handling begins
 
 App actions:
@@ -754,6 +755,19 @@ App actions:
 - record the refund as a separate state transition
 - decide whether fulfillment history remains successful while the commercial result becomes refunded
 - write audit entries for the refund decision and actor
+
+### Chargeback after completed payment
+
+Typical status changes:
+
+- `UserTransaction.status = chargedBack`
+- `UserOrder.status = chargedBack`
+
+App actions:
+
+- preserve the original completed payment attempt and record the chargeback as a separate state transition
+- decide whether fulfillment continues, is halted, or requires an operator exception
+- write audit entries for the chargeback evidence and operator decision
 
 ### Exception is resolved
 

@@ -144,18 +144,30 @@ export const checkoutPaymentResultSchema = z.object({
 			"cancelled",
 			"failed",
 			"refunded",
+			"chargedBack",
 		]),
 	}),
 	transaction: z.object({
 		id: z.number().int().positive(),
-		status: z.enum(["pending", "completed", "failed", "refunded"]),
+		status: z.enum([
+			"pending",
+			"inProcess",
+			"completed",
+			"failed",
+			"cancelled",
+			"refunded",
+			"chargedBack",
+		]),
 		amount: decimalStringSchema,
 		currency: catalogCurrencySchema,
 		provider: z.string(),
 		externalTransactionId: z.string().nullable(),
 		failureCode: z.string().nullable(),
 		failureMessage: z.string().nullable(),
+		checkoutUrl: z.string().nullable().optional(),
+		sandboxCheckoutUrl: z.string().nullable().optional(),
 	}),
+	redirectUrl: z.string().nullable().optional(),
 	shippingAddress: checkoutAddressSchema,
 	paymentMethod: checkoutPaymentMethodSchema,
 });
@@ -170,6 +182,7 @@ export const orderListItemSchema = z.object({
 		"cancelled",
 		"failed",
 		"refunded",
+		"chargedBack",
 	]),
 	createdAt: z.date(),
 	updatedAt: z.date(),
@@ -177,7 +190,15 @@ export const orderListItemSchema = z.object({
 	totalAmount: decimalStringSchema,
 	currency: catalogCurrencySchema.nullable(),
 	latestTransactionStatus: z
-		.enum(["pending", "completed", "failed", "refunded"])
+		.enum([
+			"pending",
+			"inProcess",
+			"completed",
+			"failed",
+			"cancelled",
+			"refunded",
+			"chargedBack",
+		])
 		.nullable(),
 });
 
@@ -208,7 +229,15 @@ export const orderDetailSchema = orderListItemSchema.extend({
 			id: z.number().int().positive(),
 			amount: decimalStringSchema,
 			currency: catalogCurrencySchema,
-			status: z.enum(["pending", "completed", "failed", "refunded"]),
+			status: z.enum([
+				"pending",
+				"inProcess",
+				"completed",
+				"failed",
+				"cancelled",
+				"refunded",
+				"chargedBack",
+			]),
 			provider: z.string(),
 			externalTransactionId: z.string().nullable(),
 			providerStatus: z.string().nullable(),

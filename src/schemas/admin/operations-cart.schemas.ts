@@ -65,13 +65,17 @@ export const operationsUserOrderStatusSchema = z.enum([
 	"cancelled",
 	"failed",
 	"refunded",
+	"chargedBack",
 ]);
 
 export const operationsUserTransactionStatusSchema = z.enum([
 	"pending",
+	"inProcess",
 	"completed",
 	"failed",
+	"cancelled",
 	"refunded",
+	"chargedBack",
 ]);
 
 const optionalTrimmedText = z

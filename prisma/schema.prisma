@@ -31,6 +31,7 @@ model User {
   auditLogs      AuditLog[]
   trackingEvents CartItemTrackingEvent[]
   operations     Operation[]
+  paymentProviderEvents PaymentProviderEvent[]
 
   @@unique([email])
   @@map("user")
@@ -110,6 +111,24 @@ model PaymentMethod {
   @@index([userId, active, deleted])
   @@index([externalPaymentMethodId])
   @@map("payment_method")
+}
+
+model PaymentProviderConfig {
+  id        Int                 @id @default(autoincrement())
+  provider  String              @unique @db.Text
+  enabled   Boolean             @default(false)
+  mode      PaymentProviderMode @default(sandbox)
+  settings  Json                @db.JsonB
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @default(now()) @updatedAt
+
+  @@index([enabled, mode])
+  @@map("payment_provider_config")
+}
+
+enum PaymentProviderMode {
+  sandbox
+  production
 }
 
 enum PaymentMethodType {
@@ -538,6 +557,7 @@ enum UserOrderStatus {
   cancelled // The order was cancelled before successful completion.
   failed // The order failed due to payment or orchestration issues.
   refunded // The order has been refunded after cancellation or post-delivery issues.
+  chargedBack // The completed payment was disputed or externally reversed after commercial processing.
 }
 
 model UserOrderItem {
@@ -560,40 +580,107 @@ model UserOrderItem {
 }
 
 model UserTransaction {
-  id                    Int                   @id @default(autoincrement())
-  amount                Decimal               @db.Decimal(18, 2)
-  currency              Currency              @default(ARS)
-  status                UserTransactionStatus @default(pending)
-  provider              String                @default("mock") @db.Text
-  externalTransactionId String?               @db.Text
-  idempotencyKey        String                @unique @db.Text
-  providerStatus        String?               @db.Text
-  failureCode           String?               @db.Text
-  failureMessage        String?               @db.Text
-  requestSnapshot       Json?                 @db.JsonB
-  responseSnapshot      Json?                 @db.JsonB
-  paymentMethodId       Int
-  userOrderId           Int
-  completedAt           DateTime?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @default(now()) @updatedAt
+  id                        Int                   @id @default(autoincrement())
+  amount                    Decimal               @db.Decimal(18, 2)
+  currency                  Currency              @default(ARS)
+  status                    UserTransactionStatus @default(pending)
+  provider                  String                @default("mock") @db.Text
+  providerMode              PaymentProviderMode?
+  externalTransactionId     String?               @db.Text
+  providerPreferenceId      String?               @db.Text
+  providerPaymentId         String?               @db.Text
+  providerMerchantOrderId   String?               @db.Text
+  providerOrderId           String?               @db.Text
+  idempotencyKey            String                @unique @db.Text
+  providerStatus            String?               @db.Text
+  providerStatusDetail      String?               @db.Text
+  failureCode               String?               @db.Text
+  failureMessage            String?               @db.Text
+  checkoutUrl               String?               @db.Text
+  sandboxCheckoutUrl        String?               @db.Text
+  requestSnapshot           Json?                 @db.JsonB
+  responseSnapshot          Json?                 @db.JsonB
+  paymentMethodId           Int
+  userOrderId               Int
+  completedAt               DateTime?
+  cancelledAt               DateTime?
+  expiresAt                 DateTime?
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @default(now()) @updatedAt
 
-  userOrder     UserOrder     @relation(fields: [userOrderId], references: [id])
-  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
+  userOrder             UserOrder              @relation(fields: [userOrderId], references: [id])
+  paymentMethod         PaymentMethod          @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
+  paymentProviderEvents PaymentProviderEvent[]
 
   @@index([userOrderId])
   @@index([paymentMethodId])
+  @@index([provider, providerMode])
   @@index([externalTransactionId])
+  @@index([providerPreferenceId])
+  @@index([providerPaymentId])
+  @@index([providerMerchantOrderId])
+  @@index([providerOrderId])
   @@index([status, completedAt])
+  @@index([status, updatedAt])
   @@map("user_transaction")
 }
 
 // Payment lifecycle only.
 enum UserTransactionStatus {
   pending // The transaction has been created but not yet processed.
+  inProcess // The provider is still processing the payment attempt.
   completed // The payment was captured successfully.
   failed // The payment attempt failed.
+  cancelled // The payment attempt was cancelled before successful capture.
   refunded // The payment was refunded after a previous successful capture.
+  chargedBack // The completed payment was disputed or externally reversed.
+}
+
+model PaymentProviderEvent {
+  id                   Int                        @id @default(autoincrement())
+  provider             String                     @db.Text
+  providerMode         PaymentProviderMode?
+  eventType            String?                    @db.Text
+  action               String?                    @db.Text
+  providerEventId      String?                    @db.Text
+  providerResourceType String?                    @db.Text
+  providerResourceId   String?                    @db.Text
+  providerRequestId    String?                    @db.Text
+  signatureValid       Boolean                    @default(false)
+  status               PaymentProviderEventStatus @default(received)
+  retryCount           Int                        @default(0)
+  lastError            String?                    @db.Text
+  payload              Json?                      @db.JsonB
+  headers              Json?                      @db.JsonB
+  query                Json?                      @db.JsonB
+  receivedAt           DateTime                   @default(now())
+  processedAt          DateTime?
+  ignoredAt            DateTime?
+  userTransactionId    Int?
+  userId               String?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @default(now()) @updatedAt
+
+  userTransaction UserTransaction? @relation(fields: [userTransactionId], references: [id], onDelete: SetNull)
+  user            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerEventId])
+  @@index([provider, providerMode])
+  @@index([providerResourceType, providerResourceId])
+  @@index([providerRequestId])
+  @@index([signatureValid, status])
+  @@index([status, receivedAt])
+  @@index([userTransactionId])
+  @@index([userId, receivedAt])
+  @@map("payment_provider_event")
+}
+
+enum PaymentProviderEventStatus {
+  received
+  processed
+  failed
+  ignored
+  rejected
 }
 
 model Operation {

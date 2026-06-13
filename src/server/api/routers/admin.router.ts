@@ -7,6 +7,7 @@ import { lotRouter } from "./admin/lot.router";
 import { operationRouter } from "./admin/operation.router";
 import { operationsCartRouter } from "./admin/operations-cart.router";
 import { packageRouter } from "./admin/package.router";
+import { paymentRouter } from "./admin/payment.router";
 import { productRouter } from "./admin/product.router";
 import { productClientTermsRouter } from "./admin/product-client-terms.router";
 import { productLocalConstraintsRouter } from "./admin/product-local-constraints.router";
@@ -25,6 +26,7 @@ export const adminRouter = createTRPCRouter({
 	operation: operationRouter,
 	operationsCart: operationsCartRouter,
 	package: packageRouter,
+	payment: paymentRouter,
 	product: productRouter,
 	productClientTerms: productClientTermsRouter,
 	productLocalConstraints: productLocalConstraintsRouter,
