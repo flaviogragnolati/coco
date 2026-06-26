@@ -50,3 +50,9 @@ yarn-error.log*
 /tmp
 *.tmp
 *.temp
+
+
+# ai config
+/.codex
+/.kilocode
+/.claude

@@ -1,0 +1,69 @@
+# Coco Fulfillment Context
+
+This context describes the language for customer demand aggregation, sourcing, packaging, shipping, and fulfillment traceability.
+
+## Language
+
+**Customer request**:
+The customer-facing demand captured before and during order submission.
+_Avoid_: Order line, purchase line
+
+**Payment attempt**:
+A customer payment attempt tied to a commercial order. It can be pending, in process, completed, failed, cancelled, refunded, or charged back, and it is not an aggregation batch for fulfillment.
+_Avoid_: Operation, payment operation
+
+**Chargeback**:
+A disputed or externally reversed customer payment after a completed payment attempt. It is distinct from a refund because it is not the platform's ordinary refund path.
+_Avoid_: Refund, payment failure
+
+**Operation**:
+An aggregation batch for submitted customer demand.
+_Avoid_: Job, run
+
+**Lot**:
+A supplier-scoped grouping of aggregated demand inside one operation.
+_Avoid_: Batch, package
+
+**Lot item**:
+A supplier-facing requested line inside a lot.
+_Avoid_: Package item, customer item
+
+**Demand allocation**:
+The quantity bridge that connects a customer request to a supplier-facing lot item.
+_Avoid_: CartItemLotItem, customer item
+
+**Package**:
+A physical or logical package containing sourced quantity prepared for movement.
+_Avoid_: Shipment, carrier order
+
+**Package line**:
+The quantity of a lot item represented inside a package.
+_Avoid_: Lot item, package allocation
+
+**Packaged allocation**:
+The quantity bridge that connects a demand allocation to a package line.
+_Avoid_: PackageAllocation, package line
+
+**Shipment**:
+A movement record for packages, either between internal locations or toward the end user.
+_Avoid_: Package, carrier order
+
+**Roll over**:
+Quantity that dropped out of the current fulfillment path and must be rebatched or otherwise resolved.
+_Avoid_: Remainder, leftover, silent quantity delta
+
+**Fulfillment lineage**:
+The traceable path of a customer request through aggregation, sourcing, packaging, shipment, and delivery.
+_Avoid_: Order status, shipment status
+
+**Operational state**:
+The state that answers where demand is inside sourcing, packaging, shipment, and delivery.
+_Avoid_: Commercial state, request state
+
+**Operational diagnostic**:
+A read-only signal with a stable code and severity that compares operational records, quantities, and statuses to reveal missing evidence or inconsistent fulfillment lineage.
+_Avoid_: Correction, mutation, action
+
+**Aggregate status**:
+A summary status intended for display, backed by more detailed operational records.
+_Avoid_: Source of truth, proof
