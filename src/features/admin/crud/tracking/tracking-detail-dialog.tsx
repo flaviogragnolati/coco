@@ -24,28 +24,7 @@ import {
 	fulfillmentStatusLabelMap,
 	orderStatusLabelMap,
 } from "../operations-cart/operations-cart.mappers";
-import { formatTrackingRefs, trackingSourceOptions } from "./tracking.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
-
-const sourceLabelMap = Object.fromEntries(
-	trackingSourceOptions.map((option) => [option.value, option.label]),
-) as Record<AdminTrackingTimelineDetailItem["source"], string>;
-
-function JsonPreview({ value }: { value: unknown }) {
-	if (value === null || value === undefined) {
-		return <span className="text-muted-foreground text-xs">Sin metadata</span>;
-	}
-
-	return (
-		<pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-none border bg-muted/30 p-2 font-mono text-[11px]">
-			{JSON.stringify(value, null, 2)}
-		</pre>
-	);
-}
+import { TrackingTimelineItemCard } from "./tracking-timeline.parts";
 
 function SummaryGrid({ detail }: { detail: AdminTrackingCartItemDetail }) {
 	const { cartItem } = detail;
@@ -156,56 +135,11 @@ function RelatedSummary({ event }: { event: AdminTrackingTimelineDetailItem }) {
 }
 
 function TimelineEvent({ event }: { event: AdminTrackingTimelineDetailItem }) {
-	const refs = formatTrackingRefs(event.refs);
-
 	return (
-		<li className="grid gap-3 rounded-none border p-3 lg:grid-cols-[12rem_1fr]">
-			<div className="flex flex-col gap-1">
-				<span className="font-medium text-sm">
-					{dateFormatter.format(new Date(event.createdAt))}
-				</span>
-				<Badge variant="secondary">{sourceLabelMap[event.source]}</Badge>
-				<span className="font-mono text-muted-foreground text-xs">
-					Evento #{event.id}
-				</span>
-			</div>
-
-			<div className="flex min-w-0 flex-col gap-3">
-				<div className="flex flex-col gap-1">
-					<span className="font-medium">{event.label}</span>
-					<span className="font-mono text-[11px] text-muted-foreground">
-						{event.eventKey ?? "Sin eventKey"}
-					</span>
-					<span className="text-muted-foreground text-xs">
-						Actor: {event.actor.reference ?? event.actor.userId ?? "Sin actor"}
-						{event.quantity ? ` / Cantidad: ${event.quantity}` : ""}
-					</span>
-				</div>
-
-				<div className="flex flex-wrap gap-1">
-					{refs.length > 0 ? (
-						refs.map((ref) => (
-							<Badge key={ref} variant="secondary">
-								{ref}
-							</Badge>
-						))
-					) : (
-						<span className="text-muted-foreground text-xs">Sin refs</span>
-					)}
-				</div>
-
-				<RelatedSummary event={event} />
-
-				<details className="rounded-none border bg-background p-2">
-					<summary className="cursor-pointer font-medium text-xs">
-						Metadata
-					</summary>
-					<div className="mt-2">
-						<JsonPreview value={event.metadata} />
-					</div>
-				</details>
-			</div>
-		</li>
+		<TrackingTimelineItemCard
+			extra={<RelatedSummary event={event} />}
+			item={event}
+		/>
 	);
 }
 

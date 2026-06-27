@@ -1,6 +1,6 @@
 "use client";
 
-import { ArchiveXIcon, EyeIcon, Trash2Icon } from "lucide-react";
+import { ArchiveXIcon, EyeIcon, RouteIcon, Trash2Icon } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
 import { Select } from "~/components/ui/select";
@@ -142,6 +142,7 @@ export function OperationsCartTable({
 	carts,
 	isQuickStatusPending,
 	onEdit,
+	onTrace,
 	onSoftDelete,
 	onHardDelete,
 	onQuickStatusChange,
@@ -149,6 +150,7 @@ export function OperationsCartTable({
 	carts: OperationsCartListItem[];
 	isQuickStatusPending?: boolean;
 	onEdit: (cart: OperationsCartListItem) => void;
+	onTrace: (cart: OperationsCartListItem) => void;
 	onSoftDelete: (cart: OperationsCartListItem) => void;
 	onHardDelete: (cart: OperationsCartListItem) => void;
 	onQuickStatusChange: (
@@ -162,6 +164,11 @@ export function OperationsCartTable({
 			icon: EyeIcon,
 			onSelect: onEdit,
 			disabled: (cart) => cart.deleted,
+		},
+		{
+			label: "Rastrear",
+			icon: RouteIcon,
+			onSelect: onTrace,
 		},
 		{
 			label: "Enviar a papelera",

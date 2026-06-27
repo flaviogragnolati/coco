@@ -2,6 +2,7 @@ import { createTRPCRouter } from "~/server/api/trpc";
 import { addressRouter } from "./admin/address.router";
 import { brandRouter } from "./admin/brand.router";
 import { carrierRouter } from "./admin/carrier.router";
+import { cartTraceabilityRouter } from "./admin/cart-traceability.router";
 import { destinationRouter } from "./admin/destination.router";
 import { lotRouter } from "./admin/lot.router";
 import { operationRouter } from "./admin/operation.router";
@@ -21,6 +22,7 @@ export const adminRouter = createTRPCRouter({
 	address: addressRouter,
 	brand: brandRouter,
 	carrier: carrierRouter,
+	cartTraceability: cartTraceabilityRouter,
 	destination: destinationRouter,
 	lot: lotRouter,
 	operation: operationRouter,

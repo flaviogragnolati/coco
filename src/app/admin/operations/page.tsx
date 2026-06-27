@@ -20,6 +20,7 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
+import { CartTraceabilitySearchCard } from "./_components/cart-traceability-search-card";
 
 const operationsEntries = [
 	{
@@ -78,6 +79,8 @@ export default function AdminOperationsPage() {
 			description="Herramientas para revisar y ajustar el flujo operativo de carritos, lotes, paquetes y envios."
 			title="Operaciones"
 		>
+			<CartTraceabilitySearchCard />
+
 			<section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 				{operationsEntries.map(
 					({ href, title, description, body, Icon, enabled }) => (

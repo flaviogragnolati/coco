@@ -1,6 +1,7 @@
 "use client";
 
 import { SearchIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -46,6 +47,7 @@ import { api } from "~/trpc/react";
 const allValue = "all";
 
 export function UserCartsClient() {
+	const router = useRouter();
 	const utils = api.useUtils();
 	const [includeDeleted, setIncludeDeleted] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -218,6 +220,9 @@ export function UserCartsClient() {
 					quickStatusMutation.mutate({ id: cart.id, status });
 				}}
 				onSoftDelete={setSoftDeleteTarget}
+				onTrace={(cart) =>
+					router.push(`/admin/operations/user-carts/${cart.id}`)
+				}
 			/>
 		);
 	};
