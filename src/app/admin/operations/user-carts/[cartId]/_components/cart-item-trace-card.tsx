@@ -1,9 +1,10 @@
 import { Badge } from "~/components/ui/badge";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import { lotStatusLabelMap } from "~/features/admin/crud/lot/lot.mappers";
 import {
-	cartItemStatusLabelMap,
-	fulfillmentStatusLabelMap,
+	cartItemStatusConfig,
+	fulfillmentStatusConfig,
 } from "~/features/admin/crud/operations-cart/operations-cart.mappers";
 import { packageStatusLabelMap } from "~/features/admin/crud/package/package.mappers";
 import {
@@ -115,12 +116,10 @@ export function CartItemTraceCard({ item }: { item: CartTraceabilityItem }) {
 						{item.code} · {item.quantity} {item.product.unit}
 					</span>
 					<div className="flex flex-wrap gap-1">
-						<Badge variant="outline">
-							{cartItemStatusLabelMap[item.status]}
-						</Badge>
-						<Badge variant="secondary">
-							{fulfillmentStatusLabelMap[item.fulfillmentStatus]}
-						</Badge>
+						<StatusChip config={cartItemStatusConfig[item.status]} />
+						<StatusChip
+							config={fulfillmentStatusConfig[item.fulfillmentStatus]}
+						/>
 						{item.deleted ? (
 							<Badge variant="destructive">Eliminado</Badge>
 						) : null}

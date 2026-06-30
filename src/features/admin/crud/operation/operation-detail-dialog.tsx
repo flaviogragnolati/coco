@@ -11,13 +11,20 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "~/components/ui/tooltip";
 import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import type { OperationDetail } from "~/shared/common/admin-crud/operation.types";
 import {
-	operationStatusLabelMap,
+	operationStatusConfig,
 	operationStrategyLabelMap,
 } from "./operation.mappers";
 
@@ -25,6 +32,21 @@ const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "short",
 	timeStyle: "short",
 });
+
+function IdRef({ id, label }: { id: number | string; label: string }) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span className="w-fit cursor-help font-mono text-muted-foreground text-xs">
+					#{id}
+				</span>
+			</TooltipTrigger>
+			<TooltipContent>
+				{label} #{id}
+			</TooltipContent>
+		</Tooltip>
+	);
+}
 
 function JsonPreview({ value }: { value: unknown }) {
 	if (value === null || value === undefined) {
@@ -80,7 +102,7 @@ function ConfigGrid({ operation }: { operation: OperationDetail }) {
 		<section className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
 			<div className="flex flex-col gap-1">
 				<span className="text-muted-foreground text-xs">Estado</span>
-				<Badge>{operationStatusLabelMap[operation.status]}</Badge>
+				<StatusChip config={operationStatusConfig[operation.status]} />
 				{operation.failureReason ? (
 					<span className="text-destructive text-xs">
 						{operation.failureReason}
@@ -134,10 +156,10 @@ function SupplierOrders({ operation }: { operation: OperationDetail }) {
 					<div className="rounded-none border bg-muted/20 p-2" key={order.id}>
 						<div className="flex items-center justify-between gap-2">
 							<span className="font-medium">{order.code}</span>
-							<Badge variant="outline">{order.status}</Badge>
+							<Badge variant="secondary">{order.status}</Badge>
 						</div>
-						<p className="text-muted-foreground text-xs">
-							{order.supplier.name} / #{order.id}
+						<p className="flex items-center gap-1 text-muted-foreground text-xs">
+							{order.supplier.name} <IdRef id={order.id} label="Orden" />
 						</p>
 					</div>
 				))}
@@ -284,17 +306,40 @@ export function OperationDetailDialog({
 				) : errorMessage ? (
 					<CrudErrorState message={errorMessage} />
 				) : operation ? (
-					<div className="flex flex-col gap-3">
-						<SummaryGrid operation={operation} />
-						<ConfigGrid operation={operation} />
-						<SupplierOrders operation={operation} />
-						<Lots operation={operation} />
-						<RollOvers operation={operation} />
-						<section className="flex flex-col gap-2 rounded-none border p-3">
-							<h3 className="font-medium text-sm">Resumen tecnico</h3>
-							<JsonPreview value={operation.summary} />
-						</section>
-					</div>
+					<Tabs className="w-full" defaultValue="resumen">
+						<TabsList className="flex-wrap" variant="line">
+							<TabsTrigger value="resumen">Resumen</TabsTrigger>
+							<TabsTrigger value="lotes">
+								Lotes ({operation.lots.length})
+							</TabsTrigger>
+							<TabsTrigger value="ordenes">
+								Ordenes ({operation.supplierOrders.length})
+							</TabsTrigger>
+							<TabsTrigger value="rollovers">
+								Rollovers ({operation.rollOvers.length})
+							</TabsTrigger>
+							<TabsTrigger value="tecnico">Tecnico</TabsTrigger>
+						</TabsList>
+						<TabsContent className="flex flex-col gap-3" value="resumen">
+							<SummaryGrid operation={operation} />
+							<ConfigGrid operation={operation} />
+						</TabsContent>
+						<TabsContent value="lotes">
+							<Lots operation={operation} />
+						</TabsContent>
+						<TabsContent value="ordenes">
+							<SupplierOrders operation={operation} />
+						</TabsContent>
+						<TabsContent value="rollovers">
+							<RollOvers operation={operation} />
+						</TabsContent>
+						<TabsContent value="tecnico">
+							<section className="flex flex-col gap-2 rounded-none border p-3">
+								<h3 className="font-medium text-sm">Resumen tecnico</h3>
+								<JsonPreview value={operation.summary} />
+							</section>
+						</TabsContent>
+					</Tabs>
 				) : null}
 
 				<DialogFooter>

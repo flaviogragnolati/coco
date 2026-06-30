@@ -1,7 +1,7 @@
-import { Badge } from "~/components/ui/badge";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import {
-	orderStatusLabelMap,
-	transactionStatusLabelMap,
+	orderStatusConfig,
+	transactionStatusConfig,
 } from "~/features/admin/crud/operations-cart/operations-cart.mappers";
 import type {
 	CartTraceabilityOrder,
@@ -29,9 +29,7 @@ function PaymentRow({ payment }: { payment: CartTraceabilityPayment }) {
 				</span>
 			</div>
 			<div className="flex items-start">
-				<Badge variant="secondary">
-					{transactionStatusLabelMap[payment.status] ?? payment.status}
-				</Badge>
+				<StatusChip config={transactionStatusConfig[payment.status]} />
 			</div>
 		</li>
 	);
@@ -47,7 +45,7 @@ function OrderCard({ order }: { order: CartTraceabilityOrder }) {
 						#{order.id} / {dateFormatter.format(new Date(order.createdAt))}
 					</span>
 				</div>
-				<Badge variant="outline">{orderStatusLabelMap[order.status]}</Badge>
+				<StatusChip config={orderStatusConfig[order.status]} />
 			</div>
 
 			<div className="flex flex-col gap-2">

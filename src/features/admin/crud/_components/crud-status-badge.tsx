@@ -1,4 +1,6 @@
-import { Badge } from "~/components/ui/badge";
+import { CheckCircle2, MinusCircle, Trash2 } from "lucide-react";
+
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 
 export function CrudStatusBadge({
 	active,
@@ -8,12 +10,20 @@ export function CrudStatusBadge({
 	deleted?: boolean;
 }) {
 	if (deleted) {
-		return <Badge variant="destructive">Eliminado</Badge>;
+		return (
+			<StatusChip
+				config={{ label: "Eliminado", variant: "destructive", icon: Trash2 }}
+			/>
+		);
 	}
 
 	return active ? (
-		<Badge>Activo</Badge>
+		<StatusChip
+			config={{ label: "Activo", variant: "success", icon: CheckCircle2 }}
+		/>
 	) : (
-		<Badge variant="secondary">Inactivo</Badge>
+		<StatusChip
+			config={{ label: "Inactivo", variant: "outline", icon: MinusCircle }}
+		/>
 	);
 }

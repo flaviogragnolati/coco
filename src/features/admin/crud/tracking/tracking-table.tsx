@@ -1,6 +1,8 @@
 "use client";
 
 import { Badge } from "~/components/ui/badge";
+import { IdTooltip } from "~/features/admin/crud/_components/crud-cell-tooltips";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type { AdminTrackingEventListItem } from "~/shared/common/tracking.types";
@@ -9,7 +11,11 @@ import {
 	fulfillmentStatusLabelMap,
 	orderStatusLabelMap,
 } from "../operations-cart/operations-cart.mappers";
-import { formatTrackingRefs, trackingSourceOptions } from "./tracking.mappers";
+import {
+	formatTrackingRefs,
+	trackingEventTypeConfig,
+	trackingSourceOptions,
+} from "./tracking.mappers";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "short",
@@ -32,11 +38,9 @@ const trackingColumns: CrudColumn<AdminTrackingEventListItem>[] = [
 		header: "Evento",
 		className: "min-w-52",
 		cell: (event) => (
-			<div className="flex flex-col gap-1">
-				<span className="font-medium text-foreground">{event.label}</span>
-				<span className="font-mono text-muted-foreground text-xs">
-					#{event.id}
-				</span>
+			<div className="flex flex-col items-start gap-1">
+				<StatusChip config={trackingEventTypeConfig[event.eventType]} />
+				<IdTooltip id={event.id} label="Evento" />
 			</div>
 		),
 	},

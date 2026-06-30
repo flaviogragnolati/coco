@@ -1,11 +1,15 @@
 "use client";
 
-import { Badge } from "~/components/ui/badge";
+import {
+	DateTooltip,
+	IdTooltip,
+} from "~/features/admin/crud/_components/crud-cell-tooltips";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type { LotListItem } from "~/shared/common/admin-crud/lot.types";
-import { lotStatusLabelMap } from "./lot.mappers";
+import { lotStatusConfig } from "./lot.mappers";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "short",
@@ -20,9 +24,7 @@ const lotColumns: CrudColumn<LotListItem>[] = [
 		cell: (lot) => (
 			<div className="flex flex-col gap-1">
 				<span className="font-medium">{lot.code}</span>
-				<span className="font-mono text-muted-foreground text-xs">
-					Lote #{lot.id}
-				</span>
+				<IdTooltip id={lot.id} label="Lote" />
 			</div>
 		),
 	},
@@ -33,9 +35,7 @@ const lotColumns: CrudColumn<LotListItem>[] = [
 		cell: (lot) => (
 			<div className="flex flex-col gap-1">
 				<span>{lot.operation.code}</span>
-				<span className="font-mono text-muted-foreground text-xs">
-					Op #{lot.operation.id}
-				</span>
+				<IdTooltip id={lot.operation.id} label="Operacion" />
 			</div>
 		),
 	},
@@ -57,9 +57,7 @@ const lotColumns: CrudColumn<LotListItem>[] = [
 	{
 		key: "status",
 		header: "Estado",
-		cell: (lot) => (
-			<Badge variant="outline">{lotStatusLabelMap[lot.status]}</Badge>
-		),
+		cell: (lot) => <StatusChip config={lotStatusConfig[lot.status]} />,
 	},
 	{
 		key: "quantity",
@@ -97,7 +95,7 @@ const lotColumns: CrudColumn<LotListItem>[] = [
 		className: "min-w-44",
 		cell: (lot) => (
 			<div className="flex flex-col gap-1 text-xs">
-				<span>{dateFormatter.format(new Date(lot.createdAt))}</span>
+				<DateTooltip value={lot.createdAt} />
 				<span className="text-muted-foreground">
 					Act. {dateFormatter.format(new Date(lot.updatedAt))}
 				</span>

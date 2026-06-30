@@ -1,14 +1,15 @@
 "use client";
 
-import { Badge } from "~/components/ui/badge";
+import {
+	DateTooltip,
+	IdTooltip,
+} from "~/features/admin/crud/_components/crud-cell-tooltips";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type { ShipmentListItem } from "~/shared/common/admin-crud/shipment.types";
-import {
-	shipmentStatusLabelMap,
-	shipmentTypeLabelMap,
-} from "./shipment.mappers";
+import { shipmentStatusConfig, shipmentTypeConfig } from "./shipment.mappers";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "short",
@@ -24,9 +25,7 @@ const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 			<div className="flex flex-col gap-1">
 				<span className="font-medium">{shipment.internalCode}</span>
 				<span className="text-muted-foreground text-xs">{shipment.name}</span>
-				<span className="font-mono text-muted-foreground text-xs">
-					Envio #{shipment.id}
-				</span>
+				<IdTooltip id={shipment.id} label="Envio" />
 			</div>
 		),
 	},
@@ -34,14 +33,14 @@ const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 		key: "type",
 		header: "Tipo",
 		cell: (shipment) => (
-			<Badge variant="secondary">{shipmentTypeLabelMap[shipment.type]}</Badge>
+			<StatusChip config={shipmentTypeConfig[shipment.type]} />
 		),
 	},
 	{
 		key: "status",
 		header: "Estado",
 		cell: (shipment) => (
-			<Badge variant="outline">{shipmentStatusLabelMap[shipment.status]}</Badge>
+			<StatusChip config={shipmentStatusConfig[shipment.status]} />
 		),
 	},
 	{
@@ -96,7 +95,7 @@ const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 		className: "min-w-44",
 		cell: (shipment) => (
 			<div className="flex flex-col gap-1 text-xs">
-				<span>{dateFormatter.format(new Date(shipment.createdAt))}</span>
+				<DateTooltip value={shipment.createdAt} />
 				<span className="text-muted-foreground">
 					Act. {dateFormatter.format(new Date(shipment.updatedAt))}
 				</span>

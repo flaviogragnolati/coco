@@ -1,4 +1,22 @@
 import {
+	AlertTriangle,
+	BadgeCheck,
+	Boxes,
+	ClipboardList,
+	Layers,
+	Package,
+	PackageCheck,
+	Pencil,
+	RotateCcw,
+	Send,
+	ShoppingCart,
+	Trash2,
+	Truck,
+	Warehouse,
+} from "lucide-react";
+import type { StatusConfig } from "~/shared/common/admin-crud/status-config";
+import { statusPresets } from "~/shared/common/admin-crud/status-presets";
+import {
 	type TrackingEventSource,
 	type TrackingEventType,
 	trackingEventLabelMap,
@@ -22,6 +40,103 @@ export const trackingSourceOptions: Array<{
 	value: source,
 	label: trackingSourceLabelMap[source],
 }));
+
+// A tracking timeline is an event log, not a lifecycle: only `fulfillmentException`
+// and cancellations are hard "bad" (red), the received/delivered milestones are
+// green, rollovers are amber follow-ups, the cart-only start is gray, and the
+// bulk of normal progress is blue. Icons are overridden where a distinctive glyph
+// helps scan the timeline; otherwise the preset default applies.
+export const trackingEventTypeConfig: Record<TrackingEventType, StatusConfig> =
+	{
+		addedToCart: {
+			...statusPresets.inert,
+			icon: ShoppingCart,
+			label: trackingEventLabelMap.addedToCart,
+		},
+		submittedToOrder: {
+			...statusPresets.inProgress,
+			icon: Send,
+			label: trackingEventLabelMap.submittedToOrder,
+		},
+		cartItemQuantityChanged: {
+			...statusPresets.inProgress,
+			icon: Pencil,
+			label: trackingEventLabelMap.cartItemQuantityChanged,
+		},
+		cartItemRemoved: {
+			...statusPresets.failed,
+			icon: Trash2,
+			label: trackingEventLabelMap.cartItemRemoved,
+		},
+		cartItemCancelled: {
+			...statusPresets.failed,
+			label: trackingEventLabelMap.cartItemCancelled,
+		},
+		fulfillmentException: {
+			...statusPresets.failed,
+			icon: AlertTriangle,
+			label: trackingEventLabelMap.fulfillmentException,
+		},
+		exceptionResolved: {
+			...statusPresets.success,
+			label: trackingEventLabelMap.exceptionResolved,
+		},
+		includedInOperation: {
+			...statusPresets.inProgress,
+			icon: Layers,
+			label: trackingEventLabelMap.includedInOperation,
+		},
+		allocatedToLotItem: {
+			...statusPresets.inProgress,
+			icon: Boxes,
+			label: trackingEventLabelMap.allocatedToLotItem,
+		},
+		includedInSupplierOrder: {
+			...statusPresets.inProgress,
+			icon: ClipboardList,
+			label: trackingEventLabelMap.includedInSupplierOrder,
+		},
+		supplierConfirmed: {
+			...statusPresets.inProgress,
+			icon: BadgeCheck,
+			label: trackingEventLabelMap.supplierConfirmed,
+		},
+		packaged: {
+			...statusPresets.inProgress,
+			icon: Package,
+			label: trackingEventLabelMap.packaged,
+		},
+		movedInInternalShipment: {
+			...statusPresets.inProgress,
+			icon: Truck,
+			label: trackingEventLabelMap.movedInInternalShipment,
+		},
+		receivedAtWarehouse: {
+			...statusPresets.success,
+			icon: Warehouse,
+			label: trackingEventLabelMap.receivedAtWarehouse,
+		},
+		movedInEndUserShipment: {
+			...statusPresets.inProgress,
+			icon: Truck,
+			label: trackingEventLabelMap.movedInEndUserShipment,
+		},
+		delivered: {
+			...statusPresets.success,
+			icon: PackageCheck,
+			label: trackingEventLabelMap.delivered,
+		},
+		rolledOverPreAllocation: {
+			...statusPresets.attention,
+			icon: RotateCcw,
+			label: trackingEventLabelMap.rolledOverPreAllocation,
+		},
+		rolledOverPostAllocation: {
+			...statusPresets.attention,
+			icon: RotateCcw,
+			label: trackingEventLabelMap.rolledOverPostAllocation,
+		},
+	};
 
 export function formatTrackingRefs(refs: {
 	operationId: number | null;

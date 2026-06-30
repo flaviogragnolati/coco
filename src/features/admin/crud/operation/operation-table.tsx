@@ -8,21 +8,23 @@ import {
 	Trash2Icon,
 } from "lucide-react";
 
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { CrudRowActions } from "~/features/admin/crud/_components/crud-row-actions";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import type {
 	CrudColumn,
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
-import type {
-	OperationListItem,
-	OperationStatus,
-} from "~/shared/common/admin-crud/operation.types";
+import type { OperationListItem } from "~/shared/common/admin-crud/operation.types";
 import {
-	operationStatusLabelMap,
-	operationStrategyLabelMap,
+	operationStatusConfig,
+	operationStrategyConfig,
 } from "./operation.mappers";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
@@ -30,15 +32,43 @@ const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 	timeStyle: "short",
 });
 
-function OperationStatusBadge({ status }: { status: OperationStatus }) {
-	const variant =
-		status === "failed"
-			? "destructive"
-			: status === "completed"
-				? "default"
-				: "secondary";
+const dateTooltipFormatter = new Intl.DateTimeFormat("es-AR", {
+	dateStyle: "full",
+	timeStyle: "medium",
+});
 
-	return <Badge variant={variant}>{operationStatusLabelMap[status]}</Badge>;
+function IdTooltip({ id, label }: { id: number; label: string }) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span className="w-fit cursor-help font-mono text-muted-foreground text-xs">
+					#{id}
+				</span>
+			</TooltipTrigger>
+			<TooltipContent>
+				{label} #{id}
+			</TooltipContent>
+		</Tooltip>
+	);
+}
+
+function DateTooltip({
+	value,
+	className,
+}: {
+	value: Date;
+	className?: string;
+}) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span className={`w-fit cursor-help ${className ?? ""}`}>
+					{dateFormatter.format(value)}
+				</span>
+			</TooltipTrigger>
+			<TooltipContent>{dateTooltipFormatter.format(value)}</TooltipContent>
+		</Tooltip>
+	);
 }
 
 function QuantitySummary({ operation }: { operation: OperationListItem }) {
@@ -66,9 +96,7 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 		cell: (operation) => (
 			<div className="flex flex-col gap-0.5">
 				<span className="font-medium text-foreground">{operation.code}</span>
-				<span className="font-mono text-muted-foreground text-xs">
-					#{operation.id}
-				</span>
+				<IdTooltip id={operation.id} label="Operacion" />
 			</div>
 		),
 	},
@@ -76,11 +104,9 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 		key: "status",
 		header: "Estado",
 		cell: (operation) => (
-			<div className="flex flex-col gap-1">
-				<OperationStatusBadge status={operation.status} />
-				<Badge variant="outline">
-					{operationStrategyLabelMap[operation.strategy]}
-				</Badge>
+			<div className="flex flex-col items-start gap-1">
+				<StatusChip config={operationStatusConfig[operation.status]} />
+				<StatusChip config={operationStrategyConfig[operation.strategy]} />
 			</div>
 		),
 	},
@@ -90,7 +116,7 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 		className: "min-w-44",
 		cell: (operation) => (
 			<div className="flex flex-col gap-0.5 text-xs">
-				<span>{dateFormatter.format(operation.from)}</span>
+				<DateTooltip value={operation.from} />
 				<span className="text-muted-foreground">
 					hasta {dateFormatter.format(operation.to)}
 				</span>
@@ -107,9 +133,7 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 			operation.destination ? (
 				<div className="flex flex-col gap-0.5">
 					<span className="font-medium">{operation.destination.name}</span>
-					<span className="text-muted-foreground text-xs">
-						#{operation.destination.id}
-					</span>
+					<IdTooltip id={operation.destination.id} label="Destino" />
 				</div>
 			) : (
 				<span className="text-muted-foreground text-xs">Sin destino</span>
@@ -126,7 +150,7 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 		className: "w-40",
 		cell: (operation) => (
 			<div className="flex flex-col gap-0.5 text-xs">
-				<span>{dateFormatter.format(operation.createdAt)}</span>
+				<DateTooltip value={operation.createdAt} />
 				<span className="text-muted-foreground">
 					{operation.finishedAt
 						? dateFormatter.format(operation.finishedAt)

@@ -24,6 +24,7 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
+import { crudStatusStatAccents } from "~/features/admin/crud/_lib/crud-status-stats";
 import {
 	matchesCrudStatus,
 	matchesSearch,
@@ -102,21 +103,25 @@ function StatsBlock({
 				{
 					label: "Total",
 					value: stats.total,
+					...crudStatusStatAccents.total,
 					description: totalLabel,
 				},
 				{
 					label: "Activos",
 					value: stats.active,
+					...crudStatusStatAccents.active,
 					description: activeLabel,
 				},
 				{
 					label: "Inactivos",
 					value: stats.inactive,
+					...crudStatusStatAccents.inactive,
 					description: inactiveLabel,
 				},
 				{
 					label: "Eliminados",
 					value: stats.deleted,
+					...crudStatusStatAccents.deleted,
 					description: deletedLabel,
 				},
 			]}

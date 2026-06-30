@@ -1,6 +1,13 @@
 "use client";
 
-import { SearchIcon } from "lucide-react";
+import {
+	CheckCircle2Icon,
+	ClockIcon,
+	CreditCardIcon,
+	LayersIcon,
+	SearchIcon,
+	Trash2Icon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -251,26 +258,35 @@ export function UserCartsClient() {
 						{
 							label: "Total",
 							value: statsQuery.data.total,
+							icon: LayersIcon,
 							description: "Incluye eliminados",
 						},
 						{
 							label: "Abiertos",
 							value: statsQuery.data.open,
+							icon: ClockIcon,
+							accent: "info",
 							description: "Draft, pendientes o checkout",
 						},
 						{
 							label: "Enviados",
 							value: statsQuery.data.submitted,
+							icon: CheckCircle2Icon,
+							accent: "success",
 							description: "Convertidos a solicitud",
 						},
 						{
 							label: "Con pagos",
 							value: statsQuery.data.withPayments,
+							icon: CreditCardIcon,
+							accent: "info",
 							description: "Tienen transacciones",
 						},
 						{
 							label: "Eliminados",
 							value: statsQuery.data.deleted,
+							icon: Trash2Icon,
+							accent: "destructive",
 							description: "Baja logica aplicada",
 						},
 					]}

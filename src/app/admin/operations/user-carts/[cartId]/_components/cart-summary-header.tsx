@@ -1,8 +1,9 @@
 import { Badge } from "~/components/ui/badge";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import {
-	cartStatusLabelMap,
-	fulfillmentStatusLabelMap,
+	cartStatusConfig,
+	fulfillmentStatusConfig,
 } from "~/features/admin/crud/operations-cart/operations-cart.mappers";
 import type { OperationalDiagnosticSeverity } from "~/shared/common/admin-crud/operational-diagnostic.types";
 import type {
@@ -29,12 +30,13 @@ export function CartSummaryHeader({
 	return (
 		<section className="flex flex-col gap-3">
 			<div className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
-				<div className="flex flex-col gap-1">
+				<div className="flex flex-col items-start gap-1">
 					<span className="text-muted-foreground text-xs">Carrito</span>
 					<span className="font-mono">{cart.code}</span>
-					<span className="text-muted-foreground text-xs">
-						#{cart.id} / {cartStatusLabelMap[cart.status]}
+					<span className="font-mono text-muted-foreground text-xs">
+						#{cart.id}
 					</span>
+					<StatusChip config={cartStatusConfig[cart.status]} />
 					{cart.deleted ? <Badge variant="destructive">Eliminado</Badge> : null}
 				</div>
 				<div className="flex flex-col gap-1">
@@ -73,11 +75,17 @@ export function CartSummaryHeader({
 					Resumen de fulfillment
 				</span>
 				{aggregate.fulfillmentSummary.length > 0 ? (
-					<div className="flex flex-wrap gap-1">
+					<div className="flex flex-wrap gap-2">
 						{aggregate.fulfillmentSummary.map((entry) => (
-							<Badge key={entry.status} variant="outline">
-								{fulfillmentStatusLabelMap[entry.status]}: {entry.count}
-							</Badge>
+							<span
+								className="inline-flex items-center gap-1"
+								key={entry.status}
+							>
+								<StatusChip config={fulfillmentStatusConfig[entry.status]} />
+								<span className="text-muted-foreground text-xs">
+									{entry.count}
+								</span>
+							</span>
 						))}
 					</div>
 				) : (

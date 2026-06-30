@@ -1,6 +1,14 @@
 "use client";
 
-import { PlusIcon, SearchIcon } from "lucide-react";
+import {
+	CheckCircle2,
+	Layers,
+	PackageCheck,
+	PlusIcon,
+	RotateCcw,
+	SearchIcon,
+	XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -152,26 +160,35 @@ export function OperationsClient() {
 							label: "Total",
 							value: statsQuery.data.total,
 							description: "Operaciones registradas",
+							icon: Layers,
 						},
 						{
 							label: "Completadas",
 							value: statsQuery.data.completed,
 							description: "Ejecucion tecnica exitosa",
+							icon: CheckCircle2,
+							accent: "success",
 						},
 						{
 							label: "Fallidas",
 							value: statsQuery.data.failed,
 							description: "Error tecnico",
+							icon: XCircle,
+							accent: "destructive",
 						},
 						{
 							label: "Asignada",
 							value: statsQuery.data.assignedQuantity,
 							description: "Cantidad total asignada",
+							icon: PackageCheck,
+							accent: "info",
 						},
 						{
 							label: "Rollover",
 							value: statsQuery.data.rollOverQuantity,
 							description: "Cantidad abierta",
+							icon: RotateCcw,
+							accent: "warning",
 						},
 					]}
 				/>

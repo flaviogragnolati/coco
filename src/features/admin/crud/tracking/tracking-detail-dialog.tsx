@@ -11,6 +11,7 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import {
 	CrudErrorState,
 	CrudLoadingState,
@@ -178,20 +179,30 @@ export function TrackingDetailDialog({
 				) : errorMessage ? (
 					<CrudErrorState message={errorMessage} />
 				) : detail ? (
-					<div className="grid gap-4">
-						<SummaryGrid detail={detail} />
-						{detail.timeline.length > 0 ? (
-							<ol className="grid gap-3">
-								{detail.timeline.map((event) => (
-									<TimelineEvent event={event} key={event.id} />
-								))}
-							</ol>
-						) : (
-							<div className="rounded-none border p-3 text-muted-foreground text-sm">
-								Este cart item todavia no tiene eventos de tracking.
-							</div>
-						)}
-					</div>
+					<Tabs className="w-full" defaultValue="resumen">
+						<TabsList className="flex-wrap" variant="line">
+							<TabsTrigger value="resumen">Resumen</TabsTrigger>
+							<TabsTrigger value="timeline">
+								Timeline ({detail.timeline.length})
+							</TabsTrigger>
+						</TabsList>
+						<TabsContent value="resumen">
+							<SummaryGrid detail={detail} />
+						</TabsContent>
+						<TabsContent value="timeline">
+							{detail.timeline.length > 0 ? (
+								<ol className="grid gap-3">
+									{detail.timeline.map((event) => (
+										<TimelineEvent event={event} key={event.id} />
+									))}
+								</ol>
+							) : (
+								<div className="rounded-none border p-3 text-muted-foreground text-sm">
+									Este cart item todavia no tiene eventos de tracking.
+								</div>
+							)}
+						</TabsContent>
+					</Tabs>
 				) : null}
 
 				<DialogFooter>

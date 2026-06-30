@@ -23,6 +23,7 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
+import { crudStatusStatAccents } from "~/features/admin/crud/_lib/crud-status-stats";
 import {
 	matchesCrudStatus,
 	matchesSearch,
@@ -243,21 +244,25 @@ export function AddressCrudClient() {
 						{
 							label: "Total",
 							value: stats.total,
+							...crudStatusStatAccents.total,
 							description: "Incluye direcciones eliminadas",
 						},
 						{
 							label: "Activas",
 							value: stats.active,
+							...crudStatusStatAccents.active,
 							description: "Disponibles para uso operativo",
 						},
 						{
 							label: "Inactivas",
 							value: stats.inactive,
+							...crudStatusStatAccents.inactive,
 							description: "No eliminadas, pero fuera de uso",
 						},
 						{
 							label: "Eliminadas",
 							value: stats.deleted,
+							...crudStatusStatAccents.deleted,
 							description: "Baja lógica aplicada",
 						},
 					]}

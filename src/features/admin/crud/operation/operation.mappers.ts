@@ -1,8 +1,11 @@
+import { ArrowDownUp, CheckCircle2, Clock, XCircle } from "lucide-react";
+
 import type {
 	OperationCreateFormValues,
 	OperationStatus,
 	OperationStrategy,
 } from "~/shared/common/admin-crud/operation.types";
+import type { StatusConfig } from "~/shared/common/admin-crud/status-config";
 
 export function toDateTimeLocalValue(value: Date | string) {
 	const date = new Date(value);
@@ -21,6 +24,41 @@ export const operationStrategyLabelMap: Record<OperationStrategy, string> = {
 	fifo: "FIFO",
 	other: "Otra",
 };
+
+export const operationStatusConfig: Record<OperationStatus, StatusConfig> = {
+	running: {
+		label: operationStatusLabelMap.running,
+		variant: "warning",
+		icon: Clock,
+		hint: "Asignacion en curso",
+	},
+	completed: {
+		label: operationStatusLabelMap.completed,
+		variant: "success",
+		icon: CheckCircle2,
+		hint: "Ejecucion tecnica exitosa",
+	},
+	failed: {
+		label: operationStatusLabelMap.failed,
+		variant: "destructive",
+		icon: XCircle,
+		hint: "Error tecnico en la ejecucion",
+	},
+};
+
+export const operationStrategyConfig: Record<OperationStrategy, StatusConfig> =
+	{
+		fifo: {
+			label: operationStrategyLabelMap.fifo,
+			variant: "info",
+			icon: ArrowDownUp,
+			hint: "Asignacion por orden de llegada",
+		},
+		other: {
+			label: operationStrategyLabelMap.other,
+			variant: "outline",
+		},
+	};
 
 export const operationStatusOptions = Object.entries(
 	operationStatusLabelMap,

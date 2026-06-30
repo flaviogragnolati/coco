@@ -1,8 +1,14 @@
 import type { ReactNode } from "react";
 
 import { Badge } from "~/components/ui/badge";
+import { IdTooltip } from "~/features/admin/crud/_components/crud-cell-tooltips";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import type { AdminTrackingTimelineItem } from "~/shared/common/tracking.types";
-import { formatTrackingRefs, trackingSourceOptions } from "./tracking.mappers";
+import {
+	formatTrackingRefs,
+	trackingEventTypeConfig,
+	trackingSourceOptions,
+} from "./tracking.mappers";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "short",
@@ -46,14 +52,12 @@ export function TrackingTimelineItemCard({
 					{dateFormatter.format(new Date(item.createdAt))}
 				</span>
 				<Badge variant="secondary">{sourceLabelMap[item.source]}</Badge>
-				<span className="font-mono text-muted-foreground text-xs">
-					Evento #{item.id}
-				</span>
+				<IdTooltip id={item.id} label="Evento" />
 			</div>
 
 			<div className="flex min-w-0 flex-col gap-3">
 				<div className="flex flex-col gap-1">
-					<span className="font-medium">{item.label}</span>
+					<StatusChip config={trackingEventTypeConfig[item.eventType]} />
 					<span className="font-mono text-[11px] text-muted-foreground">
 						{item.eventKey ?? "Sin eventKey"}
 					</span>

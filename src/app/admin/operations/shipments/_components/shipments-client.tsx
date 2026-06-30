@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowLeftIcon, RotateCcwIcon, SearchIcon } from "lucide-react";
+import {
+	AlertTriangleIcon,
+	ArrowLeftIcon,
+	BoxesIcon,
+	LayersIcon,
+	RotateCcwIcon,
+	SearchIcon,
+	TruckIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -162,15 +170,27 @@ export function ShipmentsClient() {
 			) : statsQuery.data ? (
 				<CrudStatsCards
 					stats={[
-						{ label: "Total", value: statsQuery.data.total },
+						{
+							label: "Total",
+							value: statsQuery.data.total,
+							icon: LayersIcon,
+						},
 						{
 							label: "En transito",
 							value: statsQuery.data.byStatus.inTransit,
+							icon: TruckIcon,
+							accent: "info",
 						},
-						{ label: "Paquetes", value: statsQuery.data.packageCount },
+						{
+							label: "Paquetes",
+							value: statsQuery.data.packageCount,
+							icon: BoxesIcon,
+						},
 						{
 							label: "Con diagnosticos",
 							value: statsQuery.data.withDiagnostics,
+							icon: AlertTriangleIcon,
+							accent: "warning",
 						},
 					]}
 				/>

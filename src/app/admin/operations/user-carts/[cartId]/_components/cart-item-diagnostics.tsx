@@ -26,7 +26,7 @@ export function DiagnosticList({
 					<div className="flex items-center gap-2">
 						<Badge
 							variant={
-								diagnostic.severity === "critical" ? "destructive" : "secondary"
+								diagnostic.severity === "critical" ? "destructive" : "warning"
 							}
 						>
 							{diagnostic.severity === "critical" ? "Critico" : "Advertencia"}

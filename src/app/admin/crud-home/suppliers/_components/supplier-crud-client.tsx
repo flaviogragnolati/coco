@@ -23,6 +23,7 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
+import { crudStatusStatAccents } from "~/features/admin/crud/_lib/crud-status-stats";
 import {
 	matchesCrudStatus,
 	matchesSearch,
@@ -237,21 +238,25 @@ export function SupplierCrudClient() {
 						{
 							label: "Total",
 							value: stats.total,
+							...crudStatusStatAccents.total,
 							description: "Incluye proveedores eliminados",
 						},
 						{
 							label: "Activos",
 							value: stats.active,
+							...crudStatusStatAccents.active,
 							description: "Disponibles para operaciones",
 						},
 						{
 							label: "Inactivos",
 							value: stats.inactive,
+							...crudStatusStatAccents.inactive,
 							description: "No eliminados, pero pausados",
 						},
 						{
 							label: "Eliminados",
 							value: stats.deleted,
+							...crudStatusStatAccents.deleted,
 							description: "Baja lógica aplicada",
 						},
 					]}

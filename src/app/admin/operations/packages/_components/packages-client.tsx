@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowLeftIcon, RotateCcwIcon, SearchIcon } from "lucide-react";
+import {
+	AlertTriangleIcon,
+	ArrowLeftIcon,
+	BoxesIcon,
+	LayersIcon,
+	PackageCheckIcon,
+	RotateCcwIcon,
+	SearchIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -156,18 +164,28 @@ export function PackagesClient() {
 			) : statsQuery.data ? (
 				<CrudStatsCards
 					stats={[
-						{ label: "Total", value: statsQuery.data.total },
+						{
+							label: "Total",
+							value: statsQuery.data.total,
+							icon: LayersIcon,
+						},
 						{
 							label: "Listos envio",
 							value: statsQuery.data.byStatus.readyForShipment,
+							icon: PackageCheckIcon,
+							accent: "info",
 						},
 						{
 							label: "Asignado",
 							value: statsQuery.data.packagedAllocationQuantity,
+							icon: BoxesIcon,
+							accent: "info",
 						},
 						{
 							label: "Con diagnosticos",
 							value: statsQuery.data.withDiagnostics,
+							icon: AlertTriangleIcon,
+							accent: "warning",
 						},
 					]}
 				/>

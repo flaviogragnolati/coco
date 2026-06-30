@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowLeftIcon, RotateCcwIcon, SearchIcon } from "lucide-react";
+import {
+	AlertTriangleIcon,
+	ArrowLeftIcon,
+	ClockIcon,
+	LayersIcon,
+	PackageCheckIcon,
+	RotateCcwIcon,
+	SearchIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -159,18 +167,28 @@ export function LotsClient() {
 			) : statsQuery.data ? (
 				<CrudStatsCards
 					stats={[
-						{ label: "Total", value: statsQuery.data.total },
+						{
+							label: "Total",
+							value: statsQuery.data.total,
+							icon: LayersIcon,
+						},
 						{
 							label: "Solicitados",
 							value: statsQuery.data.byStatus.requested,
+							icon: ClockIcon,
+							accent: "info",
 						},
 						{
 							label: "Cantidad demanda",
 							value: statsQuery.data.demandAllocationQuantity,
+							icon: PackageCheckIcon,
+							accent: "info",
 						},
 						{
 							label: "Con diagnosticos",
 							value: statsQuery.data.withDiagnostics,
+							icon: AlertTriangleIcon,
+							accent: "warning",
 						},
 					]}
 				/>

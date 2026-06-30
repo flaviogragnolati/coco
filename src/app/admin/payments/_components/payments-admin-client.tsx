@@ -2,15 +2,20 @@
 
 import {
 	ArrowLeftIcon,
+	CheckCircle2Icon,
+	ClockIcon,
+	LayersIcon,
 	RefreshCcwIcon,
 	SearchIcon,
 	SettingsIcon,
+	ShieldAlertIcon,
+	ShieldCheckIcon,
+	XCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -39,6 +44,7 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type {
@@ -51,6 +57,7 @@ import type {
 } from "~/shared/common/admin-crud/payment.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 import { api } from "~/trpc/react";
+import { resolvePaymentStatus } from "./payment.mappers";
 
 const provider = "mercadopago";
 
@@ -72,17 +79,7 @@ function JsonBlock({ value }: { value: unknown }) {
 }
 
 function PaymentStatusBadge({ status }: { status: string }) {
-	const variant =
-		status === "completed" || status === "processed"
-			? "secondary"
-			: status === "failed" ||
-					status === "cancelled" ||
-					status === "chargedBack" ||
-					status === "rejected"
-				? "destructive"
-				: "outline";
-
-	return <Badge variant={variant}>{status}</Badge>;
+	return <StatusChip config={resolvePaymentStatus(status)} />;
 }
 
 function AttemptDetail({
@@ -648,9 +645,17 @@ export function PaymentsAdminClient() {
 			key: "signature",
 			header: "Firma",
 			cell: (item) => (
-				<Badge variant={item.signatureValid ? "secondary" : "outline"}>
-					{item.signatureValid ? "válida" : "no válida"}
-				</Badge>
+				<StatusChip
+					config={
+						item.signatureValid
+							? { label: "válida", variant: "success", icon: ShieldCheckIcon }
+							: {
+									label: "no válida",
+									variant: "destructive",
+									icon: ShieldAlertIcon,
+								}
+					}
+				/>
 			),
 		},
 		{
@@ -682,10 +687,29 @@ export function PaymentsAdminClient() {
 			{statsQuery.data ? (
 				<CrudStatsCards
 					stats={[
-						{ label: "Intentos", value: statsQuery.data.totalAttempts },
-						{ label: "Pendientes", value: statsQuery.data.pendingAttempts },
-						{ label: "Completados", value: statsQuery.data.completedAttempts },
-						{ label: "Eventos fallidos", value: statsQuery.data.failedEvents },
+						{
+							label: "Intentos",
+							value: statsQuery.data.totalAttempts,
+							icon: LayersIcon,
+						},
+						{
+							label: "Pendientes",
+							value: statsQuery.data.pendingAttempts,
+							icon: ClockIcon,
+							accent: "info",
+						},
+						{
+							label: "Completados",
+							value: statsQuery.data.completedAttempts,
+							icon: CheckCircle2Icon,
+							accent: "success",
+						},
+						{
+							label: "Eventos fallidos",
+							value: statsQuery.data.failedEvents,
+							icon: XCircleIcon,
+							accent: "destructive",
+						},
 					]}
 				/>
 			) : null}

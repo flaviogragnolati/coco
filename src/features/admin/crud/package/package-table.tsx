@@ -1,11 +1,15 @@
 "use client";
 
-import { Badge } from "~/components/ui/badge";
+import {
+	DateTooltip,
+	IdTooltip,
+} from "~/features/admin/crud/_components/crud-cell-tooltips";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type { PackageListItem } from "~/shared/common/admin-crud/package.types";
-import { packageStatusLabelMap } from "./package.mappers";
+import { packageStatusConfig } from "./package.mappers";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "short",
@@ -20,9 +24,7 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 		cell: (pkg) => (
 			<div className="flex flex-col gap-1">
 				<span className="font-medium">{pkg.name}</span>
-				<span className="font-mono text-muted-foreground text-xs">
-					Paquete #{pkg.id}
-				</span>
+				<IdTooltip id={pkg.id} label="Paquete" />
 				{pkg.trackingCode ? (
 					<span className="text-muted-foreground text-xs">
 						Tracking {pkg.trackingCode}
@@ -34,9 +36,7 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 	{
 		key: "status",
 		header: "Estado",
-		cell: (pkg) => (
-			<Badge variant="outline">{packageStatusLabelMap[pkg.status]}</Badge>
-		),
+		cell: (pkg) => <StatusChip config={packageStatusConfig[pkg.status]} />,
 	},
 	{
 		key: "shipment",
@@ -90,7 +90,7 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 		className: "min-w-44",
 		cell: (pkg) => (
 			<div className="flex flex-col gap-1 text-xs">
-				<span>{dateFormatter.format(new Date(pkg.createdAt))}</span>
+				<DateTooltip value={pkg.createdAt} />
 				<span className="text-muted-foreground">
 					Act. {dateFormatter.format(new Date(pkg.updatedAt))}
 				</span>
