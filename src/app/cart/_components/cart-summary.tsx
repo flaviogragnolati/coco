@@ -85,7 +85,7 @@ export function CartSummary({
 								className="flex items-center justify-between gap-3"
 								key={total.currency}
 							>
-								<span className="text-xs">{total.currency}</span>
+								<Badge variant="info">{total.currency}</Badge>
 								<span className="font-heading font-semibold text-lg">
 									{formatCurrency(total.amount, total.currency)}
 								</span>

@@ -1,34 +1,35 @@
 "use client";
 
-import { Field, FieldLabel } from "~/components/ui/field";
 import { Select } from "~/components/ui/select";
-
-export type ProductSortValue =
-	| "name-asc"
-	| "name-desc"
-	| "price-asc"
-	| "price-desc";
+import type { CatalogSort } from "./catalog-filtering";
 
 export function ProductSortSelect({
 	value,
 	onChange,
+	showRelevance = false,
+	id = "products-sort",
+	className,
 }: {
-	value: ProductSortValue;
-	onChange: (value: ProductSortValue) => void;
+	value: CatalogSort;
+	onChange: (value: CatalogSort) => void;
+	showRelevance?: boolean;
+	id?: string;
+	className?: string;
 }) {
 	return (
-		<Field className="min-w-52">
-			<FieldLabel htmlFor="products-sort">Ordenar</FieldLabel>
-			<Select
-				id="products-sort"
-				onChange={(event) => onChange(event.target.value as ProductSortValue)}
-				value={value}
-			>
-				<option value="name-asc">Alfabetico A-Z</option>
-				<option value="name-desc">Alfabetico Z-A</option>
-				<option value="price-asc">Precio menor a mayor</option>
-				<option value="price-desc">Precio mayor a menor</option>
-			</Select>
-		</Field>
+		<Select
+			aria-label="Ordenar"
+			className={className}
+			id={id}
+			onChange={(event) => onChange(event.target.value as CatalogSort)}
+			value={value}
+		>
+			{showRelevance ? <option value="relevance">Relevancia</option> : null}
+			<option value="name-asc">Alfabético A-Z</option>
+			<option value="name-desc">Alfabético Z-A</option>
+			<option value="price-asc">Precio menor a mayor</option>
+			<option value="price-desc">Precio mayor a menor</option>
+			<option value="newest">Recién agregados</option>
+		</Select>
 	);
 }

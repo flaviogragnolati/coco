@@ -1,7 +1,6 @@
 "use client";
 
 import { ShoppingCartIcon } from "lucide-react";
-import Link from "next/link";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -12,6 +11,7 @@ import {
 } from "~/components/ui/tooltip";
 import { useCartSync } from "~/features/cart/use-cart-sync";
 import { useCartStore } from "~/store/cart-store";
+import { useCartUiStore } from "~/store/cart-ui-store";
 
 export function CartNavButton({
 	isAuthenticated,
@@ -21,6 +21,7 @@ export function CartNavButton({
 	userId?: string | null;
 }) {
 	const { isSyncing } = useCartSync({ isAuthenticated, userId });
+	const openMiniCart = useCartUiStore((state) => state.openMiniCart);
 	const itemCount = useCartStore((state) =>
 		state.hasHydrated ? Object.keys(state.items).length : 0,
 	);
@@ -28,19 +29,24 @@ export function CartNavButton({
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Button aria-label="Abrir carrito" asChild size="icon" variant="ghost">
-					<Link className="relative" href="/cart">
-						<ShoppingCartIcon />
-						{itemCount > 0 ? (
-							<Badge className="absolute -top-1.5 -right-1.5 min-w-5 justify-center px-1 py-0 text-[10px]">
-								{itemCount}
-							</Badge>
-						) : null}
-					</Link>
+				<Button
+					aria-label="Abrir carrito"
+					className="relative"
+					onClick={openMiniCart}
+					size="icon"
+					type="button"
+					variant="ghost"
+				>
+					<ShoppingCartIcon />
+					{itemCount > 0 ? (
+						<Badge className="absolute -top-1.5 -right-1.5 min-w-5 justify-center px-1 py-0 text-[10px]">
+							{itemCount}
+						</Badge>
+					) : null}
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent>
-				{isSyncing ? "Sincronizando carrito" : "Ver carrito"}
+				{isSyncing ? "Sincronizando carrito" : "Abrir carrito"}
 			</TooltipContent>
 		</Tooltip>
 	);

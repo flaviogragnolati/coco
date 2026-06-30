@@ -1,8 +1,14 @@
 "use client";
 
-import { AlertCircleIcon, ImageIcon, ShoppingCartIcon } from "lucide-react";
+import {
+	AlertCircleIcon,
+	CheckIcon,
+	ImageIcon,
+	ShoppingCartIcon,
+} from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
 	Dialog,
@@ -14,8 +20,8 @@ import {
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
 import { QuantityStepper } from "~/features/cart/_components/quantity-stepper";
-import { catalogProductToCartItem } from "~/features/cart/cart-mappers";
 import type { CartItem } from "~/shared/common/cart.types";
+import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import { formatQuantity } from "~/shared/common/commerce.helpers";
 import { api } from "~/trpc/react";
 import { ProductImage } from "./product-image";
@@ -26,11 +32,11 @@ type ProductDetailsDialogProps = {
 	disabled?: boolean;
 	open: boolean;
 	productId: number | null;
+	onAdd: (product: CatalogProductListItem) => void;
 	onDecrement: (item: CartItem) => void;
 	onIncrement: (item: CartItem) => void;
 	onOpenChange: (open: boolean) => void;
 	onQuantityCommit: (item: CartItem, quantity: string) => void;
-	onSetItem: (item: CartItem) => void;
 };
 
 export function ProductDetailsDialog({
@@ -38,11 +44,11 @@ export function ProductDetailsDialog({
 	disabled,
 	open,
 	productId,
+	onAdd,
 	onDecrement,
 	onIncrement,
 	onOpenChange,
 	onQuantityCommit,
-	onSetItem,
 }: ProductDetailsDialogProps) {
 	const detailQuery = api.catalog.getProductDetail.useQuery(
 		{ id: productId ?? 0 },
@@ -60,18 +66,18 @@ export function ProductDetailsDialog({
 				<DialogHeader>
 					<DialogTitle>{product?.name ?? "Detalle de producto"}</DialogTitle>
 					<DialogDescription>
-						Informacion comercial vigente para sumarte a una compra mayorista
+						Información comercial vigente para sumarte a una compra mayorista
 						compartida.
 					</DialogDescription>
 				</DialogHeader>
 
 				{detailQuery.isLoading ? (
 					<div className="grid gap-4 md:grid-cols-[18rem_1fr]">
-						<Skeleton className="aspect-[4/3] w-full" />
+						<Skeleton className="aspect-4/3 w-full rounded-2xl" />
 						<div className="flex flex-col gap-3">
 							<Skeleton className="h-8 w-2/3" />
-							<Skeleton className="h-20 w-full" />
-							<Skeleton className="h-24 w-full" />
+							<Skeleton className="h-20 w-full rounded-2xl" />
+							<Skeleton className="h-24 w-full rounded-2xl" />
 						</div>
 					</div>
 				) : detailQuery.isError ? (
@@ -80,14 +86,14 @@ export function ProductDetailsDialog({
 						<AlertTitle>No se pudo cargar el producto</AlertTitle>
 						<AlertDescription>
 							{detailQuery.error.message ||
-								"Intenta abrir el detalle otra vez."}
+								"Intentá abrir el detalle otra vez."}
 						</AlertDescription>
 					</Alert>
 				) : product ? (
 					<div className="grid gap-5 md:grid-cols-[18rem_1fr]">
 						<div className="flex flex-col gap-3">
 							<ProductImage
-								className="flex aspect-[4/3] w-full items-center justify-center border bg-center bg-cover bg-muted text-muted-foreground"
+								className="flex aspect-4/3 w-full items-center justify-center rounded-2xl bg-center bg-cover bg-muted text-muted-foreground"
 								imageUrl={product.imageUrl}
 								name={product.name}
 							/>
@@ -95,7 +101,7 @@ export function ProductDetailsDialog({
 								<div className="grid grid-cols-3 gap-2">
 									{product.images.slice(0, 6).map((imageUrl) => (
 										<ProductImage
-											className="flex aspect-square w-full items-center justify-center border bg-center bg-cover bg-muted text-muted-foreground"
+											className="flex aspect-square w-full items-center justify-center rounded-xl bg-center bg-cover bg-muted text-muted-foreground"
 											imageUrl={imageUrl}
 											key={imageUrl}
 											name={product.name}
@@ -105,14 +111,20 @@ export function ProductDetailsDialog({
 							) : (
 								<div className="flex items-center gap-2 text-muted-foreground text-xs">
 									<ImageIcon />
-									Sin galeria adicional
+									Sin galería adicional
 								</div>
 							)}
 						</div>
 						<div className="flex flex-col gap-4">
 							<div className="flex flex-col gap-1">
-								<span className="text-muted-foreground text-xs">
+								<span className="flex items-center gap-2 text-muted-foreground text-xs">
 									{product.brand?.name ?? "Sin marca"}
+									{activeCartItem ? (
+										<Badge variant="success">
+											<CheckIcon data-icon="inline-start" />
+											En carrito
+										</Badge>
+									) : null}
 								</span>
 								<h2 className="font-heading font-semibold text-xl">
 									{product.name}
@@ -122,8 +134,8 @@ export function ProductDetailsDialog({
 										"Producto disponible para pedidos mayoristas compartidos."}
 								</p>
 							</div>
-							<ProductPriceBlock product={product} />
-							<div className="grid gap-2 border p-3 text-xs">
+							<ProductPriceBlock product={product} variant="detail" />
+							<div className="grid gap-2 rounded-2xl bg-muted/40 p-3 text-xs">
 								<div className="flex items-center justify-between gap-3">
 									<span className="text-muted-foreground">MOQ</span>
 									<span className="font-medium">
@@ -139,11 +151,11 @@ export function ProductDetailsDialog({
 									</span>
 								</div>
 								<div className="flex items-center justify-between gap-3">
-									<span className="text-muted-foreground">Maximo</span>
+									<span className="text-muted-foreground">Máximo</span>
 									<span className="font-medium">
 										{product.terms.max
 											? formatQuantity(product.terms.max, product.unit)
-											: "Sin maximo"}
+											: "Sin máximo"}
 									</span>
 								</div>
 							</div>
@@ -172,14 +184,17 @@ export function ProductDetailsDialog({
 					>
 						Cerrar
 					</Button>
-					{product ? (
+					{product && !activeCartItem ? (
 						<Button
 							disabled={disabled}
-							onClick={() => onSetItem(catalogProductToCartItem(product))}
+							onClick={() => {
+								onAdd(product);
+								onOpenChange(false);
+							}}
 							type="button"
 						>
 							<ShoppingCartIcon data-icon="inline-start" />
-							{activeCartItem ? "Actualizar carrito" : "Agregar al carrito"}
+							Agregar al carrito
 						</Button>
 					) : null}
 				</DialogFooter>

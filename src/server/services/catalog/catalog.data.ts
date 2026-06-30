@@ -31,6 +31,7 @@ const catalogProductBaseSelect = {
 	unit: true,
 	cardImageUrl: true,
 	cartImageUrl: true,
+	createdAt: true,
 	brand: {
 		select: catalogBrandSelect,
 	},

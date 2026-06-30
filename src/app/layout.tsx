@@ -1,11 +1,12 @@
 import "~/styles/globals.css";
 
 import type { Metadata } from "next";
-import { Geist, Inter, JetBrains_Mono, Nunito_Sans } from "next/font/google";
+import { Geist, JetBrains_Mono, Nunito_Sans } from "next/font/google";
 
 import { AppNavbar } from "~/components/app-navbar";
 import { Toaster } from "~/components/ui/sonner";
 import { TooltipProvider } from "~/components/ui/tooltip";
+import { CartSheet } from "~/features/cart/_components/cart-sheet";
 import { cn } from "~/lib/utils";
 import { getSession } from "~/server/better-auth/server";
 import { TRPCReactProvider } from "~/trpc/react";
@@ -34,6 +35,7 @@ export default async function RootLayout({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	const session = await getSession();
+	const user = session?.user;
 
 	return (
 		<html
@@ -51,6 +53,10 @@ export default async function RootLayout({
 					<TooltipProvider>
 						<AppNavbar session={session} />
 						{children}
+						<CartSheet
+							isAuthenticated={Boolean(user)}
+							userId={user?.id ?? null}
+						/>
 					</TooltipProvider>
 					<Toaster />
 				</TRPCReactProvider>

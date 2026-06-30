@@ -96,6 +96,7 @@ function mapPreviewCatalogProduct(
 		unit: record.unit,
 		brand: record.brand,
 		imageUrl: selectProductImage(record),
+		createdAt: record.createdAt,
 		terms: mapPreviewTerms(terms),
 		cardImageUrl: record.cardImageUrl,
 		cartImageUrl: record.cartImageUrl,

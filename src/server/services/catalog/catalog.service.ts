@@ -54,6 +54,7 @@ function mapListItem(
 		unit: record.unit,
 		brand: record.brand,
 		imageUrl: selectProductImage(record),
+		createdAt: record.createdAt,
 		terms: mapTerms(terms),
 	};
 }

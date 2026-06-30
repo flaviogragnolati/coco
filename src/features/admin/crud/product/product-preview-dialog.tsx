@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { FeaturedProductCard } from "~/features/home/_components/featured-product-card";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
 import type { CartItem } from "~/shared/common/cart.types";
+import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 
 type ProductPreviewDialogProps = {
 	errorMessage?: string;
@@ -38,6 +39,7 @@ const ignoreCartItem = (_item: CartItem) => undefined;
 const ignoreCartQuantity = (_item: CartItem, _quantity: string) => undefined;
 const ignoreProductId = (_productId: number) => undefined;
 const ignoreRemove = (_productClientTermsId: number) => undefined;
+const ignoreProduct = (_product: CatalogProductListItem) => undefined;
 
 function PreviewUnavailable({
 	title,
@@ -196,11 +198,12 @@ export function ProductPreviewDialog({
 										<ProductCard
 											cartItem={preview.cartItem ?? undefined}
 											disabled
+											onAdd={ignoreProduct}
 											onDecrement={ignoreCartItem}
 											onDetails={ignoreProductId}
 											onIncrement={ignoreCartItem}
 											onQuantityCommit={ignoreCartQuantity}
-											onSetItem={ignoreCartItem}
+											onRemove={ignoreRemove}
 											product={preview.catalogProduct}
 										/>
 									</div>

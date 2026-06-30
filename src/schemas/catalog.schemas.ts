@@ -50,6 +50,7 @@ export const catalogProductListItemSchema = z.object({
 	unit: catalogProductUnitSchema,
 	brand: catalogBrandSummarySchema.nullable(),
 	imageUrl: z.string().nullable(),
+	createdAt: z.date(),
 	terms: catalogClientTermsSchema,
 });
 

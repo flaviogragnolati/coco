@@ -1,8 +1,10 @@
 # Coco Fulfillment Context
 
-This context describes the language for customer demand aggregation, sourcing, packaging, shipping, and fulfillment traceability.
+This context describes the language for the customer-facing catalog and cart, plus customer demand aggregation, sourcing, packaging, shipping, and fulfillment traceability.
 
 ## Language
+
+### Fulfillment and operations
 
 **Customer request**:
 The customer-facing demand captured before and during order submission.
@@ -67,3 +69,21 @@ _Avoid_: Correction, mutation, action
 **Aggregate status**:
 A summary status intended for display, backed by more detailed operational records.
 _Avoid_: Source of truth, proof
+
+### Catalog and cart (customer-facing)
+
+**Catalog**:
+The customer-facing set of purchasable products, each surfaced with its current client terms. Distinct from the internal admin Product record.
+_Avoid_: Store, product list
+
+**Client terms**:
+The active customer-facing commercial terms for a product: minimum order quantity and its price, optional step and step price, optional reference price, currency, and validity window. The single price source for catalog and cart.
+_Avoid_: Pricing, price terms
+
+**MOQ (minimum order quantity)**:
+The smallest purchasable quantity of a product and the unit in which demand is added; priced as a block by the client terms, with optional step increments above it.
+_Avoid_: Minimum, batch size
+
+**Mini-cart**:
+The slide-over cart preview opened from the navbar and when adding a product. A quick view that complements, and never replaces, the full cart page.
+_Avoid_: Cart drawer, cart popover
