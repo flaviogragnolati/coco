@@ -15,11 +15,17 @@ import {
 type CartLineRowProps = {
 	item: CartItem;
 	disabled?: boolean;
+	/**
+	 * Display-only mode: renders the quantity as text and hides the remove
+	 * button. When set, the editing callbacks are not required. Used by the
+	 * checkout Pedido/Confirmar item lists.
+	 */
+	readOnly?: boolean;
 	variant?: "compact" | "full";
-	onDecrement: (item: CartItem) => void;
-	onIncrement: (item: CartItem) => void;
-	onQuantityCommit: (item: CartItem, quantity: string) => void;
-	onRemove: (productClientTermsId: number) => void;
+	onDecrement?: (item: CartItem) => void;
+	onIncrement?: (item: CartItem) => void;
+	onQuantityCommit?: (item: CartItem, quantity: string) => void;
+	onRemove?: (productClientTermsId: number) => void;
 };
 
 function CartLineImage({
@@ -60,6 +66,7 @@ function CartLineImage({
 export function CartLineRow({
 	item,
 	disabled,
+	readOnly = false,
 	variant = "full",
 	onDecrement,
 	onIncrement,
@@ -80,27 +87,35 @@ export function CartLineRow({
 								{item.product.brandName ?? "Sin marca"}
 							</span>
 						</div>
-						<Button
-							aria-label={`Quitar ${item.product.name}`}
-							disabled={disabled}
-							onClick={() => onRemove(item.productClientTermsId)}
-							size="icon-xs"
-							type="button"
-							variant="ghost"
-						>
-							<Trash2Icon />
-						</Button>
+						{readOnly ? null : (
+							<Button
+								aria-label={`Quitar ${item.product.name}`}
+								disabled={disabled}
+								onClick={() => onRemove?.(item.productClientTermsId)}
+								size="icon-xs"
+								type="button"
+								variant="ghost"
+							>
+								<Trash2Icon />
+							</Button>
+						)}
 					</div>
 					<div className="flex items-center justify-between gap-2">
-						<QuantityStepper
-							disabled={disabled}
-							onCommit={(quantity) => onQuantityCommit(item, quantity)}
-							onDecrement={() => onDecrement(item)}
-							onIncrement={() => onIncrement(item)}
-							terms={item.terms}
-							unit={item.product.unit}
-							value={item.quantity}
-						/>
+						{readOnly ? (
+							<span className="text-muted-foreground text-xs">
+								{formatQuantity(item.quantity, item.product.unit)}
+							</span>
+						) : (
+							<QuantityStepper
+								disabled={disabled}
+								onCommit={(quantity) => onQuantityCommit?.(item, quantity)}
+								onDecrement={() => onDecrement?.(item)}
+								onIncrement={() => onIncrement?.(item)}
+								terms={item.terms}
+								unit={item.product.unit}
+								value={item.quantity}
+							/>
+						)}
 						<span className="shrink-0 font-heading font-semibold text-sm">
 							{formatCurrency(item.lineTotal, item.terms.currency)}
 						</span>
@@ -143,15 +158,21 @@ export function CartLineRow({
 							: "sin incrementos"}
 					</Badge>
 				</div>
-				<QuantityStepper
-					disabled={disabled}
-					onCommit={(quantity) => onQuantityCommit(item, quantity)}
-					onDecrement={() => onDecrement(item)}
-					onIncrement={() => onIncrement(item)}
-					terms={item.terms}
-					unit={item.product.unit}
-					value={item.quantity}
-				/>
+				{readOnly ? (
+					<span className="text-muted-foreground text-sm">
+						{formatQuantity(item.quantity, item.product.unit)}
+					</span>
+				) : (
+					<QuantityStepper
+						disabled={disabled}
+						onCommit={(quantity) => onQuantityCommit?.(item, quantity)}
+						onDecrement={() => onDecrement?.(item)}
+						onIncrement={() => onIncrement?.(item)}
+						terms={item.terms}
+						unit={item.product.unit}
+						value={item.quantity}
+					/>
+				)}
 			</div>
 			<div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
 				<div className="flex flex-col gap-1 sm:text-right">
@@ -160,16 +181,18 @@ export function CartLineRow({
 						{formatCurrency(item.lineTotal, item.terms.currency)}
 					</span>
 				</div>
-				<Button
-					aria-label={`Quitar ${item.product.name}`}
-					disabled={disabled}
-					onClick={() => onRemove(item.productClientTermsId)}
-					size="icon-sm"
-					type="button"
-					variant="ghost"
-				>
-					<Trash2Icon />
-				</Button>
+				{readOnly ? null : (
+					<Button
+						aria-label={`Quitar ${item.product.name}`}
+						disabled={disabled}
+						onClick={() => onRemove?.(item.productClientTermsId)}
+						size="icon-sm"
+						type="button"
+						variant="ghost"
+					>
+						<Trash2Icon />
+					</Button>
+				)}
 			</div>
 		</div>
 	);

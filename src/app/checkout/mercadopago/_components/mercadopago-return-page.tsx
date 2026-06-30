@@ -1,7 +1,15 @@
-import { ClockIcon, HomeIcon, ReceiptTextIcon } from "lucide-react";
+import {
+	AlertCircleIcon,
+	ClockIcon,
+	HomeIcon,
+	PackageCheckIcon,
+	ReceiptTextIcon,
+} from "lucide-react";
 import Link from "next/link";
+import type { ComponentProps } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -19,20 +27,39 @@ const copyByTone = {
 		title: "Pago enviado a confirmación",
 		description:
 			"Mercado Pago informó un retorno exitoso. La orden se confirma cuando recibimos y reconciliamos el webhook del proveedor.",
+		Icon: PackageCheckIcon,
+		iconClassName: "text-success",
+		badgeLabel: "Retorno exitoso",
+		badgeVariant: "success",
 	},
 	failure: {
 		title: "Pago no confirmado",
 		description:
 			"El retorno de Mercado Pago no confirma el pago. Podés revisar tus pedidos o intentar nuevamente si el intento queda fallido.",
+		Icon: AlertCircleIcon,
+		iconClassName: "text-destructive",
+		badgeLabel: "No confirmado",
+		badgeVariant: "destructive",
 	},
 	pending: {
 		title: "Pago pendiente",
 		description:
 			"Mercado Pago dejó el pago pendiente. La orden avanza cuando el proveedor confirme la aprobación.",
+		Icon: ClockIcon,
+		iconClassName: "text-warning",
+		badgeLabel: "Pendiente",
+		badgeVariant: "warning",
 	},
 } satisfies Record<
 	MercadoPagoReturnTone,
-	{ title: string; description: string }
+	{
+		title: string;
+		description: string;
+		Icon: typeof ClockIcon;
+		iconClassName: string;
+		badgeLabel: string;
+		badgeVariant: NonNullable<ComponentProps<typeof Badge>["variant"]>;
+	}
 >;
 
 export function MercadoPagoReturnPage({
@@ -41,16 +68,22 @@ export function MercadoPagoReturnPage({
 	tone: MercadoPagoReturnTone;
 }) {
 	const copy = copyByTone[tone];
+	const ToneIcon = copy.Icon;
 
 	return (
 		<main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-6">
 			<Card>
 				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<ClockIcon />
-						{copy.title}
-					</CardTitle>
-					<CardDescription>{copy.description}</CardDescription>
+					<div className="flex items-start justify-between gap-3">
+						<div className="flex flex-col gap-1">
+							<CardTitle className="flex items-center gap-2">
+								<ToneIcon className={`size-5 ${copy.iconClassName}`} />
+								{copy.title}
+							</CardTitle>
+							<CardDescription>{copy.description}</CardDescription>
+						</div>
+						<Badge variant={copy.badgeVariant}>{copy.badgeLabel}</Badge>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<Alert>

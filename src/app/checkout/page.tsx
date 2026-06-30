@@ -23,5 +23,5 @@ export default async function CheckoutPage() {
 		redirect("/?auth=inactive");
 	}
 
-	return <CheckoutClient userId={session.user.id} />;
+	return <CheckoutClient />;
 }

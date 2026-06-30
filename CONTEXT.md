@@ -87,3 +87,7 @@ _Avoid_: Minimum, batch size
 **Mini-cart**:
 The slide-over cart preview opened from the navbar and when adding a product. A quick view that complements, and never replaces, the full cart page.
 _Avoid_: Cart drawer, cart popover
+
+**Checkout**:
+The customer-facing flow that turns an at-checkout cart into a submitted order plus a payment attempt: review the order, choose shipping address and payment method, accept terms, and pay. Single-currency, with prices and quantities snapshotted at confirmation while the cart stays the live source of truth until then.
+_Avoid_: Order placement, purchase flow
