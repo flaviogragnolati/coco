@@ -22,6 +22,8 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { Switch } from "~/components/ui/switch";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
+import { OptionalHint } from "~/features/admin/crud/_components/optional-hint";
+import { ProductCombobox } from "~/features/admin/crud/_components/product-combobox";
 import { productSupplierTermsCreateInputSchema } from "~/schemas/admin/product-supplier-terms.schemas";
 import type { CrudModalMode } from "~/shared/common/admin-crud/crud.types";
 import type { ProductListItem } from "~/shared/common/admin-crud/product.types";
@@ -177,26 +179,20 @@ export function ProductSupplierTermsFormDialog({
 							<FieldLabel htmlFor="product-supplier-terms-product">
 								Producto
 							</FieldLabel>
-							<Select
-								aria-invalid={Boolean(errors.productId)}
+							<ProductCombobox
+								currentProductId={terms?.product.id}
 								disabled={isSubmitting || isLoadingProducts}
 								id="product-supplier-terms-product"
-								{...form.register("productId", { valueAsNumber: true })}
-							>
-								<option value={0}>Seleccionar producto</option>
-								{products.map((product) => (
-									<option
-										disabled={
-											product.deleted && product.id !== terms?.product.id
-										}
-										key={product.id}
-										value={product.id}
-									>
-										{product.name}
-										{product.deleted ? " (eliminado)" : ""}
-									</option>
-								))}
-							</Select>
+								invalid={Boolean(errors.productId)}
+								onChange={(productId) =>
+									form.setValue("productId", productId, {
+										shouldDirty: true,
+										shouldValidate: true,
+									})
+								}
+								products={products}
+								value={form.watch("productId")}
+							/>
 							<FieldError errors={[errors.productId]} />
 						</Field>
 						<Field data-invalid={Boolean(errors.supplierId)}>
@@ -276,7 +272,7 @@ export function ProductSupplierTermsFormDialog({
 							</Field>
 							<Field data-invalid={Boolean(errors.step)}>
 								<FieldLabel htmlFor="product-supplier-terms-step">
-									Step
+									Step <OptionalHint />
 								</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.step)}
@@ -289,7 +285,7 @@ export function ProductSupplierTermsFormDialog({
 							</Field>
 							<Field data-invalid={Boolean(errors.stepPrice)}>
 								<FieldLabel htmlFor="product-supplier-terms-step-price">
-									Precio step
+									Precio step <OptionalHint />
 								</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.stepPrice)}
@@ -302,7 +298,7 @@ export function ProductSupplierTermsFormDialog({
 							</Field>
 							<Field data-invalid={Boolean(errors.max)}>
 								<FieldLabel htmlFor="product-supplier-terms-max">
-									Maximo
+									Maximo <OptionalHint />
 								</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.max)}
@@ -315,7 +311,7 @@ export function ProductSupplierTermsFormDialog({
 							</Field>
 							<Field data-invalid={Boolean(errors.refPrice)}>
 								<FieldLabel htmlFor="product-supplier-terms-ref-price">
-									Precio ref.
+									Precio ref. <OptionalHint />
 								</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.refPrice)}
@@ -347,7 +343,7 @@ export function ProductSupplierTermsFormDialog({
 							</Field>
 							<Field data-invalid={Boolean(errors.toDate)}>
 								<FieldLabel htmlFor="product-supplier-terms-to-date">
-									Hasta
+									Hasta <OptionalHint />
 								</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.toDate)}

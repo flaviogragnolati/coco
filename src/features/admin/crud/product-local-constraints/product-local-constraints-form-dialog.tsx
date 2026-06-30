@@ -23,6 +23,7 @@ import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
+import { ProductCombobox } from "~/features/admin/crud/_components/product-combobox";
 import { productLocalConstraintsCreateInputSchema } from "~/schemas/admin/product-local-constraints.schemas";
 import type { CrudModalMode } from "~/shared/common/admin-crud/crud.types";
 import type { ProductListItem } from "~/shared/common/admin-crud/product.types";
@@ -179,26 +180,20 @@ export function ProductLocalConstraintsFormDialog({
 							<FieldLabel htmlFor="product-local-constraints-product">
 								Producto
 							</FieldLabel>
-							<Select
-								aria-invalid={Boolean(errors.productId)}
+							<ProductCombobox
+								currentProductId={constraint?.product.id}
 								disabled={isSubmitting || isLoadingProducts}
 								id="product-local-constraints-product"
-								{...form.register("productId", { valueAsNumber: true })}
-							>
-								<option value={0}>Seleccionar producto</option>
-								{products.map((product) => (
-									<option
-										disabled={
-											product.deleted && product.id !== constraint?.product.id
-										}
-										key={product.id}
-										value={product.id}
-									>
-										{product.name}
-										{product.deleted ? " (eliminado)" : ""}
-									</option>
-								))}
-							</Select>
+								invalid={Boolean(errors.productId)}
+								onChange={(productId) =>
+									form.setValue("productId", productId, {
+										shouldDirty: true,
+										shouldValidate: true,
+									})
+								}
+								products={products}
+								value={form.watch("productId")}
+							/>
 							<FieldError errors={[errors.productId]} />
 						</Field>
 						<Field data-invalid={Boolean(errors.constraintType)}>
