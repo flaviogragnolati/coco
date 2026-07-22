@@ -1,6 +1,8 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+import { assertAppEnvConsistency, defaultAppEnvFor } from "./env.helpers.js";
+
 export const env = createEnv({
 	/**
 	 * Specify your server-side environment variables schema here. This way you can ensure the app
@@ -17,7 +19,7 @@ export const env = createEnv({
 		DATABASE_URL: z.string().url(),
 		APP_ENV: z
 			.enum(["development", "test", "production"])
-			.default("development"),
+			.default(defaultAppEnvFor(process.env.NODE_ENV)),
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),
@@ -65,3 +67,7 @@ export const env = createEnv({
 	 */
 	emptyStringAsUndefined: true,
 });
+
+if (!process.env.SKIP_ENV_VALIDATION) {
+	assertAppEnvConsistency(env.NODE_ENV, env.APP_ENV);
+}

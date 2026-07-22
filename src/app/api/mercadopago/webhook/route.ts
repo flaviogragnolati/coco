@@ -13,6 +13,7 @@ import {
 	MERCADOPAGO_PROVIDER,
 } from "~/server/services/payments/mercadopago/mercadopago-config.service";
 import { reconcileMercadoPagoPayment } from "~/server/services/payments/mercadopago/mercadopago-reconciliation.service";
+import { resolveWebhookSignatureOutcome } from "~/server/services/payments/mercadopago/webhook-signature.decision";
 import { createPaymentProviderEvent } from "~/server/services/payments/payment.data";
 
 function headersToObject(headers: Headers) {
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
 	const xSignature = request.headers.get("x-signature");
 	const xRequestId = request.headers.get("x-request-id");
 	let signatureValid = false;
+	let accepted = false;
 	let rejectedReason: string | null = null;
 
 	try {
@@ -76,24 +78,24 @@ export async function POST(request: NextRequest) {
 			toleranceSeconds: 300,
 		});
 		signatureValid = true;
+		accepted = true;
 	} catch (error) {
-		const canProcessUnsigned = canProcessUnsignedMercadoPagoWebhook({
-			allowUnsignedWebhooksInDevelopment:
-				config.settings.allowUnsignedWebhooksInDevelopment,
+		const outcome = resolveWebhookSignatureOutcome({
+			signatureValid: false,
+			canProcessUnsigned: canProcessUnsignedMercadoPagoWebhook({
+				allowUnsignedWebhooksInDevelopment:
+					config.settings.allowUnsignedWebhooksInDevelopment,
+			}),
+			secretConfigured: Boolean(env.MERCADOPAGO_WEBHOOK_SECRET),
+			failureReason:
+				error instanceof InvalidWebhookSignatureError ? error.reason : null,
 		});
 
-		if (canProcessUnsigned) {
-			rejectedReason =
-				"Firma ausente o inválida; procesada por configuración de desarrollo.";
-		} else {
-			rejectedReason =
-				error instanceof InvalidWebhookSignatureError
-					? `Firma inválida: ${error.reason}`
-					: "Firma inválida.";
-		}
+		accepted = outcome.accept;
+		rejectedReason = outcome.auditMessage;
 	}
 
-	if (!signatureValid && !rejectedReason?.includes("procesada")) {
+	if (!accepted) {
 		await createPaymentProviderEvent(db, {
 			provider: MERCADOPAGO_PROVIDER,
 			providerMode: config.mode,

@@ -11,6 +11,7 @@ import {
 } from "~/shared/common/commerce.helpers";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
 import { api } from "~/trpc/react";
+import { decideCartBootstrap } from "./cart-bootstrap.decision";
 import { useCartStorageSync } from "./use-cart-storage-sync";
 
 type UseCartSyncOptions = {
@@ -25,7 +26,7 @@ function notifyWarnings(output: CartMutationOutput) {
 }
 
 export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
-	useCartStorageSync();
+	useCartStorageSync(userId ?? null);
 
 	const hasHydrated = useCartStore((state) => state.hasHydrated);
 	const items = useCartStore((state) => state.items);
@@ -33,6 +34,7 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 	const syncedUserId = useCartStore((state) => state.syncedUserId);
 	const replaceCart = useCartStore((state) => state.replaceCart);
 	const detachServerCart = useCartStore((state) => state.detachServerCart);
+	const resetForNewSession = useCartStore((state) => state.resetForNewSession);
 	const bootstrapCompleted = useRef(false);
 	const utils = api.useUtils();
 
@@ -55,18 +57,28 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 
 		if (!isAuthenticated || !userId) {
 			bootstrapCompleted.current = false;
-			detachServerCart();
+
+			// Fires however the session ended - expiry, cleared cookie, sign-out in
+			// another tab - so an attributed cart cannot outlive its owner here.
+			if (syncedUserId !== null) {
+				resetForNewSession();
+			} else {
+				detachServerCart();
+			}
 			return;
 		}
 
 		if (bootstrapCompleted.current) return;
 		bootstrapCompleted.current = true;
 
-		const shouldMergeLocal =
-			Object.keys(items).length > 0 &&
-			(serverCartId === null || syncedUserId !== userId);
+		const decision = decideCartBootstrap({
+			itemCount: Object.keys(items).length,
+			serverCartId,
+			syncedUserId,
+			userId,
+		});
 
-		if (shouldMergeLocal) {
+		if (decision === "merge") {
 			syncMutation.mutate({
 				items: Object.values(items).map((item) => ({
 					productClientTermsId: item.productClientTermsId,
@@ -74,6 +86,10 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 				})),
 			});
 			return;
+		}
+
+		if (decision === "discard") {
+			resetForNewSession();
 		}
 
 		void currentCartQuery.refetch().then((result) => {
@@ -86,6 +102,7 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 		isAuthenticated,
 		items,
 		replaceCart,
+		resetForNewSession,
 		serverCartId,
 		syncMutation,
 		syncedUserId,

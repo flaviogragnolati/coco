@@ -17,6 +17,7 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { authClient } from "~/server/better-auth/client";
+import { useCartStore } from "~/store/cart-store";
 
 type UserMenuProps = {
 	user: {
@@ -46,6 +47,9 @@ export function UserMenu({ user }: UserMenuProps) {
 
 		try {
 			await authClient.signOut();
+			// After the await: a failed sign-out leaves the user signed in, and
+			// wiping their cart then would be the regression, not the fix.
+			useCartStore.getState().resetForNewSession();
 			router.push("/login");
 			router.refresh();
 		} finally {

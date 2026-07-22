@@ -36,6 +36,7 @@ type CartStoreState = PersistedCartState & {
 	detachServerCart: () => void;
 	removeItem: (productClientTermsId: number) => void;
 	replaceCart: (cart: CartSnapshot, userId?: string | null) => void;
+	resetForNewSession: () => void;
 	setHasHydrated: (hasHydrated: boolean) => void;
 	setItemQuantity: (productClientTermsId: number, quantity: string) => void;
 	upsertItem: (item: CartItem) => void;
@@ -69,6 +70,8 @@ export const useCartStore = create<CartStoreState>()(
 		(set) => ({
 			...emptyPersistedState,
 			hasHydrated: false,
+			// Keeps syncedUserId: the post-checkout cart empties but the user stays
+			// bound. resetForNewSession() is the one that drops the attribution.
 			clear: () =>
 				set((state) => ({
 					...emptyPersistedState,
@@ -100,6 +103,7 @@ export const useCartStore = create<CartStoreState>()(
 					serverCartStatus: cart.status,
 					syncedUserId: userId,
 				}),
+			resetForNewSession: () => set({ ...emptyPersistedState }),
 			setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 			setItemQuantity: (productClientTermsId, quantity) =>
 				set((state) => {
@@ -138,7 +142,7 @@ export const useCartStore = create<CartStoreState>()(
 				syncedUserId: state.syncedUserId,
 			}),
 			storage: createJSONStorage(() => localStorage),
-			version: 1,
+			version: 2,
 		},
 	),
 );
