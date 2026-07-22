@@ -55,8 +55,8 @@ Quantity that dropped out of the current fulfillment path and must be rebatched 
 _Avoid_: Remainder, leftover, silent quantity delta
 
 **Fulfillment lineage**:
-The traceable path of a customer request through aggregation, sourcing, packaging, shipment, and delivery.
-_Avoid_: Order status, shipment status
+The traceable path of a customer request through aggregation, sourcing, packaging, shipment, and delivery. Concretely: rollovers, lot-item allocations, and order items. Tracking events are **history, not lineage** — an item added and then removed by an admin carries an `addedToCart` event and has no lineage at all. Encoded in `hasFulfillmentLineage` (`operations-cart.data.ts`).
+_Avoid_: Order status, shipment status, tracking events
 
 **Operational state**:
 The state that answers where demand is inside sourcing, packaging, shipment, and delivery.

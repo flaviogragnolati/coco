@@ -267,8 +267,6 @@ export class CartOperationEffects implements AdminOperationsCartEffectHandler {
 			if (!beforeItem) continue;
 
 			const afterItem = afterItems.get(itemId);
-			const hasOperationalLinks =
-				beforeItem.operationalLinkCount > 0 || beforeItem.orderItemCount > 0;
 			events.push(
 				buildRemovedOrCancelledEvent(
 					ctx,
@@ -276,7 +274,7 @@ export class CartOperationEffects implements AdminOperationsCartEffectHandler {
 					changeSet.before,
 					beforeItem,
 					afterItem,
-					hasOperationalLinks ? "cancelled" : "removed",
+					beforeItem.hasLineage ? "cancelled" : "removed",
 					"admin.operationsCart.update",
 				),
 			);
@@ -295,16 +293,13 @@ export class CartOperationEffects implements AdminOperationsCartEffectHandler {
 		const events = changeSet.before.cartItems
 			.filter((item) => !item.deleted)
 			.map((item) => {
-				const hasOperationalLinks =
-					item.operationalLinkCount > 0 || item.orderItemCount > 0;
-
 				return buildRemovedOrCancelledEvent(
 					ctx,
 					changeSet.cartId,
 					changeSet.before,
 					item,
 					afterItems.get(item.id),
-					hasOperationalLinks ? "cancelled" : "removed",
+					item.hasLineage ? "cancelled" : "removed",
 					"admin.operationsCart.softDelete",
 				);
 			});

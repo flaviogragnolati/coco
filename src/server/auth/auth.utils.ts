@@ -28,10 +28,11 @@ export function assertActiveUser(
 }
 
 export function toAdminActor(
-	user: Pick<AuthUser, "id" | "name">,
+	user: Pick<AuthUser, "id" | "name" | "role">,
 ): AdminMutationActor {
 	return {
 		id: user.id,
 		name: user.name ?? undefined,
+		role: user.role,
 	};
 }

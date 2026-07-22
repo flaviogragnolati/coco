@@ -4,6 +4,7 @@ import type {
 	ProductSupplierTermsListInput,
 	ProductSupplierTermsUpdateInput,
 } from "~/shared/common/admin-crud/product-supplier-terms.types";
+import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 
 type AdminDbClient = Prisma.TransactionClient;
 
@@ -136,8 +137,8 @@ export async function createProductSupplierTerms(
 			currency: input.currency,
 			active: input.active,
 			deleted: false,
-			fromDate: new Date(input.fromDate),
-			toDate: input.toDate ? new Date(input.toDate) : null,
+			fromDate: fromDateTimeLocalValue(input.fromDate),
+			toDate: input.toDate ? fromDateTimeLocalValue(input.toDate) : null,
 		},
 		select: productSupplierTermsDetailSelect,
 	});
@@ -160,8 +161,8 @@ export async function updateProductSupplierTerms(
 			refPrice: input.refPrice ?? null,
 			currency: input.currency,
 			active: input.active,
-			fromDate: new Date(input.fromDate),
-			toDate: input.toDate ? new Date(input.toDate) : null,
+			fromDate: fromDateTimeLocalValue(input.fromDate),
+			toDate: input.toDate ? fromDateTimeLocalValue(input.toDate) : null,
 		},
 		select: productSupplierTermsDetailSelect,
 	});

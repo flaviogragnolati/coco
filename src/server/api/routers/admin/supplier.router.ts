@@ -1,4 +1,3 @@
-import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import {
@@ -10,26 +9,14 @@ import {
 	supplierStatsSchema,
 	supplierUpdateInputSchema,
 } from "~/schemas/admin/supplier.schemas";
+import { mapServiceError } from "~/server/api/_shared/map-service-error";
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
 import { toAdminActor } from "~/server/auth/auth.utils";
-import { AdminCrudError } from "~/server/services/admin/_base/admin-crud.errors";
 import * as supplierService from "~/server/services/admin/supplier.service";
 
 const deleteResultSchema = z.object({
 	id: supplierDeleteInputSchema.shape.id,
 });
-
-function mapServiceError(error: unknown): never {
-	if (error instanceof AdminCrudError) {
-		throw new TRPCError({
-			code: error.code === "NOT_FOUND" ? "NOT_FOUND" : "CONFLICT",
-			message: error.message,
-			cause: error,
-		});
-	}
-
-	throw error;
-}
 
 export const supplierRouter = createTRPCRouter({
 	list: adminProcedure

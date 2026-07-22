@@ -1,3 +1,4 @@
+import type { Prisma } from "~/prisma/client";
 import { addressDetailSchema } from "~/schemas/admin/address.schemas";
 import {
 	userDetailSchema,
@@ -11,6 +12,7 @@ import type {
 	UserDeleteInput,
 	UserDetail,
 	UserListInput,
+	UserRole,
 	UserStats,
 	UserUpdateInput,
 } from "~/shared/common/admin-crud/user.types";
@@ -24,6 +26,12 @@ import {
 	updateAddress,
 } from "./address.data";
 import {
+	assertCanAssignRole,
+	assertCanManageUser,
+	assertNotSelf,
+} from "./user.authz";
+import {
+	countActiveSuperadmins,
 	createUser,
 	findUserById,
 	getUserRelationCounts,
@@ -86,6 +94,26 @@ function mapUserWriteError(error: unknown): never {
 	}
 
 	throw error;
+}
+
+async function assertNotLastActiveSuperadmin(
+	tx: Prisma.TransactionClient,
+	target: { id: string; role: UserRole },
+	next: { role: UserRole; active: boolean } | null,
+) {
+	if (target.role !== "superadmin") return;
+
+	const staysActiveSuperadmin =
+		next !== null && next.role === "superadmin" && next.active;
+	if (staysActiveSuperadmin) return;
+
+	const remaining = await countActiveSuperadmins(tx, target.id);
+	if (remaining === 0) {
+		throw new AdminCrudError(
+			"CONFLICT",
+			"No podés dejar el sistema sin superadministradores activos",
+		);
+	}
 }
 
 function toUserWriteInput(
@@ -161,6 +189,7 @@ export async function create(
 	database: AdminDb,
 ) {
 	assertNoExistingAddressIds(input);
+	assertCanAssignRole(actor.role, input.role);
 
 	try {
 		return await database.$transaction(async (tx) => {
@@ -230,6 +259,13 @@ export async function update(
 					"No se puede editar un usuario eliminado",
 				);
 			}
+
+			assertCanManageUser(actor.role, before);
+			assertCanAssignRole(actor.role, input.role);
+			await assertNotLastActiveSuperadmin(tx, before, {
+				role: input.role,
+				active: input.active,
+			});
 
 			await updateUser(tx, toUserWriteInput(input, input.id));
 
@@ -349,6 +385,10 @@ export async function softDelete(
 		if (!beforeRecord) throwNotFound("Usuario");
 		const before = parseDetail(beforeRecord);
 
+		assertNotSelf(actor.id, input.id);
+		assertCanManageUser(actor.role, before);
+		await assertNotLastActiveSuperadmin(tx, before, null);
+
 		const user = await softDeleteUser(tx, input.id);
 		const after = parseDetail(user);
 
@@ -373,6 +413,10 @@ export async function hardDelete(
 	return database.$transaction(async (tx) => {
 		const user = await getUserRelationCounts(tx, input.id);
 		if (!user) throwNotFound("Usuario");
+
+		assertNotSelf(actor.id, input.id);
+		assertCanManageUser(actor.role, user);
+		await assertNotLastActiveSuperadmin(tx, user, null);
 
 		const hasRestrictiveRelations =
 			user._count.addresses > 0 ||

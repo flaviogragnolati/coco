@@ -1,5 +1,6 @@
 import type { Prisma } from "~/prisma/client";
 import type { LotListInput } from "~/shared/common/admin-crud/lot.types";
+import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 
 type AdminDbClient = Prisma.TransactionClient;
 
@@ -168,10 +169,10 @@ function buildLotWhere(input: LotListInput): Prisma.LotWhereInput {
 		});
 	}
 	if (input.createdFrom !== undefined) {
-		and.push({ createdAt: { gte: new Date(input.createdFrom) } });
+		and.push({ createdAt: { gte: fromDateTimeLocalValue(input.createdFrom) } });
 	}
 	if (input.createdTo !== undefined) {
-		and.push({ createdAt: { lte: new Date(input.createdTo) } });
+		and.push({ createdAt: { lte: fromDateTimeLocalValue(input.createdTo) } });
 	}
 	if (input.search !== undefined) {
 		and.push({

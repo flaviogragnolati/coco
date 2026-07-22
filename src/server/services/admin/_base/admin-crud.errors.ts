@@ -1,7 +1,4 @@
-export type AdminCrudErrorCode =
-	| "NOT_FOUND"
-	| "CONFLICT"
-	| "RELATION_BLOCKED";
+export type AdminCrudErrorCode = "NOT_FOUND" | "CONFLICT" | "RELATION_BLOCKED";
 
 export class AdminCrudError extends Error {
 	readonly code: AdminCrudErrorCode;
@@ -15,4 +12,12 @@ export class AdminCrudError extends Error {
 
 export function throwNotFound(entityLabel: string): never {
 	throw new AdminCrudError("NOT_FOUND", `${entityLabel} no encontrado`);
+}
+
+export function throwConflict(message: string): never {
+	throw new AdminCrudError("CONFLICT", message);
+}
+
+export function throwRelationBlocked(message: string): never {
+	throw new AdminCrudError("RELATION_BLOCKED", message);
 }

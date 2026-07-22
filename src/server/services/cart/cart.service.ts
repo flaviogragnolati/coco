@@ -16,13 +16,14 @@ import type {
 } from "~/shared/common/cart.types";
 import type { CatalogClientTerms } from "~/shared/common/catalog.types";
 import {
+	buildCartSnapshot,
 	calculateLineTotal,
 	normalizeCartQuantity,
 	quantitiesEqual,
-	toMoneyString,
 	toNumber,
 	toQuantityString,
 } from "~/shared/common/commerce.helpers";
+import { isClientTermsUsable } from "../_base/terms-validity";
 import {
 	type CartProductClientTermsRecord,
 	type CartRecord,
@@ -76,17 +77,6 @@ function termsToClientTerms(
 	};
 }
 
-function termsCanBeUsed(terms: CartProductClientTermsRecord, now: Date) {
-	return (
-		terms.active &&
-		!terms.deleted &&
-		terms.product.active &&
-		!terms.product.deleted &&
-		terms.fromDate <= now &&
-		(terms.toDate === null || terms.toDate >= now)
-	);
-}
-
 function buildProductSnapshot(terms: CartProductClientTermsRecord) {
 	return {
 		source: "cart",
@@ -125,33 +115,11 @@ function toCartItem(item: CartRecord["cartItems"][number]): CartItem {
 function mapCart(record: CartRecord | null): CartSnapshot {
 	if (!record) return emptyCart();
 
-	const items = record.cartItems.map(toCartItem);
-	const totalsByCurrency = new Map<string, number>();
-	let totalQuantity = 0;
-
-	for (const item of items) {
-		totalQuantity += toNumber(item.quantity) ?? 0;
-		totalsByCurrency.set(
-			item.terms.currency,
-			(totalsByCurrency.get(item.terms.currency) ?? 0) +
-				(toNumber(item.lineTotal) ?? 0),
-		);
-	}
-
-	return {
+	return buildCartSnapshot(record.cartItems.map(toCartItem), {
 		id: record.id,
 		code: record.code,
 		status: record.status,
-		items,
-		itemCount: items.length,
-		totalQuantity: toQuantityString(totalQuantity),
-		totals: Array.from(totalsByCurrency.entries()).map(
-			([currency, amount]) => ({
-				currency: currency as CartSnapshot["totals"][number]["currency"],
-				amount: toMoneyString(amount),
-			}),
-		),
-	};
+	});
 }
 
 async function getOrCreateCurrentCart(
@@ -173,13 +141,14 @@ async function assertUsableTerms(
 		? T
 		: never,
 	productClientTermsId: number,
+	now: Date,
 ) {
 	const terms = await findProductClientTermsForCart(
 		database,
 		productClientTermsId,
 	);
 
-	if (!terms || !termsCanBeUsed(terms, new Date())) {
+	if (!terms || !isClientTermsUsable(terms, now)) {
 		throw new TRPCError({
 			code: "CONFLICT",
 			message: "El producto ya no esta disponible para agregar al carrito",
@@ -247,6 +216,8 @@ export async function syncLocal(
 	userId: string,
 	items: CartLocalItemInput[],
 ): Promise<CartMutationOutput> {
+	const now = new Date();
+
 	const mutation = await db.$transaction(async (tx) => {
 		const existingCart = await findCurrentCartForMutationByUserId(tx, userId);
 
@@ -272,7 +243,7 @@ export async function syncLocal(
 				productClientTermsId,
 			);
 
-			if (!terms || !termsCanBeUsed(terms, new Date())) {
+			if (!terms || !isClientTermsUsable(terms, now)) {
 				warnings.push({
 					type: "item_unavailable",
 					productClientTermsId,
@@ -318,9 +289,11 @@ export async function setItemQuantity(
 	userId: string,
 	input: CartLocalItemInput,
 ): Promise<CartMutationOutput> {
+	const now = new Date();
+
 	const mutation = await db.$transaction(async (tx) => {
 		const cart = await getOrCreateCurrentCart(tx, userId);
-		const terms = await assertUsableTerms(tx, input.productClientTermsId);
+		const terms = await assertUsableTerms(tx, input.productClientTermsId, now);
 		const normalized = normalizeWithWarning(
 			input.productClientTermsId,
 			input.quantity,

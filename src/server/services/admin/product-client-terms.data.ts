@@ -4,6 +4,7 @@ import type {
 	ProductClientTermsListInput,
 	ProductClientTermsUpdateInput,
 } from "~/shared/common/admin-crud/product-client-terms.types";
+import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 
 type AdminDbClient = Prisma.TransactionClient;
 
@@ -123,8 +124,8 @@ export async function createProductClientTerms(
 			currency: input.currency,
 			active: input.active,
 			deleted: false,
-			fromDate: new Date(input.fromDate),
-			toDate: input.toDate ? new Date(input.toDate) : null,
+			fromDate: fromDateTimeLocalValue(input.fromDate),
+			toDate: input.toDate ? fromDateTimeLocalValue(input.toDate) : null,
 		},
 		select: productClientTermsDetailSelect,
 	});
@@ -146,8 +147,8 @@ export async function updateProductClientTerms(
 			refPrice: input.refPrice ?? null,
 			currency: input.currency,
 			active: input.active,
-			fromDate: new Date(input.fromDate),
-			toDate: input.toDate ? new Date(input.toDate) : null,
+			fromDate: fromDateTimeLocalValue(input.fromDate),
+			toDate: input.toDate ? fromDateTimeLocalValue(input.toDate) : null,
 		},
 		select: productClientTermsDetailSelect,
 	});

@@ -3,6 +3,7 @@ import type {
 	OperationCreateInput,
 	OperationListInput,
 } from "~/shared/common/admin-crud/operation.types";
+import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 import { toPrismaInputJson } from "./_base/prisma-json";
 
 type AdminDbClient = Prisma.TransactionClient;
@@ -332,8 +333,8 @@ export async function createRunningOperation(
 		data: {
 			code: input.code,
 			status: "running",
-			from: new Date(input.from),
-			to: new Date(input.to),
+			from: fromDateTimeLocalValue(input.from),
+			to: fromDateTimeLocalValue(input.to),
 			includeRollOver: input.includeRollOver,
 			strategy: input.strategy,
 			notes: input.notes,

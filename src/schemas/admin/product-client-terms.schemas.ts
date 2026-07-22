@@ -4,6 +4,7 @@ import {
 	productIdSchema,
 	productUnitSchema,
 } from "~/schemas/admin/product.schemas";
+import { toDateTimeLocalValue } from "~/shared/common/date.helpers";
 import {
 	dateInputSchema,
 	decimalOutputSchema,
@@ -37,7 +38,7 @@ const productClientTermsInputFieldsSchema = z.object({
 	refPrice: optionalDecimalString("Precio de referencia", 2),
 	currency: currencySchema.default("ARS"),
 	active: z.boolean().default(true),
-	fromDate: dateInputSchema.default(() => new Date().toISOString()),
+	fromDate: dateInputSchema.default(() => toDateTimeLocalValue(new Date())),
 	toDate: optionalDateInputSchema,
 });
 

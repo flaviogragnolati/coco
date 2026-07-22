@@ -2,13 +2,7 @@ import type {
 	ProductSupplierTermsDetail,
 	ProductSupplierTermsFormValues,
 } from "~/shared/common/admin-crud/product-supplier-terms.types";
-
-function toDateTimeLocalValue(value: Date | string) {
-	const date = new Date(value);
-	const pad = (part: number) => String(part).padStart(2, "0");
-
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+import { toDateTimeLocalValue } from "~/shared/common/date.helpers";
 
 export const defaultProductSupplierTermsFormValues: ProductSupplierTermsFormValues =
 	{

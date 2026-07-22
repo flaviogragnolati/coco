@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "~/prisma/client";
 import type { db } from "~/server/db";
+import { currentTermsWhere } from "../_base/terms-validity";
 
 type HomeDb = typeof db;
 
@@ -60,15 +61,6 @@ export type CurrentHomeOfferRecord = Prisma.ProductClientTermsGetPayload<{
 export type FeaturedHomeProductRecord = Prisma.ProductGetPayload<{
 	select: typeof featuredProductSelect;
 }>;
-
-function currentTermsWhere(now: Date) {
-	return {
-		active: true,
-		deleted: false,
-		fromDate: { lte: now },
-		OR: [{ toDate: null }, { toDate: { gte: now } }],
-	} satisfies Prisma.ProductClientTermsWhereInput;
-}
 
 function currentOffersWhere(now: Date) {
 	return {

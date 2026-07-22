@@ -29,11 +29,10 @@ import type {
 	OrderListOutput,
 } from "~/shared/common/checkout.types";
 import {
+	buildCartSnapshot,
 	calculateLineTotal,
-	toMoneyString,
-	toNumber,
-	toQuantityString,
 } from "~/shared/common/commerce.helpers";
+import { isClientTermsUsable } from "../_base/terms-validity";
 import { getMercadoPagoConfig } from "../payments/mercadopago/mercadopago-config.service";
 import { createMercadoPagoPreference } from "../payments/mercadopago/mercadopago-preference.service";
 import {
@@ -99,20 +98,6 @@ function termsToClientTerms(
 	};
 }
 
-function termsCanBeUsed(
-	terms: CheckoutCartItemRecord["productClientTerms"],
-	now: Date,
-) {
-	return (
-		terms.active &&
-		!terms.deleted &&
-		terms.product.active &&
-		!terms.product.deleted &&
-		terms.fromDate <= now &&
-		(terms.toDate === null || terms.toDate >= now)
-	);
-}
-
 function toCartItem(item: CheckoutCartItemRecord): CartItem {
 	const terms = termsToClientTerms(item.productClientTerms);
 
@@ -133,33 +118,11 @@ function toCartItem(item: CheckoutCartItemRecord): CartItem {
 }
 
 function mapCart(record: CheckoutCartRecord): CartSnapshot {
-	const items = record.cartItems.map(toCartItem);
-	const totalsByCurrency = new Map<string, number>();
-	let totalQuantity = 0;
-
-	for (const item of items) {
-		totalQuantity += toNumber(item.quantity) ?? 0;
-		totalsByCurrency.set(
-			item.terms.currency,
-			(totalsByCurrency.get(item.terms.currency) ?? 0) +
-				(toNumber(item.lineTotal) ?? 0),
-		);
-	}
-
-	return {
+	return buildCartSnapshot(record.cartItems.map(toCartItem), {
 		id: record.id,
 		code: record.code,
 		status: record.status,
-		items,
-		itemCount: items.length,
-		totalQuantity: toQuantityString(totalQuantity),
-		totals: Array.from(totalsByCurrency.entries()).map(
-			([currency, amount]) => ({
-				currency: currency as CartSnapshot["totals"][number]["currency"],
-				amount: toMoneyString(amount),
-			}),
-		),
-	};
+	});
 }
 
 function toCheckoutAddress(record: CheckoutAddressRecord): CheckoutAddress {
@@ -188,7 +151,7 @@ function assertCartHasItems(cart: CheckoutCartRecord) {
 function assertCartItemsStillValid(cart: CheckoutCartRecord) {
 	const now = new Date();
 	const invalidItem = cart.cartItems.find(
-		(item) => !termsCanBeUsed(item.productClientTerms, now),
+		(item) => !isClientTermsUsable(item.productClientTerms, now),
 	);
 
 	if (invalidItem) {

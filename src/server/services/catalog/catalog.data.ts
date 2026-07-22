@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "~/prisma/client";
 import type { db } from "~/server/db";
+import { currentTermsWhere } from "../_base/terms-validity";
 
 type CatalogDb = typeof db;
 
@@ -60,21 +61,12 @@ export type CatalogProductDetailRecord = Prisma.ProductGetPayload<{
 	select: typeof catalogProductDetailSelect;
 }>;
 
-export function currentCatalogTermsWhere(now: Date) {
-	return {
-		active: true,
-		deleted: false,
-		fromDate: { lte: now },
-		OR: [{ toDate: null }, { toDate: { gte: now } }],
-	} satisfies Prisma.ProductClientTermsWhereInput;
-}
-
 function catalogProductWhere(now: Date): Prisma.ProductWhereInput {
 	return {
 		active: true,
 		deleted: false,
 		productClientTerms: {
-			some: currentCatalogTermsWhere(now),
+			some: currentTermsWhere(now),
 		},
 	};
 }
@@ -85,7 +77,7 @@ export async function listCatalogProducts(database: CatalogDb, now: Date) {
 		select: {
 			...catalogProductListSelect,
 			productClientTerms: {
-				where: currentCatalogTermsWhere(now),
+				where: currentTermsWhere(now),
 				select: catalogClientTermsSelect,
 				orderBy: [{ fromDate: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
 				take: 1,
@@ -108,7 +100,7 @@ export async function findCatalogProductDetail(
 		select: {
 			...catalogProductDetailSelect,
 			productClientTerms: {
-				where: currentCatalogTermsWhere(now),
+				where: currentTermsWhere(now),
 				select: catalogClientTermsSelect,
 				orderBy: [{ fromDate: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
 				take: 1,

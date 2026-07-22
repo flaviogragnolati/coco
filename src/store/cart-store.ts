@@ -9,10 +9,8 @@ import type {
 	CartStatus,
 } from "~/shared/common/cart.types";
 import {
+	buildCartSnapshot,
 	calculateLineTotal,
-	toMoneyString,
-	toNumber,
-	toQuantityString,
 } from "~/shared/common/commerce.helpers";
 
 export const CART_STORAGE_KEY = "coco.cart.v1";
@@ -59,32 +57,11 @@ export function selectCartSnapshot(state: CartSnapshotSource): CartSnapshot {
 	const items = Object.values(state.items).sort((left, right) =>
 		left.product.name.localeCompare(right.product.name, "es"),
 	);
-	const totalsByCurrency = new Map<string, number>();
-	let totalQuantity = 0;
-
-	for (const item of items) {
-		totalQuantity += toNumber(item.quantity) ?? 0;
-		totalsByCurrency.set(
-			item.terms.currency,
-			(totalsByCurrency.get(item.terms.currency) ?? 0) +
-				(toNumber(item.lineTotal) ?? 0),
-		);
-	}
-
-	return {
+	return buildCartSnapshot(items, {
 		id: state.serverCartId,
 		code: state.serverCartCode,
 		status: state.serverCartStatus,
-		items,
-		itemCount: items.length,
-		totalQuantity: toQuantityString(totalQuantity),
-		totals: Array.from(totalsByCurrency.entries()).map(
-			([currency, amount]) => ({
-				currency: currency as CartSnapshot["totals"][number]["currency"],
-				amount: toMoneyString(amount),
-			}),
-		),
-	};
+	});
 }
 
 export const useCartStore = create<CartStoreState>()(

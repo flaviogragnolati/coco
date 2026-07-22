@@ -1,18 +1,11 @@
 import { ArrowDownUp, CheckCircle2, Clock, XCircle } from "lucide-react";
-
 import type {
 	OperationCreateFormValues,
 	OperationStatus,
 	OperationStrategy,
 } from "~/shared/common/admin-crud/operation.types";
 import type { StatusConfig } from "~/shared/common/admin-crud/status-config";
-
-export function toDateTimeLocalValue(value: Date | string) {
-	const date = new Date(value);
-	const pad = (part: number) => String(part).padStart(2, "0");
-
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+import { toDateTimeLocalValue } from "~/shared/common/date.helpers";
 
 export const operationStatusLabelMap: Record<OperationStatus, string> = {
 	running: "En ejecucion",

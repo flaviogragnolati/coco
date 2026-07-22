@@ -1,5 +1,6 @@
 import type { Prisma } from "~/prisma/client";
 import type { ShipmentListInput } from "~/shared/common/admin-crud/shipment.types";
+import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 
 type AdminDbClient = Prisma.TransactionClient;
 
@@ -128,10 +129,10 @@ function buildShipmentWhere(
 		and.push({ trackingCode: { contains: input.trackingCode } });
 	}
 	if (input.createdFrom !== undefined) {
-		and.push({ createdAt: { gte: new Date(input.createdFrom) } });
+		and.push({ createdAt: { gte: fromDateTimeLocalValue(input.createdFrom) } });
 	}
 	if (input.createdTo !== undefined) {
-		and.push({ createdAt: { lte: new Date(input.createdTo) } });
+		and.push({ createdAt: { lte: fromDateTimeLocalValue(input.createdTo) } });
 	}
 	if (input.search !== undefined) {
 		and.push({

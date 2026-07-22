@@ -23,11 +23,12 @@ import {
 	getOperationCartRelationCounts,
 	getOperationCartStats,
 	hardDeleteCart,
+	hasFulfillmentLineage,
 	listOperationCarts,
 	type OperationsCartRelationRecord,
 	type OperationsProductClientTermsRecord,
+	setCartItemLifecycle,
 	softDeleteCart,
-	softDeleteCartItem,
 	updateCartItemQuantity,
 	updateCartStatus,
 	updateUserOrderItemQuantitiesByCartItemId,
@@ -130,12 +131,8 @@ function buildRelationBlockMessage(record: OperationsCartRelationRecord) {
 		(total, order) => total + order._count.transactions,
 		0,
 	);
-	const linkedCartItemCount = record.cartItems.filter(
-		(item) =>
-			item._count.rollOvers > 0 ||
-			item._count.cartItemLotItems > 0 ||
-			item._count.trackingEvents > 0 ||
-			item._count.userOrderItems > 0,
+	const linkedCartItemCount = record.cartItems.filter((item) =>
+		hasFulfillmentLineage(item._count),
 	).length;
 
 	const blockingParts = [
@@ -153,13 +150,7 @@ function buildRelationBlockMessage(record: OperationsCartRelationRecord) {
 function hasHardDeleteBlockers(record: OperationsCartRelationRecord) {
 	return (
 		record.userOrders.length > 0 ||
-		record.cartItems.some(
-			(item) =>
-				item._count.rollOvers > 0 ||
-				item._count.cartItemLotItems > 0 ||
-				item._count.trackingEvents > 0 ||
-				item._count.userOrderItems > 0,
-		)
+		record.cartItems.some((item) => hasFulfillmentLineage(item._count))
 	);
 }
 
@@ -224,9 +215,10 @@ async function reconcileCartItems(
 	for (const item of activeItems(cart)) {
 		if (submittedExistingIds.has(item.id)) continue;
 
-		const hasOperationalLinks =
-			item.operationalLinkCount > 0 || item.orderItemCount > 0;
-		await softDeleteCartItem(database, item.id, hasOperationalLinks);
+		await setCartItemLifecycle(database, item.id, {
+			deleted: true,
+			status: item.hasLineage ? "cancelled" : "dropped",
+		});
 		removedItemIds.push(item.id);
 	}
 

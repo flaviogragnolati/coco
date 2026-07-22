@@ -1,4 +1,4 @@
-import { Prisma } from "~/prisma/client";
+import { type CartItemStatus, Prisma } from "~/prisma/client";
 import type {
 	OperationsCartItemInput,
 	OperationsCartListInput,
@@ -75,6 +75,23 @@ const operationsCartItemDetailSelect = {
 		},
 	},
 } satisfies Prisma.CartItemSelect;
+
+// trackingEvents is deliberately absent: per CONTEXT.md, tracking events record
+// history, not lineage — an admin-added-then-removed item has an `addedToCart`
+// row and no fulfillment lineage at all.
+export type FulfillmentLineageCounts = {
+	rollOvers: number;
+	cartItemLotItems: number;
+	userOrderItems: number;
+};
+
+export function hasFulfillmentLineage(counts: FulfillmentLineageCounts) {
+	return (
+		counts.rollOvers > 0 ||
+		counts.cartItemLotItems > 0 ||
+		counts.userOrderItems > 0
+	);
+}
 
 const operationsCartDetailSelect = {
 	id: true,
@@ -387,9 +404,7 @@ function toDetail(record: OperationsCartDetailRecord) {
 		...record,
 		cartItems: record.cartItems.map(({ _count, ...item }) => ({
 			...item,
-			operationalLinkCount:
-				_count.rollOvers + _count.cartItemLotItems + _count.trackingEvents,
-			orderItemCount: _count.userOrderItems,
+			hasLineage: hasFulfillmentLineage(_count),
 		})),
 	};
 }
@@ -503,18 +518,16 @@ export async function createCartItem(
 	});
 }
 
-export async function softDeleteCartItem(
+// fulfillmentStatus is owned by TrackingStatusProjector (docs/tracking-architecture.md);
+// this layer writes only the lifecycle fields it is given.
+export async function setCartItemLifecycle(
 	db: AdminDbClient,
 	id: number,
-	hasOperationalLinks: boolean,
+	lifecycle: { deleted: boolean; status: CartItemStatus },
 ) {
 	return db.cartItem.update({
 		where: { id },
-		data: {
-			deleted: true,
-			status: hasOperationalLinks ? "cancelled" : "dropped",
-			fulfillmentStatus: hasOperationalLinks ? "cancelled" : undefined,
-		},
+		data: lifecycle,
 		select: operationsCartItemDetailSelect,
 	});
 }

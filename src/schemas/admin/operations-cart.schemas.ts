@@ -178,8 +178,7 @@ const operationsCartDetailItemSchema = z.object({
 	createdAt: z.date(),
 	updatedAt: z.date(),
 	productClientTerms: operationsProductClientTermsSummarySchema,
-	operationalLinkCount: z.number().int().nonnegative(),
-	orderItemCount: z.number().int().nonnegative(),
+	hasLineage: z.boolean(),
 });
 
 const operationsPaymentMethodSchema = z.object({

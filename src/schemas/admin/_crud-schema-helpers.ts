@@ -16,11 +16,22 @@ export const optionalUrl = z
 	.transform((value) => (value && value.length > 0 ? value : undefined))
 	.pipe(z.string().url("Ingresa una URL valida").optional());
 
+// The two shapes fromDateTimeLocalValue accepts: a naive `datetime-local` value
+// (interpreted in BUSINESS_TZ) or an already-unambiguous absolute instant.
+const DATE_INPUT_PATTERN =
+	/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+
+function isValidDateInput(value: string) {
+	return (
+		DATE_INPUT_PATTERN.test(value) && !Number.isNaN(new Date(value).getTime())
+	);
+}
+
 export const dateInputSchema = z
 	.string()
 	.trim()
 	.min(1, "La fecha es obligatoria")
-	.refine((value) => !Number.isNaN(new Date(value).getTime()), {
+	.refine(isValidDateInput, {
 		message: "Ingresa una fecha valida",
 	});
 
@@ -32,7 +43,7 @@ export const optionalDateInputSchema = z
 	.pipe(
 		z
 			.string()
-			.refine((value) => !Number.isNaN(new Date(value).getTime()), {
+			.refine(isValidDateInput, {
 				message: "Ingresa una fecha valida",
 			})
 			.optional(),

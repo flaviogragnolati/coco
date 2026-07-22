@@ -1,10 +1,12 @@
 import type { Prisma } from "~/prisma/client";
+import type { UserRole } from "~/shared/common/admin-crud/user.types";
 
 import { toPrismaInputJson } from "./prisma-json";
 
 export type AdminMutationActor = {
 	id: string;
 	name?: string;
+	role: UserRole;
 };
 
 type AuditLogInput = {

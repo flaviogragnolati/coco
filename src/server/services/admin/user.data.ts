@@ -151,6 +151,20 @@ export async function getUserStats(db: AdminDbClient) {
 	return { total, active, inactive, deleted };
 }
 
+export async function countActiveSuperadmins(
+	db: AdminDbClient,
+	excludeUserId?: string,
+) {
+	return db.user.count({
+		where: {
+			role: "superadmin",
+			active: true,
+			deleted: false,
+			...(excludeUserId ? { id: { not: excludeUserId } } : {}),
+		},
+	});
+}
+
 export async function createUser(db: AdminDbClient, input: UserWriteInput) {
 	return db.user.create({
 		data: {

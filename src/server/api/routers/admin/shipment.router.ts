@@ -1,5 +1,3 @@
-import { TRPCError } from "@trpc/server";
-
 import {
 	shipmentDetailSchema,
 	shipmentGetByIdInputSchema,
@@ -7,21 +5,9 @@ import {
 	shipmentListOutputSchema,
 	shipmentStatsSchema,
 } from "~/schemas/admin/shipment.schemas";
+import { mapServiceError } from "~/server/api/_shared/map-service-error";
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
-import { AdminCrudError } from "~/server/services/admin/_base/admin-crud.errors";
 import * as shipmentService from "~/server/services/admin/shipment.service";
-
-function mapServiceError(error: unknown): never {
-	if (error instanceof AdminCrudError) {
-		throw new TRPCError({
-			code: error.code === "NOT_FOUND" ? "NOT_FOUND" : "CONFLICT",
-			message: error.message,
-			cause: error,
-		});
-	}
-
-	throw error;
-}
 
 export const shipmentRouter = createTRPCRouter({
 	list: adminProcedure

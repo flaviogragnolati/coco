@@ -1,3 +1,4 @@
+import type { CartSnapshot } from "./cart.types";
 import type {
 	CatalogClientTerms,
 	CatalogCurrency,
@@ -182,4 +183,38 @@ export function calculateLineTotal(
 
 	const steps = Math.ceil((quantityNumber - moq - epsilon) / step);
 	return toMoneyString(moqPrice + Math.max(0, steps) * stepPrice);
+}
+
+// Callers own item ordering: the store sorts by name for display, while the
+// services rely on the Prisma `orderBy` that produced the rows.
+export function buildCartSnapshot(
+	items: CartSnapshot["items"],
+	meta: Pick<CartSnapshot, "id" | "code" | "status">,
+): CartSnapshot {
+	const totalsByCurrency = new Map<CatalogCurrency, number>();
+	let totalQuantity = 0;
+
+	for (const item of items) {
+		totalQuantity += toNumber(item.quantity) ?? 0;
+		totalsByCurrency.set(
+			item.terms.currency,
+			(totalsByCurrency.get(item.terms.currency) ?? 0) +
+				(toNumber(item.lineTotal) ?? 0),
+		);
+	}
+
+	return {
+		id: meta.id,
+		code: meta.code,
+		status: meta.status,
+		items,
+		itemCount: items.length,
+		totalQuantity: toQuantityString(totalQuantity),
+		totals: Array.from(totalsByCurrency.entries()).map(
+			([currency, amount]) => ({
+				currency,
+				amount: toMoneyString(amount),
+			}),
+		),
+	};
 }

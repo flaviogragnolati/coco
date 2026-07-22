@@ -33,6 +33,19 @@ Domain service
 Seed scripts may create fixture tracking rows. Runtime application services must
 publish domain events instead.
 
+### Remaining direct `fulfillmentStatus` writers
+
+The projector is the authority for status *transitions*, but three services still
+seed `awaitingAggregation` directly when a cart item enters the fulfillment path:
+`cart.data.ts`, `operations-cart.data.ts`, and `checkout.data.ts` — plus
+`mercadopago-reconciliation.service.ts` on the payment path. These are creation
+seeds and payment-cluster writes, not projections.
+
+The admin cancellation path no longer writes `fulfillmentStatus` directly: since
+2026-07-22 it writes `deleted`/`status` only and lets the `admin.cartItem.cancelled`
+event drive the projector. Because the v1 dispatcher is operation-triggered, that
+status arrives only once a `wake()` drains the outbox.
+
 ## V1 Execution Model
 
 The v1 dispatcher is operation-triggered only.

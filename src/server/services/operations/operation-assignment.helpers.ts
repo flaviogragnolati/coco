@@ -1,4 +1,5 @@
 import { Prisma } from "~/prisma/client";
+import { isSupplierTermsUsable } from "../_base/terms-validity";
 
 export type OperationSupplierTermCandidate = {
 	id: number;
@@ -28,23 +29,12 @@ function decimal(value: Prisma.Decimal | string | number) {
 	return new Prisma.Decimal(value);
 }
 
-function isTermEffective(term: OperationSupplierTermCandidate, now: Date) {
-	return (
-		term.active &&
-		!term.deleted &&
-		term.supplier.active &&
-		!term.supplier.deleted &&
-		term.fromDate <= now &&
-		(term.toDate === null || term.toDate >= now)
-	);
-}
-
 export function resolveSupplierTermForProduct(
 	product: OperationSupplierResolutionProduct,
 	now: Date,
 ) {
 	const effectiveTerms = product.supplierTerms.filter((term) =>
-		isTermEffective(term, now),
+		isSupplierTermsUsable(term, now),
 	);
 	const defaultSupplierId = product.defaultSupplierId;
 

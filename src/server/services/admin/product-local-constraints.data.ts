@@ -4,6 +4,7 @@ import type {
 	ProductLocalConstraintsListInput,
 	ProductLocalConstraintsUpdateInput,
 } from "~/shared/common/admin-crud/product-local-constraints.types";
+import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 import { toPrismaInputJson } from "./_base/prisma-json";
 
 type AdminDbClient = Prisma.TransactionClient;
@@ -114,8 +115,8 @@ export async function createProductLocalConstraints(
 			reason: input.reason ?? null,
 			active: input.active,
 			deleted: false,
-			fromDate: new Date(input.fromDate),
-			toDate: input.toDate ? new Date(input.toDate) : null,
+			fromDate: fromDateTimeLocalValue(input.fromDate),
+			toDate: input.toDate ? fromDateTimeLocalValue(input.toDate) : null,
 		},
 		select: productLocalConstraintsDetailSelect,
 	});
@@ -134,8 +135,8 @@ export async function updateProductLocalConstraints(
 			scope: toNullablePrismaJson(input.scope),
 			reason: input.reason ?? null,
 			active: input.active,
-			fromDate: new Date(input.fromDate),
-			toDate: input.toDate ? new Date(input.toDate) : null,
+			fromDate: fromDateTimeLocalValue(input.fromDate),
+			toDate: input.toDate ? fromDateTimeLocalValue(input.toDate) : null,
 		},
 		select: productLocalConstraintsDetailSelect,
 	});

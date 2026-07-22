@@ -4,6 +4,7 @@ import {
 	productIdSchema,
 	productUnitSchema,
 } from "~/schemas/admin/product.schemas";
+import { toDateTimeLocalValue } from "~/shared/common/date.helpers";
 import {
 	dateInputSchema,
 	jsonTextareaSchema,
@@ -45,7 +46,7 @@ const productLocalConstraintsInputFieldsSchema = z.object({
 	scope: jsonTextareaSchema,
 	reason: nullishText,
 	active: z.boolean().default(true),
-	fromDate: dateInputSchema.default(() => new Date().toISOString()),
+	fromDate: dateInputSchema.default(() => toDateTimeLocalValue(new Date())),
 	toDate: optionalDateInputSchema,
 });
 
