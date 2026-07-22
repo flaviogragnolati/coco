@@ -107,6 +107,12 @@ The executing agent should be able to finish without coming back to ask question
 
 If you don't know something, classify it (blocking question, non-blocking question, optional refinement, or assumption) rather than papering over it with a confident guess. A plan that hides its unknowns is more dangerous than one that names them.
 
+### 3.7 Enforce code-comment hygiene
+
+Keep implementation code self-explanatory. Do not instruct the executor to add inline or block comments that narrate what adjacent code does, restate names, types, or control flow, or label obvious steps. Use comments only to preserve non-obvious rationale that cannot be expressed clearly through naming, structure, or types—for example an invariant, trade-off, workaround, external constraint, subtle ordering or failure behavior, or architectural decision. Link to the relevant ADR or design document when one exists.
+
+Preserve and maintain JSDoc/TSDoc or equivalent structured documentation for functions, classes, types, and public interfaces according to repository conventions; do not treat structured API documentation as redundant inline commentary. In files touched by the task, remove comments made stale or redundant by the change without expanding into unrelated cleanup. Keep required directives and suppression comments narrowly scoped, and make their necessity explicit.
+
 ---
 
 ## 4. Inputs this skill accepts
@@ -226,7 +232,7 @@ Produce the plan with the following sections. Keep it concise where possible but
 14. **Risks and tradeoffs** — each risk: why it matters, likelihood/impact if inferable, mitigation, and whether it affects sequencing/testing/rollout.
 15. **Open questions** — split into blocking (must resolve before execution), non-blocking (resolve during execution), and optional refinements. For each: why it matters, who/what resolves it, and a recommended default so execution can proceed.
 16. **Definition of done** — the explicit, checkable conditions that mean the whole feature is complete and correct.
-17. **Instructions for the executing agent** — how to use this plan, what to read first, what decisions to respect, what it must not change, what to verify before modifying, and how to report progress. Make these precise enough to use directly.
+17. **Instructions for the executing agent** — how to use this plan, what to read first, what decisions to respect, what it must not change, what to verify before modifying, how to apply the code-comment hygiene rules in §3.7, and how to report progress. Make these precise enough to use directly.
 18. **Redactions and sensitivity notes** — note and redact any secrets/PII/credentials/private data with placeholders; if none were found, say so.
 
 ---
@@ -293,6 +299,7 @@ Run this final pass before presenting the plan:
 * **Self-containment** — could the agent finish without asking a question that isn't already an explicit open question?
 * **Scope guardrails** — are out-of-scope and must-not-break items unmistakable?
 * **Pitfalls** — are the real, specific hazards named (not boilerplate)?
+* **Comment hygiene** — does the plan prohibit comments that narrate what code does, preserve structured JSDoc/TSDoc, allow inline comments only for non-obvious rationale, and limit cleanup to touched code?
 * **Done** — can someone objectively verify the feature is complete from the definition of done?
 
 ---
@@ -442,6 +449,7 @@ Use this template for the file at `./tmp/implementation-plan-{feature-slug}.md` 
 - Verify before modifying: {what to confirm against the code}.
 - Execute phases in order; honor task dependencies.
 - Implement at the level the plan specifies — write the code the tasks describe; do not re-architect.
+- Keep code self-explanatory: do not add comments that restate what the code does. Use inline or block comments only for non-obvious rationale, invariants, constraints, workarounds, subtle behavior, or decisions; link the relevant ADR or design document when applicable. Preserve or update structured JSDoc/TSDoc according to repository conventions. Remove comments in touched code that become stale or redundant, but do not perform unrelated comment cleanup. Keep required directives and suppression comments narrowly scoped and explain why they are necessary.
 - If a blocking question is unresolved, stop and ask; for non-blocking gaps, proceed using the stated default and note the assumption.
 - Report progress by {phase/task completion + which acceptance criteria passed}.
 

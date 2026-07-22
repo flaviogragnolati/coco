@@ -255,6 +255,7 @@ The decisions agreed during grilling — the record that we're on the same page 
 - Verify before modifying: {what to confirm against the code}.
 - Execute phases in order; honor task dependencies.
 - Implement at the level specified — write the code the tasks describe; do not re-architect. If a blocking question is unresolved, stop and ask; for non-blocking gaps, proceed on the stated default and note the assumption.
+- Keep code self-explanatory: do not add comments that restate what the code does. Use inline or block comments only for non-obvious rationale, invariants, constraints, workarounds, subtle behavior, or decisions; link the relevant ADR or design document when applicable. Preserve or update structured JSDoc/TSDoc according to repository conventions. Remove comments in touched code that become stale or redundant, but do not perform unrelated comment cleanup. Keep required directives and suppression comments narrowly scoped and explain why they are necessary.
 ```
 
 ### Rules
@@ -263,6 +264,7 @@ The decisions agreed during grilling — the record that we're on the same page 
 - **Real paths only.** Every cited path/symbol exists in the codebase, or is marked `[NEW]`. Never invent paths.
 - **Sequenced.** An agent should be able to execute top-to-bottom. Make dependencies and ordering hazards explicit; call out the easy-to-miss companion edits.
 - **Scope is unmistakable.** In / out / deferred / must-not-break are spelled out, not implied.
+- **Code-comment hygiene.** Keep implementation code self-explanatory. Do not instruct the executor to add inline or block comments that narrate what adjacent code does, restate names, types, or control flow, or label obvious steps. Use comments only for non-obvious rationale that cannot be expressed clearly through naming, structure, or types—for example an invariant, trade-off, workaround, external constraint, subtle ordering or failure behavior, or architectural decision. Link to the relevant ADR or design document when one exists. Preserve and maintain JSDoc/TSDoc or equivalent structured documentation according to repository conventions. In touched files, remove comments made stale or redundant by the change without expanding into unrelated cleanup. Keep required directives and suppression comments narrowly scoped, and make their necessity explicit.
 - **Decisions and terms live elsewhere.** Architectural decisions belong in ADRs (§3) or, for a phase of a larger design, the upstream `design-grill` document. Domain terms belong in `CONTEXT.md` (§3). The plan *references* them; it is not their home.
 - **The plan is disposable; its by-products are not.** The plan lives in the workspace and can be thrown away after execution. The `CONTEXT.md` entries and ADRs it produced are durable repo files.
 
@@ -289,6 +291,7 @@ Before delivering, confirm:
 - **Real paths.** Every cited path/symbol exists or is marked `[NEW]`.
 - **Sequenced.** An agent could execute top-to-bottom; dependencies and ordering hazards are explicit.
 - **Scope is unmistakable.** In / out / deferred / must-not-break are clear.
+- **Comment hygiene.** The plan prohibits comments that narrate what code does, preserves structured JSDoc/TSDoc, allows inline comments only for non-obvious rationale, and limits cleanup to touched code.
 - **Docs handled.** `CONTEXT.md` updated for resolved terms (per §3); ADRs created only for qualifying decisions (per §3); both noted in the plan's documentation section.
 - **Still feature-sized.** If it became cross-cutting during the session, you escalated to `design-grill`; if it shrank to a trivial change, you de-escalated to `simple-grill`.
 

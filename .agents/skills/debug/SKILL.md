@@ -1,6 +1,6 @@
 ---
 name: debug
-description: Default first stop for everyday bugs in a T3-stack codebase (TypeScript, tRPC, Next.js, vitest, Drizzle). Use whenever the user reports a bug, says something is broken / throwing / failing / not working, gets wrong output, or has a failing test they want fixed — even if they never say the word "debug". Drives a lightweight loop that pins the symptom, gets a fast pass/fail signal from a focused vitest run or a throwaway sandbox script, maps the triggering cases, forms a couple of ranked hypotheses, then validates and applies the fix. Escalate to the `diagnose` skill when the bug is a performance regression, is flaky / non-deterministic / a heisenbug, or needs an elaborate reproduction harness — that is diagnose's territory, not this one.
+description: Default first stop for everyday bugs in a T3-stack codebase (TypeScript, tRPC, Next.js, vitest, Prisma). Use whenever the user reports a bug, says something is broken / throwing / failing / not working, gets wrong output, or has a failing test they want fixed — even if they never say the word "debug". Drives a lightweight loop that pins the symptom, gets a fast pass/fail signal from a focused vitest run or a throwaway sandbox script, maps the triggering cases, forms a couple of ranked hypotheses, then validates and applies the fix. Escalate to the `diagnose` skill when the bug is a performance regression, is flaky / non-deterministic / a heisenbug, or needs an elaborate reproduction harness — that is diagnose's territory, not this one.
 ---
 
 # debug
@@ -11,14 +11,16 @@ This is the **low tier** of debugging. Its heavy-tier counterpart is the `diagno
 
 These instructions are in English. Conduct the debugging dialogue with the user — and write the closing root-cause summary — in the project's working language (Spanish).
 
-This skill assumes a **T3-stack** codebase (TypeScript, tRPC, Next.js, **vitest**, Drizzle). The commands and seams below are written for that stack; adapt the specifics where a project differs, but keep the loop the same.
+This skill assumes a **T3-stack** codebase (TypeScript, tRPC, Next.js, **vitest**, **Prisma**). The commands and seams below are written for that stack; adapt the specifics where a project differs, but keep the loop the same.
+
+**This project's concrete commands:** `pnpm test` (vitest run, unit) · `pnpm test:watch` · `pnpm test:e2e` (Playwright, headless Chromium) · `pnpm typecheck` (tsgo) · `pnpm check` (Biome). Unit tests live next to the code as `*.test.ts` under `src/`; Playwright specs live in `e2e/`. Tests use vitest's `expect`; the DB layer is Prisma v7 with the `pg` driver adapter, and the generated client is imported from `~/prisma/client`.
 
 ## When to use this vs `diagnose`
 
 | | **debug** (this skill) | **diagnose** |
 | --- | --- | --- |
 | Use when | A bug you can reproduce — or quickly make reproducible — with a focused test or a small sandbox run | Hard bugs and performance regressions that resist a clean repro |
-| Signal | One focused `vitest` run, or a throwaway sandbox script | Whatever it takes — bisection harness, fuzz loop, replayed traces, deep instrumentation |
+| Signal | One focused `pnpm test` (vitest) run, or a throwaway sandbox script | Whatever it takes — bisection harness, fuzz loop, replayed traces, deep instrumentation |
 | Depth | A couple of ranked hypotheses, one probe, fix | 3–5 hypotheses, formal instrumentation, full post-mortem |
 
 **When to escalate to `diagnose`** — stop and switch the moment any of these is true:
@@ -44,7 +46,7 @@ Then glance at `CONTEXT.md` (the glossary) and any ADRs in the area you're touch
 
 Reach for these in roughly this order:
 
-1. **A focused `vitest` run.** Narrow it hard — a single file, or `vitest run path/to/file.test.ts`, `-t "<name>"`, `test.only` — so the loop is seconds, not minutes. If a test that reaches the bug doesn't exist yet, write a quick failing one at the nearest seam: a pure function directly, a tRPC procedure through a caller, a Drizzle query against a test DB.
+1. **A focused `vitest` run.** Narrow it hard — `pnpm test path/to/file.test.ts`, `-t "<name>"`, or `test.only` — so the loop is seconds, not minutes. If a test that reaches the bug doesn't exist yet, write a quick failing one at the nearest seam: a pure function directly, a tRPC procedure through a `createCaller`, or a Prisma query against a test DB. Prefer the pure-function seam — most of this project's existing tests assert on extracted helpers (assemblers, diagnostics, filters) with hand-built fixtures and no DB.
 2. **A throwaway sandbox script** when there's no clean test seam. Spin up a minimal subset — one procedure or function, dependencies mocked — and exercise the buggy path with a single call. Replaying a captured payload (the real tRPC input, the row that breaks) through the code path in isolation is often the fastest route.
 
 Then **sharpen the loop**: make it faster (skip unrelated setup), make the assertion specific to the actual symptom (not "didn't throw"), and make it deterministic (seed RNG, pin time/clock, isolate the DB). A 2-second deterministic loop is a debugging superpower; a 30-second flaky one barely helps.

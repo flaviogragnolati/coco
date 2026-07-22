@@ -122,6 +122,8 @@ Calibrate tasks at mid-low altitude (same as the full plan): name the file, the 
 
 Because the scope is small, **don't split into phases** by default — a single ordered list of steps is almost always right. Order matters only where there's a real hazard (e.g. a migration before the code that reads the new column); call those out, skip ceremony otherwise.
 
+Keep implementation code self-explanatory. Do not instruct the executor to add inline or block comments that narrate what adjacent code does, restate names, types, or control flow, or label obvious steps. Use comments only for non-obvious rationale that cannot be expressed clearly through naming, structure, or types—for example an invariant, trade-off, workaround, external constraint, subtle ordering or failure behavior, or architectural decision. Link the relevant ADR or design document when one exists. Preserve and maintain JSDoc/TSDoc or equivalent structured documentation according to repository conventions. In touched files, remove comments made stale or redundant by the change without expanding into unrelated cleanup. Keep required directives and suppression comments narrowly scoped, and make their necessity explicit.
+
 ---
 
 ## 6. The reduced plan
@@ -160,6 +162,8 @@ Write the plan using the structure below — a flat, phase-free subset of the im
 2. **{step name}** …
 
 {Note any ordering hazard explicitly. No phases unless genuinely needed.}
+
+**Implementation hygiene:** Keep code self-explanatory; do not add comments that restate what the code does. Use inline or block comments only for non-obvious rationale, invariants, constraints, workarounds, subtle behavior, or decisions, linking the relevant ADR or design document when applicable. Preserve or update structured JSDoc/TSDoc according to repository conventions. Remove comments in touched code that become stale or redundant, but do not perform unrelated comment cleanup. Keep required directives and suppression comments narrowly scoped and explain why they are necessary.
 
 ## 6. Edge cases & pitfalls
 - {specific edge case or hazard — empty, error, validation, permissions, an easy-to-miss companion edit, etc.}
@@ -200,6 +204,7 @@ Before delivering, confirm:
 - **Real paths.** Every cited path/symbol exists or is marked `[NEW]`.
 - **Scope is unmistakable.** In / out / must-not-break are clear.
 - **Edge cases named.** The real ones for this change, not boilerplate.
+- **Comment hygiene.** The plan prohibits comments that narrate what code does, preserves structured JSDoc/TSDoc, allows inline comments only for non-obvious rationale, and limits cleanup to touched code.
 - **Still simple.** If it stopped being simple during the session, you escalated instead of forcing this format.
 
 Do **not**: balloon this into the full `implementation-plan` document; exceed 5 questions; grill a genuinely large or cross-cutting feature with this skill; write ADRs here; fabricate file paths; or omit the alignment record, scope, or must-not-break guardrails.
