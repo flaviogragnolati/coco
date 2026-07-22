@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { Prisma } from "~/prisma/client";
 import {
 	calculateAssignableQuantity,
@@ -45,7 +44,7 @@ test("calculateAssignableQuantity rolls over quantities below supplier MOQ", () 
 		max: null,
 	});
 
-	assert.equal(assigned.toString(), "0");
+	expect(assigned.toString()).toBe("0");
 });
 
 test("calculateAssignableQuantity floors to the largest valid supplier step", () => {
@@ -56,7 +55,7 @@ test("calculateAssignableQuantity floors to the largest valid supplier step", ()
 		max: null,
 	});
 
-	assert.equal(assigned.toString(), "15");
+	expect(assigned.toString()).toBe("15");
 });
 
 test("calculateAssignableQuantity respects supplier max before step alignment", () => {
@@ -67,7 +66,7 @@ test("calculateAssignableQuantity respects supplier max before step alignment", 
 		max: "32.0000",
 	});
 
-	assert.equal(assigned.toString(), "30");
+	expect(assigned.toString()).toBe("30");
 });
 
 test("resolveSupplierTermForProduct selects the active default supplier term", () => {
@@ -80,7 +79,7 @@ test("resolveSupplierTermForProduct selects the active default supplier term", (
 		now,
 	);
 
-	assert.equal(selected.term?.supplierId, 2);
+	expect(selected.term?.supplierId).toBe(2);
 });
 
 test("resolveSupplierTermForProduct falls back to one deterministic active term", () => {
@@ -93,7 +92,7 @@ test("resolveSupplierTermForProduct falls back to one deterministic active term"
 		now,
 	);
 
-	assert.equal(selected.term?.supplierId, 3);
+	expect(selected.term?.supplierId).toBe(3);
 });
 
 test("resolveSupplierTermForProduct fails closed on supplier ambiguity", () => {
@@ -106,8 +105,8 @@ test("resolveSupplierTermForProduct fails closed on supplier ambiguity", () => {
 		now,
 	);
 
-	assert.equal(selected.term, null);
-	assert.match(selected.reason ?? "", /Proveedor ambiguo/);
+	expect(selected.term).toBe(null);
+	expect(selected.reason ?? "").toMatch(/Proveedor ambiguo/);
 });
 
 test("resolveSupplierTermForProduct ignores inactive or expired terms", () => {
@@ -127,6 +126,6 @@ test("resolveSupplierTermForProduct ignores inactive or expired terms", () => {
 		now,
 	);
 
-	assert.equal(selected.term, null);
-	assert.match(selected.reason ?? "", /Sin termino de proveedor/);
+	expect(selected.term).toBe(null);
+	expect(selected.reason ?? "").toMatch(/Sin termino de proveedor/);
 });

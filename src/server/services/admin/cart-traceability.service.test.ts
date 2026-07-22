@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { Prisma } from "~/prisma/client";
 import { cartTraceabilityDetailSchema } from "~/schemas/admin/cart-traceability.schemas";
 import type { AdminTrackingTimelineItem } from "~/shared/common/tracking.types";
@@ -254,18 +253,18 @@ test("cart traceability assembles per-item lineage across lots and shipments", (
 		buildTimelines(),
 	);
 
-	assert.equal(detail.items.length, 2);
+	expect(detail.items.length).toBe(2);
 
 	const [itemA, itemB] = detail.items;
 	const allocationA = itemA?.allocations[0];
-	assert.equal(allocationA?.lotItem.lot.code, "LOT-1");
-	assert.equal(allocationA?.lotItem.lot.operation.code, "OP-301");
-	assert.equal(allocationA?.packaging[0]?.package.name, "PKG-1");
-	assert.equal(allocationA?.packaging[0]?.shipment?.internalCode, "SHIP-1");
+	expect(allocationA?.lotItem.lot.code).toBe("LOT-1");
+	expect(allocationA?.lotItem.lot.operation.code).toBe("OP-301");
+	expect(allocationA?.packaging[0]?.package.name).toBe("PKG-1");
+	expect(allocationA?.packaging[0]?.shipment?.internalCode).toBe("SHIP-1");
 
 	// item B reaches a lot but has no packaging yet.
-	assert.equal(itemB?.allocations[0]?.lotItem.lot.code, "LOT-2");
-	assert.equal(itemB?.allocations[0]?.packaging.length, 0);
+	expect(itemB?.allocations[0]?.lotItem.lot.code).toBe("LOT-2");
+	expect(itemB?.allocations[0]?.packaging.length).toBe(0);
 });
 
 test("cart traceability attributes diagnostics to the items whose lineage touches them", () => {
@@ -277,25 +276,23 @@ test("cart traceability attributes diagnostics to the items whose lineage touche
 
 	const [itemA, itemB] = detail.items;
 
-	assert.deepEqual(
+	expect(
 		itemA?.diagnostics.map((diagnostic) => diagnostic.code).sort(),
-		[
-			"lot.item.quantityMismatch",
-			"package.line.noPackagedAllocations",
-			"shipment.status.aggregateAheadOfPackages",
-		],
-	);
-	assert.equal(itemA?.highestDiagnosticSeverity, "critical");
+	).toStrictEqual([
+		"lot.item.quantityMismatch",
+		"package.line.noPackagedAllocations",
+		"shipment.status.aggregateAheadOfPackages",
+	]);
+	expect(itemA?.highestDiagnosticSeverity).toBe("critical");
 
-	assert.deepEqual(
-		itemB?.diagnostics.map((diagnostic) => diagnostic.code),
+	expect(itemB?.diagnostics.map((diagnostic) => diagnostic.code)).toStrictEqual(
 		["lot.supplierOrder.missing"],
 	);
-	assert.equal(itemB?.highestDiagnosticSeverity, "warning");
+	expect(itemB?.highestDiagnosticSeverity).toBe("warning");
 
 	// Cart-level rollup contains every distinct diagnostic in the lineage.
-	assert.equal(detail.diagnostics.length, 4);
-	assert.equal(detail.highestDiagnosticSeverity, "critical");
+	expect(detail.diagnostics.length).toBe(4);
+	expect(detail.highestDiagnosticSeverity).toBe("critical");
 });
 
 test("cart traceability populates timelines, orders, rollovers and aggregate", () => {
@@ -305,16 +302,16 @@ test("cart traceability populates timelines, orders, rollovers and aggregate", (
 		buildTimelines(),
 	);
 
-	assert.equal(detail.cartTimeline.length, 2);
-	assert.equal(detail.items[0]?.timeline.length, 1);
-	assert.equal(detail.items[1]?.timeline.length, 0);
+	expect(detail.cartTimeline.length).toBe(2);
+	expect(detail.items[0]?.timeline.length).toBe(1);
+	expect(detail.items[1]?.timeline.length).toBe(0);
 
-	assert.equal(detail.items[0]?.rollOvers.length, 1);
-	assert.equal(detail.orders[0]?.payments[0]?.amount, "100.5");
-	assert.equal(detail.orders[0]?.payments[0]?.paymentMethodType, "mercadopago");
+	expect(detail.items[0]?.rollOvers.length).toBe(1);
+	expect(detail.orders[0]?.payments[0]?.amount).toBe("100.5");
+	expect(detail.orders[0]?.payments[0]?.paymentMethodType).toBe("mercadopago");
 
-	assert.equal(detail.aggregate.itemCount, 2);
-	assert.equal(detail.aggregate.fulfillmentSummary.length, 2);
+	expect(detail.aggregate.itemCount).toBe(2);
+	expect(detail.aggregate.fulfillmentSummary.length).toBe(2);
 });
 
 test("assembled cart traceability satisfies the output schema", () => {
@@ -324,5 +321,5 @@ test("assembled cart traceability satisfies the output schema", () => {
 		buildTimelines(),
 	);
 
-	assert.doesNotThrow(() => cartTraceabilityDetailSchema.parse(detail));
+	expect(() => cartTraceabilityDetailSchema.parse(detail)).not.toThrow();
 });

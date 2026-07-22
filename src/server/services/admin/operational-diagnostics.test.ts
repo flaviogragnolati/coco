@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { Prisma } from "~/prisma/client";
 import type { LotDetailRecord } from "./lot.data";
 import { calculateLotDiagnostics } from "./lot-diagnostics";
@@ -35,12 +34,11 @@ test("lot diagnostics classify quantity mismatch as critical", () => {
 
 	const diagnostics = calculateLotDiagnostics(lot);
 
-	assert.equal(
+	expect(
 		diagnostics.find(
 			(diagnostic) => diagnostic.code === "lot.item.quantityMismatch",
 		)?.severity,
-		"critical",
-	);
+	).toBe("critical");
 });
 
 test("package diagnostics classify allocation conservation failures as critical", () => {
@@ -69,19 +67,17 @@ test("package diagnostics classify allocation conservation failures as critical"
 
 	const diagnostics = calculatePackageDiagnostics(pkg);
 
-	assert.equal(
+	expect(
 		diagnostics.find(
 			(diagnostic) => diagnostic.code === "package.line.quantityMismatch",
 		)?.severity,
-		"critical",
-	);
-	assert.equal(
+	).toBe("critical");
+	expect(
 		diagnostics.find(
 			(diagnostic) =>
 				diagnostic.code === "package.allocation.exceedsDemandAllocation",
 		)?.severity,
-		"critical",
-	);
+	).toBe("critical");
 });
 
 test("package diagnostics warn when advanced package has no shipment", () => {
@@ -94,12 +90,11 @@ test("package diagnostics warn when advanced package has no shipment", () => {
 
 	const diagnostics = calculatePackageDiagnostics(pkg);
 
-	assert.equal(
+	expect(
 		diagnostics.find(
 			(diagnostic) => diagnostic.code === "package.shipment.missing",
 		)?.severity,
-		"warning",
-	);
+	).toBe("warning");
 });
 
 test("shipment diagnostics classify aggregate status mismatches as critical", () => {
@@ -122,23 +117,20 @@ test("shipment diagnostics classify aggregate status mismatches as critical", ()
 
 	const diagnostics = calculateShipmentDiagnostics(shipment, false);
 
-	assert.equal(
+	expect(
 		diagnostics.find(
 			(diagnostic) =>
 				diagnostic.code === "shipment.status.aggregateAheadOfPackages",
 		)?.severity,
-		"critical",
-	);
-	assert.equal(
+	).toBe("critical");
+	expect(
 		diagnostics.find(
 			(diagnostic) => diagnostic.code === "shipment.packageLine.statusMismatch",
 		)?.severity,
-		"critical",
-	);
-	assert.equal(
+	).toBe("critical");
+	expect(
 		diagnostics.find(
 			(diagnostic) => diagnostic.code === "shipment.trackingEvents.missing",
 		)?.severity,
-		"warning",
-	);
+	).toBe("warning");
 });

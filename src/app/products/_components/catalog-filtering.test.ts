@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 
 import type {
 	CatalogClientTerms,
@@ -57,15 +56,15 @@ function makeProduct(overrides: ProductOverrides = {}): CatalogProductListItem {
 }
 
 test("normalizeSearch strips accents, case and whitespace", () => {
-	assert.equal(normalizeSearch("  Café Crème  "), "cafe creme");
-	assert.equal(normalizeSearch("AZÚCAR"), "azucar");
+	expect(normalizeSearch("  Café Crème  ")).toBe("cafe creme");
+	expect(normalizeSearch("AZÚCAR")).toBe("azucar");
 });
 
 test("productPrice prefers refPrice over moqPrice", () => {
 	const withRef = makeProduct({ terms: { moqPrice: "100", refPrice: "12" } });
 	const withoutRef = makeProduct({ terms: { moqPrice: "100" } });
-	assert.equal(productPrice(withRef), 12);
-	assert.equal(productPrice(withoutRef), 100);
+	expect(productPrice(withRef)).toBe(12);
+	expect(productPrice(withoutRef)).toBe(100);
 });
 
 test("matchScore ranks name prefix over brand and description", () => {
@@ -74,11 +73,11 @@ test("matchScore ranks name prefix over brand and description", () => {
 		brand: { id: 1, name: "Oliva Co" },
 		description: "Botella premium",
 	});
-	assert.equal(matchScore(product, normalizeSearch("aceite")), 4);
-	assert.equal(matchScore(product, normalizeSearch("oliva")), 3);
-	assert.equal(matchScore(product, normalizeSearch("co")), 2);
-	assert.equal(matchScore(product, normalizeSearch("premium")), 1);
-	assert.equal(matchScore(product, normalizeSearch("inexistente")), 0);
+	expect(matchScore(product, normalizeSearch("aceite"))).toBe(4);
+	expect(matchScore(product, normalizeSearch("oliva"))).toBe(3);
+	expect(matchScore(product, normalizeSearch("co"))).toBe(2);
+	expect(matchScore(product, normalizeSearch("premium"))).toBe(1);
+	expect(matchScore(product, normalizeSearch("inexistente"))).toBe(0);
 });
 
 test("filterCatalog narrows by accent-insensitive search", () => {
@@ -94,10 +93,7 @@ test("filterCatalog narrows by accent-insensitive search", () => {
 		maxPrice: "",
 		inCartOnly: false,
 	});
-	assert.deepEqual(
-		result.map((product) => product.name),
-		["Café molido"],
-	);
+	expect(result.map((product) => product.name)).toStrictEqual(["Café molido"]);
 });
 
 test("filterCatalog narrows by brand membership", () => {
@@ -114,10 +110,7 @@ test("filterCatalog narrows by brand membership", () => {
 		maxPrice: "",
 		inCartOnly: false,
 	});
-	assert.deepEqual(
-		result.map((product) => product.name),
-		["A", "B"],
-	);
+	expect(result.map((product) => product.name)).toStrictEqual(["A", "B"]);
 });
 
 test("filterCatalog narrows by unit membership", () => {
@@ -133,10 +126,7 @@ test("filterCatalog narrows by unit membership", () => {
 		maxPrice: "",
 		inCartOnly: false,
 	});
-	assert.deepEqual(
-		result.map((product) => product.name),
-		["A"],
-	);
+	expect(result.map((product) => product.name)).toStrictEqual(["A"]);
 });
 
 test("filterCatalog narrows by price range", () => {
@@ -153,10 +143,7 @@ test("filterCatalog narrows by price range", () => {
 		maxPrice: "200",
 		inCartOnly: false,
 	});
-	assert.deepEqual(
-		result.map((product) => product.name),
-		["Mid"],
-	);
+	expect(result.map((product) => product.name)).toStrictEqual(["Mid"]);
 });
 
 test("filterCatalog narrows by inCartOnly", () => {
@@ -174,10 +161,7 @@ test("filterCatalog narrows by inCartOnly", () => {
 		},
 		{ inCartTermsIds: new Set([999]) },
 	);
-	assert.deepEqual(
-		result.map((product) => product.name),
-		["InCart"],
-	);
+	expect(result.map((product) => product.name)).toStrictEqual(["InCart"]);
 });
 
 test("sortCatalog name-asc and name-desc", () => {
@@ -186,14 +170,12 @@ test("sortCatalog name-asc and name-desc", () => {
 		makeProduct({ name: "Ananá" }),
 		makeProduct({ name: "Cereza" }),
 	];
-	assert.deepEqual(
+	expect(
 		sortCatalog(products, "name-asc").map((product) => product.name),
-		["Ananá", "Banana", "Cereza"],
-	);
-	assert.deepEqual(
+	).toStrictEqual(["Ananá", "Banana", "Cereza"]);
+	expect(
 		sortCatalog(products, "name-desc").map((product) => product.name),
-		["Cereza", "Banana", "Ananá"],
-	);
+	).toStrictEqual(["Cereza", "Banana", "Ananá"]);
 });
 
 test("sortCatalog price-asc and price-desc", () => {
@@ -202,14 +184,12 @@ test("sortCatalog price-asc and price-desc", () => {
 		makeProduct({ name: "Cheap", terms: { moqPrice: "50" } }),
 		makeProduct({ name: "Pricey", terms: { moqPrice: "300" } }),
 	];
-	assert.deepEqual(
+	expect(
 		sortCatalog(products, "price-asc").map((product) => product.name),
-		["Cheap", "Mid", "Pricey"],
-	);
-	assert.deepEqual(
+	).toStrictEqual(["Cheap", "Mid", "Pricey"]);
+	expect(
 		sortCatalog(products, "price-desc").map((product) => product.name),
-		["Pricey", "Mid", "Cheap"],
-	);
+	).toStrictEqual(["Pricey", "Mid", "Cheap"]);
 });
 
 test("sortCatalog newest orders by createdAt desc, id desc on ties", () => {
@@ -218,10 +198,9 @@ test("sortCatalog newest orders by createdAt desc, id desc on ties", () => {
 		makeProduct({ id: 2, name: "New", createdAt: new Date("2024-06-01") }),
 		makeProduct({ id: 3, name: "SameDay", createdAt: new Date("2024-06-01") }),
 	];
-	assert.deepEqual(
+	expect(
 		sortCatalog(products, "newest").map((product) => product.name),
-		["SameDay", "New", "Old"],
-	);
+	).toStrictEqual(["SameDay", "New", "Old"]);
 });
 
 test("sortCatalog relevance orders by match score when searching", () => {
@@ -230,10 +209,9 @@ test("sortCatalog relevance orders by match score when searching", () => {
 		makeProduct({ name: "Aceite puro" }),
 		makeProduct({ name: "Mezcla con aceite" }),
 	];
-	assert.deepEqual(
+	expect(
 		sortCatalog(products, "relevance", "aceite").map((product) => product.name),
-		["Aceite puro", "Mezcla con aceite", "Otro"],
-	);
+	).toStrictEqual(["Aceite puro", "Mezcla con aceite", "Otro"]);
 });
 
 test("computeBrandFacets counts products per brand sorted by label", () => {
@@ -243,7 +221,7 @@ test("computeBrandFacets counts products per brand sorted by label", () => {
 		makeProduct({ brand: { id: 1, name: "Alfa" } }),
 		makeProduct({ brand: null }),
 	];
-	assert.deepEqual(computeBrandFacets(products), [
+	expect(computeBrandFacets(products)).toStrictEqual([
 		{ id: 1, label: "Alfa", count: 2 },
 		{ id: 2, label: "Zeta", count: 1 },
 	]);
@@ -258,8 +236,8 @@ test("computeUnitFacets counts products per unit with labels", () => {
 	const facets = computeUnitFacets(products);
 	const kg = facets.find((facet) => facet.unit === "kg");
 	const box = facets.find((facet) => facet.unit === "box");
-	assert.equal(kg?.count, 2);
-	assert.equal(kg?.label, "kg");
-	assert.equal(box?.count, 1);
-	assert.equal(box?.label, "caja");
+	expect(kg?.count).toBe(2);
+	expect(kg?.label).toBe("kg");
+	expect(box?.count).toBe(1);
+	expect(box?.label).toBe("caja");
 });
