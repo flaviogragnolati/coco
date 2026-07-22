@@ -1,5 +1,11 @@
 import { expect, test } from "vitest";
-import { fromDateTimeLocalValue, toDateTimeLocalValue } from "./date.helpers";
+import {
+	formatDateTimeFull,
+	formatDateTimeMedium,
+	formatDateTimeShort,
+	fromDateTimeLocalValue,
+	toDateTimeLocalValue,
+} from "./date.helpers";
 
 // Node fixes the process timezone at startup, so these cases pin the helpers to
 // explicit UTC instants instead of mutating process.env.TZ mid-run. Independence
@@ -39,5 +45,34 @@ test("passes absolute strings through untouched", () => {
 test("treats a date-only value as midnight in the business timezone", () => {
 	expect(fromDateTimeLocalValue("2026-07-22").toISOString()).toBe(
 		"2026-07-22T03:00:00.000Z",
+	);
+});
+
+// The display formatters are pinned to BUSINESS_TZ, so these expectations are
+// absolute: 14:30 UTC is 11:30 in Buenos Aires regardless of the host zone. A
+// test that round-tripped through the host zone would pass on a machine set to
+// Argentina while the pin was missing -- exactly how the write-side drift
+// survived to production.
+test("renders the short format in the business timezone", () => {
+	expect(formatDateTimeShort(new Date("2026-07-22T14:30:00Z"))).toBe(
+		"22/7/26, 11:30 a. m.",
+	);
+});
+
+test("renders the full format in the business timezone", () => {
+	expect(formatDateTimeFull(new Date("2026-07-22T14:30:00Z"))).toBe(
+		"miércoles, 22 de julio de 2026, 11:30:00 a. m.",
+	);
+});
+
+test("renders the medium format in the business timezone", () => {
+	expect(formatDateTimeMedium(new Date("2026-07-22T14:30:00Z"))).toBe(
+		"22 jul 2026, 11:30 a. m.",
+	);
+});
+
+test("accepts an ISO string as well as a Date", () => {
+	expect(formatDateTimeShort("2026-07-22T14:30:00Z")).toBe(
+		formatDateTimeShort(new Date("2026-07-22T14:30:00Z")),
 	);
 });

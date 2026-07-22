@@ -24,16 +24,19 @@ export function fromDateTimeLocalValue(value: string) {
 
 const shortFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "short",
+	timeZone: BUSINESS_TZ,
 	timeStyle: "short",
 });
 
 const fullFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "full",
+	timeZone: BUSINESS_TZ,
 	timeStyle: "medium",
 });
 
 const mediumFormatter = new Intl.DateTimeFormat("es-AR", {
 	dateStyle: "medium",
+	timeZone: BUSINESS_TZ,
 	timeStyle: "short",
 });
 
