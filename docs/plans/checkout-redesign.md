@@ -70,7 +70,7 @@
   - **No inline item editing** inside checkout (qty/remove happen only in the mini-cart/cart).
   - No new address/payment fields, no contact-info capture, no shipping-method/tax lines
     (the model has none).
-  - No changes to `/my-operations`, order detail, or admin payment screens.
+  - No changes to `/my-orders`, order detail, or admin payment screens.
   - No Prisma schema/migration changes.
 - **Deferred (plausibly next):** show the authenticated user's email read-only on Confirmar
   ("enviaremos la confirmación a …", needs passing `userEmail` from `page.tsx`); early
@@ -445,7 +445,7 @@ step, then the summary + mobile bar, then the post-confirmation screens, then a1
 - **Depends on:** T3.x (shared section/chip patterns).
 - **Acceptance:** both success and failed states render with the new look; `onRetry` still
   resets to the review step with a fresh idempotency key.
-- **Pitfalls:** keep the `orderStatusLabel` mapping and the `/my-operations/{id}` link.
+- **Pitfalls:** keep the `orderStatusLabel` mapping and the `/my-orders/{id}` link.
 
 ### T5.2 — Mercado Pago return pages restyle
 - **Files:** [mercadopago-return-page.tsx](../../src/app/checkout/mercadopago/_components/mercadopago-return-page.tsx)
