@@ -18,15 +18,11 @@ import {
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
 import type { PackageDetail } from "~/shared/common/admin-crud/package.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
 	packageLotItemStatusConfig,
 	packageStatusConfig,
 } from "./package.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 function Resumen({ pkg }: { pkg: PackageDetail }) {
 	return (
@@ -52,10 +48,10 @@ function Resumen({ pkg }: { pkg: PackageDetail }) {
 				<div>
 					<p className="text-muted-foreground text-xs">Fechas</p>
 					<p className="text-xs">
-						Creado {dateFormatter.format(new Date(pkg.createdAt))}
+						Creado {formatDateTimeShort(new Date(pkg.createdAt))}
 					</p>
 					<p className="text-muted-foreground text-xs">
-						Actualizado {dateFormatter.format(new Date(pkg.updatedAt))}
+						Actualizado {formatDateTimeShort(new Date(pkg.updatedAt))}
 					</p>
 				</div>
 			</section>
@@ -140,8 +136,8 @@ function Actividad({ pkg }: { pkg: PackageDetail }) {
 					{pkg.trackingEvents.length > 0 ? (
 						pkg.trackingEvents.map((event) => (
 							<p className="text-xs" key={event.id}>
-								{dateFormatter.format(new Date(event.createdAt))} -{" "}
-								{event.label} - {event.cartItemCode}
+								{formatDateTimeShort(new Date(event.createdAt))} - {event.label}{" "}
+								- {event.cartItemCode}
 							</p>
 						))
 					) : (

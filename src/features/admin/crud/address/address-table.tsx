@@ -10,11 +10,7 @@ import type {
 	CrudColumn,
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const addressTypeLabelMap: Record<AddressListItem["type"], string> = {
 	all: "General",
@@ -76,7 +72,7 @@ const addressColumns: CrudColumn<AddressListItem>[] = [
 		key: "updatedAt",
 		header: "Actualizado",
 		className: "w-40",
-		cell: (address) => dateFormatter.format(address.updatedAt),
+		cell: (address) => formatDateTimeShort(address.updatedAt),
 	},
 ];
 

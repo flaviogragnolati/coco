@@ -9,12 +9,8 @@ import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type { PackageListItem } from "~/shared/common/admin-crud/package.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { packageStatusConfig } from "./package.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 const packageColumns: CrudColumn<PackageListItem>[] = [
 	{
@@ -92,7 +88,7 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 			<div className="flex flex-col gap-1 text-xs">
 				<DateTooltip value={pkg.createdAt} />
 				<span className="text-muted-foreground">
-					Act. {dateFormatter.format(new Date(pkg.updatedAt))}
+					Act. {formatDateTimeShort(new Date(pkg.updatedAt))}
 				</span>
 			</div>
 		),

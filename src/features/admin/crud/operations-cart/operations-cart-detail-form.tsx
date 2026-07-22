@@ -34,6 +34,7 @@ import type {
 	OperationsCartFormValues,
 } from "~/shared/common/admin-crud/operations-cart.types";
 import type { ProductClientTermsListItem } from "~/shared/common/admin-crud/product-client-terms.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
 	cartItemStatusLabelMap,
 	cartStatusLabelMap,
@@ -44,11 +45,6 @@ import {
 	orderStatusLabelMap,
 	transactionStatusLabelMap,
 } from "./operations-cart.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 function JsonPreview({ value }: { value: unknown }) {
 	if (value === null || value === undefined) return <span>Sin datos</span>;
@@ -171,10 +167,10 @@ export function OperationsCartDetailForm({
 								<span className="text-muted-foreground text-xs">Carrito</span>
 								<span className="font-mono">{cart.code}</span>
 								<span className="text-muted-foreground text-xs">
-									Creado: {dateFormatter.format(cart.createdAt)}
+									Creado: {formatDateTimeShort(cart.createdAt)}
 								</span>
 								<span className="text-muted-foreground text-xs">
-									Actualizado: {dateFormatter.format(cart.updatedAt)}
+									Actualizado: {formatDateTimeShort(cart.updatedAt)}
 								</span>
 							</div>
 							<Field data-invalid={Boolean(errors.status)}>
@@ -388,7 +384,7 @@ export function OperationsCartDetailForm({
 												<div className="flex flex-col gap-1">
 													<span className="font-medium">Orden #{order.id}</span>
 													<span className="text-muted-foreground text-xs">
-														{dateFormatter.format(order.createdAt)}
+														{formatDateTimeShort(order.createdAt)}
 													</span>
 												</div>
 												<Badge variant="outline">

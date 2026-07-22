@@ -3,16 +3,10 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "~/components/ui/tooltip";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
-
-const dateTooltipFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "full",
-	timeStyle: "medium",
-});
+import {
+	formatDateTimeFull,
+	formatDateTimeShort,
+} from "~/shared/common/date.helpers";
 
 /**
  * Shared `#id` reference with a "{label} #{id}" tooltip. The trigger is a plain
@@ -58,10 +52,10 @@ export function DateTooltip({
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<span className={`w-fit cursor-help ${className ?? ""}`}>
-					{dateFormatter.format(date)}
+					{formatDateTimeShort(date)}
 				</span>
 			</TooltipTrigger>
-			<TooltipContent>{dateTooltipFormatter.format(date)}</TooltipContent>
+			<TooltipContent>{formatDateTimeFull(date)}</TooltipContent>
 		</Tooltip>
 	);
 }

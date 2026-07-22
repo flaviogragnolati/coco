@@ -7,11 +7,7 @@ import type {
 	CartTraceabilityOrder,
 	CartTraceabilityPayment,
 } from "~/shared/common/cart-traceability.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 function PaymentRow({ payment }: { payment: CartTraceabilityPayment }) {
 	return (
@@ -25,7 +21,7 @@ function PaymentRow({ payment }: { payment: CartTraceabilityPayment }) {
 				</span>
 				<span className="font-mono text-[11px] text-muted-foreground">
 					Pago #{payment.id} /{" "}
-					{dateFormatter.format(new Date(payment.createdAt))}
+					{formatDateTimeShort(new Date(payment.createdAt))}
 				</span>
 			</div>
 			<div className="flex items-start">
@@ -42,7 +38,7 @@ function OrderCard({ order }: { order: CartTraceabilityOrder }) {
 				<div className="flex flex-col gap-1">
 					<span className="font-mono">{order.code}</span>
 					<span className="text-muted-foreground text-xs">
-						#{order.id} / {dateFormatter.format(new Date(order.createdAt))}
+						#{order.id} / {formatDateTimeShort(new Date(order.createdAt))}
 					</span>
 				</div>
 				<StatusChip config={orderStatusConfig[order.status]} />

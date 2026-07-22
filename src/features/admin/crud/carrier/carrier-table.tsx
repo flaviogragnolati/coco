@@ -10,11 +10,7 @@ import type {
 	CrudColumn,
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const carrierColumns: CrudColumn<CarrierListItem>[] = [
 	{
@@ -50,7 +46,7 @@ const carrierColumns: CrudColumn<CarrierListItem>[] = [
 		key: "updatedAt",
 		header: "Actualizado",
 		className: "w-40",
-		cell: (carrier) => dateFormatter.format(carrier.updatedAt),
+		cell: (carrier) => formatDateTimeShort(carrier.updatedAt),
 	},
 ];
 

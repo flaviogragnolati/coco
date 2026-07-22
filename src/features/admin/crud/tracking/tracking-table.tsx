@@ -5,6 +5,7 @@ import { IdTooltip } from "~/features/admin/crud/_components/crud-cell-tooltips"
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import type { AdminTrackingEventListItem } from "~/shared/common/tracking.types";
 import {
 	cartItemStatusLabelMap,
@@ -17,11 +18,6 @@ import {
 	trackingSourceOptions,
 } from "./tracking.mappers";
 
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
-
 const sourceLabelMap = Object.fromEntries(
 	trackingSourceOptions.map((option) => [option.value, option.label]),
 ) as Record<AdminTrackingEventListItem["source"], string>;
@@ -31,7 +27,7 @@ const trackingColumns: CrudColumn<AdminTrackingEventListItem>[] = [
 		key: "createdAt",
 		header: "Fecha",
 		className: "min-w-36",
-		cell: (event) => dateFormatter.format(new Date(event.createdAt)),
+		cell: (event) => formatDateTimeShort(new Date(event.createdAt)),
 	},
 	{
 		key: "event",

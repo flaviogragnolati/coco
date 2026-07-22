@@ -15,13 +15,9 @@ import {
 
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import type { UserOrderItemTimeline } from "~/shared/common/tracking.types";
 import type { UserTrackingStageKey } from "~/shared/common/tracking-display";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 const stageIconMap: Record<UserTrackingStageKey, LucideIcon> = {
 	submitted: ClipboardCheckIcon,
@@ -42,7 +38,7 @@ const noticeIconMap = {
 
 function formatDate(value?: string) {
 	if (!value) return null;
-	return dateFormatter.format(new Date(value));
+	return formatDateTimeShort(new Date(value));
 }
 
 function statusIcon(stage: UserOrderItemTimeline["stages"][number]) {

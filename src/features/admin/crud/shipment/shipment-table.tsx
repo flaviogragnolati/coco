@@ -9,12 +9,8 @@ import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type { ShipmentListItem } from "~/shared/common/admin-crud/shipment.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { shipmentStatusConfig, shipmentTypeConfig } from "./shipment.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 	{
@@ -97,7 +93,7 @@ const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 			<div className="flex flex-col gap-1 text-xs">
 				<DateTooltip value={shipment.createdAt} />
 				<span className="text-muted-foreground">
-					Act. {dateFormatter.format(new Date(shipment.updatedAt))}
+					Act. {formatDateTimeShort(new Date(shipment.updatedAt))}
 				</span>
 			</div>
 		),

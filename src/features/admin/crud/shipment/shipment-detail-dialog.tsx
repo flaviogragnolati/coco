@@ -19,12 +19,8 @@ import {
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
 import type { ShipmentDetail } from "~/shared/common/admin-crud/shipment.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { shipmentStatusConfig, shipmentTypeConfig } from "./shipment.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 function JsonPreview({ value }: { value: unknown }) {
 	if (value === null || value === undefined) {
@@ -62,10 +58,10 @@ function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 				<div>
 					<p className="text-muted-foreground text-xs">Fechas</p>
 					<p className="text-xs">
-						Creado {dateFormatter.format(new Date(shipment.createdAt))}
+						Creado {formatDateTimeShort(new Date(shipment.createdAt))}
 					</p>
 					<p className="text-muted-foreground text-xs">
-						Actualizado {dateFormatter.format(new Date(shipment.updatedAt))}
+						Actualizado {formatDateTimeShort(new Date(shipment.updatedAt))}
 					</p>
 				</div>
 			</section>
@@ -148,8 +144,8 @@ function Actividad({ shipment }: { shipment: ShipmentDetail }) {
 					{shipment.trackingEvents.length > 0 ? (
 						shipment.trackingEvents.map((event) => (
 							<p className="text-xs" key={event.id}>
-								{dateFormatter.format(new Date(event.createdAt))} -{" "}
-								{event.label} - {event.cartItemCode}
+								{formatDateTimeShort(new Date(event.createdAt))} - {event.label}{" "}
+								- {event.cartItemCode}
 							</p>
 						))
 					) : (

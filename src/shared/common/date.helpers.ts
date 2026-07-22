@@ -21,3 +21,34 @@ export function fromDateTimeLocalValue(value: string) {
 
 	return dayjs.tz(value, BUSINESS_TZ).toDate();
 }
+
+const shortFormatter = new Intl.DateTimeFormat("es-AR", {
+	dateStyle: "short",
+	timeStyle: "short",
+});
+
+const fullFormatter = new Intl.DateTimeFormat("es-AR", {
+	dateStyle: "full",
+	timeStyle: "medium",
+});
+
+const mediumFormatter = new Intl.DateTimeFormat("es-AR", {
+	dateStyle: "medium",
+	timeStyle: "short",
+});
+
+function toDate(value: Date | string) {
+	return value instanceof Date ? value : new Date(value);
+}
+
+export function formatDateTimeShort(value: Date | string) {
+	return shortFormatter.format(toDate(value));
+}
+
+export function formatDateTimeFull(value: Date | string) {
+	return fullFormatter.format(toDate(value));
+}
+
+export function formatDateTimeMedium(value: Date | string) {
+	return mediumFormatter.format(toDate(value));
+}

@@ -10,11 +10,7 @@ import type {
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
 import type { UserListItem } from "~/shared/common/admin-crud/user.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const roleLabelMap: Record<UserListItem["role"], string> = {
 	admin: "Administrador",
@@ -65,7 +61,7 @@ const userColumns: CrudColumn<UserListItem>[] = [
 		key: "updatedAt",
 		header: "Actualizado",
 		className: "w-40",
-		cell: (user) => dateFormatter.format(user.updatedAt),
+		cell: (user) => formatDateTimeShort(user.updatedAt),
 	},
 ];
 

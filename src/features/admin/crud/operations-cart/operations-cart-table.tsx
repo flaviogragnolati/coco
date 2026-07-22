@@ -14,16 +14,12 @@ import type {
 	OperationsCartListItem,
 	OperationsCartStatus,
 } from "~/shared/common/admin-crud/operations-cart.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
 	cartStatusLabelMap,
 	cartStatusOptions,
 	orderStatusLabelMap,
 } from "./operations-cart.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 function CartLifecycleBadge({ status }: { status: OperationsCartStatus }) {
 	const variant =
@@ -134,7 +130,7 @@ const operationsCartColumns: CrudColumn<OperationsCartListItem>[] = [
 		key: "updatedAt",
 		header: "Actualizado",
 		className: "w-40",
-		cell: (cart) => dateFormatter.format(cart.updatedAt),
+		cell: (cart) => formatDateTimeShort(cart.updatedAt),
 	},
 ];
 

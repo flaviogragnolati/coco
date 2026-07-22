@@ -10,11 +10,7 @@ import type {
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
 import type { ProductListItem } from "~/shared/common/admin-crud/product.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const unitLabelMap: Record<ProductListItem["unit"], string> = {
 	box: "Caja",
@@ -77,7 +73,7 @@ const productColumns: CrudColumn<ProductListItem>[] = [
 		key: "updatedAt",
 		header: "Actualizado",
 		className: "w-40",
-		cell: (product) => dateFormatter.format(product.updatedAt),
+		cell: (product) => formatDateTimeShort(product.updatedAt),
 	},
 ];
 

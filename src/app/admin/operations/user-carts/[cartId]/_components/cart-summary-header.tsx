@@ -10,11 +10,7 @@ import type {
 	CartTraceabilityAggregate,
 	CartTraceabilityCart,
 } from "~/shared/common/cart-traceability.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 export function CartSummaryHeader({
 	cart,
@@ -52,10 +48,10 @@ export function CartSummaryHeader({
 				<div className="flex flex-col gap-1">
 					<span className="text-muted-foreground text-xs">Fechas</span>
 					<span className="text-xs">
-						Creado: {dateFormatter.format(new Date(cart.createdAt))}
+						Creado: {formatDateTimeShort(new Date(cart.createdAt))}
 					</span>
 					<span className="text-xs">
-						Actualizado: {dateFormatter.format(new Date(cart.updatedAt))}
+						Actualizado: {formatDateTimeShort(new Date(cart.updatedAt))}
 					</span>
 				</div>
 				<div className="flex flex-col items-start gap-1">

@@ -10,10 +10,9 @@ import {
 
 import { Button } from "~/components/ui/button";
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "~/components/ui/tooltip";
+	DateTooltip,
+	IdTooltip,
+} from "~/features/admin/crud/_components/crud-cell-tooltips";
 import { CrudRowActions } from "~/features/admin/crud/_components/crud-row-actions";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
@@ -22,54 +21,11 @@ import type {
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
 import type { OperationListItem } from "~/shared/common/admin-crud/operation.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
 	operationStatusConfig,
 	operationStrategyConfig,
 } from "./operation.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
-
-const dateTooltipFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "full",
-	timeStyle: "medium",
-});
-
-function IdTooltip({ id, label }: { id: number; label: string }) {
-	return (
-		<Tooltip>
-			<TooltipTrigger asChild>
-				<span className="w-fit cursor-help font-mono text-muted-foreground text-xs">
-					#{id}
-				</span>
-			</TooltipTrigger>
-			<TooltipContent>
-				{label} #{id}
-			</TooltipContent>
-		</Tooltip>
-	);
-}
-
-function DateTooltip({
-	value,
-	className,
-}: {
-	value: Date;
-	className?: string;
-}) {
-	return (
-		<Tooltip>
-			<TooltipTrigger asChild>
-				<span className={`w-fit cursor-help ${className ?? ""}`}>
-					{dateFormatter.format(value)}
-				</span>
-			</TooltipTrigger>
-			<TooltipContent>{dateTooltipFormatter.format(value)}</TooltipContent>
-		</Tooltip>
-	);
-}
 
 function QuantitySummary({ operation }: { operation: OperationListItem }) {
 	return (
@@ -118,7 +74,7 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 			<div className="flex flex-col gap-0.5 text-xs">
 				<DateTooltip value={operation.from} />
 				<span className="text-muted-foreground">
-					hasta {dateFormatter.format(operation.to)}
+					hasta {formatDateTimeShort(operation.to)}
 				</span>
 				<span className="text-muted-foreground">
 					{operation.includeRollOver ? "Incluye rollovers" : "Sin rollovers"}
@@ -153,7 +109,7 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 				<DateTooltip value={operation.createdAt} />
 				<span className="text-muted-foreground">
 					{operation.finishedAt
-						? dateFormatter.format(operation.finishedAt)
+						? formatDateTimeShort(operation.finishedAt)
 						: "En curso"}
 				</span>
 			</div>

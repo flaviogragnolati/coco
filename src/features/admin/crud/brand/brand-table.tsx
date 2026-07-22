@@ -10,11 +10,7 @@ import type {
 	CrudColumn,
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const brandColumns: CrudColumn<BrandListItem>[] = [
 	{
@@ -67,7 +63,7 @@ const brandColumns: CrudColumn<BrandListItem>[] = [
 		key: "updatedAt",
 		header: "Actualizado",
 		className: "w-40",
-		cell: (brand) => dateFormatter.format(brand.updatedAt),
+		cell: (brand) => formatDateTimeShort(brand.updatedAt),
 	},
 ];
 

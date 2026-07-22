@@ -23,15 +23,11 @@ import {
 } from "~/features/admin/crud/_components/crud-state";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import type { OperationDetail } from "~/shared/common/admin-crud/operation.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
 	operationStatusConfig,
 	operationStrategyLabelMap,
 } from "./operation.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 function IdRef({ id, label }: { id: number | string; label: string }) {
 	return (
@@ -120,9 +116,9 @@ function ConfigGrid({ operation }: { operation: OperationDetail }) {
 			</div>
 			<div className="flex flex-col gap-1">
 				<span className="text-muted-foreground text-xs">Ventana</span>
-				<span>{dateFormatter.format(operation.from)}</span>
+				<span>{formatDateTimeShort(operation.from)}</span>
 				<span className="text-muted-foreground text-xs">
-					{dateFormatter.format(operation.to)}
+					{formatDateTimeShort(operation.to)}
 				</span>
 			</div>
 			<div className="flex flex-col gap-1">
@@ -293,7 +289,7 @@ export function OperationDetailDialog({
 					</DialogTitle>
 					<DialogDescription>
 						{operation
-							? `Ejecutada el ${dateFormatter.format(operation.createdAt)}`
+							? `Ejecutada el ${formatDateTimeShort(operation.createdAt)}`
 							: "Cargando detalle"}
 					</DialogDescription>
 				</DialogHeader>

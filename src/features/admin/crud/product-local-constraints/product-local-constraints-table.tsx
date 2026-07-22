@@ -10,11 +10,7 @@ import type {
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
 import type { ProductLocalConstraintsListItem } from "~/shared/common/admin-crud/product-local-constraints.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const constraintTypeLabel: Record<string, string> = {
 	legal_restriction: "Legal",
@@ -84,9 +80,9 @@ const productLocalConstraintsColumns: CrudColumn<ProductLocalConstraintsListItem
 			className: "w-44",
 			cell: (constraint) => (
 				<span className="text-muted-foreground text-xs">
-					{dateFormatter.format(constraint.fromDate)}
+					{formatDateTimeShort(constraint.fromDate)}
 					{constraint.toDate
-						? ` - ${dateFormatter.format(constraint.toDate)}`
+						? ` - ${formatDateTimeShort(constraint.toDate)}`
 						: ""}
 				</span>
 			),
@@ -95,7 +91,7 @@ const productLocalConstraintsColumns: CrudColumn<ProductLocalConstraintsListItem
 			key: "updatedAt",
 			header: "Actualizado",
 			className: "w-40",
-			cell: (constraint) => dateFormatter.format(constraint.updatedAt),
+			cell: (constraint) => formatDateTimeShort(constraint.updatedAt),
 		},
 	];
 

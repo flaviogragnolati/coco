@@ -15,11 +15,7 @@ import type {
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
 import type { DestinationListItem } from "~/shared/common/admin-crud/destination.types";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const destinationColumns: CrudColumn<DestinationListItem>[] = [
 	{
@@ -67,7 +63,7 @@ const destinationColumns: CrudColumn<DestinationListItem>[] = [
 		key: "updatedAt",
 		header: "Actualizado",
 		className: "w-40",
-		cell: (destination) => dateFormatter.format(destination.updatedAt),
+		cell: (destination) => formatDateTimeShort(destination.updatedAt),
 	},
 ];
 

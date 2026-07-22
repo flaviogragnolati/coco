@@ -22,6 +22,7 @@ import {
 import { requireUser } from "~/server/auth/route-guards";
 import type { OrderListItem } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
+import { formatDateTimeMedium } from "~/shared/common/date.helpers";
 import { api } from "~/trpc/server";
 
 function orderStatusLabel(status: OrderListItem["status"]) {
@@ -100,10 +101,7 @@ export default async function MyOperationsPage() {
 											{order.code}
 										</CardTitle>
 										<CardDescription>
-											{new Intl.DateTimeFormat("es-AR", {
-												dateStyle: "medium",
-												timeStyle: "short",
-											}).format(order.createdAt)}
+											{formatDateTimeMedium(order.createdAt)}
 										</CardDescription>
 									</div>
 									<Badge

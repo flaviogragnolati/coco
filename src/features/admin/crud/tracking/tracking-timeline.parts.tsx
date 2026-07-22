@@ -3,17 +3,13 @@ import type { ReactNode } from "react";
 import { Badge } from "~/components/ui/badge";
 import { IdTooltip } from "~/features/admin/crud/_components/crud-cell-tooltips";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import type { AdminTrackingTimelineItem } from "~/shared/common/tracking.types";
 import {
 	formatTrackingRefs,
 	trackingEventTypeConfig,
 	trackingSourceOptions,
 } from "./tracking.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 const sourceLabelMap = Object.fromEntries(
 	trackingSourceOptions.map((option) => [option.value, option.label]),
@@ -49,7 +45,7 @@ export function TrackingTimelineItemCard({
 		<li className="grid gap-3 rounded-none border p-3 lg:grid-cols-[12rem_1fr]">
 			<div className="flex flex-col gap-1">
 				<span className="font-medium text-sm">
-					{dateFormatter.format(new Date(item.createdAt))}
+					{formatDateTimeShort(new Date(item.createdAt))}
 				</span>
 				<Badge variant="secondary">{sourceLabelMap[item.source]}</Badge>
 				<IdTooltip id={item.id} label="Evento" />

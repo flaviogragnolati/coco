@@ -56,18 +56,14 @@ import type {
 	PaymentProviderConfig,
 } from "~/shared/common/admin-crud/payment.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { api } from "~/trpc/react";
 import { resolvePaymentStatus } from "./payment.mappers";
 
 const provider = "mercadopago";
 
 function formatDate(value: Date | null) {
-	return value
-		? new Intl.DateTimeFormat("es-AR", {
-				dateStyle: "short",
-				timeStyle: "short",
-			}).format(value)
-		: "Sin dato";
+	return value ? formatDateTimeShort(value) : "Sin dato";
 }
 
 function JsonBlock({ value }: { value: unknown }) {

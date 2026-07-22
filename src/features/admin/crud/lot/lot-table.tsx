@@ -9,12 +9,8 @@ import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type { LotListItem } from "~/shared/common/admin-crud/lot.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { lotStatusConfig } from "./lot.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 const lotColumns: CrudColumn<LotListItem>[] = [
 	{
@@ -97,7 +93,7 @@ const lotColumns: CrudColumn<LotListItem>[] = [
 			<div className="flex flex-col gap-1 text-xs">
 				<DateTooltip value={lot.createdAt} />
 				<span className="text-muted-foreground">
-					Act. {dateFormatter.format(new Date(lot.updatedAt))}
+					Act. {formatDateTimeShort(new Date(lot.updatedAt))}
 				</span>
 			</div>
 		),

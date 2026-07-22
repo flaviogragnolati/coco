@@ -19,12 +19,8 @@ import {
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
 import type { LotDetail } from "~/shared/common/admin-crud/lot.types";
+import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { lotItemStatusConfig, lotStatusConfig } from "./lot.mappers";
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-	dateStyle: "short",
-	timeStyle: "short",
-});
 
 function TrackingLink({ lot }: { lot: LotDetail }) {
 	const params = new URLSearchParams({ lotId: String(lot.id) });
@@ -60,10 +56,10 @@ function Resumen({ lot }: { lot: LotDetail }) {
 				<div>
 					<p className="text-muted-foreground text-xs">Fechas</p>
 					<p className="text-xs">
-						Creado {dateFormatter.format(new Date(lot.createdAt))}
+						Creado {formatDateTimeShort(new Date(lot.createdAt))}
 					</p>
 					<p className="text-muted-foreground text-xs">
-						Actualizado {dateFormatter.format(new Date(lot.updatedAt))}
+						Actualizado {formatDateTimeShort(new Date(lot.updatedAt))}
 					</p>
 				</div>
 			</section>
@@ -147,8 +143,8 @@ function Actividad({ lot }: { lot: LotDetail }) {
 					{lot.trackingEvents.length > 0 ? (
 						lot.trackingEvents.map((event) => (
 							<p className="text-xs" key={event.id}>
-								{dateFormatter.format(new Date(event.createdAt))} -{" "}
-								{event.label} - {event.cartItemCode}
+								{formatDateTimeShort(new Date(event.createdAt))} - {event.label}{" "}
+								- {event.cartItemCode}
 							</p>
 						))
 					) : (
