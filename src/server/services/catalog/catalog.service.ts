@@ -6,40 +6,17 @@ import {
 } from "~/schemas/catalog.schemas";
 import { db } from "~/server/db";
 import type {
-	CatalogClientTerms,
 	CatalogProductDetail,
 	CatalogProductListItem,
 } from "~/shared/common/catalog.types";
+import { selectProductImage } from "~/shared/common/commerce.helpers";
+import { termsToClientTerms } from "../_base/client-terms.mapper";
 import {
 	type CatalogProductDetailRecord,
 	type CatalogProductListRecord,
 	findCatalogProductDetail,
 	listCatalogProducts,
 } from "./catalog.data";
-
-function selectProductImage(product: {
-	cardImageUrl: string | null;
-	cartImageUrl: string | null;
-}) {
-	return product.cardImageUrl ?? product.cartImageUrl;
-}
-
-function mapTerms(
-	terms: CatalogProductListRecord["productClientTerms"][number],
-): CatalogClientTerms {
-	return {
-		id: terms.id,
-		moq: terms.moq.toString(),
-		moqPrice: terms.moqPrice.toString(),
-		step: terms.step?.toString() ?? null,
-		stepPrice: terms.stepPrice?.toString() ?? null,
-		max: terms.max?.toString() ?? null,
-		refPrice: terms.refPrice?.toString() ?? null,
-		currency: terms.currency,
-		fromDate: terms.fromDate,
-		toDate: terms.toDate,
-	};
-}
 
 function mapListItem(
 	record: CatalogProductListRecord,
@@ -53,9 +30,9 @@ function mapListItem(
 		description: record.description,
 		unit: record.unit,
 		brand: record.brand,
-		imageUrl: selectProductImage(record),
+		imageUrl: selectProductImage(record, "catalog"),
 		createdAt: record.createdAt,
-		terms: mapTerms(terms),
+		terms: termsToClientTerms(terms),
 	};
 }
 

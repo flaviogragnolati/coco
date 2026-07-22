@@ -1,6 +1,11 @@
 import { expect, test } from "vitest";
 import type { CartSnapshot } from "./cart.types";
-import { buildCartSnapshot } from "./commerce.helpers";
+import {
+	buildCartSnapshot,
+	formatCurrency,
+	formatQuantity,
+	selectProductImage,
+} from "./commerce.helpers";
 
 const meta = { id: 7, code: "CART-7", status: "pending" } as const;
 
@@ -89,4 +94,32 @@ test("preserves the caller's item order", () => {
 		"Zanahoria",
 		"Arroz",
 	]);
+});
+
+const bothImages = { cardImageUrl: "card.jpg", cartImageUrl: "cart.jpg" };
+const cardOnly = { cardImageUrl: "card.jpg", cartImageUrl: null };
+const cartOnly = { cardImageUrl: null, cartImageUrl: "cart.jpg" };
+const neither = { cardImageUrl: null, cartImageUrl: null };
+
+test("selectProductImage prefers the cart image in the cart context", () => {
+	expect(selectProductImage(bothImages, "cart")).toBe("cart.jpg");
+	expect(selectProductImage(cardOnly, "cart")).toBe("card.jpg");
+	expect(selectProductImage(cartOnly, "cart")).toBe("cart.jpg");
+	expect(selectProductImage(neither, "cart")).toBeNull();
+});
+
+test("selectProductImage prefers the card image in the catalog context", () => {
+	expect(selectProductImage(bothImages, "catalog")).toBe("card.jpg");
+	expect(selectProductImage(cardOnly, "catalog")).toBe("card.jpg");
+	expect(selectProductImage(cartOnly, "catalog")).toBe("cart.jpg");
+	expect(selectProductImage(neither, "catalog")).toBeNull();
+});
+
+// The home formatters used to carry their own toNumber, which coerced "" to 0.
+// The shared one returns null, so an empty value now falls through to the raw
+// branch instead of rendering as zero. Latent today: every caller feeds a
+// Prisma Decimal string, which is never "".
+test("empty values fall through to the raw branch instead of coercing to zero", () => {
+	expect(formatCurrency("", "ARS")).toBe("ARS ");
+	expect(formatQuantity("", "kg")).toBe(" kg");
 });

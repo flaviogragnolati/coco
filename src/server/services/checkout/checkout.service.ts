@@ -14,7 +14,6 @@ import { db } from "~/server/db";
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
 import type { CartItem, CartSnapshot } from "~/shared/common/cart.types";
-import type { CatalogClientTerms } from "~/shared/common/catalog.types";
 import type {
 	CheckoutAddress,
 	CheckoutAddressCreateInput,
@@ -31,7 +30,9 @@ import type {
 import {
 	buildCartSnapshot,
 	calculateLineTotal,
+	selectProductImage,
 } from "~/shared/common/commerce.helpers";
+import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
 import { getMercadoPagoConfig } from "../payments/mercadopago/mercadopago-config.service";
 import { createMercadoPagoPreference } from "../payments/mercadopago/mercadopago-preference.service";
@@ -74,30 +75,6 @@ const TERMS_TEXT = "lorem ipsum";
 
 type CheckoutCartItemRecord = CheckoutCartRecord["cartItems"][number];
 
-function selectProductImage(product: {
-	cardImageUrl: string | null;
-	cartImageUrl: string | null;
-}) {
-	return product.cartImageUrl ?? product.cardImageUrl;
-}
-
-function termsToClientTerms(
-	terms: CheckoutCartItemRecord["productClientTerms"],
-): CatalogClientTerms {
-	return {
-		id: terms.id,
-		moq: terms.moq.toString(),
-		moqPrice: terms.moqPrice.toString(),
-		step: terms.step?.toString() ?? null,
-		stepPrice: terms.stepPrice?.toString() ?? null,
-		max: terms.max?.toString() ?? null,
-		refPrice: terms.refPrice?.toString() ?? null,
-		currency: terms.currency,
-		fromDate: terms.fromDate,
-		toDate: terms.toDate,
-	};
-}
-
 function toCartItem(item: CheckoutCartItemRecord): CartItem {
 	const terms = termsToClientTerms(item.productClientTerms);
 
@@ -111,7 +88,7 @@ function toCartItem(item: CheckoutCartItemRecord): CartItem {
 			description: item.productClientTerms.product.description,
 			unit: item.productClientTerms.product.unit,
 			brandName: item.productClientTerms.product.brand?.name ?? null,
-			imageUrl: selectProductImage(item.productClientTerms.product),
+			imageUrl: selectProductImage(item.productClientTerms.product, "cart"),
 		},
 		terms,
 	};

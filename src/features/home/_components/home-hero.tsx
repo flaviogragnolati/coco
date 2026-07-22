@@ -9,12 +9,9 @@ import Link from "next/link";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { formatQuantity } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
-import {
-	formatQuantity,
-	getOfferDisplayPrice,
-	getOfferPriceLabel,
-} from "../home-formatters";
+import { getOfferDisplayPrice, getOfferPriceLabel } from "../home-formatters";
 
 export function HomeHero({
 	isActiveUser,

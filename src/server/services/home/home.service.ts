@@ -5,6 +5,7 @@ import {
 	homeOffersOutputSchema,
 } from "~/schemas/home.schemas";
 import { db } from "~/server/db";
+import { selectProductImage } from "~/shared/common/commerce.helpers";
 import type {
 	HomeFeaturedProduct,
 	HomeOffer,
@@ -16,13 +17,6 @@ import {
 	listFeaturedHomeProducts,
 } from "./home.data";
 
-function selectProductImage(product: {
-	cardImageUrl: string | null;
-	cartImageUrl: string | null;
-}) {
-	return product.cardImageUrl ?? product.cartImageUrl;
-}
-
 function mapHomeOffer(record: CurrentHomeOfferRecord): HomeOffer {
 	return {
 		id: record.id,
@@ -30,7 +24,7 @@ function mapHomeOffer(record: CurrentHomeOfferRecord): HomeOffer {
 		productDescription: record.product.description,
 		unit: record.product.unit,
 		brandName: record.product.brand?.name ?? null,
-		imageUrl: selectProductImage(record.product),
+		imageUrl: selectProductImage(record.product, "catalog"),
 		moq: record.moq.toString(),
 		moqPrice: record.moqPrice.toString(),
 		refPrice: record.refPrice?.toString() ?? null,
@@ -51,7 +45,7 @@ function mapFeaturedProduct(
 		productDescription: record.description,
 		unit: record.unit,
 		brandName: record.brand?.name ?? null,
-		imageUrl: selectProductImage(record),
+		imageUrl: selectProductImage(record, "catalog"),
 		refPrice: terms?.refPrice?.toString() ?? null,
 		currency: terms?.currency ?? null,
 	};

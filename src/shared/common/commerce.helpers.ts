@@ -71,6 +71,21 @@ export function toMoneyString(value: number) {
 	return moneyValueFormatter.format(Number(value.toFixed(2)));
 }
 
+/**
+ * Picks the image a product should render with. The two contexts genuinely
+ * disagree on precedence, so it is a required argument: two of the call sites
+ * feed the persisted `productSnapshot` JSON, where a silent flip would diverge
+ * new rows from existing ones.
+ */
+export function selectProductImage(
+	product: { cardImageUrl: string | null; cartImageUrl: string | null },
+	context: "cart" | "catalog",
+) {
+	return context === "cart"
+		? (product.cartImageUrl ?? product.cardImageUrl)
+		: (product.cardImageUrl ?? product.cartImageUrl);
+}
+
 export function getDisplayPrice(terms: CatalogClientTerms) {
 	return terms.refPrice ?? terms.moqPrice;
 }

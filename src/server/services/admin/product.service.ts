@@ -21,15 +21,14 @@ import type {
 	ProductUpdateInput,
 } from "~/shared/common/admin-crud/product.types";
 import type { CartItem } from "~/shared/common/cart.types";
-import type {
-	CatalogClientTerms,
-	CatalogProductDetail,
-} from "~/shared/common/catalog.types";
+import type { CatalogProductDetail } from "~/shared/common/catalog.types";
 import {
 	calculateLineTotal,
 	normalizeCartQuantity,
+	selectProductImage,
 } from "~/shared/common/commerce.helpers";
 import type { HomeFeaturedProduct } from "~/shared/common/home.types";
+import { termsToClientTerms } from "../_base/client-terms.mapper";
 import type { AdminMutationActor } from "./_base/admin-audit";
 import { writeAdminAuditLog } from "./_base/admin-audit";
 import { AdminCrudError, throwNotFound } from "./_base/admin-crud.errors";
@@ -59,30 +58,6 @@ function parseDetail(record: ProductDetailRecord): ProductDetail {
 	return productDetailSchema.parse(record);
 }
 
-function selectProductImage(product: {
-	cardImageUrl: string | null;
-	cartImageUrl: string | null;
-}) {
-	return product.cardImageUrl ?? product.cartImageUrl;
-}
-
-function mapPreviewTerms(
-	terms: CatalogProductDetailRecord["productClientTerms"][number],
-): CatalogClientTerms {
-	return {
-		id: terms.id,
-		moq: terms.moq.toString(),
-		moqPrice: terms.moqPrice.toString(),
-		step: terms.step?.toString() ?? null,
-		stepPrice: terms.stepPrice?.toString() ?? null,
-		max: terms.max?.toString() ?? null,
-		refPrice: terms.refPrice?.toString() ?? null,
-		currency: terms.currency,
-		fromDate: terms.fromDate,
-		toDate: terms.toDate,
-	};
-}
-
 function mapPreviewCatalogProduct(
 	record: CatalogProductDetailRecord,
 ): CatalogProductDetail | null {
@@ -95,9 +70,9 @@ function mapPreviewCatalogProduct(
 		description: record.description,
 		unit: record.unit,
 		brand: record.brand,
-		imageUrl: selectProductImage(record),
+		imageUrl: selectProductImage(record, "catalog"),
 		createdAt: record.createdAt,
-		terms: mapPreviewTerms(terms),
+		terms: termsToClientTerms(terms),
 		cardImageUrl: record.cardImageUrl,
 		cartImageUrl: record.cartImageUrl,
 		images: record.images,

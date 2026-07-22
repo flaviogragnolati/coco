@@ -24,12 +24,9 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
+import { formatQuantity } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
-import {
-	formatQuantity,
-	getOfferDisplayPrice,
-	getOfferPriceLabel,
-} from "../home-formatters";
+import { getOfferDisplayPrice, getOfferPriceLabel } from "../home-formatters";
 import { SectionHeading } from "./section-heading";
 
 function OfferImage({ offer }: { offer: HomeOffer }) {

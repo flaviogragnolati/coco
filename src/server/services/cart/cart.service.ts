@@ -20,9 +20,11 @@ import {
 	calculateLineTotal,
 	normalizeCartQuantity,
 	quantitiesEqual,
+	selectProductImage,
 	toNumber,
 	toQuantityString,
 } from "~/shared/common/commerce.helpers";
+import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
 import {
 	type CartProductClientTermsRecord,
@@ -53,30 +55,6 @@ function emptyCart(): CartSnapshot {
 	};
 }
 
-function selectProductImage(product: {
-	cardImageUrl: string | null;
-	cartImageUrl: string | null;
-}) {
-	return product.cartImageUrl ?? product.cardImageUrl;
-}
-
-function termsToClientTerms(
-	terms: CartProductClientTermsRecord,
-): CatalogClientTerms {
-	return {
-		id: terms.id,
-		moq: terms.moq.toString(),
-		moqPrice: terms.moqPrice.toString(),
-		step: terms.step?.toString() ?? null,
-		stepPrice: terms.stepPrice?.toString() ?? null,
-		max: terms.max?.toString() ?? null,
-		refPrice: terms.refPrice?.toString() ?? null,
-		currency: terms.currency,
-		fromDate: terms.fromDate,
-		toDate: terms.toDate,
-	};
-}
-
 function buildProductSnapshot(terms: CartProductClientTermsRecord) {
 	return {
 		source: "cart",
@@ -88,7 +66,7 @@ function buildProductSnapshot(terms: CartProductClientTermsRecord) {
 			description: terms.product.description,
 			unit: terms.product.unit,
 			brandName: terms.product.brand?.name ?? null,
-			imageUrl: selectProductImage(terms.product),
+			imageUrl: selectProductImage(terms.product, "cart"),
 		},
 	};
 }
@@ -106,7 +84,7 @@ function toCartItem(item: CartRecord["cartItems"][number]): CartItem {
 			description: item.productClientTerms.product.description,
 			unit: item.productClientTerms.product.unit,
 			brandName: item.productClientTerms.product.brand?.name ?? null,
-			imageUrl: selectProductImage(item.productClientTerms.product),
+			imageUrl: selectProductImage(item.productClientTerms.product, "cart"),
 		},
 		terms,
 	};

@@ -8,8 +8,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { formatCurrency } from "~/shared/common/commerce.helpers";
 import type { HomeFeaturedProduct } from "~/shared/common/home.types";
-import { formatCurrency } from "../home-formatters";
 
 export function FeaturedProductCard({
 	product,
