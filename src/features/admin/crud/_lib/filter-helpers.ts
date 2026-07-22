@@ -4,7 +4,10 @@ export function normalizeSearch(value: string) {
 	return value.trim().toLocaleLowerCase("es-AR");
 }
 
-export function matchesSearch(search: string, values: Array<number | string | null>) {
+export function matchesSearch(
+	search: string,
+	values: Array<number | string | null>,
+) {
 	if (!search) return true;
 
 	return values.some((value) =>

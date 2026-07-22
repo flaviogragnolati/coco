@@ -1,85 +1,100 @@
 "use client";
 
-import { PlusIcon, SearchIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "~/components/ui/button";
-import {
-	Field,
-	FieldContent,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-} from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { Switch } from "~/components/ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { CrudDeleteDialog } from "~/features/admin/crud/_components/crud-delete-dialog";
-import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
-import {
-	CrudEmptyState,
-	CrudErrorState,
-	CrudLoadingState,
-} from "~/features/admin/crud/_components/crud-state";
-import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
-import { crudStatusStatAccents } from "~/features/admin/crud/_lib/crud-status-stats";
-import {
-	matchesCrudStatus,
-	matchesSearch,
-	normalizeSearch,
-} from "~/features/admin/crud/_lib/filter-helpers";
+import { CrudEntityPage } from "~/features/admin/crud/_components/crud-entity-page";
+import type { CrudEntityCopy } from "~/features/admin/crud/_lib/crud-entity-copy";
+import { useCrudEntityPage } from "~/features/admin/crud/_lib/use-crud-entity-page";
+import { useCrudPageState } from "~/features/admin/crud/_lib/use-crud-page-state";
 import { ProductFormDialog } from "~/features/admin/crud/product/product-form-dialog";
 import { ProductPreviewDialog } from "~/features/admin/crud/product/product-preview-dialog";
 import { ProductTable } from "~/features/admin/crud/product/product-table";
-import type {
-	CrudModalState,
-	CrudStatusFilter,
-} from "~/shared/common/admin-crud/crud.types";
 import type {
 	ProductFormValues,
 	ProductListItem,
 } from "~/shared/common/admin-crud/product.types";
 import { api } from "~/trpc/react";
 
-const closedFormState: CrudModalState<number> = {
-	open: false,
-	mode: null,
-	entityId: null,
+const productSearchFields = (product: ProductListItem) => [
+	product.id,
+	product.name,
+	product.description,
+	product.brand?.name ?? null,
+	product.defaultSupplier?.name ?? null,
+];
+
+const productCopy: CrudEntityCopy<ProductListItem> = {
+	idPrefix: "product",
+	pageShell: {
+		title: "Productos",
+		description:
+			"Administración de catálogo, imágenes, unidad comercial y relación opcional con marca y proveedor por defecto.",
+	},
+	createButtonLabel: "Agregar nuevo",
+	searchPlaceholder: "ID, nombre, marca o proveedor",
+	statusLabels: { active: "Activos", inactive: "Inactivos" },
+	stats: {
+		total: { label: "Total", description: "Incluye productos eliminados" },
+		active: {
+			label: "Activos",
+			description: "Disponibles para operaciones nuevas",
+		},
+		inactive: {
+			label: "Inactivos",
+			description: "No eliminados, pero fuera de uso",
+		},
+		deleted: { label: "Eliminados", description: "Baja lógica aplicada" },
+	},
+	includeDeletedLabel: "Mostrar eliminados",
+	includeDeletedHint: "Baja lógica",
+	listErrorMessage: "No se pudo obtener la lista de productos",
+	statsErrorMessage: "No se pudieron cargar los indicadores",
+	detailErrorMessage: "No se pudo cargar el producto",
+	empty: {
+		title: "No hay productos para mostrar",
+		description: "Ajustá los filtros o agregá un producto nuevo.",
+	},
+	softDelete: {
+		title: "Confirmar baja lógica",
+		confirmLabel: "Enviar a papelera",
+		describe: (product) =>
+			`El producto "${product.name}" quedará eliminado lógicamente e inactivo.`,
+	},
+	hardDelete: {
+		title: "Eliminación definitiva",
+		confirmLabel: "Eliminar definitivamente",
+		describe: (product) =>
+			`Esta acción intenta borrar el producto "${product.name}" de la base de datos. Si tiene términos comerciales o restricciones locales, el servidor la va a bloquear.`,
+		confirmationValue: (product) => product.name,
+		confirmationLabel: (product) => `Escribí "${product.name}" para confirmar`,
+	},
 };
 
 export function ProductCrudClient() {
 	const utils = api.useUtils();
-	const [includeDeleted, setIncludeDeleted] = useState(false);
-	const [statusFilter, setStatusFilter] = useState<CrudStatusFilter>("all");
-	const [searchTerm, setSearchTerm] = useState("");
-	const [formState, setFormState] =
-		useState<CrudModalState<number>>(closedFormState);
-	const [softDeleteTarget, setSoftDeleteTarget] =
-		useState<ProductListItem | null>(null);
-	const [hardDeleteTarget, setHardDeleteTarget] =
-		useState<ProductListItem | null>(null);
+	const state = useCrudPageState<number, ProductListItem>();
 	const [previewProductId, setPreviewProductId] = useState<number | null>(null);
 
-	const selectedProductId =
-		formState.open && formState.mode === "edit" ? formState.entityId : null;
-	const formMode = formState.mode ?? "create";
-
-	const productsQuery = api.admin.product.list.useQuery({ includeDeleted });
+	const productsQuery = api.admin.product.list.useQuery({
+		includeDeleted: state.includeDeleted,
+	});
 	const statsQuery = api.admin.product.getStats.useQuery();
 	const brandsQuery = api.admin.brand.list.useQuery({ includeDeleted: true });
 	const suppliersQuery = api.admin.supplier.list.useQuery({
 		includeDeleted: true,
 	});
 	const productDetailQuery = api.admin.product.getById.useQuery(
-		{ id: selectedProductId ?? 0 },
-		{ enabled: selectedProductId !== null },
+		{ id: state.selectedId ?? 0 },
+		{ enabled: state.selectedId !== null },
 	);
 	const productPreviewQuery = api.admin.product.getPreview.useQuery(
 		{ id: previewProductId ?? 0 },
 		{ enabled: previewProductId !== null },
 	);
 
+	// ProductFormDialog can create a brand inline, so saving a product may write
+	// brand rows and always invalidates the preview projection.
 	const invalidateProductQueries = async () => {
 		await Promise.all([
 			utils.admin.product.list.invalidate(),
@@ -94,7 +109,7 @@ export function ProductCrudClient() {
 	const createMutation = api.admin.product.create.useMutation({
 		onSuccess: async () => {
 			toast.success("Producto creado");
-			setFormState(closedFormState);
+			state.closeForm();
 			await invalidateProductQueries();
 		},
 		onError: (error) => {
@@ -105,7 +120,7 @@ export function ProductCrudClient() {
 	const updateMutation = api.admin.product.update.useMutation({
 		onSuccess: async () => {
 			toast.success("Producto actualizado");
-			setFormState(closedFormState);
+			state.closeForm();
 			await invalidateProductQueries();
 		},
 		onError: (error) => {
@@ -116,7 +131,7 @@ export function ProductCrudClient() {
 	const softDeleteMutation = api.admin.product.softDelete.useMutation({
 		onSuccess: async () => {
 			toast.warning("Producto enviado a papelera");
-			setSoftDeleteTarget(null);
+			state.setSoftDeleteTarget(null);
 			await invalidateProductQueries();
 		},
 		onError: (error) => {
@@ -127,7 +142,7 @@ export function ProductCrudClient() {
 	const hardDeleteMutation = api.admin.product.hardDelete.useMutation({
 		onSuccess: async () => {
 			toast.success("Producto eliminado definitivamente");
-			setHardDeleteTarget(null);
+			state.setHardDeleteTarget(null);
 			await invalidateProductQueries();
 		},
 		onError: (error) => {
@@ -135,276 +150,82 @@ export function ProductCrudClient() {
 		},
 	});
 
-	useEffect(() => {
-		if (
-			formState.open &&
-			formState.mode === "edit" &&
-			productDetailQuery.isError
-		) {
-			toast.error(
-				productDetailQuery.error.message || "No se pudo cargar el producto",
-			);
-			setFormState(closedFormState);
-		}
-	}, [
-		formState.mode,
-		formState.open,
-		productDetailQuery.error,
-		productDetailQuery.isError,
-	]);
-
-	const filteredProducts = useMemo(() => {
-		const search = normalizeSearch(searchTerm);
-
-		return (productsQuery.data ?? []).filter((product) => {
-			return (
-				matchesCrudStatus(statusFilter, product) &&
-				matchesSearch(search, [
-					product.id,
-					product.name,
-					product.description,
-					product.brand?.name ?? null,
-					product.defaultSupplier?.name ?? null,
-				])
-			);
-		});
-	}, [productsQuery.data, searchTerm, statusFilter]);
-
-	const stats = statsQuery.data;
-	const isFormSubmitting = createMutation.isPending || updateMutation.isPending;
+	const page = useCrudEntityPage({
+		state,
+		listQuery: productsQuery,
+		detailQuery: productDetailQuery,
+		createMutation,
+		updateMutation,
+		searchFields: productSearchFields,
+		detailErrorMessage: productCopy.detailErrorMessage,
+	});
 
 	const handleSubmit = (values: ProductFormValues) => {
-		if (formState.mode === "edit" && formState.entityId !== null) {
-			updateMutation.mutate({
-				id: formState.entityId,
-				...values,
-			});
+		if (state.formState.mode === "edit" && state.formState.entityId !== null) {
+			updateMutation.mutate({ id: state.formState.entityId, ...values });
 			return;
 		}
 
 		createMutation.mutate(values);
 	};
 
-	const renderTable = () => {
-		if (productsQuery.isLoading) return <CrudLoadingState />;
-
-		if (productsQuery.isError) {
-			return (
-				<CrudErrorState
-					message={
-						productsQuery.error.message ||
-						"No se pudo obtener la lista de productos"
-					}
-				/>
-			);
-		}
-
-		if (filteredProducts.length === 0) {
-			return (
-				<CrudEmptyState
-					description="Ajustá los filtros o agregá un producto nuevo."
-					title="No hay productos para mostrar"
-				/>
-			);
-		}
-
-		return (
-			<ProductTable
-				onEdit={(product) =>
-					setFormState({
-						open: true,
-						mode: "edit",
-						entityId: product.id,
-					})
-				}
-				onHardDelete={setHardDeleteTarget}
-				onPreview={(product) => setPreviewProductId(product.id)}
-				onSoftDelete={setSoftDeleteTarget}
-				products={filteredProducts}
-			/>
-		);
-	};
-
 	return (
-		<CrudPageShell
-			actions={
-				<Button
-					onClick={() =>
-						setFormState({ open: true, mode: "create", entityId: null })
+		<CrudEntityPage
+			copy={productCopy}
+			extras={
+				<ProductPreviewDialog
+					errorMessage={
+						productPreviewQuery.isError
+							? productPreviewQuery.error.message ||
+								"No se pudo cargar el preview"
+							: undefined
 					}
-				>
-					<PlusIcon data-icon="inline-start" />
-					Agregar nuevo
-				</Button>
+					isLoading={productPreviewQuery.isFetching}
+					onOpenChange={(open) => {
+						if (!open) setPreviewProductId(null);
+					}}
+					open={previewProductId !== null}
+					preview={productPreviewQuery.data}
+				/>
 			}
-			description="Administración de catálogo, imágenes, unidad comercial y relación opcional con marca y proveedor por defecto."
-			title="Productos"
-		>
-			{statsQuery.isLoading ? (
-				<CrudLoadingState rows={2} />
-			) : statsQuery.isError ? (
-				<CrudErrorState
-					message={
-						statsQuery.error.message || "No se pudieron cargar los indicadores"
-					}
+			filteredItems={page.filteredItems}
+			hardDelete={{
+				isPending: hardDeleteMutation.isPending,
+				onConfirm: (product) => hardDeleteMutation.mutate({ id: product.id }),
+			}}
+			listQuery={productsQuery}
+			renderFormDialog={() => (
+				<ProductFormDialog
+					brands={brandsQuery.data ?? []}
+					isLoadingBrands={brandsQuery.isLoading}
+					isLoadingProduct={page.isLoadingDetail}
+					isLoadingSuppliers={suppliersQuery.isLoading}
+					isSubmitting={page.isFormSubmitting}
+					mode={state.formMode}
+					onOpenChange={(open) => {
+						if (!open) state.closeForm();
+					}}
+					onSubmit={handleSubmit}
+					open={state.formState.open}
+					product={page.detail}
+					suppliers={suppliersQuery.data ?? []}
 				/>
-			) : stats ? (
-				<CrudStatsCards
-					stats={[
-						{
-							label: "Total",
-							value: stats.total,
-							...crudStatusStatAccents.total,
-							description: "Incluye productos eliminados",
-						},
-						{
-							label: "Activos",
-							value: stats.active,
-							...crudStatusStatAccents.active,
-							description: "Disponibles para operaciones nuevas",
-						},
-						{
-							label: "Inactivos",
-							value: stats.inactive,
-							...crudStatusStatAccents.inactive,
-							description: "No eliminados, pero fuera de uso",
-						},
-						{
-							label: "Eliminados",
-							value: stats.deleted,
-							...crudStatusStatAccents.deleted,
-							description: "Baja lógica aplicada",
-						},
-					]}
+			)}
+			renderTable={() => (
+				<ProductTable
+					onEdit={(product) => state.openEdit(product.id)}
+					onHardDelete={state.setHardDeleteTarget}
+					onPreview={(product) => setPreviewProductId(product.id)}
+					onSoftDelete={state.setSoftDeleteTarget}
+					products={page.filteredItems}
 				/>
-			) : null}
-
-			<section className="flex flex-col gap-3">
-				<div className="flex flex-col gap-3 rounded-none border p-3 lg:flex-row lg:items-end lg:justify-between">
-					<FieldGroup className="grid flex-1 gap-3 md:grid-cols-[minmax(14rem,1fr)_auto_auto] md:items-end">
-						<Field>
-							<FieldLabel htmlFor="product-search">Buscar</FieldLabel>
-							<div className="relative">
-								<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									id="product-search"
-									onChange={(event) => setSearchTerm(event.target.value)}
-									placeholder="ID, nombre, marca o proveedor"
-									value={searchTerm}
-								/>
-							</div>
-						</Field>
-						<Field>
-							<FieldLabel>Estado</FieldLabel>
-							<ToggleGroup
-								onValueChange={(value) => {
-									if (value) setStatusFilter(value as CrudStatusFilter);
-								}}
-								type="single"
-								value={statusFilter}
-								variant="outline"
-							>
-								<ToggleGroupItem value="all">Todos</ToggleGroupItem>
-								<ToggleGroupItem value="active">Activos</ToggleGroupItem>
-								<ToggleGroupItem value="inactive">Inactivos</ToggleGroupItem>
-							</ToggleGroup>
-						</Field>
-						<Field orientation="horizontal">
-							<Switch
-								checked={includeDeleted}
-								id="product-include-deleted"
-								onCheckedChange={setIncludeDeleted}
-							/>
-							<FieldContent>
-								<FieldLabel htmlFor="product-include-deleted">
-									Mostrar eliminados
-								</FieldLabel>
-								<FieldDescription>Baja lógica</FieldDescription>
-							</FieldContent>
-						</Field>
-					</FieldGroup>
-				</div>
-
-				{renderTable()}
-			</section>
-
-			<ProductFormDialog
-				brands={brandsQuery.data ?? []}
-				isLoadingBrands={brandsQuery.isLoading}
-				isLoadingProduct={formMode === "edit" && productDetailQuery.isFetching}
-				isLoadingSuppliers={suppliersQuery.isLoading}
-				isSubmitting={isFormSubmitting}
-				mode={formMode}
-				onOpenChange={(open) => {
-					if (!open) setFormState(closedFormState);
-				}}
-				onSubmit={handleSubmit}
-				open={formState.open}
-				product={formMode === "edit" ? productDetailQuery.data : undefined}
-				suppliers={suppliersQuery.data ?? []}
-			/>
-
-			<ProductPreviewDialog
-				errorMessage={
-					productPreviewQuery.isError
-						? productPreviewQuery.error.message ||
-							"No se pudo cargar el preview"
-						: undefined
-				}
-				isLoading={productPreviewQuery.isFetching}
-				onOpenChange={(open) => {
-					if (!open) setPreviewProductId(null);
-				}}
-				open={previewProductId !== null}
-				preview={productPreviewQuery.data}
-			/>
-
-			<CrudDeleteDialog
-				confirmLabel="Enviar a papelera"
-				description={
-					softDeleteTarget
-						? `El producto "${softDeleteTarget.name}" quedará eliminado lógicamente e inactivo.`
-						: ""
-				}
-				isPending={softDeleteMutation.isPending}
-				onConfirm={() => {
-					if (softDeleteTarget) {
-						softDeleteMutation.mutate({ id: softDeleteTarget.id });
-					}
-				}}
-				onOpenChange={(open) => {
-					if (!open) setSoftDeleteTarget(null);
-				}}
-				open={Boolean(softDeleteTarget)}
-				title="Confirmar baja lógica"
-			/>
-
-			<CrudDeleteDialog
-				confirmationLabel={
-					hardDeleteTarget
-						? `Escribí "${hardDeleteTarget.name}" para confirmar`
-						: "Confirmación"
-				}
-				confirmationValue={hardDeleteTarget?.name}
-				confirmLabel="Eliminar definitivamente"
-				description={
-					hardDeleteTarget
-						? `Esta acción intenta borrar el producto "${hardDeleteTarget.name}" de la base de datos. Si tiene términos comerciales o restricciones locales, el servidor la va a bloquear.`
-						: ""
-				}
-				isPending={hardDeleteMutation.isPending}
-				onConfirm={() => {
-					if (hardDeleteTarget) {
-						hardDeleteMutation.mutate({ id: hardDeleteTarget.id });
-					}
-				}}
-				onOpenChange={(open) => {
-					if (!open) setHardDeleteTarget(null);
-				}}
-				open={Boolean(hardDeleteTarget)}
-				title="Eliminación definitiva"
-			/>
-		</CrudPageShell>
+			)}
+			softDelete={{
+				isPending: softDeleteMutation.isPending,
+				onConfirm: (product) => softDeleteMutation.mutate({ id: product.id }),
+			}}
+			state={state}
+			statsQuery={statsQuery}
+		/>
 	);
 }

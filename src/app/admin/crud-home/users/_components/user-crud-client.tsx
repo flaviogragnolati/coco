@@ -1,77 +1,86 @@
 "use client";
 
-import { PlusIcon, SearchIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "~/components/ui/button";
-import {
-	Field,
-	FieldContent,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-} from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { Switch } from "~/components/ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { CrudDeleteDialog } from "~/features/admin/crud/_components/crud-delete-dialog";
-import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
-import {
-	CrudEmptyState,
-	CrudErrorState,
-	CrudLoadingState,
-} from "~/features/admin/crud/_components/crud-state";
-import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
-import { crudStatusStatAccents } from "~/features/admin/crud/_lib/crud-status-stats";
-import {
-	matchesCrudStatus,
-	matchesSearch,
-	normalizeSearch,
-} from "~/features/admin/crud/_lib/filter-helpers";
+import { CrudEntityPage } from "~/features/admin/crud/_components/crud-entity-page";
+import type { CrudEntityCopy } from "~/features/admin/crud/_lib/crud-entity-copy";
+import { useCrudEntityPage } from "~/features/admin/crud/_lib/use-crud-entity-page";
+import { useCrudPageState } from "~/features/admin/crud/_lib/use-crud-page-state";
 import { UserFormDialog } from "~/features/admin/crud/user/user-form-dialog";
 import { UserTable } from "~/features/admin/crud/user/user-table";
-import type {
-	CrudModalState,
-	CrudStatusFilter,
-} from "~/shared/common/admin-crud/crud.types";
 import type {
 	UserFormValues,
 	UserListItem,
 } from "~/shared/common/admin-crud/user.types";
 import { api } from "~/trpc/react";
 
-const closedFormState: CrudModalState<string> = {
-	open: false,
-	mode: null,
-	entityId: null,
+const userSearchFields = (user: UserListItem) => [
+	user.id,
+	user.name,
+	user.email,
+	user.role,
+];
+
+const userCopy: CrudEntityCopy<UserListItem> = {
+	idPrefix: "user",
+	pageShell: {
+		title: "Usuarios",
+		description:
+			"Gestión del perfil interno del usuario, con alta de UUID server-side y administración embebida de direcciones.",
+	},
+	createButtonLabel: "Agregar nuevo",
+	searchPlaceholder: "ID, nombre, email o rol",
+	statusLabels: { active: "Activos", inactive: "Inactivos" },
+	stats: {
+		total: { label: "Total", description: "Incluye usuarios eliminados" },
+		active: { label: "Activos", description: "Disponibles para operar" },
+		inactive: {
+			label: "Inactivos",
+			description: "No eliminados, pero pausados",
+		},
+		deleted: { label: "Eliminados", description: "Baja lógica aplicada" },
+	},
+	includeDeletedLabel: "Mostrar eliminados",
+	includeDeletedHint: "Baja lógica",
+	listErrorMessage: "No se pudo obtener la lista de usuarios",
+	statsErrorMessage: "No se pudieron cargar los indicadores",
+	detailErrorMessage: "No se pudo cargar el usuario",
+	empty: {
+		title: "No hay usuarios para mostrar",
+		description: "Ajustá los filtros o agregá un usuario nuevo.",
+	},
+	softDelete: {
+		title: "Confirmar baja lógica",
+		confirmLabel: "Enviar a papelera",
+		describe: (user) =>
+			`El usuario "${user.name}" quedará eliminado lógicamente e inactivo.`,
+	},
+	hardDelete: {
+		title: "Eliminación definitiva",
+		confirmLabel: "Eliminar definitivamente",
+		describe: (user) =>
+			`Esta acción intenta borrar al usuario "${user.name}" de la base de datos. Si tiene direcciones, medios de pago, carritos u órdenes, el servidor la va a bloquear.`,
+		confirmationValue: (user) => user.email,
+		confirmationLabel: (user) => `Escribí "${user.email}" para confirmar`,
+	},
 };
 
 export function UserCrudClient() {
 	const utils = api.useUtils();
-	const [includeDeleted, setIncludeDeleted] = useState(false);
-	const [statusFilter, setStatusFilter] = useState<CrudStatusFilter>("all");
-	const [searchTerm, setSearchTerm] = useState("");
-	const [formState, setFormState] =
-		useState<CrudModalState<string>>(closedFormState);
-	const [softDeleteTarget, setSoftDeleteTarget] = useState<UserListItem | null>(
-		null,
-	);
-	const [hardDeleteTarget, setHardDeleteTarget] = useState<UserListItem | null>(
-		null,
-	);
+	const state = useCrudPageState<string, UserListItem>();
 
-	const selectedUserId =
-		formState.open && formState.mode === "edit" ? formState.entityId : null;
-	const formMode = formState.mode ?? "create";
-
-	const usersQuery = api.admin.user.list.useQuery({ includeDeleted });
+	const usersQuery = api.admin.user.list.useQuery({
+		includeDeleted: state.includeDeleted,
+	});
 	const statsQuery = api.admin.user.getStats.useQuery();
 	const userDetailQuery = api.admin.user.getById.useQuery(
-		{ id: selectedUserId ?? "" },
-		{ enabled: selectedUserId !== null },
+		{ id: state.selectedId ?? "" },
+		{ enabled: state.selectedId !== null },
 	);
 
+	// UserFormDialog edits the user's addresses through an embedded field array,
+	// so saving a user writes address rows too. Not symmetric: the address page
+	// does not invalidate users.
 	const invalidateUserQueries = async () => {
 		await Promise.all([
 			utils.admin.user.list.invalidate(),
@@ -86,7 +95,7 @@ export function UserCrudClient() {
 	const createMutation = api.admin.user.create.useMutation({
 		onSuccess: async () => {
 			toast.success("Usuario creado");
-			setFormState(closedFormState);
+			state.closeForm();
 			await invalidateUserQueries();
 		},
 		onError: (error) => {
@@ -97,7 +106,7 @@ export function UserCrudClient() {
 	const updateMutation = api.admin.user.update.useMutation({
 		onSuccess: async () => {
 			toast.success("Usuario actualizado");
-			setFormState(closedFormState);
+			state.closeForm();
 			await invalidateUserQueries();
 		},
 		onError: (error) => {
@@ -108,7 +117,7 @@ export function UserCrudClient() {
 	const softDeleteMutation = api.admin.user.softDelete.useMutation({
 		onSuccess: async () => {
 			toast.warning("Usuario enviado a papelera");
-			setSoftDeleteTarget(null);
+			state.setSoftDeleteTarget(null);
 			await invalidateUserQueries();
 		},
 		onError: (error) => {
@@ -119,7 +128,7 @@ export function UserCrudClient() {
 	const hardDeleteMutation = api.admin.user.hardDelete.useMutation({
 		onSuccess: async () => {
 			toast.success("Usuario eliminado definitivamente");
-			setHardDeleteTarget(null);
+			state.setHardDeleteTarget(null);
 			await invalidateUserQueries();
 		},
 		onError: (error) => {
@@ -127,250 +136,61 @@ export function UserCrudClient() {
 		},
 	});
 
-	useEffect(() => {
-		if (
-			formState.open &&
-			formState.mode === "edit" &&
-			userDetailQuery.isError
-		) {
-			toast.error(
-				userDetailQuery.error.message || "No se pudo cargar el usuario",
-			);
-			setFormState(closedFormState);
-		}
-	}, [
-		formState.mode,
-		formState.open,
-		userDetailQuery.error,
-		userDetailQuery.isError,
-	]);
-
-	const filteredUsers = useMemo(() => {
-		const search = normalizeSearch(searchTerm);
-
-		return (usersQuery.data ?? []).filter((user) => {
-			return (
-				matchesCrudStatus(statusFilter, user) &&
-				matchesSearch(search, [user.id, user.name, user.email, user.role])
-			);
-		});
-	}, [searchTerm, statusFilter, usersQuery.data]);
-
-	const stats = statsQuery.data;
-	const isFormSubmitting = createMutation.isPending || updateMutation.isPending;
+	const page = useCrudEntityPage({
+		state,
+		listQuery: usersQuery,
+		detailQuery: userDetailQuery,
+		createMutation,
+		updateMutation,
+		searchFields: userSearchFields,
+		detailErrorMessage: userCopy.detailErrorMessage,
+	});
 
 	const handleSubmit = (values: UserFormValues) => {
-		if (formState.mode === "edit" && formState.entityId !== null) {
-			updateMutation.mutate({
-				id: formState.entityId,
-				...values,
-			});
+		if (state.formState.mode === "edit" && state.formState.entityId !== null) {
+			updateMutation.mutate({ id: state.formState.entityId, ...values });
 			return;
 		}
 
 		createMutation.mutate(values);
 	};
 
-	const renderTable = () => {
-		if (usersQuery.isLoading) return <CrudLoadingState />;
-
-		if (usersQuery.isError) {
-			return (
-				<CrudErrorState
-					message={
-						usersQuery.error.message ||
-						"No se pudo obtener la lista de usuarios"
-					}
-				/>
-			);
-		}
-
-		if (filteredUsers.length === 0) {
-			return (
-				<CrudEmptyState
-					description="Ajustá los filtros o agregá un usuario nuevo."
-					title="No hay usuarios para mostrar"
-				/>
-			);
-		}
-
-		return (
-			<UserTable
-				onEdit={(user) =>
-					setFormState({
-						open: true,
-						mode: "edit",
-						entityId: user.id,
-					})
-				}
-				onHardDelete={setHardDeleteTarget}
-				onSoftDelete={setSoftDeleteTarget}
-				users={filteredUsers}
-			/>
-		);
-	};
-
 	return (
-		<CrudPageShell
-			actions={
-				<Button
-					onClick={() =>
-						setFormState({ open: true, mode: "create", entityId: null })
-					}
-				>
-					<PlusIcon data-icon="inline-start" />
-					Agregar nuevo
-				</Button>
-			}
-			description="Gestión del perfil interno del usuario, con alta de UUID server-side y administración embebida de direcciones."
-			title="Usuarios"
-		>
-			{statsQuery.isLoading ? (
-				<CrudLoadingState rows={2} />
-			) : statsQuery.isError ? (
-				<CrudErrorState
-					message={
-						statsQuery.error.message || "No se pudieron cargar los indicadores"
-					}
+		<CrudEntityPage
+			copy={userCopy}
+			filteredItems={page.filteredItems}
+			hardDelete={{
+				isPending: hardDeleteMutation.isPending,
+				onConfirm: (user) => hardDeleteMutation.mutate({ id: user.id }),
+			}}
+			listQuery={usersQuery}
+			renderFormDialog={() => (
+				<UserFormDialog
+					isLoadingUser={page.isLoadingDetail}
+					isSubmitting={page.isFormSubmitting}
+					mode={state.formMode}
+					onOpenChange={(open) => {
+						if (!open) state.closeForm();
+					}}
+					onSubmit={handleSubmit}
+					open={state.formState.open}
+					user={page.detail}
 				/>
-			) : stats ? (
-				<CrudStatsCards
-					stats={[
-						{
-							label: "Total",
-							value: stats.total,
-							...crudStatusStatAccents.total,
-							description: "Incluye usuarios eliminados",
-						},
-						{
-							label: "Activos",
-							value: stats.active,
-							...crudStatusStatAccents.active,
-							description: "Disponibles para operar",
-						},
-						{
-							label: "Inactivos",
-							value: stats.inactive,
-							...crudStatusStatAccents.inactive,
-							description: "No eliminados, pero pausados",
-						},
-						{
-							label: "Eliminados",
-							value: stats.deleted,
-							...crudStatusStatAccents.deleted,
-							description: "Baja lógica aplicada",
-						},
-					]}
+			)}
+			renderTable={() => (
+				<UserTable
+					onEdit={(user) => state.openEdit(user.id)}
+					onHardDelete={state.setHardDeleteTarget}
+					onSoftDelete={state.setSoftDeleteTarget}
+					users={page.filteredItems}
 				/>
-			) : null}
-
-			<section className="flex flex-col gap-3">
-				<div className="flex flex-col gap-3 rounded-none border p-3 lg:flex-row lg:items-end lg:justify-between">
-					<FieldGroup className="grid flex-1 gap-3 md:grid-cols-[minmax(14rem,1fr)_auto_auto] md:items-end">
-						<Field>
-							<FieldLabel htmlFor="user-search">Buscar</FieldLabel>
-							<div className="relative">
-								<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									id="user-search"
-									onChange={(event) => setSearchTerm(event.target.value)}
-									placeholder="ID, nombre, email o rol"
-									value={searchTerm}
-								/>
-							</div>
-						</Field>
-						<Field>
-							<FieldLabel>Estado</FieldLabel>
-							<ToggleGroup
-								onValueChange={(value) => {
-									if (value) setStatusFilter(value as CrudStatusFilter);
-								}}
-								type="single"
-								value={statusFilter}
-								variant="outline"
-							>
-								<ToggleGroupItem value="all">Todos</ToggleGroupItem>
-								<ToggleGroupItem value="active">Activos</ToggleGroupItem>
-								<ToggleGroupItem value="inactive">Inactivos</ToggleGroupItem>
-							</ToggleGroup>
-						</Field>
-						<Field orientation="horizontal">
-							<Switch
-								checked={includeDeleted}
-								id="user-include-deleted"
-								onCheckedChange={setIncludeDeleted}
-							/>
-							<FieldContent>
-								<FieldLabel htmlFor="user-include-deleted">
-									Mostrar eliminados
-								</FieldLabel>
-								<FieldDescription>Baja lógica</FieldDescription>
-							</FieldContent>
-						</Field>
-					</FieldGroup>
-				</div>
-
-				{renderTable()}
-			</section>
-
-			<UserFormDialog
-				isLoadingUser={formMode === "edit" && userDetailQuery.isFetching}
-				isSubmitting={isFormSubmitting}
-				mode={formMode}
-				onOpenChange={(open) => {
-					if (!open) setFormState(closedFormState);
-				}}
-				onSubmit={handleSubmit}
-				open={formState.open}
-				user={formMode === "edit" ? userDetailQuery.data : undefined}
-			/>
-
-			<CrudDeleteDialog
-				confirmLabel="Enviar a papelera"
-				description={
-					softDeleteTarget
-						? `El usuario "${softDeleteTarget.name}" quedará eliminado lógicamente e inactivo.`
-						: ""
-				}
-				isPending={softDeleteMutation.isPending}
-				onConfirm={() => {
-					if (softDeleteTarget) {
-						softDeleteMutation.mutate({ id: softDeleteTarget.id });
-					}
-				}}
-				onOpenChange={(open) => {
-					if (!open) setSoftDeleteTarget(null);
-				}}
-				open={Boolean(softDeleteTarget)}
-				title="Confirmar baja lógica"
-			/>
-
-			<CrudDeleteDialog
-				confirmationLabel={
-					hardDeleteTarget
-						? `Escribí "${hardDeleteTarget.email}" para confirmar`
-						: "Confirmación"
-				}
-				confirmationValue={hardDeleteTarget?.email}
-				confirmLabel="Eliminar definitivamente"
-				description={
-					hardDeleteTarget
-						? `Esta acción intenta borrar al usuario "${hardDeleteTarget.name}" de la base de datos. Si tiene direcciones, medios de pago, carritos u órdenes, el servidor la va a bloquear.`
-						: ""
-				}
-				isPending={hardDeleteMutation.isPending}
-				onConfirm={() => {
-					if (hardDeleteTarget) {
-						hardDeleteMutation.mutate({ id: hardDeleteTarget.id });
-					}
-				}}
-				onOpenChange={(open) => {
-					if (!open) setHardDeleteTarget(null);
-				}}
-				open={Boolean(hardDeleteTarget)}
-				title="Eliminación definitiva"
-			/>
-		</CrudPageShell>
+			)}
+			softDelete={{
+				isPending: softDeleteMutation.isPending,
+				onConfirm: (user) => softDeleteMutation.mutate({ id: user.id }),
+			}}
+			state={state}
+			statsQuery={statsQuery}
+		/>
 	);
 }

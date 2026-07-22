@@ -1,73 +1,84 @@
 "use client";
 
-import { PlusIcon, SearchIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "~/components/ui/button";
-import {
-	Field,
-	FieldContent,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-} from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { Switch } from "~/components/ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { CrudDeleteDialog } from "~/features/admin/crud/_components/crud-delete-dialog";
-import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
-import {
-	CrudEmptyState,
-	CrudErrorState,
-	CrudLoadingState,
-} from "~/features/admin/crud/_components/crud-state";
-import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
-import { crudStatusStatAccents } from "~/features/admin/crud/_lib/crud-status-stats";
-import {
-	matchesCrudStatus,
-	matchesSearch,
-	normalizeSearch,
-} from "~/features/admin/crud/_lib/filter-helpers";
+import { CrudEntityPage } from "~/features/admin/crud/_components/crud-entity-page";
+import type { CrudEntityCopy } from "~/features/admin/crud/_lib/crud-entity-copy";
+import { useCrudEntityPage } from "~/features/admin/crud/_lib/use-crud-entity-page";
+import { useCrudPageState } from "~/features/admin/crud/_lib/use-crud-page-state";
 import { BrandFormDialog } from "~/features/admin/crud/brand/brand-form-dialog";
 import { BrandTable } from "~/features/admin/crud/brand/brand-table";
 import type {
 	BrandFormValues,
 	BrandListItem,
 } from "~/shared/common/admin-crud/brand.types";
-import type {
-	CrudModalState,
-	CrudStatusFilter,
-} from "~/shared/common/admin-crud/crud.types";
 import { api } from "~/trpc/react";
 
-const closedFormState: CrudModalState<number> = {
-	open: false,
-	mode: null,
-	entityId: null,
+const brandSearchFields = (brand: BrandListItem) => [
+	brand.id,
+	brand.name,
+	brand.description,
+	brand.logoUrl,
+];
+
+const brandCopy: CrudEntityCopy<BrandListItem> = {
+	idPrefix: "brand",
+	pageShell: {
+		title: "Marcas",
+		description:
+			"Administración de marcas comerciales con baja lógica y bloqueo de eliminación definitiva cuando todavía existen productos asociados.",
+	},
+	createButtonLabel: "Agregar nueva",
+	searchPlaceholder: "ID, nombre, descripción o logo",
+	statusLabels: { active: "Activas", inactive: "Inactivas" },
+	stats: {
+		total: { label: "Total", description: "Incluye marcas eliminadas" },
+		active: {
+			label: "Activas",
+			description: "Disponibles para nuevos productos",
+		},
+		inactive: {
+			label: "Inactivas",
+			description: "No eliminadas, pero fuera de uso",
+		},
+		deleted: { label: "Eliminadas", description: "Baja lógica aplicada" },
+	},
+	includeDeletedLabel: "Mostrar eliminadas",
+	includeDeletedHint: "Baja lógica",
+	listErrorMessage: "No se pudo obtener la lista de marcas",
+	statsErrorMessage: "No se pudieron cargar los indicadores",
+	detailErrorMessage: "No se pudo cargar la marca",
+	empty: {
+		title: "No hay marcas para mostrar",
+		description: "Ajustá los filtros o registrá una marca nueva.",
+	},
+	softDelete: {
+		title: "Confirmar baja lógica",
+		confirmLabel: "Enviar a papelera",
+		describe: (brand) =>
+			`La marca "${brand.name}" quedará eliminada lógicamente e inactiva.`,
+	},
+	hardDelete: {
+		title: "Eliminación definitiva",
+		confirmLabel: "Eliminar definitivamente",
+		describe: (brand) =>
+			`Esta acción intenta borrar la marca "${brand.name}" de la base de datos. Si todavía hay productos que la referencian, el servidor va a bloquear la operación.`,
+		confirmationValue: (brand) => brand.name,
+		confirmationLabel: (brand) => `Escribí "${brand.name}" para confirmar`,
+	},
 };
 
 export function BrandCrudClient() {
 	const utils = api.useUtils();
-	const [includeDeleted, setIncludeDeleted] = useState(false);
-	const [statusFilter, setStatusFilter] = useState<CrudStatusFilter>("all");
-	const [searchTerm, setSearchTerm] = useState("");
-	const [formState, setFormState] =
-		useState<CrudModalState<number>>(closedFormState);
-	const [softDeleteTarget, setSoftDeleteTarget] =
-		useState<BrandListItem | null>(null);
-	const [hardDeleteTarget, setHardDeleteTarget] =
-		useState<BrandListItem | null>(null);
+	const state = useCrudPageState<number, BrandListItem>();
 
-	const selectedBrandId =
-		formState.open && formState.mode === "edit" ? formState.entityId : null;
-	const formMode = formState.mode ?? "create";
-
-	const brandsQuery = api.admin.brand.list.useQuery({ includeDeleted });
+	const brandsQuery = api.admin.brand.list.useQuery({
+		includeDeleted: state.includeDeleted,
+	});
 	const statsQuery = api.admin.brand.getStats.useQuery();
 	const brandDetailQuery = api.admin.brand.getById.useQuery(
-		{ id: selectedBrandId ?? 0 },
-		{ enabled: selectedBrandId !== null },
+		{ id: state.selectedId ?? 0 },
+		{ enabled: state.selectedId !== null },
 	);
 
 	const invalidateBrandQueries = async () => {
@@ -81,7 +92,7 @@ export function BrandCrudClient() {
 	const createMutation = api.admin.brand.create.useMutation({
 		onSuccess: async () => {
 			toast.success("Marca creada");
-			setFormState(closedFormState);
+			state.closeForm();
 			await invalidateBrandQueries();
 		},
 		onError: (error) => {
@@ -92,7 +103,7 @@ export function BrandCrudClient() {
 	const updateMutation = api.admin.brand.update.useMutation({
 		onSuccess: async () => {
 			toast.success("Marca actualizada");
-			setFormState(closedFormState);
+			state.closeForm();
 			await invalidateBrandQueries();
 		},
 		onError: (error) => {
@@ -103,7 +114,7 @@ export function BrandCrudClient() {
 	const softDeleteMutation = api.admin.brand.softDelete.useMutation({
 		onSuccess: async () => {
 			toast.warning("Marca enviada a papelera");
-			setSoftDeleteTarget(null);
+			state.setSoftDeleteTarget(null);
 			await invalidateBrandQueries();
 		},
 		onError: (error) => {
@@ -114,7 +125,7 @@ export function BrandCrudClient() {
 	const hardDeleteMutation = api.admin.brand.hardDelete.useMutation({
 		onSuccess: async () => {
 			toast.success("Marca eliminada definitivamente");
-			setHardDeleteTarget(null);
+			state.setHardDeleteTarget(null);
 			await invalidateBrandQueries();
 		},
 		onError: (error) => {
@@ -122,254 +133,61 @@ export function BrandCrudClient() {
 		},
 	});
 
-	useEffect(() => {
-		if (
-			formState.open &&
-			formState.mode === "edit" &&
-			brandDetailQuery.isError
-		) {
-			toast.error(
-				brandDetailQuery.error.message || "No se pudo cargar la marca",
-			);
-			setFormState(closedFormState);
-		}
-	}, [
-		brandDetailQuery.error,
-		brandDetailQuery.isError,
-		formState.mode,
-		formState.open,
-	]);
-
-	const filteredBrands = useMemo(() => {
-		const search = normalizeSearch(searchTerm);
-
-		return (brandsQuery.data ?? []).filter((brand) => {
-			return (
-				matchesCrudStatus(statusFilter, brand) &&
-				matchesSearch(search, [
-					brand.id,
-					brand.name,
-					brand.description,
-					brand.logoUrl,
-				])
-			);
-		});
-	}, [brandsQuery.data, searchTerm, statusFilter]);
-
-	const stats = statsQuery.data;
-	const isFormSubmitting = createMutation.isPending || updateMutation.isPending;
+	const page = useCrudEntityPage({
+		state,
+		listQuery: brandsQuery,
+		detailQuery: brandDetailQuery,
+		createMutation,
+		updateMutation,
+		searchFields: brandSearchFields,
+		detailErrorMessage: brandCopy.detailErrorMessage,
+	});
 
 	const handleSubmit = (values: BrandFormValues) => {
-		if (formState.mode === "edit" && formState.entityId !== null) {
-			updateMutation.mutate({
-				id: formState.entityId,
-				...values,
-			});
+		if (state.formState.mode === "edit" && state.formState.entityId !== null) {
+			updateMutation.mutate({ id: state.formState.entityId, ...values });
 			return;
 		}
 
 		createMutation.mutate(values);
 	};
 
-	const renderTable = () => {
-		if (brandsQuery.isLoading) return <CrudLoadingState />;
-
-		if (brandsQuery.isError) {
-			return (
-				<CrudErrorState
-					message={
-						brandsQuery.error.message || "No se pudo obtener la lista de marcas"
-					}
-				/>
-			);
-		}
-
-		if (filteredBrands.length === 0) {
-			return (
-				<CrudEmptyState
-					description="Ajustá los filtros o registrá una marca nueva."
-					title="No hay marcas para mostrar"
-				/>
-			);
-		}
-
-		return (
-			<BrandTable
-				brands={filteredBrands}
-				onEdit={(brand) =>
-					setFormState({
-						open: true,
-						mode: "edit",
-						entityId: brand.id,
-					})
-				}
-				onHardDelete={setHardDeleteTarget}
-				onSoftDelete={setSoftDeleteTarget}
-			/>
-		);
-	};
-
 	return (
-		<CrudPageShell
-			actions={
-				<Button
-					onClick={() =>
-						setFormState({ open: true, mode: "create", entityId: null })
-					}
-				>
-					<PlusIcon data-icon="inline-start" />
-					Agregar nueva
-				</Button>
-			}
-			description="Administración de marcas comerciales con baja lógica y bloqueo de eliminación definitiva cuando todavía existen productos asociados."
-			title="Marcas"
-		>
-			{statsQuery.isLoading ? (
-				<CrudLoadingState rows={2} />
-			) : statsQuery.isError ? (
-				<CrudErrorState
-					message={
-						statsQuery.error.message || "No se pudieron cargar los indicadores"
-					}
+		<CrudEntityPage
+			copy={brandCopy}
+			filteredItems={page.filteredItems}
+			hardDelete={{
+				isPending: hardDeleteMutation.isPending,
+				onConfirm: (brand) => hardDeleteMutation.mutate({ id: brand.id }),
+			}}
+			listQuery={brandsQuery}
+			renderFormDialog={() => (
+				<BrandFormDialog
+					brand={page.detail}
+					isLoadingBrand={page.isLoadingDetail}
+					isSubmitting={page.isFormSubmitting}
+					mode={state.formMode}
+					onOpenChange={(open) => {
+						if (!open) state.closeForm();
+					}}
+					onSubmit={handleSubmit}
+					open={state.formState.open}
 				/>
-			) : stats ? (
-				<CrudStatsCards
-					stats={[
-						{
-							label: "Total",
-							value: stats.total,
-							...crudStatusStatAccents.total,
-							description: "Incluye marcas eliminadas",
-						},
-						{
-							label: "Activas",
-							value: stats.active,
-							...crudStatusStatAccents.active,
-							description: "Disponibles para nuevos productos",
-						},
-						{
-							label: "Inactivas",
-							value: stats.inactive,
-							...crudStatusStatAccents.inactive,
-							description: "No eliminadas, pero fuera de uso",
-						},
-						{
-							label: "Eliminadas",
-							value: stats.deleted,
-							...crudStatusStatAccents.deleted,
-							description: "Baja lógica aplicada",
-						},
-					]}
+			)}
+			renderTable={() => (
+				<BrandTable
+					brands={page.filteredItems}
+					onEdit={(brand) => state.openEdit(brand.id)}
+					onHardDelete={state.setHardDeleteTarget}
+					onSoftDelete={state.setSoftDeleteTarget}
 				/>
-			) : null}
-
-			<section className="flex flex-col gap-3">
-				<div className="flex flex-col gap-3 rounded-none border p-3 lg:flex-row lg:items-end lg:justify-between">
-					<FieldGroup className="grid flex-1 gap-3 md:grid-cols-[minmax(14rem,1fr)_auto_auto] md:items-end">
-						<Field>
-							<FieldLabel htmlFor="brand-search">Buscar</FieldLabel>
-							<div className="relative">
-								<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									id="brand-search"
-									onChange={(event) => setSearchTerm(event.target.value)}
-									placeholder="ID, nombre, descripción o logo"
-									value={searchTerm}
-								/>
-							</div>
-						</Field>
-						<Field>
-							<FieldLabel>Estado</FieldLabel>
-							<ToggleGroup
-								onValueChange={(value) => {
-									if (value) setStatusFilter(value as CrudStatusFilter);
-								}}
-								type="single"
-								value={statusFilter}
-								variant="outline"
-							>
-								<ToggleGroupItem value="all">Todos</ToggleGroupItem>
-								<ToggleGroupItem value="active">Activas</ToggleGroupItem>
-								<ToggleGroupItem value="inactive">Inactivas</ToggleGroupItem>
-							</ToggleGroup>
-						</Field>
-						<Field orientation="horizontal">
-							<Switch
-								checked={includeDeleted}
-								id="brand-include-deleted"
-								onCheckedChange={setIncludeDeleted}
-							/>
-							<FieldContent>
-								<FieldLabel htmlFor="brand-include-deleted">
-									Mostrar eliminadas
-								</FieldLabel>
-								<FieldDescription>Baja lógica</FieldDescription>
-							</FieldContent>
-						</Field>
-					</FieldGroup>
-				</div>
-
-				{renderTable()}
-			</section>
-
-			<BrandFormDialog
-				brand={formMode === "edit" ? brandDetailQuery.data : undefined}
-				isLoadingBrand={formMode === "edit" && brandDetailQuery.isFetching}
-				isSubmitting={isFormSubmitting}
-				mode={formMode}
-				onOpenChange={(open) => {
-					if (!open) setFormState(closedFormState);
-				}}
-				onSubmit={handleSubmit}
-				open={formState.open}
-			/>
-
-			<CrudDeleteDialog
-				confirmLabel="Enviar a papelera"
-				description={
-					softDeleteTarget
-						? `La marca "${softDeleteTarget.name}" quedará eliminada lógicamente e inactiva.`
-						: ""
-				}
-				isPending={softDeleteMutation.isPending}
-				onConfirm={() => {
-					if (softDeleteTarget) {
-						softDeleteMutation.mutate({ id: softDeleteTarget.id });
-					}
-				}}
-				onOpenChange={(open) => {
-					if (!open) setSoftDeleteTarget(null);
-				}}
-				open={Boolean(softDeleteTarget)}
-				title="Confirmar baja lógica"
-			/>
-
-			<CrudDeleteDialog
-				confirmationLabel={
-					hardDeleteTarget
-						? `Escribí "${hardDeleteTarget.name}" para confirmar`
-						: "Confirmación"
-				}
-				confirmationValue={hardDeleteTarget?.name}
-				confirmLabel="Eliminar definitivamente"
-				description={
-					hardDeleteTarget
-						? `Esta acción intenta borrar la marca "${hardDeleteTarget.name}" de la base de datos. Si todavía hay productos que la referencian, el servidor va a bloquear la operación.`
-						: ""
-				}
-				isPending={hardDeleteMutation.isPending}
-				onConfirm={() => {
-					if (hardDeleteTarget) {
-						hardDeleteMutation.mutate({ id: hardDeleteTarget.id });
-					}
-				}}
-				onOpenChange={(open) => {
-					if (!open) setHardDeleteTarget(null);
-				}}
-				open={Boolean(hardDeleteTarget)}
-				title="Eliminación definitiva"
-			/>
-		</CrudPageShell>
+			)}
+			softDelete={{
+				isPending: softDeleteMutation.isPending,
+				onConfirm: (brand) => softDeleteMutation.mutate({ id: brand.id }),
+			}}
+			state={state}
+			statsQuery={statsQuery}
+		/>
 	);
 }

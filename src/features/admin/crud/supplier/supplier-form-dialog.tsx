@@ -20,9 +20,9 @@ import { Input } from "~/components/ui/input";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
-import { supplierCreateInputSchema } from "~/schemas/admin/supplier.schemas";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
+import { supplierCreateInputSchema } from "~/schemas/admin/supplier.schemas";
 import type { CrudModalMode } from "~/shared/common/admin-crud/crud.types";
 import type {
 	SupplierDetail,
@@ -58,8 +58,7 @@ export function SupplierFormDialog({
 
 	const errors = form.formState.errors;
 	const active = Boolean(form.watch("active"));
-	const title =
-		mode === "create" ? "Agregar proveedor" : "Editar proveedor";
+	const title = mode === "create" ? "Agregar proveedor" : "Editar proveedor";
 
 	useEffect(() => {
 		if (!open) return;
@@ -161,7 +160,9 @@ export function SupplierFormDialog({
 							<FieldError errors={[errors.name]} />
 						</Field>
 						<Field data-invalid={Boolean(errors.description)}>
-							<FieldLabel htmlFor="supplier-description">Descripción</FieldLabel>
+							<FieldLabel htmlFor="supplier-description">
+								Descripción
+							</FieldLabel>
 							<Textarea
 								aria-invalid={Boolean(errors.description)}
 								disabled={isSubmitting}
@@ -281,7 +282,9 @@ export function SupplierFormDialog({
 								<FieldError errors={[errors.contactInfo?.email]} />
 							</Field>
 							<Field data-invalid={Boolean(errors.contactInfo?.phone)}>
-								<FieldLabel htmlFor="supplier-contact-phone">Teléfono</FieldLabel>
+								<FieldLabel htmlFor="supplier-contact-phone">
+									Teléfono
+								</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.contactInfo?.phone)}
 									disabled={isSubmitting}

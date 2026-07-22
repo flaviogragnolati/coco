@@ -1,75 +1,82 @@
 "use client";
 
-import { PlusIcon, SearchIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "~/components/ui/button";
-import {
-	Field,
-	FieldContent,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-} from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { Switch } from "~/components/ui/switch";
-import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { CrudDeleteDialog } from "~/features/admin/crud/_components/crud-delete-dialog";
-import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
-import {
-	CrudEmptyState,
-	CrudErrorState,
-	CrudLoadingState,
-} from "~/features/admin/crud/_components/crud-state";
-import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
-import { crudStatusStatAccents } from "~/features/admin/crud/_lib/crud-status-stats";
-import {
-	matchesCrudStatus,
-	matchesSearch,
-	normalizeSearch,
-} from "~/features/admin/crud/_lib/filter-helpers";
+import { CrudEntityPage } from "~/features/admin/crud/_components/crud-entity-page";
+import type { CrudEntityCopy } from "~/features/admin/crud/_lib/crud-entity-copy";
+import { useCrudEntityPage } from "~/features/admin/crud/_lib/use-crud-entity-page";
+import { useCrudPageState } from "~/features/admin/crud/_lib/use-crud-page-state";
 import { DestinationFormDialog } from "~/features/admin/crud/destination/destination-form-dialog";
 import { DestinationTable } from "~/features/admin/crud/destination/destination-table";
-import type {
-	CrudModalState,
-	CrudStatusFilter,
-} from "~/shared/common/admin-crud/crud.types";
 import type {
 	DestinationFormValues,
 	DestinationListItem,
 } from "~/shared/common/admin-crud/destination.types";
 import { api } from "~/trpc/react";
 
-const closedFormState: CrudModalState<number> = {
-	open: false,
-	mode: null,
-	entityId: null,
+const destinationSearchFields = (destination: DestinationListItem) => [
+	destination.id,
+	destination.name,
+	destination.description,
+	destination.googleMapsUrl,
+];
+
+const destinationCopy: CrudEntityCopy<DestinationListItem> = {
+	idPrefix: "destination",
+	pageShell: {
+		title: "Destinos",
+		description:
+			"Administracion de destinos internos y almacenes con URL opcional de Google Maps.",
+	},
+	createButtonLabel: "Agregar nuevo",
+	searchPlaceholder: "ID, nombre, descripcion o mapa",
+	statusLabels: { active: "Activos", inactive: "Inactivos" },
+	stats: {
+		total: { label: "Total", description: "Incluye destinos eliminados" },
+		active: { label: "Activos", description: "Disponibles para operaciones" },
+		inactive: {
+			label: "Inactivos",
+			description: "No eliminados, pero pausados",
+		},
+		deleted: { label: "Eliminados", description: "Baja logica aplicada" },
+	},
+	includeDeletedLabel: "Mostrar eliminados",
+	includeDeletedHint: "Baja logica",
+	listErrorMessage: "No se pudo obtener la lista de destinos",
+	statsErrorMessage: "No se pudieron cargar los indicadores",
+	detailErrorMessage: "No se pudo cargar el destino",
+	empty: {
+		title: "No hay destinos para mostrar",
+		description: "Ajusta los filtros o agrega un destino nuevo.",
+	},
+	softDelete: {
+		title: "Confirmar baja logica",
+		confirmLabel: "Enviar a papelera",
+		describe: (destination) =>
+			`El destino "${destination.name}" quedara eliminado logicamente e inactivo.`,
+	},
+	hardDelete: {
+		title: "Eliminacion definitiva",
+		confirmLabel: "Eliminar definitivamente",
+		describe: () =>
+			"Esta accion intenta borrar el destino de la base de datos. Si tiene lot items relacionados, el servidor la va a bloquear.",
+		confirmationValue: (destination) => destination.name,
+		confirmationLabel: (destination) =>
+			`Escribi "${destination.name}" para confirmar`,
+	},
 };
 
 export function DestinationCrudClient() {
 	const utils = api.useUtils();
-	const [includeDeleted, setIncludeDeleted] = useState(false);
-	const [statusFilter, setStatusFilter] = useState<CrudStatusFilter>("all");
-	const [searchTerm, setSearchTerm] = useState("");
-	const [formState, setFormState] =
-		useState<CrudModalState<number>>(closedFormState);
-	const [softDeleteTarget, setSoftDeleteTarget] =
-		useState<DestinationListItem | null>(null);
-	const [hardDeleteTarget, setHardDeleteTarget] =
-		useState<DestinationListItem | null>(null);
-
-	const selectedDestinationId =
-		formState.open && formState.mode === "edit" ? formState.entityId : null;
-	const formMode = formState.mode ?? "create";
+	const state = useCrudPageState<number, DestinationListItem>();
 
 	const destinationsQuery = api.admin.destination.list.useQuery({
-		includeDeleted,
+		includeDeleted: state.includeDeleted,
 	});
 	const statsQuery = api.admin.destination.getStats.useQuery();
 	const destinationDetailQuery = api.admin.destination.getById.useQuery(
-		{ id: selectedDestinationId ?? 0 },
-		{ enabled: selectedDestinationId !== null },
+		{ id: state.selectedId ?? 0 },
+		{ enabled: state.selectedId !== null },
 	);
 
 	const invalidateDestinationQueries = async () => {
@@ -83,7 +90,7 @@ export function DestinationCrudClient() {
 	const createMutation = api.admin.destination.create.useMutation({
 		onSuccess: async () => {
 			toast.success("Destino creado");
-			setFormState(closedFormState);
+			state.closeForm();
 			await invalidateDestinationQueries();
 		},
 		onError: (error) => {
@@ -94,7 +101,7 @@ export function DestinationCrudClient() {
 	const updateMutation = api.admin.destination.update.useMutation({
 		onSuccess: async () => {
 			toast.success("Destino actualizado");
-			setFormState(closedFormState);
+			state.closeForm();
 			await invalidateDestinationQueries();
 		},
 		onError: (error) => {
@@ -105,7 +112,7 @@ export function DestinationCrudClient() {
 	const softDeleteMutation = api.admin.destination.softDelete.useMutation({
 		onSuccess: async () => {
 			toast.warning("Destino enviado a papelera");
-			setSoftDeleteTarget(null);
+			state.setSoftDeleteTarget(null);
 			await invalidateDestinationQueries();
 		},
 		onError: (error) => {
@@ -116,7 +123,7 @@ export function DestinationCrudClient() {
 	const hardDeleteMutation = api.admin.destination.hardDelete.useMutation({
 		onSuccess: async () => {
 			toast.success("Destino eliminado definitivamente");
-			setHardDeleteTarget(null);
+			state.setHardDeleteTarget(null);
 			await invalidateDestinationQueries();
 		},
 		onError: (error) => {
@@ -124,259 +131,63 @@ export function DestinationCrudClient() {
 		},
 	});
 
-	useEffect(() => {
-		if (
-			formState.open &&
-			formState.mode === "edit" &&
-			destinationDetailQuery.isError
-		) {
-			toast.error(
-				destinationDetailQuery.error.message || "No se pudo cargar el destino",
-			);
-			setFormState(closedFormState);
-		}
-	}, [
-		destinationDetailQuery.error,
-		destinationDetailQuery.isError,
-		formState.mode,
-		formState.open,
-	]);
-
-	const filteredDestinations = useMemo(() => {
-		const search = normalizeSearch(searchTerm);
-
-		return (destinationsQuery.data ?? []).filter((destination) => {
-			return (
-				matchesCrudStatus(statusFilter, destination) &&
-				matchesSearch(search, [
-					destination.id,
-					destination.name,
-					destination.description,
-					destination.googleMapsUrl,
-				])
-			);
-		});
-	}, [destinationsQuery.data, searchTerm, statusFilter]);
-
-	const stats = statsQuery.data;
-	const isFormSubmitting = createMutation.isPending || updateMutation.isPending;
+	const page = useCrudEntityPage({
+		state,
+		listQuery: destinationsQuery,
+		detailQuery: destinationDetailQuery,
+		createMutation,
+		updateMutation,
+		searchFields: destinationSearchFields,
+		detailErrorMessage: destinationCopy.detailErrorMessage,
+	});
 
 	const handleSubmit = (values: DestinationFormValues) => {
-		if (formState.mode === "edit" && formState.entityId !== null) {
-			updateMutation.mutate({
-				id: formState.entityId,
-				...values,
-			});
+		if (state.formState.mode === "edit" && state.formState.entityId !== null) {
+			updateMutation.mutate({ id: state.formState.entityId, ...values });
 			return;
 		}
 
 		createMutation.mutate(values);
 	};
 
-	const renderTable = () => {
-		if (destinationsQuery.isLoading) return <CrudLoadingState />;
-
-		if (destinationsQuery.isError) {
-			return (
-				<CrudErrorState
-					message={
-						destinationsQuery.error.message ||
-						"No se pudo obtener la lista de destinos"
-					}
-				/>
-			);
-		}
-
-		if (filteredDestinations.length === 0) {
-			return (
-				<CrudEmptyState
-					description="Ajusta los filtros o agrega un destino nuevo."
-					title="No hay destinos para mostrar"
-				/>
-			);
-		}
-
-		return (
-			<DestinationTable
-				destinations={filteredDestinations}
-				onEdit={(destination) =>
-					setFormState({
-						open: true,
-						mode: "edit",
-						entityId: destination.id,
-					})
-				}
-				onHardDelete={setHardDeleteTarget}
-				onSoftDelete={setSoftDeleteTarget}
-			/>
-		);
-	};
-
 	return (
-		<CrudPageShell
-			actions={
-				<Button
-					onClick={() =>
-						setFormState({ open: true, mode: "create", entityId: null })
-					}
-				>
-					<PlusIcon data-icon="inline-start" />
-					Agregar nuevo
-				</Button>
-			}
-			description="Administracion de destinos internos y almacenes con URL opcional de Google Maps."
-			title="Destinos"
-		>
-			{statsQuery.isLoading ? (
-				<CrudLoadingState rows={2} />
-			) : statsQuery.isError ? (
-				<CrudErrorState
-					message={
-						statsQuery.error.message || "No se pudieron cargar los indicadores"
-					}
+		<CrudEntityPage
+			copy={destinationCopy}
+			filteredItems={page.filteredItems}
+			hardDelete={{
+				isPending: hardDeleteMutation.isPending,
+				onConfirm: (destination) =>
+					hardDeleteMutation.mutate({ id: destination.id }),
+			}}
+			listQuery={destinationsQuery}
+			renderFormDialog={() => (
+				<DestinationFormDialog
+					destination={page.detail}
+					isLoadingDestination={page.isLoadingDetail}
+					isSubmitting={page.isFormSubmitting}
+					mode={state.formMode}
+					onOpenChange={(open) => {
+						if (!open) state.closeForm();
+					}}
+					onSubmit={handleSubmit}
+					open={state.formState.open}
 				/>
-			) : stats ? (
-				<CrudStatsCards
-					stats={[
-						{
-							label: "Total",
-							value: stats.total,
-							...crudStatusStatAccents.total,
-							description: "Incluye destinos eliminados",
-						},
-						{
-							label: "Activos",
-							value: stats.active,
-							...crudStatusStatAccents.active,
-							description: "Disponibles para operaciones",
-						},
-						{
-							label: "Inactivos",
-							value: stats.inactive,
-							...crudStatusStatAccents.inactive,
-							description: "No eliminados, pero pausados",
-						},
-						{
-							label: "Eliminados",
-							value: stats.deleted,
-							...crudStatusStatAccents.deleted,
-							description: "Baja logica aplicada",
-						},
-					]}
+			)}
+			renderTable={() => (
+				<DestinationTable
+					destinations={page.filteredItems}
+					onEdit={(destination) => state.openEdit(destination.id)}
+					onHardDelete={state.setHardDeleteTarget}
+					onSoftDelete={state.setSoftDeleteTarget}
 				/>
-			) : null}
-
-			<section className="flex flex-col gap-3">
-				<div className="flex flex-col gap-3 rounded-none border p-3 lg:flex-row lg:items-end lg:justify-between">
-					<FieldGroup className="grid flex-1 gap-3 md:grid-cols-[minmax(14rem,1fr)_auto_auto] md:items-end">
-						<Field>
-							<FieldLabel htmlFor="destination-search">Buscar</FieldLabel>
-							<div className="relative">
-								<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									id="destination-search"
-									onChange={(event) => setSearchTerm(event.target.value)}
-									placeholder="ID, nombre, descripcion o mapa"
-									value={searchTerm}
-								/>
-							</div>
-						</Field>
-						<Field>
-							<FieldLabel>Estado</FieldLabel>
-							<ToggleGroup
-								onValueChange={(value) => {
-									if (value) setStatusFilter(value as CrudStatusFilter);
-								}}
-								type="single"
-								value={statusFilter}
-								variant="outline"
-							>
-								<ToggleGroupItem value="all">Todos</ToggleGroupItem>
-								<ToggleGroupItem value="active">Activos</ToggleGroupItem>
-								<ToggleGroupItem value="inactive">Inactivos</ToggleGroupItem>
-							</ToggleGroup>
-						</Field>
-						<Field orientation="horizontal">
-							<Switch
-								checked={includeDeleted}
-								id="destination-include-deleted"
-								onCheckedChange={setIncludeDeleted}
-							/>
-							<FieldContent>
-								<FieldLabel htmlFor="destination-include-deleted">
-									Mostrar eliminados
-								</FieldLabel>
-								<FieldDescription>Baja logica</FieldDescription>
-							</FieldContent>
-						</Field>
-					</FieldGroup>
-				</div>
-
-				{renderTable()}
-			</section>
-
-			<DestinationFormDialog
-				destination={
-					formMode === "edit" ? destinationDetailQuery.data : undefined
-				}
-				isLoadingDestination={
-					formMode === "edit" && destinationDetailQuery.isFetching
-				}
-				isSubmitting={isFormSubmitting}
-				mode={formMode}
-				onOpenChange={(open) => {
-					if (!open) setFormState(closedFormState);
-				}}
-				onSubmit={handleSubmit}
-				open={formState.open}
-			/>
-
-			<CrudDeleteDialog
-				confirmLabel="Enviar a papelera"
-				description={
-					softDeleteTarget
-						? `El destino "${softDeleteTarget.name}" quedara eliminado logicamente e inactivo.`
-						: ""
-				}
-				isPending={softDeleteMutation.isPending}
-				onConfirm={() => {
-					if (softDeleteTarget) {
-						softDeleteMutation.mutate({ id: softDeleteTarget.id });
-					}
-				}}
-				onOpenChange={(open) => {
-					if (!open) setSoftDeleteTarget(null);
-				}}
-				open={Boolean(softDeleteTarget)}
-				title="Confirmar baja logica"
-			/>
-
-			<CrudDeleteDialog
-				confirmationLabel={
-					hardDeleteTarget
-						? `Escribi "${hardDeleteTarget.name}" para confirmar`
-						: "Confirmacion"
-				}
-				confirmationValue={hardDeleteTarget?.name}
-				confirmLabel="Eliminar definitivamente"
-				description={
-					hardDeleteTarget
-						? "Esta accion intenta borrar el destino de la base de datos. Si tiene lot items relacionados, el servidor la va a bloquear."
-						: ""
-				}
-				isPending={hardDeleteMutation.isPending}
-				onConfirm={() => {
-					if (hardDeleteTarget) {
-						hardDeleteMutation.mutate({ id: hardDeleteTarget.id });
-					}
-				}}
-				onOpenChange={(open) => {
-					if (!open) setHardDeleteTarget(null);
-				}}
-				open={Boolean(hardDeleteTarget)}
-				title="Eliminacion definitiva"
-			/>
-		</CrudPageShell>
+			)}
+			softDelete={{
+				isPending: softDeleteMutation.isPending,
+				onConfirm: (destination) =>
+					softDeleteMutation.mutate({ id: destination.id }),
+			}}
+			state={state}
+			statsQuery={statsQuery}
+		/>
 	);
 }

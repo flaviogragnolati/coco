@@ -12,7 +12,12 @@ import {
 	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "~/components/ui/field";
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 
 export function CrudDeleteDialog({
@@ -40,8 +45,7 @@ export function CrudDeleteDialog({
 }) {
 	const [typedValue, setTypedValue] = useState("");
 	const requiresConfirmation = Boolean(confirmationValue);
-	const isConfirmed =
-		!requiresConfirmation || typedValue === confirmationValue;
+	const isConfirmed = !requiresConfirmation || typedValue === confirmationValue;
 
 	useEffect(() => {
 		if (!open) setTypedValue("");
