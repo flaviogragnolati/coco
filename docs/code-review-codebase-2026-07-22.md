@@ -20,7 +20,9 @@ Around it sits a cluster that compounds: a mock payment gateway reachable in pro
 
 > **Status note (2026-07-22):** the MercadoPago / money cluster is **deliberately deferred to a separate session** at the owner's direction. It is parked, not dismissed. (The numbering in the original note read "#2–#9"; per §5 those numbers are the structural findings, and the money cluster is **#10, #15, #25–#34**. Corrected here.)
 >
-> **Remediation note (2026-07-22):** findings **#2, #3, #4, #5, #6, #7, #8** are **resolved** — see the per-finding notes in §5 and the full log in §10. Finding **#9** (CRUD-client consolidation) is **resolved** in a follow-up session; see its note in §5.1, which also records a refutation of one claim in the finding. Findings **#35** and **#36** (Batch 2 — session boundary and environment) are **resolved** in a third session; see §12, which also records two corrections to #36's text and an explicit list of what was left unverified. Finding **#1** (money-path tests) remains open.
+> **Remediation note (2026-07-22):** findings **#2, #3, #4, #5, #6, #7, #8** are **resolved** — see the per-finding notes in §5 and the full log in §10. Finding **#9** (CRUD-client consolidation) is **resolved** in a follow-up session; see its note in §5.1, which also records a refutation of one claim in the finding. Findings **#35** and **#36** (Batch 2 — session boundary and environment) are **resolved** in a third session; see §12, which also records two corrections to #36's text and an explicit list of what was left unverified. Findings **#20, #21, #22, #23, #24, #39, #40** (Batch 6 — consolidation and naming) are **resolved** in a fourth session; see §13, which records nine corrections to the review's own text, five deliberate behaviour changes, and what was left unverified. Finding **#1** (money-path tests) remains open.
+>
+> **Running total: 17 of 58 findings resolved** — #2–#9, #20–#24, #35, #36, #39, #40. Open: **#1** (Critical), the parked money cluster (**#10, #15, #25–#34**), and the Medium/Low remainder. Dead code (**#55–#58**) is deferred, and **#55** is deliberately *kept* rather than pending — see §9.
 
 ## 2. Scope & Methodology
 
@@ -37,7 +39,11 @@ Around it sits a cluster that compounds: a mock payment gateway reachable in pro
 | `pnpm typecheck` (tsgo) | ✅ clean, exit 0 |
 | `pnpm test` (vitest) | ✅ 5 files, 37 tests, all pass — **in 553ms** |
 | `pnpm check` (biome) | ❌ **29 errors, 4 warnings** across 393 files |
-| `npx madge --circular src/` | ✅ no circular dependencies |
+| `npx madge --circular src/` | ✅ no circular dependencies — **but see the correction below; this signal was vacuous** |
+
+> **Baseline snapshot.** The table above records what the review measured on `main` @ `e078a8e`. It is deliberately **not** updated as findings are remediated — each session's log (§10–§13) carries its own before/after gates. Current numbers: `pnpm check` is at **19 errors / 4 warnings** (down from 29; finding #19 still open), and `pnpm test` at **15 files, 118 tests** (up from 5 / 37).
+>
+> **Correction (2026-07-22, §13).** The madge signal — repeated in §12 — proved **vacuous**. Both `pnpm madge` and a bare `npx madge ./src` process **2 files** (`env.js` and `env.helpers.js`): madge defaults to `.js` only, so it never looked at a single `.ts` or `.tsx` file. Re-run correctly as `npx madge --circular --extensions ts,tsx --ts-config tsconfig.json ./src`, it reports **39 cycles, all of them inside `generated/prisma/`** (generated code, out of scope per §2) and **zero in hand-written `src/`**. The conclusion happens to hold; the evidence for it did not exist until now. **The `madge` script in `package.json` needs the flags added, or it will keep reporting a clean bill of health for a directory it is not reading.**
 
 The test duration is itself a finding: 37 tests in 42ms of actual test time is a suite that touches almost nothing. See finding #1.
 
@@ -94,7 +100,7 @@ Sorted by computed risk descending. **✅** marks findings resolved on 2026-07-2
 | 43 | Unhandled outbox events marked `processed` (latent) | ERR-1 | `domain-event-dispatcher.ts:145` | S3 | F1 | 🟢 Low (3) | | 🟠 Strong |
 | 44 | Sequential creates inside a Serializable transaction | PERF-5 | `operation-execution.service.ts:556` | S3 | F1 | 🟢 Low (3) | | 🟠 Strong |
 | 45 | `RollOver` has no index covering `status` | PERF-1 | `prisma/schema.prisma:855` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
-| 46 | Order page masks every failure as 404 | ERR-2 | `my-operations/[orderId]/page.tsx:126` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
+| 46 | Order page masks every failure as 404 | ERR-2 | `my-orders/[orderId]/page.tsx:126` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
 | 47 | User can rewrite `type` on the managed MP payment method | DATA-5 | `checkout.data.ts:341` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
 | 48 | Second hand-rolled inbox beside the outbox | MAINT-4 | `mercadopago-reconciliation.service.ts:258` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
 | 49 | `PaymentGatewayPort` bypassed by the only real provider | MAINT-1 | `payment-gateway.ts:36` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
@@ -1061,7 +1067,7 @@ Each is real and verified; none warrants a full narrative.
 | 43 | An outbox event with zero matching listeners is marked `processed`. Eligibility is gated by a hand-maintained `supportedEventTypes` Set duplicating the mapper's 17 `case` labels. Currently latent — all lists match — and the mapper's exhaustive switch is a partial canary, but the Set is not type-enforced. | `domain-event-dispatcher.ts:145` | Add a distinct "unhandled" outcome; derive `supports()` from the mapper's coverage instead of a parallel list. |
 | 44 | `materializeAssignments`/`materializeRollOvers` create rows one at a time in sequential loops inside a **Serializable** transaction, plus a per-assignment `lotItem.update({ increment })` where the map is already accumulating. | `operation-execution.service.ts:556,603` | ~600 sequential round-trips for a 200-item operation, lengthening the Serializable window and raising retry rates. Use `createManyAndReturn`; write summed quantities once. |
 | 45 | `RollOver` is indexed on `cartItemId`/`operationId` only, none on `status`. `listOpenRollOverDemand` filters `status: "open"` with a non-sargable `operationId: { not: … }` and sorts by `createdAt, id`. | `prisma/schema.prisma:855` | Seq-scan of a table that only grows (rows are transitioned, never deleted), inside the Serializable transaction. Add `@@index([status, createdAt, id])`. |
-| 46 | Bare `catch { notFound(); }` around two API calls converts DB outages and Zod output-parse failures into 404s, unlogged (`createCaller` has no `onError`). | `my-operations/[orderId]/page.tsx:126` | Incidents are invisible; users are told their order does not exist. Catch and rethrow non-`NOT_FOUND` errors. |
+| 46 | Bare `catch { notFound(); }` around two API calls converts DB outages and Zod output-parse failures into 404s, unlogged (`createCaller` has no `onError`). | `my-orders/[orderId]/page.tsx:126` | Incidents are invisible; users are told their order does not exist. Catch and rethrow non-`NOT_FOUND` errors. |
 | 47 | `updateCheckoutPaymentMethod` lets a user rewrite `type` on the provider-managed MercadoPago method, breaking the `find` half of `findOrCreateMercadoPagoPaymentMethod` (which requires both `type` and `provider` to equal `"mercadopago"`). | `checkout.data.ts:341` | A new `PaymentMethod` row is created on every `checkout.start()` thereafter — unbounded growth. Exclude provider-managed rows from user updates. |
 | 48 | `PaymentProviderEvent` is a second hand-rolled inbox (`status`/`retryCount`/`lastError`) beside the outbox, with the failure-bookkeeping bug of #10. | `mercadopago-reconciliation.service.ts:258` | Record receipt, publish a domain event, and let the dispatcher's claim/retry/audit machinery drive reconciliation. |
 | 49 | `PaymentGatewayPort` has one implementation (the mock) and one caller, and the only production provider routes around it — provider identity then leaks back into the generic result builder as a `provider === "mercadopago"` ternary. | `payment-gateway.ts:36` | The typed interface constrains nothing about the code that takes money. Model both outcomes (`captured` \| `redirectRequired`) so MP is an adapter behind the port. |
@@ -1086,6 +1092,11 @@ Each is real and verified; none warrants a full narrative.
 **4. Read-time diagnostics stand in for write-time invariants.** The `*-diagnostics.ts` modules detect states that transactions and DB constraints should have made impossible (#16) — and the two most damaging quantity bugs (#32, #33) fall in the *gap* the diagnostics don't cover. Diagnostics are the right safety net for historical data and the wrong primary control.
 
 **5. Shared helpers exist and are bypassed.** `decimalOutputSchema` (#21), `requiredText`/`optionalUrl` (#22), `commerce.helpers` (#5, #39), `crud-cell-tooltips` (#40), `currentCatalogTermsWhere` (#6), `writeAdminAuditLog` (#54), `admin-crud.errors` (#8) — in each case the abstraction was built and then not adopted at some call sites. Two have already drifted in user-visible ways (accented vs unaccented error copy; opposite image precedence). The failure mode isn't missing abstraction, it's incomplete migration — worth a lint rule or a codemod pass rather than case-by-case cleanup.
+
+> **Largely closed (§13).** #21, #22, #39 and #40 are done, alongside #5, #6 and #8 earlier; #54 is the remainder. Two observations from doing it are worth keeping:
+>
+> - **Drift does not reliably run copy → shared.** #22's drift ran the *other* way: the shared helper carried the unaccented copy and the local copies were correct, so importing the shared version naively would have regressed three live admin forms. A codemod that assumes the shared symbol is canonical would have shipped that regression silently. The shared symbol has to be *checked*, not trusted, before the copies are deleted.
+> - **The compiler enumerates the call sites for free, but only per-symbol.** Every consolidation here deleted a local symbol, so `tsgo` listed every miss — provided the deletion happened while the blast radius was still one symbol wide. That, rather than a lint rule, is what made a 77-file change mechanical. A lint rule would still be the right way to stop the *next* copy from being written.
 
 **6. Concurrency is defended in one place and nowhere else.** `executeOperation` correctly uses `Serializable` and `tx` throughout; cart and checkout run at default Read Committed with read-then-write patterns and no unique constraints (#13, #28). The team clearly knows the technique — it just wasn't applied to the paths users hit concurrently.
 
@@ -1390,6 +1401,7 @@ The review is substantially right but wrong in specifics. Recorded so none is re
 | `pnpm check` (biome) | ❌ 19 errors, 4 warnings | ❌ **19 errors, 4 warnings** — unchanged; finding #19 still open |
 | `pnpm build` | ✅ | ✅ — route tree shows `/my-orders` and `/my-orders/[orderId]` |
 | `TZ=UTC` / `TZ=America/Los_Angeles vitest date.helpers` | — | ✅ **identical output under both** |
+| `npx madge --circular --extensions ts,tsx --ts-config tsconfig.json ./src` | — | ✅ **0 cycles in `src/`** (39 in `generated/prisma/`, out of scope) |
 
 **Completeness greps, all returning their expected output:**
 
@@ -1426,9 +1438,11 @@ Specifically not executed, most consequential first:
 - **`checkout.schemas.ts:5` and `profile.schemas.ts:5` hold two further `requiredText` copies**, and they plus `admin/payment.schemas.ts:11-13` hold `emptyStringToNull` helpers the shared module does not cover. A natural follow-up to #22, outside its stated five files.
 - **The Prisma model rename** behind #23's deeper half.
 - **`bluebird`** — an unused dependency found during this session, folded into #58.
+- **The `madge` script in `package.json` reads no TypeScript.** `madge ./src` defaults to `.js`, so it processes exactly two files and has been reporting a clean result for a directory it never opened — a vacuous green in §2 and §12. Correct invocation and current result are recorded in the §2 correction. One-line fix: add `--extensions ts,tsx --ts-config tsconfig.json` to both `madge` scripts.
 
 ### Documentation touched
 
 - **This document** — §3 and §4 marks, §9 Batch 6, and in-place corrections to §5.3 rows #39, #40, #55 and #58.
 - `docs/plans/checkout-redesign.md` — the two `/my-operations` references updated.
+- **Open finding #46's location repointed** to `my-orders/[orderId]/page.tsx:126` in §3 and §5.3. The route rename moved the file out from under a finding that is still open; the `catch { notFound(); }` block itself is unchanged. Finding #24's own text still says `/my-operations` throughout — that is the state it describes, and rewriting it would erase what was found.
 - `CONTEXT.md` — untouched. This session brings the code *to* CONTEXT.md, not the reverse.
