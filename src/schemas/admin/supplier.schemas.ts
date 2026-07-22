@@ -1,12 +1,6 @@
 import { z } from "zod";
 
-const requiredText = (message: string) => z.string().trim().min(1, message);
-
-const nullishText = z
-	.string()
-	.trim()
-	.nullish()
-	.transform((value) => (value && value.length > 0 ? value : undefined));
+import { nullishText, requiredText } from "./_crud-schema-helpers";
 
 const optionalEmail = z
 	.string()

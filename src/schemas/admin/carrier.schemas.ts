@@ -7,11 +7,11 @@ const optionalEmail = z
 	.trim()
 	.optional()
 	.transform((value) => (value && value.length > 0 ? value : undefined))
-	.pipe(z.string().email("Ingresa un email valido").optional());
+	.pipe(z.string().email("Ingresá un email válido").optional());
 
 export const carrierIdSchema = z
 	.number()
-	.int("El id debe ser un numero entero")
+	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
 export const carrierAddressSchema = z.object({

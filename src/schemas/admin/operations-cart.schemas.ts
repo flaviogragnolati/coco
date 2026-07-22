@@ -1,8 +1,6 @@
 import { z } from "zod";
-import {
-	decimalOutputSchema,
-	requiredDecimalString,
-} from "~/schemas/admin/_crud-schema-helpers";
+import { decimalOutputSchema } from "~/schemas/_schema-helpers";
+import { requiredDecimalString } from "~/schemas/admin/_crud-schema-helpers";
 import { userIdSchema } from "~/schemas/admin/address.schemas";
 import {
 	productIdSchema,
@@ -16,12 +14,12 @@ import { userRoleSchema } from "~/schemas/admin/user.schemas";
 
 export const operationsCartIdSchema = z
 	.number()
-	.int("El id debe ser un numero entero")
+	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
 export const operationsCartItemIdSchema = z
 	.number()
-	.int("El id debe ser un numero entero")
+	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
 export const operationsCartStatusSchema = z.enum([

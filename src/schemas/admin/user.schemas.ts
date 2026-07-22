@@ -5,21 +5,13 @@ import {
 	addressEmbeddedInputSchema,
 	userIdSchema,
 } from "~/schemas/admin/address.schemas";
-
-const requiredText = (message: string) => z.string().trim().min(1, message);
+import { optionalUrl, requiredText } from "./_crud-schema-helpers";
 
 const requiredEmail = z
 	.string()
 	.trim()
 	.min(1, "El email es obligatorio")
 	.pipe(z.string().email("Ingresá un email válido"));
-
-const optionalUrl = z
-	.string()
-	.trim()
-	.optional()
-	.transform((value) => (value && value.length > 0 ? value : undefined))
-	.pipe(z.string().url("Ingresá una URL válida").optional());
 
 export const userRoleSchema = z.enum(["user", "admin", "superadmin"]);
 

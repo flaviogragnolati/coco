@@ -22,7 +22,7 @@ const productReferenceSchema = z.object({
 
 export const productLocalConstraintsIdSchema = z
 	.number()
-	.int("El id debe ser un numero entero")
+	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
 export const productLocalConstraintTypeSchema = z.enum([

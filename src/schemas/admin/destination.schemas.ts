@@ -4,7 +4,7 @@ import { nullishText, optionalUrl, requiredText } from "./_crud-schema-helpers";
 
 export const destinationIdSchema = z
 	.number()
-	.int("El id debe ser un numero entero")
+	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
 export const destinationCreateInputSchema = z.object({

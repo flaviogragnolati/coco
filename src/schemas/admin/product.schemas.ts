@@ -8,21 +8,7 @@ import { supplierIdSchema } from "~/schemas/admin/supplier.schemas";
 import { cartItemSchema } from "~/schemas/cart.schemas";
 import { catalogProductDetailSchema } from "~/schemas/catalog.schemas";
 import { homeFeaturedProductSchema } from "~/schemas/home.schemas";
-
-const requiredText = (message: string) => z.string().trim().min(1, message);
-
-const optionalText = z
-	.string()
-	.trim()
-	.optional()
-	.transform((value) => (value && value.length > 0 ? value : undefined));
-
-const optionalUrl = z
-	.string()
-	.trim()
-	.optional()
-	.transform((value) => (value && value.length > 0 ? value : undefined))
-	.pipe(z.string().url("Ingresá una URL válida").optional());
+import { nullishText, optionalUrl, requiredText } from "./_crud-schema-helpers";
 
 const imageUrlSchema = z.string().trim().url("Ingresá una URL válida");
 
@@ -68,7 +54,7 @@ export const productBrandAssignmentSchema = z.discriminatedUnion("mode", [
 
 export const productCreateInputSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
-	description: optionalText,
+	description: nullishText,
 	cartImageUrl: optionalUrl,
 	cardImageUrl: optionalUrl,
 	images: z.array(imageUrlSchema).default([]),

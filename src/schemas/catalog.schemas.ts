@@ -1,18 +1,5 @@
 import { z } from "zod";
-
-const decimalStringSchema = z.preprocess((value) => {
-	if (value === null || value === undefined) return value;
-	if (typeof value === "string") return value;
-	if (typeof value === "number") return String(value);
-	if (
-		typeof value === "object" &&
-		"toString" in value &&
-		typeof value.toString === "function"
-	) {
-		return value.toString();
-	}
-	return value;
-}, z.string());
+import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 
 export const catalogCurrencySchema = z.enum(["ARS", "USD", "EUR", "BRL"]);
 
@@ -32,12 +19,12 @@ export const catalogBrandSummarySchema = z.object({
 
 export const catalogClientTermsSchema = z.object({
 	id: z.number().int().positive(),
-	moq: decimalStringSchema,
-	moqPrice: decimalStringSchema,
-	step: decimalStringSchema.nullable(),
-	stepPrice: decimalStringSchema.nullable(),
-	max: decimalStringSchema.nullable(),
-	refPrice: decimalStringSchema.nullable(),
+	moq: decimalOutputSchema,
+	moqPrice: decimalOutputSchema,
+	step: decimalOutputSchema.nullable(),
+	stepPrice: decimalOutputSchema.nullable(),
+	max: decimalOutputSchema.nullable(),
+	refPrice: decimalOutputSchema.nullable(),
 	currency: catalogCurrencySchema,
 	fromDate: z.date(),
 	toDate: z.date().nullable(),

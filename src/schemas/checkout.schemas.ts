@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 import { cartSnapshotSchema } from "~/schemas/cart.schemas";
 import { catalogCurrencySchema } from "~/schemas/catalog.schemas";
 
@@ -13,20 +14,6 @@ const emptyStringToNull = (value: unknown) => {
 const optionalTextInputSchema = z
 	.preprocess(emptyStringToNull, z.string().nullable().optional())
 	.transform((value) => value ?? null);
-
-const decimalStringSchema = z.preprocess((value) => {
-	if (value === null || value === undefined) return value;
-	if (typeof value === "string") return value;
-	if (typeof value === "number") return String(value);
-	if (
-		typeof value === "object" &&
-		"toString" in value &&
-		typeof value.toString === "function"
-	) {
-		return value.toString();
-	}
-	return value;
-}, z.string());
 
 const safePaymentTextSchema = (message: string) =>
 	requiredText(message)
@@ -158,7 +145,7 @@ export const checkoutPaymentResultSchema = z.object({
 			"refunded",
 			"chargedBack",
 		]),
-		amount: decimalStringSchema,
+		amount: decimalOutputSchema,
 		currency: catalogCurrencySchema,
 		provider: z.string(),
 		externalTransactionId: z.string().nullable(),
@@ -187,7 +174,7 @@ export const orderListItemSchema = z.object({
 	createdAt: z.date(),
 	updatedAt: z.date(),
 	itemCount: z.number().int().nonnegative(),
-	totalAmount: decimalStringSchema,
+	totalAmount: decimalOutputSchema,
 	currency: catalogCurrencySchema.nullable(),
 	latestTransactionStatus: z
 		.enum([
@@ -218,7 +205,7 @@ export const orderDetailSchema = orderListItemSchema.extend({
 		z.object({
 			id: z.number().int().positive(),
 			sourceCartItemId: z.number().int().positive(),
-			quantity: decimalStringSchema,
+			quantity: decimalOutputSchema,
 			productSnapshot: z.unknown(),
 			priceSnapshot: z.unknown(),
 			createdAt: z.date(),
@@ -227,7 +214,7 @@ export const orderDetailSchema = orderListItemSchema.extend({
 	transactions: z.array(
 		z.object({
 			id: z.number().int().positive(),
-			amount: decimalStringSchema,
+			amount: decimalOutputSchema,
 			currency: catalogCurrencySchema,
 			status: z.enum([
 				"pending",

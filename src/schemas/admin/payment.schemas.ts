@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 import { catalogCurrencySchema } from "~/schemas/catalog.schemas";
 
 const emptyStringToNull = (value: unknown) => {
@@ -11,20 +12,6 @@ const emptyStringToNull = (value: unknown) => {
 const nullableTextSchema = z
 	.preprocess(emptyStringToNull, z.string().nullable().optional())
 	.transform((value) => value ?? null);
-
-const decimalStringSchema = z.preprocess((value) => {
-	if (value === null || value === undefined) return value;
-	if (typeof value === "string") return value;
-	if (typeof value === "number") return String(value);
-	if (
-		typeof value === "object" &&
-		"toString" in value &&
-		typeof value.toString === "function"
-	) {
-		return value.toString();
-	}
-	return value;
-}, z.string());
 
 const jsonLikeSchema = z.unknown().nullable();
 
@@ -64,7 +51,7 @@ export const paymentListInputSchema = z.object({
 
 export const paymentAttemptListItemSchema = z.object({
 	id: paymentAttemptIdSchema,
-	amount: decimalStringSchema,
+	amount: decimalOutputSchema,
 	currency: catalogCurrencySchema,
 	status: paymentAttemptStatusSchema,
 	provider: z.string(),

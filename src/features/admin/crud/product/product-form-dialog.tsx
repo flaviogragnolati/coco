@@ -61,9 +61,12 @@ const defaultInlineBrand: InlineBrandValues = {
 	active: true,
 };
 
-function toInlineBrandValues(
-	value: Partial<InlineBrandValues> | InlineBrandValues,
-): InlineBrandValues {
+function toInlineBrandValues(value: {
+	name?: string | null;
+	description?: string | null;
+	logoUrl?: string | null;
+	active?: boolean | null;
+}): InlineBrandValues {
 	return {
 		name: value.name ?? "",
 		description: value.description ?? "",
@@ -117,8 +120,12 @@ export function ProductFormDialog({
 	const brandAssignmentErrors = errors.brandAssignment as
 		| BrandAssignmentErrors
 		| undefined;
+	// `watch` yields the form's *input* type, whose optional text fields accept
+	// null; the controlled inputs below need a plain string.
 	const inlineBrand =
-		brandAssignment.mode === "new" ? brandAssignment.brand : defaultInlineBrand;
+		brandAssignment.mode === "new"
+			? toInlineBrandValues(brandAssignment.brand)
+			: defaultInlineBrand;
 	const title = mode === "create" ? "Agregar producto" : "Editar producto";
 
 	useEffect(() => {

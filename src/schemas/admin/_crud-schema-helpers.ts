@@ -14,7 +14,7 @@ export const optionalUrl = z
 	.trim()
 	.optional()
 	.transform((value) => (value && value.length > 0 ? value : undefined))
-	.pipe(z.string().url("Ingresa una URL valida").optional());
+	.pipe(z.string().url("Ingresá una URL válida").optional());
 
 // The two shapes fromDateTimeLocalValue accepts: a naive `datetime-local` value
 // (interpreted in BUSINESS_TZ) or an already-unambiguous absolute instant.
@@ -32,7 +32,7 @@ export const dateInputSchema = z
 	.trim()
 	.min(1, "La fecha es obligatoria")
 	.refine(isValidDateInput, {
-		message: "Ingresa una fecha valida",
+		message: "Ingresá una fecha válida",
 	});
 
 export const optionalDateInputSchema = z
@@ -44,7 +44,7 @@ export const optionalDateInputSchema = z
 		z
 			.string()
 			.refine(isValidDateInput, {
-				message: "Ingresa una fecha valida",
+				message: "Ingresá una fecha válida",
 			})
 			.optional(),
 	);
@@ -63,20 +63,6 @@ export function validateDateRange(
 		});
 	}
 }
-
-export const decimalOutputSchema = z.preprocess((value) => {
-	if (value === null || value === undefined) return value;
-	if (typeof value === "string") return value;
-	if (typeof value === "number") return String(value);
-	if (
-		typeof value === "object" &&
-		"toString" in value &&
-		typeof value.toString === "function"
-	) {
-		return value.toString();
-	}
-	return value;
-}, z.string());
 
 export function requiredDecimalString(label: string, scale: number) {
 	const pattern = new RegExp(`^\\d+(?:\\.\\d{1,${scale}})?$`);
@@ -123,7 +109,7 @@ export const jsonTextareaSchema = z
 		} catch {
 			ctx.addIssue({
 				code: "custom",
-				message: "Ingresa JSON valido",
+				message: "Ingresá JSON válido",
 			});
 			return z.NEVER;
 		}

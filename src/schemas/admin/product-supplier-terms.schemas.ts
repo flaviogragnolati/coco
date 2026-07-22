@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 import {
 	productIdSchema,
 	productUnitSchema,
@@ -8,7 +9,6 @@ import { supplierIdSchema } from "~/schemas/admin/supplier.schemas";
 import { toDateTimeLocalValue } from "~/shared/common/date.helpers";
 import {
 	dateInputSchema,
-	decimalOutputSchema,
 	optionalDateInputSchema,
 	optionalDecimalString,
 	requiredDecimalString,
@@ -31,7 +31,7 @@ const supplierReferenceSchema = z.object({
 
 export const productSupplierTermsIdSchema = z
 	.number()
-	.int("El id debe ser un numero entero")
+	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
 const productSupplierTermsInputFieldsSchema = z.object({

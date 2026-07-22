@@ -1,25 +1,12 @@
 import { z } from "zod";
+import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 import {
 	catalogClientTermsSchema,
 	catalogCurrencySchema,
 	catalogProductUnitSchema,
 } from "~/schemas/catalog.schemas";
 
-const decimalStringSchema = z.preprocess((value) => {
-	if (value === null || value === undefined) return value;
-	if (typeof value === "string") return value;
-	if (typeof value === "number") return String(value);
-	if (
-		typeof value === "object" &&
-		"toString" in value &&
-		typeof value.toString === "function"
-	) {
-		return value.toString();
-	}
-	return value;
-}, z.string());
-
-const positiveDecimalStringSchema = decimalStringSchema.refine((value) => {
+const positiveDecimalStringSchema = decimalOutputSchema.refine((value) => {
 	const parsed = Number(value);
 	return Number.isFinite(parsed) && parsed > 0;
 }, "La cantidad debe ser mayor a cero");
@@ -45,15 +32,15 @@ export const cartProductSummarySchema = z.object({
 
 export const cartItemSchema = z.object({
 	productClientTermsId: z.number().int().positive(),
-	quantity: decimalStringSchema,
-	lineTotal: decimalStringSchema,
+	quantity: decimalOutputSchema,
+	lineTotal: decimalOutputSchema,
 	product: cartProductSummarySchema,
 	terms: catalogClientTermsSchema,
 });
 
 export const cartTotalSchema = z.object({
 	currency: catalogCurrencySchema,
-	amount: decimalStringSchema,
+	amount: decimalOutputSchema,
 });
 
 export const cartSnapshotSchema = z.object({
@@ -62,7 +49,7 @@ export const cartSnapshotSchema = z.object({
 	status: cartStatusSchema.nullable(),
 	items: z.array(cartItemSchema),
 	itemCount: z.number().int().nonnegative(),
-	totalQuantity: decimalStringSchema,
+	totalQuantity: decimalOutputSchema,
 	totals: z.array(cartTotalSchema),
 });
 

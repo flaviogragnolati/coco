@@ -1,19 +1,6 @@
 import { z } from "zod";
 
-const requiredText = (message: string) => z.string().trim().min(1, message);
-
-const optionalText = z
-	.string()
-	.trim()
-	.optional()
-	.transform((value) => (value && value.length > 0 ? value : undefined));
-
-const optionalUrl = z
-	.string()
-	.trim()
-	.optional()
-	.transform((value) => (value && value.length > 0 ? value : undefined))
-	.pipe(z.string().url("Ingresá una URL válida").optional());
+import { nullishText, optionalUrl, requiredText } from "./_crud-schema-helpers";
 
 export const brandIdSchema = z
 	.number()
@@ -22,7 +9,7 @@ export const brandIdSchema = z
 
 export const brandCreateInputSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
-	description: optionalText,
+	description: nullishText,
 	logoUrl: optionalUrl,
 	active: z.boolean().default(true),
 });
