@@ -59,7 +59,7 @@ const userCopy: CrudEntityCopy<UserListItem> = {
 		title: "Eliminación definitiva",
 		confirmLabel: "Eliminar definitivamente",
 		describe: (user) =>
-			`Esta acción intenta borrar al usuario "${user.name}" de la base de datos. Si tiene direcciones, medios de pago, carritos u órdenes, el servidor la va a bloquear.`,
+			`Esta acción intenta borrar al usuario "${user.name}" (${user.email}) de la base de datos. Si tiene direcciones, medios de pago, carritos u órdenes, el servidor la va a bloquear.`,
 		confirmationValue: (user) => user.email,
 		confirmationLabel: (user) => `Escribí "${user.email}" para confirmar`,
 	},

@@ -25,10 +25,10 @@ const carrierCopy: CrudEntityCopy<CarrierListItem> = {
 	pageShell: {
 		title: "Carriers",
 		description:
-			"Administracion de carriers con datos de direccion, contacto y eliminacion definitiva bloqueada por ordenes relacionadas.",
+			"Administración de carriers con datos de dirección, contacto y eliminación definitiva bloqueada por órdenes relacionadas.",
 	},
 	createButtonLabel: "Agregar nuevo",
-	searchPlaceholder: "ID, nombre o descripcion",
+	searchPlaceholder: "ID, nombre o descripción",
 	statusLabels: { active: "Activos", inactive: "Inactivos" },
 	stats: {
 		total: { label: "Total", description: "Incluye carriers eliminados" },
@@ -37,30 +37,30 @@ const carrierCopy: CrudEntityCopy<CarrierListItem> = {
 			label: "Inactivos",
 			description: "No eliminados, pero pausados",
 		},
-		deleted: { label: "Eliminados", description: "Baja logica aplicada" },
+		deleted: { label: "Eliminados", description: "Baja lógica aplicada" },
 	},
 	includeDeletedLabel: "Mostrar eliminados",
-	includeDeletedHint: "Baja logica",
+	includeDeletedHint: "Baja lógica",
 	listErrorMessage: "No se pudo obtener la lista de carriers",
 	statsErrorMessage: "No se pudieron cargar los indicadores",
 	detailErrorMessage: "No se pudo cargar el carrier",
 	empty: {
 		title: "No hay carriers para mostrar",
-		description: "Ajusta los filtros o agrega un carrier nuevo.",
+		description: "Ajustá los filtros o agregá un carrier nuevo.",
 	},
 	softDelete: {
-		title: "Confirmar baja logica",
+		title: "Confirmar baja lógica",
 		confirmLabel: "Enviar a papelera",
 		describe: (carrier) =>
-			`El carrier "${carrier.name}" quedara eliminado logicamente e inactivo.`,
+			`El carrier "${carrier.name}" quedará eliminado lógicamente e inactivo.`,
 	},
 	hardDelete: {
-		title: "Eliminacion definitiva",
+		title: "Eliminación definitiva",
 		confirmLabel: "Eliminar definitivamente",
-		describe: () =>
-			"Esta accion intenta borrar el carrier de la base de datos. Si tiene ordenes relacionadas, el servidor la va a bloquear.",
+		describe: (carrier) =>
+			`Esta acción intenta borrar el carrier "${carrier.name}" de la base de datos. Si tiene órdenes relacionadas, el servidor la va a bloquear.`,
 		confirmationValue: (carrier) => carrier.name,
-		confirmationLabel: (carrier) => `Escribi "${carrier.name}" para confirmar`,
+		confirmationLabel: (carrier) => `Escribí "${carrier.name}" para confirmar`,
 	},
 };
 

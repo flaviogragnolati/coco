@@ -22,8 +22,9 @@ type CrudStatCopy = { label: string; description: string };
 export type CrudEntityCopy<TListItem> = {
 	idPrefix: string;
 	/**
-	 * Overrides the generated `${idPrefix}-include-deleted` DOM id. Exists only
-	 * to preserve `supplier`'s historical unprefixed id during the migration.
+	 * Overrides the generated `${idPrefix}-include-deleted` DOM id, which the
+	 * product-terms panels need because theirs are suffixed onto the search id
+	 * rather than the prefix.
 	 */
 	includeDeletedId?: string;
 	/**

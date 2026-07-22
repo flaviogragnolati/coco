@@ -26,10 +26,10 @@ const destinationCopy: CrudEntityCopy<DestinationListItem> = {
 	pageShell: {
 		title: "Destinos",
 		description:
-			"Administracion de destinos internos y almacenes con URL opcional de Google Maps.",
+			"Administración de destinos internos y almacenes con URL opcional de Google Maps.",
 	},
 	createButtonLabel: "Agregar nuevo",
-	searchPlaceholder: "ID, nombre, descripcion o mapa",
+	searchPlaceholder: "ID, nombre, descripción o mapa",
 	statusLabels: { active: "Activos", inactive: "Inactivos" },
 	stats: {
 		total: { label: "Total", description: "Incluye destinos eliminados" },
@@ -38,31 +38,31 @@ const destinationCopy: CrudEntityCopy<DestinationListItem> = {
 			label: "Inactivos",
 			description: "No eliminados, pero pausados",
 		},
-		deleted: { label: "Eliminados", description: "Baja logica aplicada" },
+		deleted: { label: "Eliminados", description: "Baja lógica aplicada" },
 	},
 	includeDeletedLabel: "Mostrar eliminados",
-	includeDeletedHint: "Baja logica",
+	includeDeletedHint: "Baja lógica",
 	listErrorMessage: "No se pudo obtener la lista de destinos",
 	statsErrorMessage: "No se pudieron cargar los indicadores",
 	detailErrorMessage: "No se pudo cargar el destino",
 	empty: {
 		title: "No hay destinos para mostrar",
-		description: "Ajusta los filtros o agrega un destino nuevo.",
+		description: "Ajustá los filtros o agregá un destino nuevo.",
 	},
 	softDelete: {
-		title: "Confirmar baja logica",
+		title: "Confirmar baja lógica",
 		confirmLabel: "Enviar a papelera",
 		describe: (destination) =>
-			`El destino "${destination.name}" quedara eliminado logicamente e inactivo.`,
+			`El destino "${destination.name}" quedará eliminado lógicamente e inactivo.`,
 	},
 	hardDelete: {
-		title: "Eliminacion definitiva",
+		title: "Eliminación definitiva",
 		confirmLabel: "Eliminar definitivamente",
-		describe: () =>
-			"Esta accion intenta borrar el destino de la base de datos. Si tiene lot items relacionados, el servidor la va a bloquear.",
+		describe: (destination) =>
+			`Esta acción intenta borrar el destino "${destination.name}" de la base de datos. Si tiene ítems de lote relacionados, el servidor la va a bloquear.`,
 		confirmationValue: (destination) => destination.name,
 		confirmationLabel: (destination) =>
-			`Escribi "${destination.name}" para confirmar`,
+			`Escribí "${destination.name}" para confirmar`,
 	},
 };
 

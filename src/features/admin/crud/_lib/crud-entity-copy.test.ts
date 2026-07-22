@@ -51,10 +51,11 @@ test("an explicit includeDeletedId overrides only that id", () => {
 test("an omitted confirmationValue is distinguishable from an empty one", () => {
 	const item: Item = { active: true, name: "Acme" };
 
+	const emptyBuilder: CrudEntityCopy<Item>["hardDelete"]["confirmationValue"] =
+		() => "";
+
 	expect(copy.hardDelete.confirmationValue?.(item)).toBeUndefined();
-	expect(
-		{ ...copy.hardDelete, confirmationValue: () => "" }.confirmationValue(item),
-	).toBe("");
+	expect(emptyBuilder?.(item)).toBe("");
 });
 
 test("emits the stat quartet in order with its accents attached", () => {

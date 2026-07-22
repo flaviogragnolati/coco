@@ -63,6 +63,8 @@ const addressCopy: CrudEntityCopy<AddressListItem> = {
 		confirmLabel: "Eliminar definitivamente",
 		describe: (address) =>
 			`Esta acción borra la dirección #${address.id} de la base de datos. No hay bloqueos por relaciones hijas definidos actualmente.`,
+		confirmationValue: (address) => String(address.id),
+		confirmationLabel: (address) => `Escribí "${address.id}" para confirmar`,
 	},
 };
 

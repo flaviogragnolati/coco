@@ -22,7 +22,6 @@ const supplierSearchFields = (supplier: SupplierListItem) => [
 
 const supplierCopy: CrudEntityCopy<SupplierListItem> = {
 	idPrefix: "supplier",
-	includeDeletedId: "include-deleted",
 	pageShell: {
 		title: "Proveedores",
 		description:
@@ -58,8 +57,8 @@ const supplierCopy: CrudEntityCopy<SupplierListItem> = {
 	hardDelete: {
 		title: "Eliminación definitiva",
 		confirmLabel: "Eliminar definitivamente",
-		describe: () =>
-			"Esta acción intenta borrar el proveedor de la base de datos. Si tiene lotes, términos u órdenes de proveedor relacionadas, el servidor la va a bloquear.",
+		describe: (supplier) =>
+			`Esta acción intenta borrar el proveedor "${supplier.name}" de la base de datos. Si tiene lotes, términos u órdenes de proveedor relacionadas, el servidor la va a bloquear.`,
 		confirmationValue: (supplier) => supplier.name,
 		confirmationLabel: (supplier) =>
 			`Escribí "${supplier.name}" para confirmar`,
