@@ -35,8 +35,8 @@ export function HomeFooter() {
 						<Link className="hover:text-foreground" href="/login">
 							Ingresar
 						</Link>
-						<Link className="hover:text-foreground" href="/my-operations">
-							Mis operaciones
+						<Link className="hover:text-foreground" href="/my-orders">
+							Mis pedidos
 						</Link>
 						<Link className="hover:text-foreground" href="/profile">
 							Perfil

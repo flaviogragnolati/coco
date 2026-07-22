@@ -109,10 +109,10 @@ function RelatedSummary({ event }: { event: AdminTrackingTimelineDetailItem }) {
 			? `Rollover ${related.rollOver.stage} - ${related.rollOver.status} - ${related.rollOver.quantity}`
 			: null,
 		related.cartItemLotItem
-			? `CartItemLotItem #${related.cartItemLotItem.id} - ${related.cartItemLotItem.quantity}`
+			? `Asignacion de demanda #${related.cartItemLotItem.id} - ${related.cartItemLotItem.quantity}`
 			: null,
 		related.packageAllocation
-			? `PackageAllocation #${related.packageAllocation.id} - ${related.packageAllocation.quantity}`
+			? `Asignacion empaquetada #${related.packageAllocation.id} - ${related.packageAllocation.quantity}`
 			: null,
 	].filter((entry): entry is string => Boolean(entry));
 

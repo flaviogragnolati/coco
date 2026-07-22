@@ -122,9 +122,9 @@ export function AppNavbar({ session }: AppNavbarProps) {
 					</Button>
 					{isActiveUser ? (
 						<Button asChild size="sm" variant="ghost">
-							<Link href="/my-operations">
+							<Link href="/my-orders">
 								<ShoppingBagIcon data-icon="inline-start" />
-								Mis operaciones
+								Mis pedidos
 							</Link>
 						</Button>
 					) : null}

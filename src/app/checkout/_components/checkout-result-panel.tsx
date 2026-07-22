@@ -140,7 +140,7 @@ export function CheckoutResultPanel({
 						</Link>
 					</Button>
 					<Button asChild>
-						<Link href={`/my-operations/${result.order.id}`}>
+						<Link href={`/my-orders/${result.order.id}`}>
 							<ShoppingBagIcon data-icon="inline-start" />
 							Ver mi pedido
 						</Link>

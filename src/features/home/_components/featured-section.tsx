@@ -20,7 +20,7 @@ export function FeaturedSection({
 	featuredProducts: HomeFeaturedProduct[];
 	isActiveUser: boolean;
 }) {
-	const ctaHref = isActiveUser ? "/my-operations" : "/login";
+	const ctaHref = isActiveUser ? "/my-orders" : "/login";
 
 	return (
 		<section className="border-y bg-muted/30" id="destacados">

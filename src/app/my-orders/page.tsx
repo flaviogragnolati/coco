@@ -57,7 +57,7 @@ function paymentStatusLabel(status: OrderListItem["latestTransactionStatus"]) {
 	}
 }
 
-export default async function MyOperationsPage() {
+export default async function MyOrdersPage() {
 	await requireUser();
 	const orders = await api.orders.listMine();
 
@@ -65,7 +65,7 @@ export default async function MyOperationsPage() {
 		<main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8">
 			<section className="flex flex-col gap-2">
 				<h1 className="font-heading font-semibold text-2xl tracking-normal">
-					Mis operaciones
+					Mis pedidos
 				</h1>
 				<p className="text-muted-foreground text-sm/relaxed">
 					Pedidos realizados y su estado comercial dentro de Coco.
@@ -135,7 +135,7 @@ export default async function MyOperationsPage() {
 							</CardContent>
 							<CardFooter>
 								<Button asChild className="w-full" variant="outline">
-									<Link href={`/my-operations/${order.id}`}>Ver pedido</Link>
+									<Link href={`/my-orders/${order.id}`}>Ver pedido</Link>
 								</Button>
 							</CardFooter>
 						</Card>

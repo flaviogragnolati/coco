@@ -87,9 +87,9 @@ export function UserMenu({ user }: UserMenuProps) {
 						</Link>
 					</DropdownMenuItem>
 					<DropdownMenuItem asChild>
-						<Link href="/my-operations">
+						<Link href="/my-orders">
 							<ShoppingBagIcon />
-							Ver mis operaciones
+							Ver mis pedidos
 						</Link>
 					</DropdownMenuItem>
 				</DropdownMenuGroup>

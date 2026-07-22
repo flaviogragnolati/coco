@@ -104,7 +104,7 @@ export function MercadoPagoReturnPage({
 						</Link>
 					</Button>
 					<Button asChild>
-						<Link href="/my-operations">
+						<Link href="/my-orders">
 							<ReceiptTextIcon data-icon="inline-start" />
 							Ver mis pedidos
 						</Link>

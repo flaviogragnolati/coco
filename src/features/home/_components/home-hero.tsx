@@ -22,8 +22,8 @@ export function HomeHero({
 	canAccessAdmin: boolean;
 	spotlightOffer?: HomeOffer;
 }) {
-	const primaryHref = isActiveUser ? "/my-operations" : "/login";
-	const primaryLabel = isActiveUser ? "Ver mis operaciones" : "Unirme a Coco";
+	const primaryHref = isActiveUser ? "/my-orders" : "/login";
+	const primaryLabel = isActiveUser ? "Ver mis pedidos" : "Unirme a Coco";
 	const PrimaryIcon = isActiveUser ? ShoppingBagIcon : LogInIcon;
 
 	return (

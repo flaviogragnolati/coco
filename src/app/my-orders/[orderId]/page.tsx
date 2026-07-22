@@ -136,9 +136,9 @@ export default async function OrderDetailPage({
 		<main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
 			<div className="flex items-center justify-between gap-3">
 				<Button asChild variant="outline">
-					<Link href="/my-operations">
+					<Link href="/my-orders">
 						<ArrowLeftIcon data-icon="inline-start" />
-						Mis operaciones
+						Mis pedidos
 					</Link>
 				</Button>
 				<Badge

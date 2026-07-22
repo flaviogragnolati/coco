@@ -13,8 +13,8 @@ import { joinSteps } from "../home-content";
 import { SectionHeading } from "./section-heading";
 
 export function JoinSection({ isActiveUser }: { isActiveUser: boolean }) {
-	const href = isActiveUser ? "/my-operations" : "/login";
-	const label = isActiveUser ? "Ver mis operaciones" : "Continuar con Google";
+	const href = isActiveUser ? "/my-orders" : "/login";
+	const label = isActiveUser ? "Ver mis pedidos" : "Continuar con Google";
 	const Icon = isActiveUser ? ArrowRightIcon : LogInIcon;
 
 	return (

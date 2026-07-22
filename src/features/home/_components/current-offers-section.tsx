@@ -98,7 +98,7 @@ export function CurrentOffersSection({
 	offers: HomeOffer[];
 	isActiveUser: boolean;
 }) {
-	const ctaHref = isActiveUser ? "/my-operations" : "/login";
+	const ctaHref = isActiveUser ? "/my-orders" : "/login";
 
 	return (
 		<section
