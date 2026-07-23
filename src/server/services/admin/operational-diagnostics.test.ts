@@ -2,6 +2,11 @@ import { expect, test } from "vitest";
 import { Prisma } from "~/prisma/client";
 import type { LotDetailRecord } from "./lot.data";
 import { calculateLotDiagnostics } from "./lot-diagnostics";
+import {
+	DIAGNOSTIC_SCAN_LIMIT,
+	paginate,
+	resolveDiagnosticListPage,
+} from "./operational-diagnostics.types";
 import type { PackageDetailRecord } from "./package.data";
 import { calculatePackageDiagnostics } from "./package-diagnostics";
 import type { ShipmentDetailRecord } from "./shipment.data";
@@ -133,4 +138,57 @@ test("shipment diagnostics classify aggregate status mismatches as critical", ()
 			(diagnostic) => diagnostic.code === "shipment.trackingEvents.missing",
 		)?.severity,
 	).toBe("warning");
+});
+
+test("resolveDiagnosticListPage flags truncation at the scan cap", () => {
+	const items = [{ diagnosticCount: 0 }, { diagnosticCount: 2 }];
+	const input = { page: 1, pageSize: 25, diagnosticState: "all" as const };
+
+	expect(
+		resolveDiagnosticListPage(items, input, DIAGNOSTIC_SCAN_LIMIT - 1)
+			.truncated,
+	).toBe(false);
+	expect(
+		resolveDiagnosticListPage(items, input, DIAGNOSTIC_SCAN_LIMIT).truncated,
+	).toBe(true);
+});
+
+test("resolveDiagnosticListPage filters by diagnostic state", () => {
+	const items = [
+		{ diagnosticCount: 0 },
+		{ diagnosticCount: 3 },
+		{ diagnosticCount: 0 },
+	];
+
+	const withoutDiagnostics = resolveDiagnosticListPage(
+		items,
+		{ page: 1, pageSize: 25, diagnosticState: "withoutDiagnostics" },
+		items.length,
+	);
+	expect(
+		withoutDiagnostics.items.every((item) => item.diagnosticCount === 0),
+	).toBe(true);
+	expect(withoutDiagnostics.total).toBe(2);
+
+	const withDiagnostics = resolveDiagnosticListPage(
+		items,
+		{ page: 1, pageSize: 25, diagnosticState: "withDiagnostics" },
+		items.length,
+	);
+	expect(withDiagnostics.items.every((item) => item.diagnosticCount > 0)).toBe(
+		true,
+	);
+	expect(withDiagnostics.total).toBe(1);
+});
+
+test("resolveDiagnosticListPage pageCount matches paginate", () => {
+	const items = Array.from({ length: 30 }, () => ({ diagnosticCount: 1 }));
+	const input = { page: 1, pageSize: 25, diagnosticState: "all" as const };
+
+	const resolved = resolveDiagnosticListPage(items, input, items.length);
+	const paginated = paginate(items, input);
+
+	expect(resolved.pageCount).toBe(paginated.pageCount);
+	expect(resolved.total).toBe(paginated.total);
+	expect(resolved.items.length).toBe(paginated.items.length);
 });

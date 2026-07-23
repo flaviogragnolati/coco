@@ -1,22 +1,22 @@
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
-import type { ShipmentDetailRecord } from "./shipment.data";
+import type { ShipmentSummaryRecord } from "./shipment.data";
 
 const shipmentPackageCompatibility: Partial<
-	Record<ShipmentDetailRecord["status"], Set<string>>
+	Record<ShipmentSummaryRecord["status"], Set<string>>
 > = {
 	inTransit: new Set(["inTransit", "received"]),
 	received: new Set(["received"]),
 };
 
 const shipmentLineCompatibility: Partial<
-	Record<ShipmentDetailRecord["status"], Set<string>>
+	Record<ShipmentSummaryRecord["status"], Set<string>>
 > = {
 	inTransit: new Set(["shipped", "received"]),
 	received: new Set(["received"]),
 };
 
 export function calculateShipmentDiagnostics(
-	shipment: ShipmentDetailRecord,
+	shipment: ShipmentSummaryRecord,
 	hasTrackingEvents: boolean,
 ): OperationalDiagnostic[] {
 	const diagnostics: OperationalDiagnostic[] = [];

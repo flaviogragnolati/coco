@@ -137,6 +137,8 @@ const operationsPaymentSummarySchema = z.object({
 });
 
 export const operationsCartListInputSchema = z.object({
+	page: z.number().int().positive().default(1),
+	pageSize: z.number().int().min(1).max(100).default(25),
 	includeDeleted: z.boolean().optional().default(false),
 	search: optionalTrimmedText,
 	userId: userIdSchema.optional(),
@@ -244,7 +246,10 @@ export const operationsCartItemInputSchema = z.object({
 export const operationsCartUpdateInputSchema = z.object({
 	id: operationsCartIdSchema,
 	status: operationsCartStatusSchema,
-	items: z.array(operationsCartItemInputSchema).default([]),
+	items: z
+		.array(operationsCartItemInputSchema)
+		.max(200, "Demasiados items en el carrito")
+		.default([]),
 });
 
 export const operationsCartQuickStatusInputSchema = z.object({
@@ -265,6 +270,10 @@ export const operationsCartStatsSchema = z.object({
 	withPayments: z.number().int().nonnegative(),
 });
 
-export const operationsCartListOutputSchema = z.array(
-	operationsCartListItemSchema,
-);
+export const operationsCartListOutputSchema = z.object({
+	items: z.array(operationsCartListItemSchema),
+	page: z.number().int().positive(),
+	pageSize: z.number().int().positive(),
+	total: z.number().int().nonnegative(),
+	pageCount: z.number().int().nonnegative(),
+});

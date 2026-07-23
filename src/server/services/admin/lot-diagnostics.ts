@@ -1,4 +1,4 @@
-import type { LotDetailRecord } from "./lot.data";
+import type { LotSummaryRecord } from "./lot.data";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
 import { decimal, sumDecimals } from "./operational-diagnostics.types";
 
@@ -19,7 +19,7 @@ const activeDemandStatuses = new Set([
 ]);
 
 const compatibleLotItemStatuses: Partial<
-	Record<LotDetailRecord["status"], Set<string>>
+	Record<LotSummaryRecord["status"], Set<string>>
 > = {
 	requested: new Set([
 		"requested",
@@ -33,7 +33,7 @@ const compatibleLotItemStatuses: Partial<
 };
 
 export function calculateLotDiagnostics(
-	lot: LotDetailRecord,
+	lot: LotSummaryRecord,
 ): OperationalDiagnostic[] {
 	const diagnostics: OperationalDiagnostic[] = [];
 

@@ -6,6 +6,7 @@ import {
 	assembleCartTraceability,
 	type CartTraceabilityDiagnosticsMaps,
 	type CartTraceabilityTimelines,
+	groupTimelineByCartItem,
 } from "./cart-traceability.assembler";
 import type { CartTraceabilityRecord } from "./cart-traceability.data";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
@@ -322,4 +323,21 @@ test("assembled cart traceability satisfies the output schema", () => {
 	);
 
 	expect(() => cartTraceabilityDetailSchema.parse(detail)).not.toThrow();
+});
+
+test("groupTimelineByCartItem buckets events by cart item, preserving order", () => {
+	const timeline = [
+		timelineItem(10, 1),
+		timelineItem(11, 2),
+		timelineItem(12, 1),
+	];
+
+	const grouped = groupTimelineByCartItem(timeline);
+
+	// item 1 keeps its two events in input order.
+	expect(grouped.get(1)?.map((event) => event.id)).toStrictEqual([10, 12]);
+	// item 2 is separated into its own bucket.
+	expect(grouped.get(2)?.map((event) => event.id)).toStrictEqual([11]);
+	// an item with no events yields no entry (the assembler falls back to []).
+	expect(grouped.has(3)).toBe(false);
 });

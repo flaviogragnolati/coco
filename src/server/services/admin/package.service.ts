@@ -14,18 +14,21 @@ import type {
 import { trackingEventLabelMap } from "~/shared/common/tracking-display";
 import { throwNotFound } from "./_base/admin-crud.errors";
 import {
+	DIAGNOSTIC_SCAN_LIMIT,
 	decimal,
 	diagnosticMessages,
 	highestSeverity,
-	matchesDiagnosticState,
-	paginate,
+	resolveDiagnosticListPage,
 	sumDecimals,
 } from "./operational-diagnostics.types";
 import {
+	countPackageCandidates,
 	findPackageById,
+	getPackageStats,
 	listLatestPackageTrackingEvents,
 	listPackageCandidates,
 	type PackageDetailRecord,
+	type PackageSummaryRecord,
 	type PackageTrackingEventRecord,
 } from "./package.data";
 import { calculatePackageDiagnostics } from "./package-diagnostics";
@@ -57,7 +60,7 @@ function toTrackingEventSummary(event: PackageTrackingEventRecord) {
 	};
 }
 
-function summarizePackage(record: PackageDetailRecord): PackageListItem & {
+function summarizePackage(record: PackageSummaryRecord): PackageListItem & {
 	diagnostics: ReturnType<typeof calculatePackageDiagnostics>;
 } {
 	const diagnostics = calculatePackageDiagnostics(record);
@@ -148,15 +151,38 @@ async function toDetail(
 }
 
 export async function list(input: PackageListInput, database: AdminDb) {
-	const records = await listPackageCandidates(database, input);
+	if (input.diagnosticState === "all") {
+		const [total, records] = await Promise.all([
+			countPackageCandidates(database, input),
+			listPackageCandidates(database, input, {
+				skip: (input.page - 1) * input.pageSize,
+				take: input.pageSize,
+			}),
+		]);
+		const items = records
+			.map(summarizePackage)
+			.map(({ diagnostics: _diagnostics, ...item }) => item);
+
+		return packageListOutputSchema.parse({
+			items,
+			page: input.page,
+			pageSize: input.pageSize,
+			total,
+			pageCount: total === 0 ? 0 : Math.ceil(total / input.pageSize),
+			truncated: false,
+		});
+	}
+
+	const records = await listPackageCandidates(database, input, {
+		take: DIAGNOSTIC_SCAN_LIMIT,
+	});
 	const summarized = records
 		.map(summarizePackage)
-		.filter((item) =>
-			matchesDiagnosticState(item.diagnosticCount, input.diagnosticState),
-		)
 		.map(({ diagnostics: _diagnostics, ...item }) => item);
 
-	return packageListOutputSchema.parse(paginate(summarized, input));
+	return packageListOutputSchema.parse(
+		resolveDiagnosticListPage(summarized, input, records.length),
+	);
 }
 
 export async function getById(id: number, database: AdminDb) {
@@ -166,41 +192,43 @@ export async function getById(id: number, database: AdminDb) {
 }
 
 export async function getStats(database: AdminDb): Promise<PackageStats> {
-	const records = await listPackageCandidates(database, {
-		page: 1,
-		pageSize: 100,
-		search: undefined,
-		diagnosticState: "all",
-	});
-	const summaries = records.map(summarizePackage);
+	const [stats, scanRecords] = await Promise.all([
+		getPackageStats(database),
+		listPackageCandidates(
+			database,
+			{
+				page: 1,
+				pageSize: DIAGNOSTIC_SCAN_LIMIT,
+				search: undefined,
+				diagnosticState: "all",
+			},
+			{ take: DIAGNOSTIC_SCAN_LIMIT },
+		),
+	]);
+
+	const byStatusCounts = new Map(
+		stats.byStatus.map((row) => [row.status, row._count._all]),
+	);
 	const byStatus = Object.fromEntries(
-		packageStatuses.map((status) => [
-			status,
-			summaries.filter((summary) => summary.status === status).length,
-		]),
+		packageStatuses.map((status) => [status, byStatusCounts.get(status) ?? 0]),
 	) as Record<PackageStatus, number>;
-	const packageLineQuantity = sumDecimals(
-		records.flatMap((record) =>
-			record.packageLotItems.map((line) => line.quantity),
-		),
-	);
-	const packagedAllocationQuantity = sumDecimals(
-		records.flatMap((record) =>
-			record.packageLotItems.flatMap((line) =>
-				line.packageAllocations.map((allocation) => allocation.quantity),
-			),
-		),
-	);
+
+	const packageLineQuantity = decimal(stats.packageLineQuantity);
+	const withDiagnostics = scanRecords
+		.map(summarizePackage)
+		.filter((summary) => summary.diagnosticCount > 0).length;
 
 	return packageStatsSchema.parse({
-		total: summaries.length,
+		total: stats.total,
 		byStatus,
 		packageLineQuantity: packageLineQuantity.toString(),
-		packagedAllocationQuantity: packagedAllocationQuantity.toString(),
-		unallocatedQuantity: decimal(packageLineQuantity)
-			.minus(packagedAllocationQuantity)
+		packagedAllocationQuantity: decimal(
+			stats.packagedAllocationQuantity,
+		).toString(),
+		unallocatedQuantity: packageLineQuantity
+			.minus(decimal(stats.packagedAllocationQuantity))
 			.toString(),
-		withDiagnostics: summaries.filter((summary) => summary.diagnosticCount > 0)
-			.length,
+		withDiagnostics,
+		truncated: scanRecords.length >= DIAGNOSTIC_SCAN_LIMIT,
 	});
 }

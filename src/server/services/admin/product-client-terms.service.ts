@@ -1,3 +1,4 @@
+import { adminOptionsOutputSchema } from "~/schemas/admin/_options.schemas";
 import {
 	productClientTermsDetailSchema,
 	productClientTermsListOutputSchema,
@@ -23,6 +24,7 @@ import {
 	getProductClientTermsStats,
 	hardDeleteProductClientTerms,
 	listProductClientTerms,
+	listProductClientTermsOptions,
 	type ProductClientTermsDetailRecord,
 	type ProductClientTermsRelationCountRecord,
 	softDeleteProductClientTerms,
@@ -71,6 +73,20 @@ export async function list(
 ) {
 	const records = await listProductClientTerms(database, input);
 	return productClientTermsListOutputSchema.parse(records);
+}
+
+export async function options(
+	input: { search?: string; take: number; selectedValue?: string },
+	database: AdminDb,
+) {
+	const records = await listProductClientTermsOptions(database, input);
+	return adminOptionsOutputSchema.parse(
+		records.map((record) => ({
+			value: String(record.id),
+			label: `#${record.id} - ${record.product.name}`,
+			deleted: record.deleted,
+		})),
+	);
 }
 
 export async function getById(id: number, database: AdminDb) {

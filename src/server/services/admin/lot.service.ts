@@ -14,19 +14,22 @@ import type {
 import { trackingEventLabelMap } from "~/shared/common/tracking-display";
 import { throwNotFound } from "./_base/admin-crud.errors";
 import {
+	countLotCandidates,
 	findLotById,
+	getLotStats,
 	type LotDetailRecord,
+	type LotSummaryRecord,
 	type LotTrackingEventRecord,
 	listLatestLotTrackingEvents,
 	listLotCandidates,
 } from "./lot.data";
 import { calculateLotDiagnostics } from "./lot-diagnostics";
 import {
+	DIAGNOSTIC_SCAN_LIMIT,
 	decimal,
 	diagnosticMessages,
 	highestSeverity,
-	matchesDiagnosticState,
-	paginate,
+	resolveDiagnosticListPage,
 	sumDecimals,
 } from "./operational-diagnostics.types";
 
@@ -56,7 +59,7 @@ function toTrackingEventSummary(event: LotTrackingEventRecord) {
 	};
 }
 
-function summarizeLot(record: LotDetailRecord): LotListItem & {
+function summarizeLot(record: LotSummaryRecord): LotListItem & {
 	diagnostics: ReturnType<typeof calculateLotDiagnostics>;
 } {
 	const diagnostics = calculateLotDiagnostics(record);
@@ -171,15 +174,38 @@ async function toDetail(
 }
 
 export async function list(input: LotListInput, database: AdminDb) {
-	const records = await listLotCandidates(database, input);
+	if (input.diagnosticState === "all") {
+		const [total, records] = await Promise.all([
+			countLotCandidates(database, input),
+			listLotCandidates(database, input, {
+				skip: (input.page - 1) * input.pageSize,
+				take: input.pageSize,
+			}),
+		]);
+		const items = records
+			.map(summarizeLot)
+			.map(({ diagnostics: _diagnostics, ...item }) => item);
+
+		return lotListOutputSchema.parse({
+			items,
+			page: input.page,
+			pageSize: input.pageSize,
+			total,
+			pageCount: total === 0 ? 0 : Math.ceil(total / input.pageSize),
+			truncated: false,
+		});
+	}
+
+	const records = await listLotCandidates(database, input, {
+		take: DIAGNOSTIC_SCAN_LIMIT,
+	});
 	const summarized = records
 		.map(summarizeLot)
-		.filter((item) =>
-			matchesDiagnosticState(item.diagnosticCount, input.diagnosticState),
-		)
 		.map(({ diagnostics: _diagnostics, ...item }) => item);
 
-	return lotListOutputSchema.parse(paginate(summarized, input));
+	return lotListOutputSchema.parse(
+		resolveDiagnosticListPage(summarized, input, records.length),
+	);
 }
 
 export async function getById(id: number, database: AdminDb) {
@@ -189,50 +215,41 @@ export async function getById(id: number, database: AdminDb) {
 }
 
 export async function getStats(database: AdminDb): Promise<LotStats> {
-	const records = await listLotCandidates(database, {
-		page: 1,
-		pageSize: 100,
-		search: undefined,
-		diagnosticState: "all",
-	});
-	const summaries = records.map(summarizeLot);
+	const [stats, scanRecords] = await Promise.all([
+		getLotStats(database),
+		listLotCandidates(
+			database,
+			{
+				page: 1,
+				pageSize: DIAGNOSTIC_SCAN_LIMIT,
+				search: undefined,
+				diagnosticState: "all",
+			},
+			{ take: DIAGNOSTIC_SCAN_LIMIT },
+		),
+	]);
+
+	const byStatusCounts = new Map(
+		stats.byStatus.map((row) => [row.status, row._count._all]),
+	);
 	const byStatus = Object.fromEntries(
-		lotStatuses.map((status) => [
-			status,
-			summaries.filter((summary) => summary.status === status).length,
-		]),
+		lotStatuses.map((status) => [status, byStatusCounts.get(status) ?? 0]),
 	) as Record<LotStatus, number>;
-	const lotItemQuantity = sumDecimals(
-		records.flatMap((record) => record.lotItems.map((item) => item.quantity)),
-	);
-	const demandAllocationQuantity = sumDecimals(
-		records.flatMap((record) =>
-			record.lotItems.flatMap((item) =>
-				item.cartItemLotItems.map((allocation) => allocation.quantity),
-			),
-		),
-	);
-	const packagedQuantity = sumDecimals(
-		records.flatMap((record) =>
-			record.lotItems.flatMap((item) =>
-				item.cartItemLotItems.flatMap((allocation) =>
-					allocation.packageAllocations.map(
-						(packageAllocation) => packageAllocation.quantity,
-					),
-				),
-			),
-		),
-	);
+
+	const demandAllocationQuantity = decimal(stats.demandAllocationQuantity);
+	const withDiagnostics = scanRecords
+		.map(summarizeLot)
+		.filter((summary) => summary.diagnosticCount > 0).length;
 
 	return lotStatsSchema.parse({
-		total: summaries.length,
+		total: stats.total,
 		byStatus,
-		lotItemQuantity: lotItemQuantity.toString(),
+		lotItemQuantity: decimal(stats.lotItemQuantity).toString(),
 		demandAllocationQuantity: demandAllocationQuantity.toString(),
-		pendingPackageQuantity: decimal(demandAllocationQuantity)
-			.minus(packagedQuantity)
+		pendingPackageQuantity: demandAllocationQuantity
+			.minus(decimal(stats.packagedQuantity))
 			.toString(),
-		withDiagnostics: summaries.filter((summary) => summary.diagnosticCount > 0)
-			.length,
+		withDiagnostics,
+		truncated: scanRecords.length >= DIAGNOSTIC_SCAN_LIMIT,
 	});
 }

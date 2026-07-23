@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
+import { adminOptionsInputBase } from "~/schemas/admin/_options.schemas";
 import {
 	productIdSchema,
 	productUnitSchema,
@@ -59,6 +60,11 @@ export const productClientTermsDeleteInputSchema = z.object({
 export const productClientTermsListInputSchema = z.object({
 	includeDeleted: z.boolean().optional().default(false),
 });
+
+export const productClientTermsOptionsInputSchema =
+	adminOptionsInputBase.extend({
+		selectedValue: z.string().optional(),
+	});
 
 export const productClientTermsListItemSchema = z.object({
 	id: productClientTermsIdSchema,

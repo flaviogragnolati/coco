@@ -1,3 +1,4 @@
+import { adminOptionsOutputSchema } from "~/schemas/admin/_options.schemas";
 import { brandDetailSchema } from "~/schemas/admin/brand.schemas";
 import {
 	productDetailSchema,
@@ -41,6 +42,7 @@ import {
 	getProductRelationCounts,
 	getProductStats,
 	hardDeleteProduct,
+	listProductOptions,
 	listProducts,
 	type ProductDetailRecord,
 	type ProductRelationCountRecord,
@@ -244,6 +246,20 @@ function toProductWriteInput(
 export async function list(input: ProductListInput, database: AdminDb) {
 	const records = await listProducts(database, input);
 	return productListOutputSchema.parse(records);
+}
+
+export async function options(
+	input: { search?: string; take: number; selectedValue?: string },
+	database: AdminDb,
+) {
+	const records = await listProductOptions(database, input);
+	return adminOptionsOutputSchema.parse(
+		records.map((record) => ({
+			value: String(record.id),
+			label: record.name,
+			deleted: record.deleted,
+		})),
+	);
 }
 
 export async function getById(id: number, database: AdminDb) {

@@ -97,6 +97,52 @@ export async function findProductClientTermsById(
 	});
 }
 
+const productClientTermsOptionSelect = {
+	id: true,
+	deleted: true,
+	product: {
+		select: {
+			name: true,
+		},
+	},
+} satisfies Prisma.ProductClientTermsSelect;
+
+export async function listProductClientTermsOptions(
+	db: AdminDbClient,
+	input: { search?: string; take: number; selectedValue?: string },
+) {
+	const records = await db.productClientTerms.findMany({
+		where: input.search
+			? { product: { name: { contains: input.search } } }
+			: undefined,
+		select: productClientTermsOptionSelect,
+		orderBy: [
+			{ deleted: "asc" },
+			{ active: "desc" },
+			{ fromDate: "desc" },
+			{ id: "desc" },
+		],
+		take: input.take,
+	});
+
+	const selectedId = input.selectedValue
+		? Number(input.selectedValue)
+		: undefined;
+	if (
+		selectedId !== undefined &&
+		Number.isSafeInteger(selectedId) &&
+		!records.some((record) => record.id === selectedId)
+	) {
+		const selected = await db.productClientTerms.findUnique({
+			where: { id: selectedId },
+			select: productClientTermsOptionSelect,
+		});
+		if (selected) return [selected, ...records];
+	}
+
+	return records;
+}
+
 export async function getProductClientTermsStats(db: AdminDbClient) {
 	const [total, active, inactive, deleted] = await Promise.all([
 		db.productClientTerms.count(),

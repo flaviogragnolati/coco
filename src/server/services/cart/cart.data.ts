@@ -87,6 +87,10 @@ export type CartProductClientTermsRecord = Prisma.ProductClientTermsGetPayload<{
 	select: typeof cartProductClientTermsSelect;
 }>;
 
+export type CartItemMutationRecord = Prisma.CartItemGetPayload<{
+	select: typeof cartItemMutationSelect;
+}>;
+
 export async function findCurrentCartByUserId(
 	database: CartDbClient,
 	userId: string,
@@ -152,6 +156,36 @@ export async function findActiveCartItemByTerms(
 			cartId,
 			deleted: false,
 			productClientTermsId,
+			status: "inCart",
+		},
+		select: cartItemMutationSelect,
+	});
+}
+
+export async function listProductClientTermsForCart(
+	database: CartDbClient,
+	ids: number[],
+) {
+	if (ids.length === 0) return [];
+
+	return database.productClientTerms.findMany({
+		where: { id: { in: ids } },
+		select: cartProductClientTermsSelect,
+	});
+}
+
+export async function listActiveCartItemsByTerms(
+	database: CartDbClient,
+	cartId: number,
+	ids: number[],
+) {
+	if (ids.length === 0) return [];
+
+	return database.cartItem.findMany({
+		where: {
+			cartId,
+			deleted: false,
+			productClientTermsId: { in: ids },
 			status: "inCart",
 		},
 		select: cartItemMutationSelect,

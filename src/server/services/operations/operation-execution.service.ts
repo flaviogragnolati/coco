@@ -86,6 +86,14 @@ function buildCode(prefix: string, operationId: number) {
 	return `${prefix}-${operationId}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
+function requireValue<K, V>(map: Map<K, V>, key: K, label: string): V {
+	const value = map.get(key);
+	if (value === undefined) {
+		throw new Error(`Missing ${label} for ${String(key)}`);
+	}
+	return value;
+}
+
 function resolveAssignments(demandItems: DemandItem[], now: Date) {
 	const assignments: ResolvedAssignment[] = [];
 	const rollOvers: RollOverInput[] = [];
@@ -447,6 +455,89 @@ function assignmentKey(input: {
 	return `${input.supplierId}:${input.productSupplierTermsId}:${input.destinationId}`;
 }
 
+type SupplierAccumulator = {
+	supplierId: number;
+	supplierOrderCode: string;
+	lotCode: string;
+};
+
+type LotItemAccumulator = {
+	supplierId: number;
+	productSupplierTermsId: number;
+	code: string;
+	quantity: Prisma.Decimal;
+};
+
+type AllocationAccumulator = {
+	cartItemId: number;
+	cartId: number;
+	assignmentKey: string;
+	quantity: Prisma.Decimal;
+};
+
+/**
+ * Pure grouping pass: fold the assignments into one supplier order + lot per
+ * supplier, one lot item per assignment key (with summed quantity), and one
+ * demand allocation per (cart item, assignment key). Every code is generated
+ * here so the bulk-write pass can look up the returned id by its code rather
+ * than by array position.
+ */
+function groupAssignments(input: {
+	operationId: number;
+	destinationId: number;
+	assignments: ResolvedAssignment[];
+}) {
+	const suppliers = new Map<number, SupplierAccumulator>();
+	const lotItems = new Map<string, LotItemAccumulator>();
+	const allocations = new Map<string, AllocationAccumulator>();
+
+	for (const assignment of input.assignments) {
+		const supplierId = assignment.supplierTerm.supplierId;
+
+		if (!suppliers.has(supplierId)) {
+			suppliers.set(supplierId, {
+				supplierId,
+				supplierOrderCode: buildCode("SORD-OP", input.operationId),
+				lotCode: buildCode("LOT-OP", input.operationId),
+			});
+		}
+
+		const key = assignmentKey({
+			supplierId,
+			productSupplierTermsId: assignment.supplierTerm.id,
+			destinationId: input.destinationId,
+		});
+		const lotItem = lotItems.get(key);
+		if (lotItem) {
+			lotItem.quantity = lotItem.quantity.plus(assignment.assignedQuantity);
+		} else {
+			lotItems.set(key, {
+				supplierId,
+				productSupplierTermsId: assignment.supplierTerm.id,
+				code: buildCode("LITEM-OP", input.operationId),
+				quantity: assignment.assignedQuantity,
+			});
+		}
+
+		const allocationKey = `${assignment.demand.cartItemId}:${key}`;
+		const allocation = allocations.get(allocationKey);
+		if (allocation) {
+			allocation.quantity = allocation.quantity.plus(
+				assignment.assignedQuantity,
+			);
+		} else {
+			allocations.set(allocationKey, {
+				cartItemId: assignment.demand.cartItemId,
+				cartId: assignment.demand.cartId,
+				assignmentKey: key,
+				quantity: assignment.assignedQuantity,
+			});
+		}
+	}
+
+	return { suppliers, lotItems, allocations };
+}
+
 async function materializeAssignments(
 	db: OperationDb,
 	input: {
@@ -455,138 +546,129 @@ async function materializeAssignments(
 		assignments: ResolvedAssignment[];
 	},
 ) {
-	const supplierOrderBySupplierId = new Map<
-		number,
-		{ id: number; code: string }
-	>();
-	const lotBySupplierId = new Map<number, { id: number; code: string }>();
-	const lotItemByKey = new Map<string, { id: number; code: string }>();
-	const allocationByKey = new Map<
-		string,
-		{
-			cartItemId: number;
-			cartId: number;
-			lotItemId: number;
-			quantity: Prisma.Decimal;
-		}
-	>();
+	if (input.assignments.length === 0) {
+		return { allocations: [], lotCount: 0, supplierOrderCount: 0 };
+	}
 
-	for (const assignment of input.assignments) {
-		const supplierId = assignment.supplierTerm.supplierId;
+	const { suppliers, lotItems, allocations } = groupAssignments(input);
 
-		let supplierOrder = supplierOrderBySupplierId.get(supplierId);
-		if (!supplierOrder) {
-			supplierOrder = await db.supplierOrder.create({
-				data: {
-					code: buildCode("SORD-OP", input.operationId),
-					supplierId,
-					status: "pending",
-					metadata: toPrismaInputJson({
-						source: "operation.createAndExecute",
-						operationId: String(input.operationId),
-					}),
-				},
-				select: { id: true, code: true },
-			});
-			supplierOrderBySupplierId.set(supplierId, supplierOrder);
-		}
+	const supplierList = Array.from(suppliers.values());
+	const supplierOrderRows = await db.supplierOrder.createManyAndReturn({
+		data: supplierList.map((supplier) => ({
+			code: supplier.supplierOrderCode,
+			supplierId: supplier.supplierId,
+			status: "pending",
+			metadata: toPrismaInputJson({
+				source: "operation.createAndExecute",
+				operationId: String(input.operationId),
+			}),
+		})),
+		select: { id: true, code: true },
+	});
+	const supplierOrderIdByCode = new Map(
+		supplierOrderRows.map((row) => [row.code, row.id]),
+	);
 
-		let lot = lotBySupplierId.get(supplierId);
-		if (!lot) {
-			lot = await db.lot.create({
-				data: {
-					code: buildCode("LOT-OP", input.operationId),
-					status: "assembling",
-					operationId: input.operationId,
-					supplierId,
-					supplierOrderId: supplierOrder.id,
-				},
-				select: { id: true, code: true },
-			});
-			lotBySupplierId.set(supplierId, lot);
-		}
+	const lotRows = await db.lot.createManyAndReturn({
+		data: supplierList.map((supplier) => ({
+			code: supplier.lotCode,
+			status: "assembling",
+			operationId: input.operationId,
+			supplierId: supplier.supplierId,
+			supplierOrderId: requireValue(
+				supplierOrderIdByCode,
+				supplier.supplierOrderCode,
+				"supplier order id",
+			),
+		})),
+		select: { id: true, code: true },
+	});
+	const lotIdByCode = new Map(lotRows.map((row) => [row.code, row.id]));
 
-		const key = assignmentKey({
-			supplierId,
-			productSupplierTermsId: assignment.supplierTerm.id,
-			destinationId: input.destinationId,
-		});
-		let lotItem = lotItemByKey.get(key);
-		if (!lotItem) {
-			lotItem = await db.lotItem.create({
-				data: {
-					code: buildCode("LITEM-OP", input.operationId),
-					status: "pending",
-					lotId: lot.id,
-					supplierId,
-					destinationId: input.destinationId,
-					productSupplierTermsId: assignment.supplierTerm.id,
-					quantity: assignment.assignedQuantity.toString(),
-				},
-				select: { id: true, code: true },
-			});
-			lotItemByKey.set(key, lotItem);
-		} else {
-			await db.lotItem.update({
-				where: { id: lotItem.id },
-				data: {
-					quantity: { increment: assignment.assignedQuantity.toString() },
-				},
-			});
-		}
+	const lotItemList = Array.from(lotItems.values());
+	const lotItemRows = await db.lotItem.createManyAndReturn({
+		data: lotItemList.map((lotItem) => {
+			const supplier = requireValue(suppliers, lotItem.supplierId, "supplier");
+			return {
+				code: lotItem.code,
+				status: "pending" as const,
+				lotId: requireValue(lotIdByCode, supplier.lotCode, "lot id"),
+				supplierId: lotItem.supplierId,
+				destinationId: input.destinationId,
+				productSupplierTermsId: lotItem.productSupplierTermsId,
+				quantity: lotItem.quantity.toString(),
+			};
+		}),
+		select: { id: true, code: true },
+	});
+	const lotItemIdByCode = new Map(lotItemRows.map((row) => [row.code, row.id]));
 
-		const allocationKey = `${assignment.demand.cartItemId}:${lotItem.id}`;
-		const currentAllocation = allocationByKey.get(allocationKey);
-		if (!currentAllocation) {
-			allocationByKey.set(allocationKey, {
-				cartItemId: assignment.demand.cartItemId,
-				cartId: assignment.demand.cartId,
-				lotItemId: lotItem.id,
-				quantity: assignment.assignedQuantity,
-			});
-			continue;
-		}
-
-		currentAllocation.quantity = currentAllocation.quantity.plus(
-			assignment.assignedQuantity,
+	const lotIdByLotItemId = new Map<number, number>();
+	for (const lotItem of lotItems.values()) {
+		const lotItemId = requireValue(
+			lotItemIdByCode,
+			lotItem.code,
+			"lot item id",
+		);
+		const supplier = requireValue(suppliers, lotItem.supplierId, "supplier");
+		lotIdByLotItemId.set(
+			lotItemId,
+			requireValue(lotIdByCode, supplier.lotCode, "lot id"),
 		);
 	}
 
-	const allocations: MaterializedAllocation[] = [];
-	for (const allocation of allocationByKey.values()) {
-		const created = await db.cartItemLotItem.create({
-			data: {
-				cartItemId: allocation.cartItemId,
-				lotItemId: allocation.lotItemId,
-				quantity: allocation.quantity.toString(),
-			},
-			select: {
-				id: true,
-				cartItemId: true,
-				quantity: true,
-				lotItem: {
-					select: {
-						id: true,
-						lotId: true,
-					},
-				},
-			},
-		});
-
-		allocations.push({
-			cartItemId: created.cartItemId,
-			cartId: allocation.cartId,
-			cartItemLotItemId: created.id,
-			lotId: created.lotItem.lotId,
-			lotItemId: created.lotItem.id,
-			quantity: created.quantity,
-		});
+	const allocationList = Array.from(allocations.values());
+	const cartIdByAllocation = new Map<string, number>();
+	for (const allocation of allocationList) {
+		const lotItem = requireValue(
+			lotItems,
+			allocation.assignmentKey,
+			"lot item",
+		);
+		const lotItemId = requireValue(
+			lotItemIdByCode,
+			lotItem.code,
+			"lot item id",
+		);
+		cartIdByAllocation.set(
+			`${allocation.cartItemId}:${lotItemId}`,
+			allocation.cartId,
+		);
 	}
 
+	const allocationRows = await db.cartItemLotItem.createManyAndReturn({
+		data: allocationList.map((allocation) => {
+			const lotItem = requireValue(
+				lotItems,
+				allocation.assignmentKey,
+				"lot item",
+			);
+			return {
+				cartItemId: allocation.cartItemId,
+				lotItemId: requireValue(lotItemIdByCode, lotItem.code, "lot item id"),
+				quantity: allocation.quantity.toString(),
+			};
+		}),
+		select: { id: true, cartItemId: true, quantity: true, lotItemId: true },
+	});
+
+	const materialized: MaterializedAllocation[] = allocationRows.map((row) => ({
+		cartItemId: row.cartItemId,
+		cartId: requireValue(
+			cartIdByAllocation,
+			`${row.cartItemId}:${row.lotItemId}`,
+			"cart id",
+		),
+		cartItemLotItemId: row.id,
+		lotId: requireValue(lotIdByLotItemId, row.lotItemId, "lot id"),
+		lotItemId: row.lotItemId,
+		quantity: row.quantity,
+	}));
+
 	return {
-		allocations,
-		lotCount: lotBySupplierId.size,
-		supplierOrderCount: supplierOrderBySupplierId.size,
+		allocations: materialized,
+		lotCount: suppliers.size,
+		supplierOrderCount: suppliers.size,
 	};
 }
 
@@ -597,52 +679,57 @@ async function materializeRollOvers(
 		rollOvers: RollOverInput[];
 	},
 ) {
+	const positiveRollOvers = input.rollOvers.filter((rollOver) =>
+		isPositive(rollOver.quantity),
+	);
+
 	const createdRollOvers: MaterializedRollOver[] = [];
-	const includedSourceRollOverIds = new Set<number>();
-
-	for (const rollOver of input.rollOvers) {
-		if (!isPositive(rollOver.quantity)) continue;
-		if (rollOver.demand.sourceRollOverId !== undefined) {
-			includedSourceRollOverIds.add(rollOver.demand.sourceRollOverId);
-		}
-
-		const created = await db.rollOver.create({
-			data: {
+	if (positiveRollOvers.length > 0) {
+		const rows = await db.rollOver.createManyAndReturn({
+			data: positiveRollOvers.map((rollOver) => ({
 				cartItemId: rollOver.demand.cartItemId,
 				operationId: input.operationId,
-				stage: "preAllocation",
-				status: "open",
+				stage: "preAllocation" as const,
+				status: "open" as const,
 				quantity: rollOver.quantity.toString(),
 				reason: rollOver.reason,
-			},
-			select: {
-				id: true,
-				cartItemId: true,
-				quantity: true,
-				cartItem: {
-					select: {
-						cartId: true,
-					},
-				},
-			},
+			})),
+			select: { id: true, cartItemId: true, quantity: true },
 		});
 
-		createdRollOvers.push({
-			id: created.id,
-			cartItemId: created.cartItemId,
-			cartId: created.cartItem.cartId,
-			quantity: created.quantity,
+		// createManyAndReturn issues a single INSERT ... RETURNING, so rows come
+		// back in input order; the length assertion turns any future violation
+		// into a loud failure inside the transaction rather than a silent
+		// mis-attribution of cartId (RollOver has no unique code to join on).
+		if (rows.length !== positiveRollOvers.length) {
+			throw new Error(
+				`Roll over bulk insert returned ${rows.length} rows for ${positiveRollOvers.length} inputs`,
+			);
+		}
+
+		positiveRollOvers.forEach((rollOver, index) => {
+			const row = rows[index];
+			if (row === undefined) return;
+			createdRollOvers.push({
+				id: row.id,
+				cartItemId: row.cartItemId,
+				cartId: rollOver.demand.cartId,
+				quantity: row.quantity,
+			});
 		});
 	}
 
-	const assignedSourceRollOverIds = input.rollOvers
-		.map((rollOver) => rollOver.demand.sourceRollOverId)
-		.filter((id): id is number => id !== undefined);
-	for (const id of assignedSourceRollOverIds) includedSourceRollOverIds.add(id);
+	const rebatchedIds = Array.from(
+		new Set(
+			input.rollOvers
+				.map((rollOver) => rollOver.demand.sourceRollOverId)
+				.filter((id): id is number => id !== undefined),
+		),
+	);
 
-	if (includedSourceRollOverIds.size > 0) {
+	if (rebatchedIds.length > 0) {
 		await db.rollOver.updateMany({
-			where: { id: { in: Array.from(includedSourceRollOverIds) } },
+			where: { id: { in: rebatchedIds } },
 			data: { status: "rebatched" },
 		});
 	}

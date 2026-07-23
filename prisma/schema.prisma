@@ -854,6 +854,7 @@ model RollOver {
 
   @@index([cartItemId])
   @@index([operationId])
+  @@index([status, createdAt, id])
   @@map("roll_over")
 }
 

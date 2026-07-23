@@ -17,6 +17,7 @@ import type {
 } from "~/shared/common/admin-crud/operations-cart.types";
 import { AdminCrudError, throwNotFound } from "./_base/admin-crud.errors";
 import {
+	countOperationCarts,
 	createCartItem,
 	findOperationCartById,
 	findProductClientTermsForCartItem,
@@ -226,8 +227,18 @@ async function reconcileCartItems(
 }
 
 export async function list(input: OperationsCartListInput, database: AdminDb) {
-	const records = await listOperationCarts(database, input);
-	return operationsCartListOutputSchema.parse(records);
+	const [total, items] = await Promise.all([
+		countOperationCarts(database, input),
+		listOperationCarts(database, input),
+	]);
+
+	return operationsCartListOutputSchema.parse({
+		items,
+		page: input.page,
+		pageSize: input.pageSize,
+		total,
+		pageCount: total === 0 ? 0 : Math.ceil(total / input.pageSize),
+	});
 }
 
 export async function getById(id: number, database: AdminDb) {

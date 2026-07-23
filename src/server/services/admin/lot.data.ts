@@ -144,6 +144,65 @@ export type LotDetailRecord = Prisma.LotGetPayload<{
 	select: typeof lotDetailSelect;
 }>;
 
+const lotSummarySelect = {
+	id: true,
+	code: true,
+	status: true,
+	createdAt: true,
+	updatedAt: true,
+	operation: {
+		select: {
+			id: true,
+			code: true,
+			status: true,
+		},
+	},
+	supplier: {
+		select: {
+			id: true,
+			name: true,
+			active: true,
+			deleted: true,
+		},
+	},
+	supplierOrder: {
+		select: {
+			id: true,
+			code: true,
+			externalReference: true,
+			status: true,
+		},
+	},
+	lotItems: {
+		orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+		select: {
+			id: true,
+			code: true,
+			status: true,
+			quantity: true,
+			cartItemLotItems: {
+				select: {
+					quantity: true,
+					packageAllocations: {
+						select: {
+							quantity: true,
+						},
+					},
+					cartItem: {
+						select: {
+							fulfillmentStatus: true,
+						},
+					},
+				},
+			},
+		},
+	},
+} satisfies Prisma.LotSelect;
+
+export type LotSummaryRecord = Prisma.LotGetPayload<{
+	select: typeof lotSummarySelect;
+}>;
+
 export type LotTrackingEventRecord = Prisma.CartItemTrackingEventGetPayload<{
 	select: typeof lotTrackingEventSelect;
 }>;
@@ -191,17 +250,63 @@ function buildLotWhere(input: LotListInput): Prisma.LotWhereInput {
 export async function listLotCandidates(
 	db: AdminDbClient,
 	input: LotListInput,
+	options?: { skip?: number; take?: number },
 ) {
 	return db.lot.findMany({
 		where: buildLotWhere(input),
-		select: lotDetailSelect,
+		select: lotSummarySelect,
 		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+		skip: options?.skip,
+		take: options?.take,
 	});
+}
+
+export async function countLotCandidates(
+	db: AdminDbClient,
+	input: LotListInput,
+) {
+	return db.lot.count({ where: buildLotWhere(input) });
+}
+
+export async function getLotStats(db: AdminDbClient) {
+	const [
+		total,
+		byStatus,
+		lotItemQuantity,
+		demandAllocationQuantity,
+		packagedQuantity,
+	] = await Promise.all([
+		db.lot.count(),
+		db.lot.groupBy({ by: ["status"], _count: { _all: true } }),
+		db.lotItem.aggregate({ _sum: { quantity: true } }),
+		db.cartItemLotItem.aggregate({ _sum: { quantity: true } }),
+		db.packageAllocation.aggregate({ _sum: { quantity: true } }),
+	]);
+
+	return {
+		total,
+		byStatus,
+		lotItemQuantity: lotItemQuantity._sum.quantity,
+		demandAllocationQuantity: demandAllocationQuantity._sum.quantity,
+		packagedQuantity: packagedQuantity._sum.quantity,
+	};
 }
 
 export async function findLotById(db: AdminDbClient, id: number) {
 	return db.lot.findUnique({
 		where: { id },
+		select: lotDetailSelect,
+	});
+}
+
+export async function listLotsByIds(
+	db: AdminDbClient,
+	ids: number[],
+): Promise<LotDetailRecord[]> {
+	if (ids.length === 0) return [];
+
+	return db.lot.findMany({
+		where: { id: { in: ids } },
 		select: lotDetailSelect,
 	});
 }

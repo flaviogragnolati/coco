@@ -37,6 +37,29 @@ export type CartTraceabilityTimelines = {
 	byItemId: Map<number, AdminTrackingTimelineItem[]>;
 };
 
+/**
+ * Bucket a flat cart timeline by `cartItemId`, preserving input order within
+ * each bucket. The cart timeline is a strict superset of every per-item
+ * timeline (same select, same order, same mapper), so this replaces one query
+ * per cart item with a single pass over the already-loaded cart timeline.
+ */
+export function groupTimelineByCartItem(
+	timeline: AdminTrackingTimelineItem[],
+): Map<number, AdminTrackingTimelineItem[]> {
+	const byItemId = new Map<number, AdminTrackingTimelineItem[]>();
+
+	for (const item of timeline) {
+		const bucket = byItemId.get(item.cartItemId);
+		if (bucket) {
+			bucket.push(item);
+		} else {
+			byItemId.set(item.cartItemId, [item]);
+		}
+	}
+
+	return byItemId;
+}
+
 function diagnosticKey(diagnostic: OperationalDiagnostic) {
 	return `${diagnostic.code}::${JSON.stringify(diagnostic.refs ?? {})}`;
 }

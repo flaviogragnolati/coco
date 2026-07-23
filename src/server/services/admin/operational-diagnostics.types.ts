@@ -1,10 +1,18 @@
 import { Prisma } from "~/prisma/client";
 import type {
+	DiagnosticState,
 	OperationalDiagnostic,
 	OperationalDiagnosticSeverity,
 } from "~/shared/common/admin-crud/operational-diagnostic.types";
 
 export type { OperationalDiagnostic, OperationalDiagnosticSeverity };
+
+/**
+ * Upper bound on rows scanned when a request filters by diagnostic state — that
+ * filter is computed in JS and cannot be pushed into SQL, so the read is capped
+ * and the cap is surfaced to the caller via `truncated`.
+ */
+export const DIAGNOSTIC_SCAN_LIMIT = 1000;
 
 export const zeroDecimal = () => new Prisma.Decimal(0);
 
@@ -76,4 +84,26 @@ export function matchesDiagnosticState(
 	if (state === "withDiagnostics") return diagnosticCount > 0;
 	if (state === "withoutDiagnostics") return diagnosticCount === 0;
 	return true;
+}
+
+/**
+ * Filtered-path pagination for the diagnostic lists. The caller scans at most
+ * DIAGNOSTIC_SCAN_LIMIT rows (in orderBy order); this filters by diagnostic
+ * state, paginates in JS, and reports whether the scan hit the cap.
+ */
+export function resolveDiagnosticListPage<
+	TItem extends { diagnosticCount: number },
+>(
+	items: TItem[],
+	input: { page: number; pageSize: number; diagnosticState: DiagnosticState },
+	scanned: number,
+) {
+	const filtered = items.filter((item) =>
+		matchesDiagnosticState(item.diagnosticCount, input.diagnosticState),
+	);
+
+	return {
+		...paginate(filtered, input),
+		truncated: scanned >= DIAGNOSTIC_SCAN_LIMIT,
+	};
 }

@@ -22,7 +22,12 @@ export function CartTraceabilitySearchCard() {
 	const [submitted, setSubmitted] = useState("");
 
 	const resultsQuery = api.admin.operationsCart.list.useQuery(
-		{ search: submitted, includeDeleted: true },
+		{
+			search: submitted,
+			includeDeleted: true,
+			page: 1,
+			pageSize: MAX_RESULTS,
+		},
 		{ enabled: submitted.length > 0 },
 	);
 
@@ -31,7 +36,7 @@ export function CartTraceabilitySearchCard() {
 		setSubmitted(term.trim());
 	};
 
-	const results = resultsQuery.data ?? [];
+	const results = resultsQuery.data?.items ?? [];
 
 	return (
 		<Card>
@@ -65,7 +70,7 @@ export function CartTraceabilitySearchCard() {
 						<p className="text-muted-foreground text-xs">Buscando...</p>
 					) : results.length > 0 ? (
 						<ul className="flex flex-col gap-1">
-							{results.slice(0, MAX_RESULTS).map((cart) => (
+							{results.map((cart) => (
 								<li key={cart.id}>
 									<Button
 										asChild

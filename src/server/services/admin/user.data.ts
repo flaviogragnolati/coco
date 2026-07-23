@@ -126,6 +126,38 @@ export async function listUsers(db: AdminDbClient, input: UserListInput) {
 	}));
 }
 
+export async function listUserOptions(
+	db: AdminDbClient,
+	input: { search?: string; take: number; selectedValue?: string },
+) {
+	const records = await db.user.findMany({
+		where: input.search
+			? {
+					OR: [
+						{ name: { contains: input.search } },
+						{ email: { contains: input.search } },
+					],
+				}
+			: undefined,
+		select: userSummarySelect,
+		orderBy: [{ deleted: "asc" }, { active: "desc" }, { name: "asc" }],
+		take: input.take,
+	});
+
+	if (
+		input.selectedValue &&
+		!records.some((record) => record.id === input.selectedValue)
+	) {
+		const selected = await db.user.findUnique({
+			where: { id: input.selectedValue },
+			select: userSummarySelect,
+		});
+		if (selected) return [selected, ...records];
+	}
+
+	return records;
+}
+
 export async function findUserById(db: AdminDbClient, id: string) {
 	return db.user.findUnique({
 		where: { id },

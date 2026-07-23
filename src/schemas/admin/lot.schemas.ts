@@ -206,6 +206,7 @@ export const lotListOutputSchema = z.object({
 	pageSize: z.number().int().positive(),
 	total: z.number().int().nonnegative(),
 	pageCount: z.number().int().nonnegative(),
+	truncated: z.boolean(),
 });
 
 export const lotStatsSchema = z.object({
@@ -215,4 +216,5 @@ export const lotStatsSchema = z.object({
 	demandAllocationQuantity: decimalOutputSchema,
 	pendingPackageQuantity: decimalOutputSchema,
 	withDiagnostics: z.number().int().nonnegative(),
+	truncated: z.boolean(),
 });

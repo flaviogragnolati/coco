@@ -36,6 +36,8 @@ function Combobox({
 	invalid,
 	id,
 	className,
+	onSearchChange,
+	loading,
 }: {
 	options: ComboboxOption[];
 	value: string | null;
@@ -47,8 +49,13 @@ function Combobox({
 	invalid?: boolean;
 	id?: string;
 	className?: string;
+	onSearchChange?: (value: string) => void;
+	loading?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
+	// When onSearchChange is provided the caller owns filtering (server-side
+	// search), so cmdk's client-side filter is turned off.
+	const serverSearch = onSearchChange !== undefined;
 	const selected = value
 		? options.find((option) => option.value === value)
 		: undefined;
@@ -83,10 +90,19 @@ function Combobox({
 				align="start"
 				className="w-(--radix-popover-trigger-width) p-0"
 			>
-				<Command>
-					<CommandInput placeholder={searchPlaceholder} />
+				<Command shouldFilter={serverSearch ? false : undefined}>
+					<CommandInput
+						onValueChange={onSearchChange}
+						placeholder={searchPlaceholder}
+					/>
 					<CommandList>
-						<CommandEmpty>{emptyText}</CommandEmpty>
+						{loading ? (
+							<div className="py-6 text-center text-muted-foreground text-sm">
+								Buscando...
+							</div>
+						) : (
+							<CommandEmpty>{emptyText}</CommandEmpty>
+						)}
 						<CommandGroup>
 							{options.map((option) => (
 								<CommandItem

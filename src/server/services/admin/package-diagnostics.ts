@@ -1,9 +1,9 @@
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
 import { decimal, sumDecimals } from "./operational-diagnostics.types";
-import type { PackageDetailRecord } from "./package.data";
+import type { PackageSummaryRecord } from "./package.data";
 
 const compatiblePackageLineStatuses: Partial<
-	Record<PackageDetailRecord["status"], Set<string>>
+	Record<PackageSummaryRecord["status"], Set<string>>
 > = {
 	readyForShipment: new Set(["packed", "shipped", "received"]),
 	inTransit: new Set(["shipped", "received"]),
@@ -11,7 +11,7 @@ const compatiblePackageLineStatuses: Partial<
 };
 
 export function calculatePackageDiagnostics(
-	pkg: PackageDetailRecord,
+	pkg: PackageSummaryRecord,
 ): OperationalDiagnostic[] {
 	const diagnostics: OperationalDiagnostic[] = [];
 

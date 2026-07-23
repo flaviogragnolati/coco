@@ -1,5 +1,5 @@
 import { z } from "zod";
-
+import { adminOptionsInputBase } from "~/schemas/admin/_options.schemas";
 import {
 	brandIdSchema,
 	brandInlineCreateInputSchema,
@@ -74,6 +74,10 @@ export const productDeleteInputSchema = z.object({
 
 export const productListInputSchema = z.object({
 	includeDeleted: z.boolean().optional().default(false),
+});
+
+export const productOptionsInputSchema = adminOptionsInputBase.extend({
+	selectedValue: z.string().optional(),
 });
 
 export const productListItemSchema = z.object({

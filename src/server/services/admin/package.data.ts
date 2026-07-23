@@ -117,6 +117,49 @@ export type PackageDetailRecord = Prisma.PackageGetPayload<{
 	select: typeof packageDetailSelect;
 }>;
 
+const packageSummarySelect = {
+	id: true,
+	name: true,
+	trackingCode: true,
+	status: true,
+	createdAt: true,
+	updatedAt: true,
+	shipment: {
+		select: {
+			id: true,
+			name: true,
+			internalCode: true,
+			status: true,
+			type: true,
+			trackingCode: true,
+		},
+	},
+	packageLotItems: {
+		orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+		select: {
+			id: true,
+			status: true,
+			quantity: true,
+			packageAllocations: {
+				select: {
+					id: true,
+					quantity: true,
+					cartItemLotItem: {
+						select: {
+							id: true,
+							quantity: true,
+						},
+					},
+				},
+			},
+		},
+	},
+} satisfies Prisma.PackageSelect;
+
+export type PackageSummaryRecord = Prisma.PackageGetPayload<{
+	select: typeof packageSummarySelect;
+}>;
+
 export type PackageTrackingEventRecord =
 	Prisma.CartItemTrackingEventGetPayload<{
 		select: typeof packageTrackingEventSelect;
@@ -171,17 +214,56 @@ function buildPackageWhere(input: PackageListInput): Prisma.PackageWhereInput {
 export async function listPackageCandidates(
 	db: AdminDbClient,
 	input: PackageListInput,
+	options?: { skip?: number; take?: number },
 ) {
 	return db.package.findMany({
 		where: buildPackageWhere(input),
-		select: packageDetailSelect,
+		select: packageSummarySelect,
 		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+		skip: options?.skip,
+		take: options?.take,
 	});
+}
+
+export async function countPackageCandidates(
+	db: AdminDbClient,
+	input: PackageListInput,
+) {
+	return db.package.count({ where: buildPackageWhere(input) });
+}
+
+export async function getPackageStats(db: AdminDbClient) {
+	const [total, byStatus, packageLineQuantity, packagedAllocationQuantity] =
+		await Promise.all([
+			db.package.count(),
+			db.package.groupBy({ by: ["status"], _count: { _all: true } }),
+			db.packageLotItem.aggregate({ _sum: { quantity: true } }),
+			db.packageAllocation.aggregate({ _sum: { quantity: true } }),
+		]);
+
+	return {
+		total,
+		byStatus,
+		packageLineQuantity: packageLineQuantity._sum.quantity,
+		packagedAllocationQuantity: packagedAllocationQuantity._sum.quantity,
+	};
 }
 
 export async function findPackageById(db: AdminDbClient, id: number) {
 	return db.package.findUnique({
 		where: { id },
+		select: packageDetailSelect,
+	});
+}
+
+export async function listPackagesByIds(
+	db: AdminDbClient,
+	ids: number[],
+): Promise<PackageDetailRecord[]> {
+	if (ids.length === 0) return [];
+
+	return db.package.findMany({
+		where: { id: { in: ids } },
 		select: packageDetailSelect,
 	});
 }

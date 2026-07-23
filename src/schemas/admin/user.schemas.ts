@@ -1,5 +1,5 @@
 import { z } from "zod";
-
+import { adminOptionsInputBase } from "~/schemas/admin/_options.schemas";
 import {
 	addressEmbeddedDetailSchema,
 	addressEmbeddedInputSchema,
@@ -35,6 +35,10 @@ export const userDeleteInputSchema = z.object({
 
 export const userListInputSchema = z.object({
 	includeDeleted: z.boolean().optional().default(false),
+});
+
+export const userOptionsInputSchema = adminOptionsInputBase.extend({
+	selectedValue: z.string().optional(),
 });
 
 export const userListItemSchema = z.object({

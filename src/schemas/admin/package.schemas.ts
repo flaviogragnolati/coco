@@ -162,6 +162,7 @@ export const packageListOutputSchema = z.object({
 	pageSize: z.number().int().positive(),
 	total: z.number().int().nonnegative(),
 	pageCount: z.number().int().nonnegative(),
+	truncated: z.boolean(),
 });
 
 export const packageStatsSchema = z.object({
@@ -171,4 +172,5 @@ export const packageStatsSchema = z.object({
 	packagedAllocationQuantity: decimalOutputSchema,
 	unallocatedQuantity: decimalOutputSchema,
 	withDiagnostics: z.number().int().nonnegative(),
+	truncated: z.boolean(),
 });

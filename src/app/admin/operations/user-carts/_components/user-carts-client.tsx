@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
+import { Combobox, type ComboboxOption } from "~/components/ui/combobox";
 import {
 	Field,
 	FieldContent,
@@ -31,6 +32,7 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
+import { useDebouncedValue } from "~/features/admin/crud/_lib/use-debounced-value";
 import {
 	cartItemStatusOptions,
 	cartStatusOptions,
@@ -52,10 +54,14 @@ import type {
 import { api } from "~/trpc/react";
 
 const allValue = "all";
+const pageSizeOptions = [10, 25, 50, 100] as const;
 
 export function UserCartsClient() {
 	const router = useRouter();
 	const utils = api.useUtils();
+	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] =
+		useState<(typeof pageSizeOptions)[number]>(25);
 	const [includeDeleted, setIncludeDeleted] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [cartStatus, setCartStatus] = useState<OperationsCartStatus | "all">(
@@ -82,9 +88,23 @@ export function UserCartsClient() {
 		useState<OperationsCartListItem | null>(null);
 	const [hardDeleteTarget, setHardDeleteTarget] =
 		useState<OperationsCartListItem | null>(null);
+	const [userSearch, setUserSearch] = useState("");
+	const [productSearch, setProductSearch] = useState("");
+	const [termsSearch, setTermsSearch] = useState("");
+
+	const debouncedUserSearch = useDebouncedValue(userSearch, 250);
+	const debouncedProductSearch = useDebouncedValue(productSearch, 250);
+	const debouncedTermsSearch = useDebouncedValue(termsSearch, 250);
+
+	const updateFilter = <T,>(setter: (value: T) => void, value: T) => {
+		setter(value);
+		setPage(1);
+	};
 
 	const listInput = useMemo(
 		() => ({
+			page,
+			pageSize,
 			includeDeleted,
 			search: searchTerm.trim().length > 0 ? searchTerm : undefined,
 			userId: userId === allValue ? undefined : userId,
@@ -106,6 +126,8 @@ export function UserCartsClient() {
 			fulfillmentStatus,
 			includeDeleted,
 			orderStatus,
+			page,
+			pageSize,
 			paymentStatus,
 			productClientTermsId,
 			productId,
@@ -116,16 +138,60 @@ export function UserCartsClient() {
 
 	const cartsQuery = api.admin.operationsCart.list.useQuery(listInput);
 	const statsQuery = api.admin.operationsCart.getStats.useQuery();
-	const usersQuery = api.admin.user.list.useQuery({ includeDeleted: true });
-	const productsQuery = api.admin.product.list.useQuery({
-		includeDeleted: true,
+	const userOptionsQuery = api.admin.user.options.useQuery({
+		search: debouncedUserSearch || undefined,
+		selectedValue: userId === allValue ? undefined : userId,
 	});
+	const productOptionsQuery = api.admin.product.options.useQuery({
+		search: debouncedProductSearch || undefined,
+		selectedValue: productId === allValue ? undefined : productId,
+	});
+	const termsOptionsQuery = api.admin.productClientTerms.options.useQuery({
+		search: debouncedTermsSearch || undefined,
+		selectedValue:
+			productClientTermsId === allValue ? undefined : productClientTermsId,
+	});
+	// The detail form edits cart items and needs the full client-terms records
+	// (product, moq, pricing) that the lightweight `options` endpoint omits.
 	const productClientTermsQuery = api.admin.productClientTerms.list.useQuery({
 		includeDeleted: true,
 	});
 	const detailQuery = api.admin.operationsCart.getById.useQuery(
 		{ id: selectedCartId ?? 0 },
 		{ enabled: selectedCartId !== null },
+	);
+
+	const userComboOptions = useMemo<ComboboxOption[]>(
+		() => [
+			{ value: allValue, label: "Todos" },
+			...(userOptionsQuery.data ?? []).map((option) => ({
+				value: option.value,
+				label: `${option.label}${option.deleted ? " (eliminado)" : ""}`,
+			})),
+		],
+		[userOptionsQuery.data],
+	);
+
+	const productComboOptions = useMemo<ComboboxOption[]>(
+		() => [
+			{ value: allValue, label: "Todos" },
+			...(productOptionsQuery.data ?? []).map((option) => ({
+				value: option.value,
+				label: `${option.label}${option.deleted ? " (eliminado)" : ""}`,
+			})),
+		],
+		[productOptionsQuery.data],
+	);
+
+	const termsComboOptions = useMemo<ComboboxOption[]>(
+		() => [
+			{ value: allValue, label: "Todos" },
+			...(termsOptionsQuery.data ?? []).map((option) => ({
+				value: option.value,
+				label: `${option.label}${option.deleted ? " (eliminado)" : ""}`,
+			})),
+		],
+		[termsOptionsQuery.data],
 	);
 
 	const invalidateCartQueries = async () => {
@@ -205,7 +271,7 @@ export function UserCartsClient() {
 			);
 		}
 
-		const carts = cartsQuery.data ?? [];
+		const carts = cartsQuery.data?.items ?? [];
 
 		if (carts.length === 0) {
 			return (
@@ -233,6 +299,9 @@ export function UserCartsClient() {
 			/>
 		);
 	};
+
+	const pageCount = cartsQuery.data?.pageCount ?? 0;
+	const total = cartsQuery.data?.total ?? 0;
 
 	return (
 		<CrudPageShell
@@ -303,7 +372,9 @@ export function UserCartsClient() {
 								<Input
 									className="pl-8"
 									id="operations-cart-search"
-									onChange={(event) => setSearchTerm(event.target.value)}
+									onChange={(event) =>
+										updateFilter(setSearchTerm, event.target.value)
+									}
 									placeholder="Codigo, usuario, email o producto"
 									value={searchTerm}
 								/>
@@ -311,60 +382,46 @@ export function UserCartsClient() {
 						</Field>
 						<Field>
 							<FieldLabel htmlFor="operations-cart-user">Usuario</FieldLabel>
-							<Select
-								disabled={usersQuery.isLoading}
+							<Combobox
 								id="operations-cart-user"
-								onChange={(event) => setUserId(event.target.value)}
+								loading={userOptionsQuery.isLoading}
+								onChange={(next) => updateFilter(setUserId, next)}
+								onSearchChange={setUserSearch}
+								options={userComboOptions}
+								placeholder="Todos"
+								searchPlaceholder="Buscar usuario o email..."
 								value={userId}
-							>
-								<option value={allValue}>Todos</option>
-								{(usersQuery.data ?? []).map((user) => (
-									<option key={user.id} value={user.id}>
-										{user.name} - {user.email}
-										{user.deleted ? " (eliminado)" : ""}
-									</option>
-								))}
-							</Select>
+							/>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor="operations-cart-product">
 								Producto
 							</FieldLabel>
-							<Select
-								disabled={productsQuery.isLoading}
+							<Combobox
 								id="operations-cart-product"
-								onChange={(event) => setProductId(event.target.value)}
+								loading={productOptionsQuery.isLoading}
+								onChange={(next) => updateFilter(setProductId, next)}
+								onSearchChange={setProductSearch}
+								options={productComboOptions}
+								placeholder="Todos"
+								searchPlaceholder="Buscar producto..."
 								value={productId}
-							>
-								<option value={allValue}>Todos</option>
-								{(productsQuery.data ?? []).map((product) => (
-									<option key={product.id} value={product.id}>
-										{product.name}
-										{product.deleted ? " (eliminado)" : ""}
-									</option>
-								))}
-							</Select>
+							/>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor="operations-cart-terms">
 								Terminos cliente
 							</FieldLabel>
-							<Select
-								disabled={productClientTermsQuery.isLoading}
+							<Combobox
 								id="operations-cart-terms"
-								onChange={(event) =>
-									setProductClientTermsId(event.target.value)
-								}
+								loading={termsOptionsQuery.isLoading}
+								onChange={(next) => updateFilter(setProductClientTermsId, next)}
+								onSearchChange={setTermsSearch}
+								options={termsComboOptions}
+								placeholder="Todos"
+								searchPlaceholder="Buscar terminos..."
 								value={productClientTermsId}
-							>
-								<option value={allValue}>Todos</option>
-								{(productClientTermsQuery.data ?? []).map((terms) => (
-									<option key={terms.id} value={terms.id}>
-										#{terms.id} - {terms.product.name}
-										{terms.deleted ? " (eliminado)" : ""}
-									</option>
-								))}
-							</Select>
+							/>
 						</Field>
 						<Field>
 							<FieldLabel htmlFor="operations-cart-status-filter">
@@ -373,7 +430,8 @@ export function UserCartsClient() {
 							<Select
 								id="operations-cart-status-filter"
 								onChange={(event) =>
-									setCartStatus(
+									updateFilter(
+										setCartStatus,
 										event.target.value as OperationsCartStatus | "all",
 									)
 								}
@@ -394,7 +452,8 @@ export function UserCartsClient() {
 							<Select
 								id="operations-cart-item-status-filter"
 								onChange={(event) =>
-									setCartItemStatus(
+									updateFilter(
+										setCartItemStatus,
 										event.target.value as OperationsCartItemStatus | "all",
 									)
 								}
@@ -415,7 +474,8 @@ export function UserCartsClient() {
 							<Select
 								id="operations-cart-fulfillment-filter"
 								onChange={(event) =>
-									setFulfillmentStatus(
+									updateFilter(
+										setFulfillmentStatus,
 										event.target.value as
 											| OperationsCartItemFulfillmentStatus
 											| "all",
@@ -438,7 +498,8 @@ export function UserCartsClient() {
 							<Select
 								id="operations-cart-order-filter"
 								onChange={(event) =>
-									setOrderStatus(
+									updateFilter(
+										setOrderStatus,
 										event.target.value as OperationsUserOrderStatus | "all",
 									)
 								}
@@ -459,7 +520,8 @@ export function UserCartsClient() {
 							<Select
 								id="operations-cart-payment-filter"
 								onChange={(event) =>
-									setPaymentStatus(
+									updateFilter(
+										setPaymentStatus,
 										event.target.value as
 											| OperationsUserTransactionStatus
 											| "all",
@@ -479,7 +541,9 @@ export function UserCartsClient() {
 							<Switch
 								checked={includeDeleted}
 								id="operations-cart-include-deleted"
-								onCheckedChange={setIncludeDeleted}
+								onCheckedChange={(checked) =>
+									updateFilter(setIncludeDeleted, checked)
+								}
 							/>
 							<FieldContent>
 								<FieldLabel htmlFor="operations-cart-include-deleted">
@@ -488,7 +552,61 @@ export function UserCartsClient() {
 								<FieldDescription>Baja logica</FieldDescription>
 							</FieldContent>
 						</Field>
+						<Field>
+							<FieldLabel htmlFor="operations-cart-page-size">
+								Tamaño pagina
+							</FieldLabel>
+							<Select
+								id="operations-cart-page-size"
+								onChange={(event) =>
+									updateFilter(
+										setPageSize,
+										Number(
+											event.target.value,
+										) as (typeof pageSizeOptions)[number],
+									)
+								}
+								value={String(pageSize)}
+							>
+								{pageSizeOptions.map((option) => (
+									<option key={option} value={option}>
+										{option}
+									</option>
+								))}
+							</Select>
+						</Field>
 					</FieldGroup>
+				</div>
+
+				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+					<span className="text-muted-foreground text-sm">
+						{cartsQuery.isLoading
+							? "Cargando carritos"
+							: `${total} carrito${total === 1 ? "" : "s"}`}
+					</span>
+					<div className="flex items-center gap-2">
+						<Button
+							disabled={page <= 1 || cartsQuery.isLoading}
+							onClick={() => setPage((current) => Math.max(1, current - 1))}
+							type="button"
+							variant="outline"
+						>
+							Anterior
+						</Button>
+						<span className="text-sm">
+							Pagina {page} de {Math.max(pageCount, 1)}
+						</span>
+						<Button
+							disabled={
+								pageCount === 0 || page >= pageCount || cartsQuery.isLoading
+							}
+							onClick={() => setPage((current) => current + 1)}
+							type="button"
+							variant="outline"
+						>
+							Siguiente
+						</Button>
+					</div>
 				</div>
 
 				{renderTable()}

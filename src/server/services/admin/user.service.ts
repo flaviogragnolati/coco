@@ -1,4 +1,5 @@
 import type { Prisma } from "~/prisma/client";
+import { adminOptionsOutputSchema } from "~/schemas/admin/_options.schemas";
 import { addressDetailSchema } from "~/schemas/admin/address.schemas";
 import {
 	userDetailSchema,
@@ -37,6 +38,7 @@ import {
 	getUserRelationCounts,
 	getUserStats,
 	hardDeleteUser,
+	listUserOptions,
 	listUsers,
 	softDeleteUser,
 	type UserDetailRecord,
@@ -171,6 +173,20 @@ function assertUniqueAddressIds(input: UserUpdateInput) {
 export async function list(input: UserListInput, database: AdminDb) {
 	const records = await listUsers(database, input);
 	return userListOutputSchema.parse(records);
+}
+
+export async function options(
+	input: { search?: string; take: number; selectedValue?: string },
+	database: AdminDb,
+) {
+	const records = await listUserOptions(database, input);
+	return adminOptionsOutputSchema.parse(
+		records.map((record) => ({
+			value: record.id,
+			label: `${record.name} - ${record.email}`,
+			deleted: record.deleted,
+		})),
+	);
 }
 
 export async function getById(id: string, database: AdminDb) {

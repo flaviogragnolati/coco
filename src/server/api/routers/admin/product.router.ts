@@ -1,11 +1,13 @@
 import { z } from "zod";
 
+import { adminOptionsOutputSchema } from "~/schemas/admin/_options.schemas";
 import {
 	productCreateInputSchema,
 	productDeleteInputSchema,
 	productDetailSchema,
 	productListInputSchema,
 	productListOutputSchema,
+	productOptionsInputSchema,
 	productPreviewSchema,
 	productStatsSchema,
 	productUpdateInputSchema,
@@ -24,6 +26,11 @@ export const productRouter = createTRPCRouter({
 		.input(productListInputSchema)
 		.output(productListOutputSchema)
 		.query(async ({ ctx, input }) => productService.list(input, ctx.db)),
+
+	options: adminProcedure
+		.input(productOptionsInputSchema)
+		.output(adminOptionsOutputSchema)
+		.query(async ({ ctx, input }) => productService.options(input, ctx.db)),
 
 	getById: adminProcedure
 		.input(productDeleteInputSchema)

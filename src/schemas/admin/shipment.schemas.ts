@@ -135,6 +135,7 @@ export const shipmentListOutputSchema = z.object({
 	pageSize: z.number().int().positive(),
 	total: z.number().int().nonnegative(),
 	pageCount: z.number().int().nonnegative(),
+	truncated: z.boolean(),
 });
 
 export const shipmentStatsSchema = z.object({
@@ -144,4 +145,5 @@ export const shipmentStatsSchema = z.object({
 	packageCount: z.number().int().nonnegative(),
 	transportedQuantity: decimalOutputSchema,
 	withDiagnostics: z.number().int().nonnegative(),
+	truncated: z.boolean(),
 });

@@ -121,6 +121,41 @@ export async function findProductById(db: AdminDbClient, id: number) {
 	});
 }
 
+const productOptionSelect = {
+	id: true,
+	name: true,
+	deleted: true,
+} satisfies Prisma.ProductSelect;
+
+export async function listProductOptions(
+	db: AdminDbClient,
+	input: { search?: string; take: number; selectedValue?: string },
+) {
+	const records = await db.product.findMany({
+		where: input.search ? { name: { contains: input.search } } : undefined,
+		select: productOptionSelect,
+		orderBy: [{ deleted: "asc" }, { active: "desc" }, { name: "asc" }],
+		take: input.take,
+	});
+
+	const selectedId = input.selectedValue
+		? Number(input.selectedValue)
+		: undefined;
+	if (
+		selectedId !== undefined &&
+		Number.isSafeInteger(selectedId) &&
+		!records.some((record) => record.id === selectedId)
+	) {
+		const selected = await db.product.findUnique({
+			where: { id: selectedId },
+			select: productOptionSelect,
+		});
+		if (selected) return [selected, ...records];
+	}
+
+	return records;
+}
+
 export async function getProductStats(db: AdminDbClient) {
 	const [total, active, inactive, deleted] = await Promise.all([
 		db.product.count(),

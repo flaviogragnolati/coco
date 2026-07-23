@@ -417,9 +417,18 @@ export async function listOperationCarts(
 		where: buildCartWhere(input),
 		select: operationsCartListSelect,
 		orderBy: [{ deleted: "asc" }, { updatedAt: "desc" }, { id: "desc" }],
+		skip: (input.page - 1) * input.pageSize,
+		take: input.pageSize,
 	});
 
 	return records.map(toListItem);
+}
+
+export async function countOperationCarts(
+	db: AdminDbClient,
+	input: OperationsCartListInput,
+) {
+	return db.cart.count({ where: buildCartWhere(input) });
 }
 
 export async function findOperationCartById(db: AdminDbClient, id: number) {

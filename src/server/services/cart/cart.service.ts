@@ -27,6 +27,7 @@ import {
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
 import {
+	type CartItemMutationRecord,
 	type CartProductClientTermsRecord,
 	type CartRecord,
 	createCartItem,
@@ -36,6 +37,8 @@ import {
 	findCurrentCartByUserId,
 	findCurrentCartForMutationByUserId,
 	findProductClientTermsForCart,
+	listActiveCartItemsByTerms,
+	listProductClientTermsForCart,
 	softDeleteCartItem,
 	softDeleteCartItemsByCartId,
 	updateCartItemQuantity,
@@ -166,8 +169,8 @@ async function upsertCartItem(
 	cartId: number,
 	terms: CartProductClientTermsRecord,
 	quantity: string,
+	existing: CartItemMutationRecord | null,
 ) {
-	const existing = await findActiveCartItemByTerms(database, cartId, terms.id);
 	if (existing) {
 		return updateCartItemQuantity(database, existing.id, quantity);
 	}
@@ -215,11 +218,19 @@ export async function syncLocal(
 			);
 		}
 
+		const ids = Array.from(localQuantityByTerms.keys());
+		const [termsRecords, existingItems] = await Promise.all([
+			listProductClientTermsForCart(tx, ids),
+			listActiveCartItemsByTerms(tx, cart.id, ids),
+		]);
+
+		const termsById = new Map(termsRecords.map((terms) => [terms.id, terms]));
+		const existingItemByTermsId = new Map(
+			existingItems.map((item) => [item.productClientTermsId, item]),
+		);
+
 		for (const [productClientTermsId, localQuantity] of localQuantityByTerms) {
-			const terms = await findProductClientTermsForCart(
-				tx,
-				productClientTermsId,
-			);
+			const terms = termsById.get(productClientTermsId);
 
 			if (!terms || !isClientTermsUsable(terms, now)) {
 				warnings.push({
@@ -230,11 +241,8 @@ export async function syncLocal(
 				continue;
 			}
 
-			const existingItem = await findActiveCartItemByTerms(
-				tx,
-				cart.id,
-				productClientTermsId,
-			);
+			const existingItem =
+				existingItemByTermsId.get(productClientTermsId) ?? null;
 			const mergedQuantity =
 				(toNumber(existingItem?.quantity.toString()) ?? 0) + localQuantity;
 			const normalized = normalizeWithWarning(
@@ -244,7 +252,13 @@ export async function syncLocal(
 			);
 
 			if (normalized.warning) warnings.push(normalized.warning);
-			await upsertCartItem(tx, cart.id, terms, normalized.quantity);
+			await upsertCartItem(
+				tx,
+				cart.id,
+				terms,
+				normalized.quantity,
+				existingItem,
+			);
 		}
 
 		return {
@@ -277,8 +291,9 @@ export async function setItemQuantity(
 			input.quantity,
 			termsToClientTerms(terms),
 		);
+		const existing = await findActiveCartItemByTerms(tx, cart.id, terms.id);
 
-		await upsertCartItem(tx, cart.id, terms, normalized.quantity);
+		await upsertCartItem(tx, cart.id, terms, normalized.quantity, existing);
 
 		return {
 			cartId: cart.id,

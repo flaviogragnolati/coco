@@ -15,17 +15,21 @@ import type {
 import { trackingEventLabelMap } from "~/shared/common/tracking-display";
 import { throwNotFound } from "./_base/admin-crud.errors";
 import {
+	DIAGNOSTIC_SCAN_LIMIT,
+	decimal,
 	diagnosticMessages,
 	highestSeverity,
-	matchesDiagnosticState,
-	paginate,
+	resolveDiagnosticListPage,
 	sumDecimals,
 } from "./operational-diagnostics.types";
 import {
+	countShipmentCandidates,
 	findShipmentById,
+	getShipmentStats,
 	listLatestShipmentTrackingEvents,
 	listShipmentCandidates,
 	type ShipmentDetailRecord,
+	type ShipmentSummaryRecord,
 	type ShipmentTrackingEventRecord,
 } from "./shipment.data";
 import { calculateShipmentDiagnostics } from "./shipment-diagnostics";
@@ -59,7 +63,7 @@ function toTrackingEventSummary(event: ShipmentTrackingEventRecord) {
 	};
 }
 
-function packageLineQuantity(record: ShipmentDetailRecord) {
+function packageLineQuantity(record: ShipmentSummaryRecord) {
 	return sumDecimals(
 		record.packages.flatMap((pkg) =>
 			pkg.packageLotItems.map((line) => line.quantity),
@@ -67,7 +71,7 @@ function packageLineQuantity(record: ShipmentDetailRecord) {
 	);
 }
 
-function packageAllocationQuantity(record: ShipmentDetailRecord) {
+function packageAllocationQuantity(record: ShipmentSummaryRecord) {
 	return sumDecimals(
 		record.packages.flatMap((pkg) =>
 			pkg.packageLotItems.flatMap((line) =>
@@ -78,7 +82,7 @@ function packageAllocationQuantity(record: ShipmentDetailRecord) {
 }
 
 function summarizeShipment(
-	record: ShipmentDetailRecord,
+	record: ShipmentSummaryRecord,
 	hasTrackingEvents: boolean,
 ): ShipmentListItem & {
 	diagnostics: ReturnType<typeof calculateShipmentDiagnostics>;
@@ -159,15 +163,38 @@ async function toDetail(
 }
 
 export async function list(input: ShipmentListInput, database: AdminDb) {
-	const records = await listShipmentCandidates(database, input);
+	if (input.diagnosticState === "all") {
+		const [total, records] = await Promise.all([
+			countShipmentCandidates(database, input),
+			listShipmentCandidates(database, input, {
+				skip: (input.page - 1) * input.pageSize,
+				take: input.pageSize,
+			}),
+		]);
+		const items = records
+			.map((record) => summarizeShipment(record, false))
+			.map(({ diagnostics: _diagnostics, ...item }) => item);
+
+		return shipmentListOutputSchema.parse({
+			items,
+			page: input.page,
+			pageSize: input.pageSize,
+			total,
+			pageCount: total === 0 ? 0 : Math.ceil(total / input.pageSize),
+			truncated: false,
+		});
+	}
+
+	const records = await listShipmentCandidates(database, input, {
+		take: DIAGNOSTIC_SCAN_LIMIT,
+	});
 	const summarized = records
 		.map((record) => summarizeShipment(record, false))
-		.filter((item) =>
-			matchesDiagnosticState(item.diagnosticCount, input.diagnosticState),
-		)
 		.map(({ diagnostics: _diagnostics, ...item }) => item);
 
-	return shipmentListOutputSchema.parse(paginate(summarized, input));
+	return shipmentListOutputSchema.parse(
+		resolveDiagnosticListPage(summarized, input, records.length),
+	);
 }
 
 export async function getById(id: number, database: AdminDb) {
@@ -177,39 +204,46 @@ export async function getById(id: number, database: AdminDb) {
 }
 
 export async function getStats(database: AdminDb): Promise<ShipmentStats> {
-	const records = await listShipmentCandidates(database, {
-		page: 1,
-		pageSize: 100,
-		search: undefined,
-		trackingCode: undefined,
-		diagnosticState: "all",
-	});
-	const summaries = records.map((record) => summarizeShipment(record, false));
+	const [stats, scanRecords] = await Promise.all([
+		getShipmentStats(database),
+		listShipmentCandidates(
+			database,
+			{
+				page: 1,
+				pageSize: DIAGNOSTIC_SCAN_LIMIT,
+				search: undefined,
+				trackingCode: undefined,
+				diagnosticState: "all",
+			},
+			{ take: DIAGNOSTIC_SCAN_LIMIT },
+		),
+	]);
+
+	const byStatusCounts = new Map(
+		stats.byStatus.map((row) => [row.status, row._count._all]),
+	);
 	const byStatus = Object.fromEntries(
-		shipmentStatuses.map((status) => [
-			status,
-			summaries.filter((summary) => summary.status === status).length,
-		]),
+		shipmentStatuses.map((status) => [status, byStatusCounts.get(status) ?? 0]),
 	) as Record<ShipmentStatus, number>;
+
+	const byTypeCounts = new Map(
+		stats.byType.map((row) => [row.type, row._count._all]),
+	);
 	const byType = Object.fromEntries(
-		shipmentTypes.map((type) => [
-			type,
-			summaries.filter((summary) => summary.type === type).length,
-		]),
+		shipmentTypes.map((type) => [type, byTypeCounts.get(type) ?? 0]),
 	) as Record<ShipmentType, number>;
 
+	const withDiagnostics = scanRecords
+		.map((record) => summarizeShipment(record, false))
+		.filter((summary) => summary.diagnosticCount > 0).length;
+
 	return shipmentStatsSchema.parse({
-		total: summaries.length,
+		total: stats.total,
 		byStatus,
 		byType,
-		packageCount: records.reduce(
-			(count, record) => count + record.packages.length,
-			0,
-		),
-		transportedQuantity: sumDecimals(
-			records.map(packageLineQuantity),
-		).toString(),
-		withDiagnostics: summaries.filter((summary) => summary.diagnosticCount > 0)
-			.length,
+		packageCount: stats.packageCount,
+		transportedQuantity: decimal(stats.transportedQuantity).toString(),
+		withDiagnostics,
+		truncated: scanRecords.length >= DIAGNOSTIC_SCAN_LIMIT,
 	});
 }

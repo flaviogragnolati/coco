@@ -1,11 +1,13 @@
 import { z } from "zod";
 
+import { adminOptionsOutputSchema } from "~/schemas/admin/_options.schemas";
 import {
 	productClientTermsCreateInputSchema,
 	productClientTermsDeleteInputSchema,
 	productClientTermsDetailSchema,
 	productClientTermsListInputSchema,
 	productClientTermsListOutputSchema,
+	productClientTermsOptionsInputSchema,
 	productClientTermsStatsSchema,
 	productClientTermsUpdateInputSchema,
 } from "~/schemas/admin/product-client-terms.schemas";
@@ -24,6 +26,13 @@ export const productClientTermsRouter = createTRPCRouter({
 		.output(productClientTermsListOutputSchema)
 		.query(async ({ ctx, input }) =>
 			productClientTermsService.list(input, ctx.db),
+		),
+
+	options: adminProcedure
+		.input(productClientTermsOptionsInputSchema)
+		.output(adminOptionsOutputSchema)
+		.query(async ({ ctx, input }) =>
+			productClientTermsService.options(input, ctx.db),
 		),
 
 	getById: adminProcedure

@@ -189,6 +189,9 @@ export function LotsClient() {
 							value: statsQuery.data.withDiagnostics,
 							icon: AlertTriangleIcon,
 							accent: "warning",
+							description: statsQuery.data.truncated
+								? "Primeros 1000 mas recientes"
+								: undefined,
 						},
 					]}
 				/>
@@ -335,11 +338,18 @@ export function LotsClient() {
 				</div>
 
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-					<span className="text-muted-foreground text-sm">
-						{listQuery.isLoading
-							? "Cargando lotes"
-							: `${total} lote${total === 1 ? "" : "s"}`}
-					</span>
+					<div className="flex flex-col gap-1">
+						<span className="text-muted-foreground text-sm">
+							{listQuery.isLoading
+								? "Cargando lotes"
+								: `${total} lote${total === 1 ? "" : "s"}`}
+						</span>
+						{listQuery.data?.truncated ? (
+							<span className="text-muted-foreground text-xs">
+								Resultados limitados a los 1000 mas recientes.
+							</span>
+						) : null}
+					</div>
 					<div className="flex items-center gap-2">
 						<Button
 							disabled={page <= 1 || listQuery.isLoading}
