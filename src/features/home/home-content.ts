@@ -1,24 +1,18 @@
 import {
-	BadgePercentIcon,
 	BoxesIcon,
-	ClockIcon,
-	HandshakeIcon,
 	type LucideIcon,
 	MailIcon,
 	PackageCheckIcon,
 	PhoneIcon,
 	SearchIcon,
-	ShieldCheckIcon,
 	ShoppingCartIcon,
-	TruckIcon,
 } from "lucide-react";
 
 export const homeNavLinks = [
-	{ href: "#como-funciona", label: "Como funciona" },
-	{ href: "#unirse", label: "Unirse" },
-	{ href: "#ofertas", label: "Ofertas" },
-	{ href: "#destacados", label: "Destacados" },
-	{ href: "#contacto", label: "Contacto" },
+	{ href: "/#como-funciona", label: "Cómo funciona" },
+	{ href: "/#ofertas", label: "Ofertas" },
+	{ href: "/#preguntas-frecuentes", label: "Preguntas frecuentes" },
+	{ href: "/#contacto", label: "Contacto" },
 ];
 
 export const howItWorksSteps: Array<{
@@ -27,79 +21,73 @@ export const howItWorksSteps: Array<{
 	Icon: LucideIcon;
 }> = [
 	{
-		title: "Elegis una oferta",
+		title: "Explorá y armá tu pedido",
 		description:
-			"Ves productos mayoristas vigentes, precios de referencia y cantidades minimas disponibles.",
+			"Revisá productos y condiciones vigentes. Podés sumar al carrito sin crear una cuenta.",
 		Icon: SearchIcon,
 	},
 	{
-		title: "Sumas tu pedido",
+		title: "Registrate, elegí la entrega y pagá",
 		description:
-			"Cargas lo que necesitas sin depender de coordinar con otros compradores.",
+			"Al iniciar el checkout completás tus datos, definís cómo recibir el pedido y confirmás el pago.",
 		Icon: ShoppingCartIcon,
 	},
 	{
-		title: "Coco consolida",
+		title: "Seguimos la compra hasta la entrega",
 		description:
-			"Unimos pedidos compatibles para alcanzar mejores condiciones de compra mayorista.",
+			"Coco consolida la demanda pagada y te comunica el avance de la operación hasta que recibís tu pedido.",
 		Icon: BoxesIcon,
 	},
+];
+
+export const heroBenefits: Array<{
+	title: string;
+	Icon: LucideIcon;
+}> = [
 	{
-		title: "Confirmamos la operacion",
-		description:
-			"Cuando el pedido consolidado esta listo, avanzas con pago, entrega y seguimiento.",
+		title: "Explorá sin registrarte",
+		Icon: SearchIcon,
+	},
+	{
+		title: "Armá tu carrito a tu ritmo",
+		Icon: ShoppingCartIcon,
+	},
+	{
+		title: "Seguí el pedido después del pago",
 		Icon: PackageCheckIcon,
 	},
 ];
 
-export const joinSteps: Array<{
-	title: string;
-	description: string;
-}> = [
+export const faqItems = [
 	{
-		title: "Ingresas con Google",
-		description: "Usamos el acceso actual de Coco para que el alta sea rapida.",
+		question: "¿Necesito una cuenta para ver productos?",
+		answer:
+			"No. Podés explorar el catálogo y armar tu carrito sin registrarte. Te pedimos que ingreses cuando empezás el checkout.",
 	},
 	{
-		title: "Completas tu perfil",
-		description:
-			"Agregas los datos necesarios para operar, facturar y recibir informacion.",
+		question: "¿Qué significa cantidad mínima?",
+		answer:
+			"Es la menor cantidad que podés comprar de un producto bajo sus condiciones comerciales vigentes. La vas a ver antes de sumarlo al carrito.",
 	},
 	{
-		title: "Participas en pedidos",
-		description:
-			"Elegis oportunidades vigentes y Coco simplifica la compra consolidada.",
-	},
-];
-
-export const featuredBenefits: Array<{
-	title: string;
-	description: string;
-	Icon: LucideIcon;
-}> = [
-	{
-		title: "Ahorro por volumen",
-		description:
-			"Acceso a condiciones mayoristas sin tener que comprar todo el minimo individualmente.",
-		Icon: BadgePercentIcon,
+		question: "¿Cuándo pago mi pedido?",
+		answer:
+			"Pagás al confirmar el checkout, después de elegir la entrega. Con el pago aprobado, tu demanda queda lista para que Coco la consolide.",
 	},
 	{
-		title: "Sin coordinacion manual",
-		description:
-			"Cada usuario carga su necesidad y Coco se encarga de juntar demanda compatible.",
-		Icon: HandshakeIcon,
+		question: "¿Qué pasa después del pago?",
+		answer:
+			"Tu pedido pasa a seguimiento. Coco agrupa la demanda pagada en operaciones compatibles y te informa cada cambio hasta la entrega.",
 	},
 	{
-		title: "Proceso simple",
-		description:
-			"Menos pasos operativos para pasar de una oferta vigente a una compra consolidada.",
-		Icon: ShieldCheckIcon,
+		question: "¿Qué pasa si mi demanda no entra en una operación?",
+		answer:
+			"Puede reprogramarse para una operación posterior. Vas a ver su estado en Mis pedidos y podés contactar a soporte si necesitás revisar tu caso.",
 	},
 	{
-		title: "Entrega ordenada",
-		description:
-			"Las operaciones quedan preparadas para seguimiento, pago y logistica posterior.",
-		Icon: TruckIcon,
+		question: "¿Dónde sigo el avance de mi compra?",
+		answer:
+			"En Mis pedidos encontrás el estado y la cronología de cada compra, desde la confirmación del pago hasta la entrega.",
 	},
 ];
 
@@ -108,6 +96,7 @@ export const contactItems: Array<{
 	value: string;
 	href?: string;
 	Icon: LucideIcon;
+	external?: boolean;
 }> = [
 	{
 		label: "Email",
@@ -120,10 +109,6 @@ export const contactItems: Array<{
 		value: "+54 9 11 0000-0000",
 		href: "https://wa.me/5491100000000",
 		Icon: PhoneIcon,
-	},
-	{
-		label: "Horario",
-		value: "Lunes a viernes, 9 a 18 hs",
-		Icon: ClockIcon,
+		external: true,
 	},
 ];

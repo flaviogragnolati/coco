@@ -4,7 +4,6 @@ import { AlertTriangleIcon, ImageIcon } from "lucide-react";
 
 import { CartItemRow } from "~/app/cart/_components/cart-item-row";
 import { ProductCard } from "~/app/products/_components/product-card";
-import { ProductImage } from "~/app/products/_components/product-image";
 import { ProductPriceBlock } from "~/app/products/_components/product-price-block";
 import { Badge } from "~/components/ui/badge";
 import {
@@ -22,7 +21,8 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { FeaturedProductCard } from "~/features/home/_components/featured-product-card";
+import { ProductImage } from "~/features/catalog/_components/product-image";
+import { HomeOfferCard } from "~/features/home/_components/home-offer-card";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
 import type { CartItem } from "~/shared/common/cart.types";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
@@ -232,9 +232,9 @@ export function ProductPreviewDialog({
 								)}
 							</TabsContent>
 							<TabsContent value="home">
-								{preview.featuredProduct ? (
+								{preview.homeOffer ? (
 									<div className="max-w-md">
-										<FeaturedProductCard product={preview.featuredProduct} />
+										<HomeOfferCard offer={preview.homeOffer} />
 									</div>
 								) : (
 									<PreviewUnavailable

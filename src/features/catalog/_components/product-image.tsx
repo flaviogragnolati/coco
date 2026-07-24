@@ -20,7 +20,8 @@ export function ProductImage({ imageUrl, name, className }: ProductImageProps) {
 
 	return (
 		<div className={className}>
-			<ImageIcon />
+			<ImageIcon aria-hidden="true" />
+			<span className="sr-only">Sin imagen para {name}</span>
 		</div>
 	);
 }

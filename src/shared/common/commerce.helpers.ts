@@ -98,6 +98,18 @@ export function getPriceLabel(
 	return `Precio MOQ por ${formatQuantity(terms.moq, unit)}`;
 }
 
+export function getPerUnitPrice(
+	terms: Pick<CatalogClientTerms, "refPrice" | "moqPrice" | "moq">,
+): number | null {
+	const refPrice = toNumber(terms.refPrice);
+	if (refPrice !== null) return refPrice;
+
+	const moqPrice = toNumber(terms.moqPrice);
+	const moq = toNumber(terms.moq);
+	if (moqPrice === null || moq === null || moq <= 0) return null;
+	return moqPrice / moq;
+}
+
 function getMaxValidQuantity(terms: CatalogClientTerms) {
 	const moq = toNumber(terms.moq) ?? 0;
 	const step = toNumber(terms.step);

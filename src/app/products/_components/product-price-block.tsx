@@ -4,26 +4,11 @@ import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import {
 	formatCurrency,
 	formatQuantity,
+	getPerUnitPrice,
 	productUnitLabelMap,
-	toNumber,
 } from "~/shared/common/commerce.helpers";
 
 type ProductPriceBlockVariant = "card" | "table" | "detail";
-
-/**
- * Per-unit price shown as a secondary reference. Prefers the explicit
- * refPrice; otherwise derives it from the MOQ block (moqPrice / moq),
- * guarding against divide-by-zero.
- */
-function getPerUnitPrice(product: CatalogProductListItem): number | null {
-	const refPrice = toNumber(product.terms.refPrice);
-	if (refPrice !== null) return refPrice;
-
-	const moqPrice = toNumber(product.terms.moqPrice);
-	const moq = toNumber(product.terms.moq);
-	if (moqPrice === null || moq === null || moq <= 0) return null;
-	return moqPrice / moq;
-}
 
 export function ProductPriceBlock({
 	product,
@@ -32,7 +17,7 @@ export function ProductPriceBlock({
 	product: CatalogProductListItem;
 	variant?: ProductPriceBlockVariant;
 }) {
-	const perUnit = getPerUnitPrice(product);
+	const perUnit = getPerUnitPrice(product.terms);
 	const perUnitLabel =
 		perUnit === null
 			? null

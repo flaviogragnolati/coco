@@ -13,6 +13,7 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 import { QuantityStepper } from "~/features/cart/_components/quantity-stepper";
+import { ProductImage } from "~/features/catalog/_components/product-image";
 import { cn } from "~/lib/utils";
 import type { CartItem } from "~/shared/common/cart.types";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
@@ -21,7 +22,6 @@ import {
 	formatQuantity,
 	productUnitLabelMap,
 } from "~/shared/common/commerce.helpers";
-import { ProductImage } from "./product-image";
 import { ProductPriceBlock } from "./product-price-block";
 
 type CatalogTableProps = {

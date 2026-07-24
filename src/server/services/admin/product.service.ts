@@ -28,7 +28,7 @@ import {
 	normalizeCartQuantity,
 	selectProductImage,
 } from "~/shared/common/commerce.helpers";
-import type { HomeFeaturedProduct } from "~/shared/common/home.types";
+import type { HomeOffer } from "~/shared/common/home.types";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import type { AdminMutationActor } from "./_base/admin-audit";
 import { writeAdminAuditLog } from "./_base/admin-audit";
@@ -100,16 +100,16 @@ function mapPreviewCartItem(product: CatalogProductDetail): CartItem {
 	};
 }
 
-function mapPreviewFeaturedProduct(
-	product: CatalogProductDetail,
-): HomeFeaturedProduct {
+function mapPreviewHomeOffer(product: CatalogProductDetail): HomeOffer {
 	return {
-		id: product.id,
+		productId: product.id,
+		productClientTermsId: product.terms.id,
 		productName: product.name,
-		productDescription: product.description,
 		unit: product.unit,
 		brandName: product.brand?.name ?? null,
 		imageUrl: product.imageUrl,
+		moq: product.terms.moq,
+		moqPrice: product.terms.moqPrice,
 		refPrice: product.terms.refPrice,
 		currency: product.terms.currency,
 	};
@@ -289,9 +289,7 @@ export async function getPreview(
 		adminProduct,
 		catalogProduct,
 		cartItem: catalogProduct ? mapPreviewCartItem(catalogProduct) : null,
-		featuredProduct: catalogProduct
-			? mapPreviewFeaturedProduct(catalogProduct)
-			: null,
+		homeOffer: catalogProduct ? mapPreviewHomeOffer(catalogProduct) : null,
 		warnings: buildPreviewWarnings(adminProduct, catalogProduct),
 	});
 }

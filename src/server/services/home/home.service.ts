@@ -1,27 +1,19 @@
 import "server-only";
 
-import {
-	homeFeaturedProductsOutputSchema,
-	homeOffersOutputSchema,
-} from "~/schemas/home.schemas";
+import { homeOffersOutputSchema } from "~/schemas/home.schemas";
 import { db } from "~/server/db";
 import { selectProductImage } from "~/shared/common/commerce.helpers";
-import type {
-	HomeFeaturedProduct,
-	HomeOffer,
-} from "~/shared/common/home.types";
+import type { HomeOffer } from "~/shared/common/home.types";
 import {
 	type CurrentHomeOfferRecord,
-	type FeaturedHomeProductRecord,
 	listCurrentHomeOffers,
-	listFeaturedHomeProducts,
 } from "./home.data";
 
 function mapHomeOffer(record: CurrentHomeOfferRecord): HomeOffer {
 	return {
-		id: record.id,
+		productId: record.product.id,
+		productClientTermsId: record.id,
 		productName: record.product.name,
-		productDescription: record.product.description,
 		unit: record.product.unit,
 		brandName: record.product.brand?.name ?? null,
 		imageUrl: selectProductImage(record.product, "catalog"),
@@ -29,36 +21,17 @@ function mapHomeOffer(record: CurrentHomeOfferRecord): HomeOffer {
 		moqPrice: record.moqPrice.toString(),
 		refPrice: record.refPrice?.toString() ?? null,
 		currency: record.currency,
-		fromDate: record.fromDate,
-		toDate: record.toDate,
-	};
-}
-
-function mapFeaturedProduct(
-	record: FeaturedHomeProductRecord,
-): HomeFeaturedProduct {
-	const terms = record.productClientTerms[0];
-
-	return {
-		id: record.id,
-		productName: record.name,
-		productDescription: record.description,
-		unit: record.unit,
-		brandName: record.brand?.name ?? null,
-		imageUrl: selectProductImage(record, "catalog"),
-		refPrice: terms?.refPrice?.toString() ?? null,
-		currency: terms?.currency ?? null,
 	};
 }
 
 export async function getHomeOffers(limit = 4) {
 	const records = await listCurrentHomeOffers(db, new Date(), limit);
-	return homeOffersOutputSchema.parse(records.map(mapHomeOffer));
-}
-
-export async function getHomeFeaturedProducts(limit = 3) {
-	const records = await listFeaturedHomeProducts(db, new Date(), limit);
-	return homeFeaturedProductsOutputSchema.parse(
-		records.map(mapFeaturedProduct),
+	const uniqueRecords = records.filter(
+		(record, index, allRecords) =>
+			allRecords.findIndex(
+				(candidate) => candidate.product.id === record.product.id,
+			) === index,
 	);
+
+	return homeOffersOutputSchema.parse(uniqueRecords.map(mapHomeOffer));
 }

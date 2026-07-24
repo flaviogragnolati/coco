@@ -20,11 +20,11 @@ import {
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
 import { QuantityStepper } from "~/features/cart/_components/quantity-stepper";
+import { ProductImage } from "~/features/catalog/_components/product-image";
 import type { CartItem } from "~/shared/common/cart.types";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import { formatQuantity } from "~/shared/common/commerce.helpers";
 import { api } from "~/trpc/react";
-import { ProductImage } from "./product-image";
 import { ProductPriceBlock } from "./product-price-block";
 
 type ProductDetailsDialogProps = {

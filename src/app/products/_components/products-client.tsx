@@ -80,9 +80,6 @@ export function ProductsClient({
 }) {
 	const params = useCatalogParams();
 	const { filters, sort, view, perPage } = params;
-	const [selectedProductId, setSelectedProductId] = useState<number | null>(
-		null,
-	);
 	const [filtersOpen, setFiltersOpen] = useState(false);
 
 	const productsQuery = api.catalog.list.useQuery();
@@ -133,9 +130,9 @@ export function ProductsClient({
 	}, [productsQuery.isLoading, params.page, pageCount, params.setPage]);
 
 	const selectedCartItem =
-		selectedProductId === null
+		params.productId === null
 			? undefined
-			: cartItems.find((item) => item.product.id === selectedProductId);
+			: cartItems.find((item) => item.product.id === params.productId);
 
 	const handleAdd = (product: CatalogProductListItem) => {
 		cartActions.setItem(catalogProductToCartItem(product));
@@ -158,7 +155,7 @@ export function ProductsClient({
 		cartItemsByTermsId,
 		disabled: cartActions.isPending,
 		onAdd: handleAdd,
-		onDetails: setSelectedProductId,
+		onDetails: params.setProductId,
 		onDecrement: cartActions.decrement,
 		onIncrement: cartActions.increment,
 		onQuantityCommit: cartActions.updateQuantity,
@@ -292,13 +289,13 @@ export function ProductsClient({
 				onDecrement={cartActions.decrement}
 				onIncrement={cartActions.increment}
 				onOpenChange={(open) => {
-					if (!open) setSelectedProductId(null);
+					if (!open) params.setProductId(null);
 				}}
 				onQuantityCommit={(item, quantity) =>
 					cartActions.updateQuantity(item, quantity)
 				}
-				open={selectedProductId !== null}
-				productId={selectedProductId}
+				open={params.productId !== null}
+				productId={params.productId}
 			/>
 		</main>
 	);

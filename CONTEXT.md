@@ -76,6 +76,10 @@ _Avoid_: Source of truth, proof
 The customer-facing set of purchasable products, each surfaced with its current client terms. Distinct from the internal admin Product record.
 _Avoid_: Store, product list
 
+**Featured offer**:
+A current catalog product surfaced automatically on the home page from its active client terms. It does not imply a promotion, discount, or open aggregation operation.
+_Avoid_: Promotion, discount, operation
+
 **Client terms**:
 The active customer-facing commercial terms for a product: minimum order quantity and its price, optional step and step price, optional reference price, currency, and validity window. The single price source for catalog and cart.
 _Avoid_: Pricing, price terms

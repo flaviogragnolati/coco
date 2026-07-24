@@ -61,7 +61,10 @@ export function useCatalogParams() {
 	searchParamsRef.current = searchParams;
 
 	const commit = useCallback(
-		(updates: Record<string, string | null>) => {
+		(
+			updates: Record<string, string | null>,
+			history: "push" | "replace" = "replace",
+		) => {
 			const params = new URLSearchParams(searchParamsRef.current.toString());
 			for (const [key, value] of Object.entries(updates)) {
 				if (value === null || value === "") {
@@ -71,7 +74,8 @@ export function useCatalogParams() {
 				}
 			}
 			const qs = params.toString();
-			router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+			const href = qs ? `${pathname}?${qs}` : pathname;
+			router[history](href, { scroll: false });
 		},
 		[pathname, router],
 	);
@@ -150,6 +154,16 @@ export function useCatalogParams() {
 		? rawPerPage
 		: DEFAULT_PER_PAGE;
 
+	const rawProductId = searchParams.get("product");
+	const parsedProductId =
+		rawProductId && /^[1-9]\d*$/.test(rawProductId)
+			? Number(rawProductId)
+			: null;
+	const productId =
+		parsedProductId !== null && Number.isSafeInteger(parsedProductId)
+			? parsedProductId
+			: null;
+
 	const setBrandIds = useCallback(
 		(ids: number[]) =>
 			commit({ brand: ids.length ? ids.join(",") : null, page: null }),
@@ -205,6 +219,19 @@ export function useCatalogParams() {
 			}),
 		[commit],
 	);
+	const setProductId = useCallback(
+		(id: number | null) =>
+			commit(
+				{
+					product:
+						id !== null && Number.isSafeInteger(id) && id > 0
+							? String(id)
+							: null,
+				},
+				"push",
+			),
+		[commit],
+	);
 
 	const reset = useCallback(() => {
 		setSearchInput("");
@@ -229,6 +256,7 @@ export function useCatalogParams() {
 		view,
 		page,
 		perPage,
+		productId,
 		setSearch,
 		setBrandIds,
 		setUnits,
@@ -240,6 +268,7 @@ export function useCatalogParams() {
 		setView,
 		setPage,
 		setPerPage,
+		setProductId,
 		reset,
 	};
 }

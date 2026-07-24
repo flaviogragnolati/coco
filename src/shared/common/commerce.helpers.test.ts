@@ -4,6 +4,7 @@ import {
 	buildCartSnapshot,
 	formatCurrency,
 	formatQuantity,
+	getPerUnitPrice,
 	selectProductImage,
 } from "./commerce.helpers";
 
@@ -122,4 +123,25 @@ test("selectProductImage prefers the card image in the catalog context", () => {
 test("empty values fall through to the raw branch instead of coercing to zero", () => {
 	expect(formatCurrency("", "ARS")).toBe("ARS ");
 	expect(formatQuantity("", "kg")).toBe(" kg");
+});
+
+test("getPerUnitPrice prefers an explicit reference price", () => {
+	expect(
+		getPerUnitPrice({ refPrice: "12.5", moqPrice: "100", moq: "10" }),
+	).toBe(12.5);
+});
+
+test("getPerUnitPrice derives the reference from the minimum block", () => {
+	expect(getPerUnitPrice({ refPrice: null, moqPrice: "100", moq: "8" })).toBe(
+		12.5,
+	);
+});
+
+test("getPerUnitPrice rejects zero and invalid minimum quantities", () => {
+	expect(
+		getPerUnitPrice({ refPrice: null, moqPrice: "100", moq: "0" }),
+	).toBeNull();
+	expect(
+		getPerUnitPrice({ refPrice: null, moqPrice: "invalid", moq: "8" }),
+	).toBeNull();
 });

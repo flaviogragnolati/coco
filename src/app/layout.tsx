@@ -46,6 +46,7 @@ export default async function RootLayout({
 				nunitoSans.variable,
 				geistHeading.variable,
 			)}
+			data-scroll-behavior="smooth"
 			lang="es"
 		>
 			<body className="min-h-screen bg-background text-foreground">

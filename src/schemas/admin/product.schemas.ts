@@ -7,7 +7,7 @@ import {
 import { supplierIdSchema } from "~/schemas/admin/supplier.schemas";
 import { cartItemSchema } from "~/schemas/cart.schemas";
 import { catalogProductDetailSchema } from "~/schemas/catalog.schemas";
-import { homeFeaturedProductSchema } from "~/schemas/home.schemas";
+import { homeOfferSchema } from "~/schemas/home.schemas";
 import { nullishText, optionalUrl, requiredText } from "./_crud-schema-helpers";
 
 const imageUrlSchema = z.string().trim().url("Ingresá una URL válida");
@@ -118,7 +118,7 @@ export const productPreviewSchema = z.object({
 	adminProduct: productDetailSchema,
 	catalogProduct: catalogProductDetailSchema.nullable(),
 	cartItem: cartItemSchema.nullable(),
-	featuredProduct: homeFeaturedProductSchema.nullable(),
+	homeOffer: homeOfferSchema.nullable(),
 	warnings: z.array(z.string()),
 });
 

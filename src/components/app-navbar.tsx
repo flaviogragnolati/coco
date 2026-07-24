@@ -1,7 +1,7 @@
 import {
 	ChevronDownIcon,
-	HomeIcon,
 	LayoutDashboardIcon,
+	LogInIcon,
 	MapPinIcon,
 	PackageIcon,
 	ShieldIcon,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { CartNavButton } from "~/components/cart-nav-button";
+import { MobileNavMenu } from "~/components/mobile-nav-menu";
 import { Button, buttonVariants } from "~/components/ui/button";
 import {
 	DropdownMenu,
@@ -26,6 +27,7 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { UserMenu } from "~/components/user-menu";
+import { homeNavLinks } from "~/features/home/home-content";
 import { isAdminRole } from "~/server/auth/auth.utils";
 import type { Session } from "~/server/better-auth";
 
@@ -102,32 +104,21 @@ export function AppNavbar({ session }: AppNavbarProps) {
 	const DashboardIcon = adminDashboardLink.Icon;
 
 	return (
-		<header className="sticky top-0 border-b bg-background/95 backdrop-blur">
-			<nav className="mx-auto flex min-h-14 w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2">
-				<div className="flex min-w-0 items-center gap-2">
-					<Button asChild className="font-heading text-sm" variant="ghost">
-						<Link href="/">Coco</Link>
-					</Button>
-					<Button asChild size="sm" variant="ghost">
-						<Link href="/">
-							<HomeIcon data-icon="inline-start" />
-							Home
-						</Link>
-					</Button>
-					<Button asChild size="sm" variant="ghost">
-						<Link href="/products">
-							<ShoppingBagIcon data-icon="inline-start" />
-							Productos
-						</Link>
-					</Button>
-					{isActiveUser ? (
-						<Button asChild size="sm" variant="ghost">
-							<Link href="/my-orders">
-								<ShoppingBagIcon data-icon="inline-start" />
-								Mis pedidos
-							</Link>
+		<header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
+			<nav className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 md:px-6">
+				<Link
+					className="shrink-0 font-heading font-semibold text-xl tracking-tight"
+					href="/"
+				>
+					Coco
+				</Link>
+
+				<div className="hidden min-w-0 items-center gap-1 xl:flex">
+					{homeNavLinks.map((link) => (
+						<Button asChild key={link.href} size="sm" variant="ghost">
+							<Link href={link.href}>{link.label}</Link>
 						</Button>
-					) : null}
+					))}
 					{canAccessAdmin ? (
 						<DropdownMenu>
 							<DropdownMenuTrigger
@@ -185,6 +176,12 @@ export function AppNavbar({ session }: AppNavbarProps) {
 							</DropdownMenuContent>
 						</DropdownMenu>
 					) : null}
+					<Button asChild size="sm">
+						<Link href="/products">
+							<ShoppingBagIcon data-icon="inline-start" />
+							Comprar
+						</Link>
+					</Button>
 				</div>
 
 				<div className="flex items-center gap-2">
@@ -201,10 +198,20 @@ export function AppNavbar({ session }: AppNavbarProps) {
 							}}
 						/>
 					) : (
-						<Button asChild size="sm">
-							<Link href="/login">Ingresar</Link>
+						<Button asChild size="sm" variant="ghost">
+							<Link href="/login">
+								<LogInIcon data-icon="inline-start" />
+								<span className="hidden sm:inline">Ingresar</span>
+								<span className="sr-only sm:hidden">Ingresar</span>
+							</Link>
 						</Button>
 					)}
+					<div className="xl:hidden">
+						<MobileNavMenu
+							canAccessAdmin={canAccessAdmin}
+							isActiveUser={isActiveUser}
+						/>
+					</div>
 				</div>
 			</nav>
 		</header>
