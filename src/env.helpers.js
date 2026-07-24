@@ -14,6 +14,19 @@ export function defaultAppEnvFor(nodeEnv) {
 }
 
 /**
+ * Resolves a canonical environment variable before any supported alias while
+ * preserving the original value byte-for-byte.
+ *
+ * @param {...(string | undefined)} values
+ * @returns {string | undefined}
+ */
+export function firstDefinedEnvValue(...values) {
+	return values.find(
+		(value) => typeof value === "string" && value.trim().length > 0,
+	);
+}
+
+/**
  * A production build with a non-production `APP_ENV` has no legitimate expression:
  * the enum has no `staging` member, so the combination can only be a misconfiguration
  * that silently relaxes every `APP_ENV !== "production"` gate.

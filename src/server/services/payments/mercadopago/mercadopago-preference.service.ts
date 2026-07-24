@@ -6,10 +6,12 @@ import { Preference } from "mercadopago";
 import { createMercadoPagoClient } from "~/lib/mercadopago/client";
 import type { CheckoutCartRecord } from "~/server/services/checkout/checkout.data";
 import type { PaymentProviderConfig } from "~/shared/common/admin-crud/payment.types";
+import { calculateLineTotal } from "~/shared/common/commerce.helpers";
 import {
-	calculateLineTotal,
-	toMoneyString,
-} from "~/shared/common/commerce.helpers";
+	buildMercadoPagoPreferenceCreateData,
+	MercadoPagoPreferenceInvariantError,
+	type MercadoPagoPreferenceLine,
+} from "./mercadopago-preference.decision";
 
 type CreateMercadoPagoPreferenceInput = {
 	cart: CheckoutCartRecord;
@@ -28,35 +30,32 @@ type CreateMercadoPagoPreferenceInput = {
 	config: PaymentProviderConfig;
 };
 
-function buildPreferenceItems(cart: CheckoutCartRecord) {
-	return cart.cartItems.map((item) => {
+function buildPreferenceLines(cart: CheckoutCartRecord) {
+	return cart.cartItems.map<MercadoPagoPreferenceLine>((item) => {
 		const name = item.productClientTerms.product.name;
-		const quantity = Number(item.quantity.toString());
-		const lineTotal = Number(
-			calculateLineTotal(
-				{
-					id: item.productClientTerms.id,
-					moq: item.productClientTerms.moq.toString(),
-					moqPrice: item.productClientTerms.moqPrice.toString(),
-					step: item.productClientTerms.step?.toString() ?? null,
-					stepPrice: item.productClientTerms.stepPrice?.toString() ?? null,
-					max: item.productClientTerms.max?.toString() ?? null,
-					refPrice: item.productClientTerms.refPrice?.toString() ?? null,
-					currency: item.productClientTerms.currency,
-					fromDate: item.productClientTerms.fromDate,
-					toDate: item.productClientTerms.toDate,
-				},
-				item.quantity.toString(),
-			),
+		const requestedQuantity = item.quantity.toString();
+		const lineTotal = calculateLineTotal(
+			{
+				id: item.productClientTerms.id,
+				moq: item.productClientTerms.moq.toString(),
+				moqPrice: item.productClientTerms.moqPrice.toString(),
+				step: item.productClientTerms.step?.toString() ?? null,
+				stepPrice: item.productClientTerms.stepPrice?.toString() ?? null,
+				max: item.productClientTerms.max?.toString() ?? null,
+				refPrice: item.productClientTerms.refPrice?.toString() ?? null,
+				currency: item.productClientTerms.currency,
+				fromDate: item.productClientTerms.fromDate,
+				toDate: item.productClientTerms.toDate,
+			},
+			requestedQuantity,
 		);
-		const unitPrice = quantity > 0 ? lineTotal / quantity : lineTotal;
 
 		return {
 			id: String(item.productClientTerms.product.id),
 			title: name,
-			quantity: Math.max(1, Math.round(quantity)),
-			unit_price: Number(toMoneyString(unitPrice)),
-			currency_id: item.productClientTerms.currency,
+			requestedQuantity,
+			lineTotal,
+			currency: item.productClientTerms.currency,
 		};
 	});
 }
@@ -68,47 +67,33 @@ export async function createMercadoPagoPreference(
 	const expiresAt = new Date(
 		Date.now() + input.config.settings.preferenceExpiresInMinutes * 60_000,
 	);
-	const externalReference = `user_transaction:${input.transaction.id}`;
-	const body = {
-		items: buildPreferenceItems(input.cart),
-		payer: {
-			email: input.order.user.email,
-		},
-		external_reference: externalReference,
-		back_urls: {
-			success: input.config.settings.successBackUrl,
-			failure: input.config.settings.failureBackUrl,
-			pending: input.config.settings.pendingBackUrl,
-		},
-		auto_return: input.config.settings.autoReturnApproved
-			? "approved"
-			: undefined,
-		notification_url: input.config.settings.notificationUrl,
-		binary_mode: input.config.settings.binaryMode,
-		expires: true,
-		expiration_date_to: expiresAt.toISOString(),
-		date_of_expiration: expiresAt.toISOString(),
-		statement_descriptor:
-			input.config.settings.statementDescriptor ?? undefined,
-		payment_methods: {
-			excluded_payment_methods:
-				input.config.settings.excludedPaymentMethods.map((id) => ({ id })),
-			excluded_payment_types: input.config.settings.excludedPaymentTypes.map(
-				(id) => ({ id }),
-			),
-		},
-		metadata: {
-			userTransactionId: input.transaction.id,
-			userOrderId: input.order.id,
-			userOrderCode: input.order.code,
-		},
-	};
+	let preferenceData: ReturnType<typeof buildMercadoPagoPreferenceCreateData>;
+
+	try {
+		preferenceData = buildMercadoPagoPreferenceCreateData({
+			lines: buildPreferenceLines(input.cart),
+			expectedAmount: input.transaction.amount.toString(),
+			currency: input.transaction.currency,
+			payerEmail: input.order.user.email,
+			transactionId: input.transaction.id,
+			orderId: input.order.id,
+			orderCode: input.order.code,
+			expiresAt,
+			settings: input.config.settings,
+		});
+	} catch (error) {
+		if (!(error instanceof MercadoPagoPreferenceInvariantError)) throw error;
+
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message:
+				"El total o la moneda del checkout no coincide con la preferencia de Mercado Pago.",
+		});
+	}
 
 	const result = await preference.create({
-		body,
-		requestOptions: {
-			idempotencyKey: `mercadopago:preference:userTransaction:${input.transaction.id}`,
-		},
+		body: preferenceData.body,
+		requestOptions: preferenceData.requestOptions,
 	});
 
 	if (!result.id) {
@@ -122,9 +107,9 @@ export async function createMercadoPagoPreference(
 		providerPreferenceId: result.id,
 		checkoutUrl: result.init_point ?? null,
 		sandboxCheckoutUrl: result.sandbox_init_point ?? null,
-		expiresAt,
-		externalReference,
-		requestSnapshot: body,
+		expiresAt: preferenceData.expiresAt,
+		externalReference: preferenceData.externalReference,
+		requestSnapshot: preferenceData.body,
 		responseSnapshot: result,
 	};
 }

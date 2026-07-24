@@ -1,7 +1,11 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-import { assertAppEnvConsistency, defaultAppEnvFor } from "./env.helpers.js";
+import {
+	assertAppEnvConsistency,
+	defaultAppEnvFor,
+	firstDefinedEnvValue,
+} from "./env.helpers.js";
 
 export const env = createEnv({
 	/**
@@ -52,8 +56,14 @@ export const env = createEnv({
 		APP_ENV: process.env.APP_ENV,
 		NODE_ENV: process.env.NODE_ENV,
 		DEV_USER_ROLE: process.env.DEV_USER_ROLE,
-		MERCADOPAGO_ACCESS_TOKEN: process.env.MERCADOPAGO_ACCESS_TOKEN,
-		MERCADOPAGO_WEBHOOK_SECRET: process.env.MERCADOPAGO_WEBHOOK_SECRET,
+		MERCADOPAGO_ACCESS_TOKEN: firstDefinedEnvValue(
+			process.env.MERCADOPAGO_ACCESS_TOKEN,
+			process.env.MP_ACCESS_TOKEN,
+		),
+		MERCADOPAGO_WEBHOOK_SECRET: firstDefinedEnvValue(
+			process.env.MERCADOPAGO_WEBHOOK_SECRET,
+			process.env.MP_WEBHOOK_TOKEN,
+		),
 		MERCADOPAGO_TIMEOUT_MS: process.env.MERCADOPAGO_TIMEOUT_MS,
 	},
 	/**

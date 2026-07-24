@@ -15,15 +15,12 @@ import {
 	updatePaymentProviderEventStatus,
 } from "~/server/services/payments/payment.data";
 import { MERCADOPAGO_PROVIDER } from "./mercadopago-config.service";
-
-type PaymentStatus =
-	| "pending"
-	| "inProcess"
-	| "completed"
-	| "failed"
-	| "cancelled"
-	| "refunded"
-	| "chargedBack";
+import {
+	mapMercadoPagoPaymentStatus,
+	type PaymentStatus,
+	shouldApplyMercadoPagoPaymentStatus,
+	shouldSubmitOrderAfterMercadoPagoReconciliation,
+} from "./mercadopago-reconciliation.decision";
 
 type AttemptWithOrder = Prisma.UserTransactionGetPayload<{
 	include: {
@@ -35,37 +32,6 @@ type AttemptWithOrder = Prisma.UserTransactionGetPayload<{
 		};
 	};
 }>;
-
-function mapProviderStatus(status: string | undefined | null): PaymentStatus {
-	switch (status) {
-		case "approved":
-			return "completed";
-		case "in_process":
-			return "inProcess";
-		case "rejected":
-			return "failed";
-		case "cancelled":
-			return "cancelled";
-		case "refunded":
-			return "refunded";
-		case "charged_back":
-			return "chargedBack";
-		default:
-			return "pending";
-	}
-}
-
-function shouldApplyStatus(
-	current: PaymentStatus,
-	next: PaymentStatus,
-): boolean {
-	if (current === next) return true;
-	if (next === "refunded" || next === "chargedBack") return true;
-	if (current === "refunded" || current === "chargedBack") return false;
-	if (current === "completed") return false;
-	if (next === "completed") return true;
-	return true;
-}
 
 function extractTransactionIdFromReference(reference: unknown) {
 	if (typeof reference !== "string") return null;
@@ -182,9 +148,9 @@ async function updateAttemptFromPayment(
 	attempt: AttemptWithOrder,
 	payment: Awaited<ReturnType<Payment["get"]>>,
 ) {
-	const nextStatus = mapProviderStatus(payment.status);
+	const nextStatus = mapMercadoPagoPaymentStatus(payment.status);
 	const currentStatus = attempt.status as PaymentStatus;
-	const status = shouldApplyStatus(currentStatus, nextStatus)
+	const status = shouldApplyMercadoPagoPaymentStatus(currentStatus, nextStatus)
 		? nextStatus
 		: currentStatus;
 	const completedAt =
@@ -219,11 +185,13 @@ async function updateAttemptFromPayment(
 		},
 	});
 
-	if (status === "completed") {
-		await submitOrderAfterCompletedPayment(tx, {
-			...attempt,
-			completedAt: updated.completedAt,
-		});
+	if (
+		shouldSubmitOrderAfterMercadoPagoReconciliation({
+			completedAt: attempt.completedAt,
+			status,
+		})
+	) {
+		await submitOrderAfterCompletedPayment(tx, attempt);
 	}
 
 	if (status === "refunded") {

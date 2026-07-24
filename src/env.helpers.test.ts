@@ -1,6 +1,10 @@
 import { expect, test } from "vitest";
 
-import { assertAppEnvConsistency, defaultAppEnvFor } from "./env.helpers.js";
+import {
+	assertAppEnvConsistency,
+	defaultAppEnvFor,
+	firstDefinedEnvValue,
+} from "./env.helpers.js";
 
 test("defaultAppEnvFor mirrors production and test, defaults everything else", () => {
 	expect(defaultAppEnvFor("production")).toBe("production");
@@ -36,4 +40,16 @@ test("assertAppEnvConsistency accepts every other combination", () => {
 	for (const [nodeEnv, appEnv] of safe) {
 		expect(() => assertAppEnvConsistency(nodeEnv, appEnv)).not.toThrow();
 	}
+});
+
+test("firstDefinedEnvValue prefers the canonical value", () => {
+	expect(firstDefinedEnvValue("canonical", "alias")).toBe("canonical");
+});
+
+test("firstDefinedEnvValue falls back past missing and empty values", () => {
+	expect(firstDefinedEnvValue(undefined, "", "   ", "alias")).toBe("alias");
+});
+
+test("firstDefinedEnvValue leaves resolved secret bytes untouched", () => {
+	expect(firstDefinedEnvValue("  secret  ")).toBe("  secret  ");
 });

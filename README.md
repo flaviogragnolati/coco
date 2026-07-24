@@ -5,6 +5,33 @@ This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3
 ## Project Docs
 
 - [Schema foundation reference](docs/schema-reference.md) - canonical domain and workflow reference derived from `prisma/schema.prisma`
+- [Mercado Pago sandbox enablement](docs/plans/mercadopago-checkout-pro-sandbox-enablement.md) - Checkout Pro configuration and validation plan
+
+## Mercado Pago Checkout Pro
+
+Checkout Pro uses server-only credentials. Prefer
+`MERCADOPAGO_ACCESS_TOKEN` and `MERCADOPAGO_WEBHOOK_SECRET`; existing
+environments may use the compatible aliases `MP_ACCESS_TOKEN` and
+`MP_WEBHOOK_TOKEN`. Never prefix these variables with `NEXT_PUBLIC_`.
+
+For the shared sandbox environment, configure Mercado Pago payment Webhooks at:
+
+```text
+https://coco-murex.vercel.app/api/mercadopago/webhook
+```
+
+The provider configuration uses these return pages:
+
+```text
+https://coco-murex.vercel.app/checkout/mercadopago/success
+https://coco-murex.vercel.app/checkout/mercadopago/failure
+https://coco-murex.vercel.app/checkout/mercadopago/pending
+```
+
+Keep the provider in `sandbox` mode until a complete test-buyer purchase and a
+signed webhook simulation have both succeeded. Local `.env` values are not
+automatically available to Vercel; configure the same server-only credentials
+in the linked Vercel project.
 
 ## What's next? How do I make an app with this?
 
