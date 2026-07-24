@@ -15,13 +15,13 @@ import { shipmentStatusConfig, shipmentTypeConfig } from "./shipment.mappers";
 const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 	{
 		key: "shipment",
-		header: "Envio",
+		header: "Envío",
 		className: "min-w-48",
 		cell: (shipment) => (
 			<div className="flex flex-col gap-1">
 				<span className="font-medium">{shipment.internalCode}</span>
 				<span className="text-muted-foreground text-xs">{shipment.name}</span>
-				<IdTooltip id={shipment.id} label="Envio" />
+				<IdTooltip id={shipment.id} label="Envío" />
 			</div>
 		),
 	},
@@ -41,7 +41,7 @@ const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 	},
 	{
 		key: "carrier",
-		header: "Carrier",
+		header: "Transportista",
 		className: "min-w-44",
 		cell: (shipment) =>
 			shipment.carrierOrder ? (
@@ -69,7 +69,7 @@ const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 	},
 	{
 		key: "diagnostics",
-		header: "Diagnosticos",
+		header: "Diagnósticos",
 		className: "min-w-60",
 		cell: (shipment) => (
 			<div className="flex flex-col gap-1">
@@ -110,7 +110,7 @@ export function ShipmentTable({
 	return (
 		<CrudTable
 			columns={shipmentColumns}
-			getRowAriaLabel={(shipment) => `Ver envio ${shipment.internalCode}`}
+			getRowAriaLabel={(shipment) => `Ver envío ${shipment.internalCode}`}
 			getRowKey={(shipment) => shipment.id}
 			items={shipments}
 			onRowClick={onSelect}

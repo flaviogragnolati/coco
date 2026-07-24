@@ -58,7 +58,7 @@ export function CarrierFormDialog({
 
 	const errors = form.formState.errors;
 	const active = Boolean(form.watch("active"));
-	const title = mode === "create" ? "Agregar carrier" : "Editar carrier";
+	const title = mode === "create" ? "Agregar transportista" : "Editar transportista";
 
 	useEffect(() => {
 		if (!open) return;
@@ -160,7 +160,7 @@ export function CarrierFormDialog({
 							<FieldError errors={[errors.name]} />
 						</Field>
 						<Field data-invalid={Boolean(errors.description)}>
-							<FieldLabel htmlFor="carrier-description">Descripcion</FieldLabel>
+							<FieldLabel htmlFor="carrier-description">Descripción</FieldLabel>
 							<Textarea
 								aria-invalid={Boolean(errors.description)}
 								disabled={isSubmitting}
@@ -172,7 +172,7 @@ export function CarrierFormDialog({
 					</FieldGroup>
 
 					<FieldSet>
-						<FieldLegend>Direccion</FieldLegend>
+						<FieldLegend>Dirección</FieldLegend>
 						<FieldGroup className="grid gap-4 md:grid-cols-2">
 							<Field
 								className="md:col-span-2"
@@ -239,7 +239,7 @@ export function CarrierFormDialog({
 								<FieldError errors={[errors.address?.postalCode]} />
 							</Field>
 							<Field data-invalid={Boolean(errors.address?.country)}>
-								<FieldLabel htmlFor="carrier-address-country">Pais</FieldLabel>
+								<FieldLabel htmlFor="carrier-address-country">País</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.address?.country)}
 									disabled={isSubmitting}

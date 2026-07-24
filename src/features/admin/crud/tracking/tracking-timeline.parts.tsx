@@ -21,7 +21,7 @@ export function JsonPreview({ value }: { value: unknown }) {
 	}
 
 	return (
-		<pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-none border bg-muted/30 p-2 font-mono text-[11px]">
+		<pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-2 font-mono text-[11px]">
 			{JSON.stringify(value, null, 2)}
 		</pre>
 	);
@@ -42,7 +42,7 @@ export function TrackingTimelineItemCard({
 	const refs = formatTrackingRefs(item.refs);
 
 	return (
-		<li className="grid gap-3 rounded-none border p-3 lg:grid-cols-[12rem_1fr]">
+		<li className="grid gap-3 rounded-lg border p-3 lg:grid-cols-[12rem_1fr]">
 			<div className="flex flex-col gap-1">
 				<span className="font-medium text-sm">
 					{formatDateTimeShort(new Date(item.createdAt))}
@@ -77,7 +77,7 @@ export function TrackingTimelineItemCard({
 
 				{extra}
 
-				<details className="rounded-none border bg-background p-2">
+				<details className="rounded-lg border bg-background p-2">
 					<summary className="cursor-pointer font-medium text-xs">
 						Metadata
 					</summary>
@@ -99,7 +99,7 @@ export function TrackingTimeline({
 }) {
 	if (items.length === 0) {
 		return (
-			<div className="rounded-none border p-3 text-muted-foreground text-sm">
+			<div className="rounded-2xl border p-3 text-muted-foreground text-sm">
 				{emptyLabel}
 			</div>
 		);

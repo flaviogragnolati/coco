@@ -64,7 +64,7 @@ export function OperationCreateDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="La operacion se crea y ejecuta al confirmar."
+			description="La operación se crea y ejecuta al confirmar."
 			footer={
 				<>
 					<Button
@@ -91,7 +91,7 @@ export function OperationCreateDialog({
 			}
 			onOpenChange={onOpenChange}
 			open={open}
-			title="Nueva operacion"
+			title="Nueva operación"
 		>
 			<form
 				className="flex flex-col gap-5"

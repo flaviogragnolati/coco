@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	ArrowLeftIcon,
 	CheckCircle2Icon,
 	ClockIcon,
 	LayersIcon,
@@ -12,7 +11,6 @@ import {
 	ShieldCheckIcon,
 	XCircleIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -669,14 +667,6 @@ export function PaymentsAdminClient() {
 
 	return (
 		<CrudPageShell
-			actions={
-				<Button asChild variant="outline">
-					<Link href="/admin">
-						<ArrowLeftIcon data-icon="inline-start" />
-						Admin
-					</Link>
-				</Button>
-			}
 			description="Trazabilidad de intentos de pago, eventos de proveedor y configuración de Mercado Pago."
 			title="Pagos"
 		>
@@ -709,7 +699,7 @@ export function PaymentsAdminClient() {
 					]}
 				/>
 			) : null}
-			<div className="rounded-none border p-3">
+			<div className="rounded-2xl border p-3">
 				<Field>
 					<FieldLabel htmlFor="payment-search">Buscar</FieldLabel>
 					<div className="relative">

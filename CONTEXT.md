@@ -50,6 +50,10 @@ _Avoid_: PackageAllocation, package line
 A movement record for packages, either between internal locations or toward the end user.
 _Avoid_: Package, carrier order
 
+**Carrier**:
+A logistics provider that moves shipments. Code, URLs, and data keep `carrier`; Spanish-facing UI labels it "Transportista".
+_Avoid_: Courier, shipping company
+
 **Roll over**:
 Quantity that dropped out of the current fulfillment path and must be rebatched or otherwise resolved.
 _Avoid_: Remainder, leftover, silent quantity delta

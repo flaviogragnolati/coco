@@ -50,14 +50,14 @@ export const fulfillmentStatusOptions: Array<{
 	label: string;
 }> = [
 	{ value: "awaitingAggregation", label: "Pendiente de agregacion" },
-	{ value: "includedInOperation", label: "En operacion" },
+	{ value: "includedInOperation", label: "En operación" },
 	{ value: "allocatedToSupplierItem", label: "Asignado a proveedor" },
 	{ value: "requestedFromSupplier", label: "Pedido a proveedor" },
 	{ value: "supplierConfirmed", label: "Confirmado por proveedor" },
 	{ value: "packaged", label: "Empaquetado" },
-	{ value: "inInternalShipment", label: "Envio interno" },
-	{ value: "atWarehouse", label: "En deposito" },
-	{ value: "inEndUserShipment", label: "Envio a usuario" },
+	{ value: "inInternalShipment", label: "Envío interno" },
+	{ value: "atWarehouse", label: "En depósito" },
+	{ value: "inEndUserShipment", label: "Envío a usuario" },
 	{ value: "delivered", label: "Entregado" },
 	{ value: "partiallyRolledOver", label: "Parcialmente rebalanceado" },
 	{ value: "rolledOver", label: "Rebalanceado" },

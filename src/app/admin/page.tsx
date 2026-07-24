@@ -1,81 +1,66 @@
-import {
-	ArrowRightIcon,
-	CreditCardIcon,
-	ShoppingBagIcon,
-	WrenchIcon,
-} from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Button } from "~/components/ui/button";
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "~/components/ui/card";
+import { adminNavGroups } from "~/features/admin/shell/admin-nav";
+import { CartTraceabilitySearchCard } from "~/features/admin/shell/cart-traceability-search-card";
+import { getSession } from "~/server/better-auth/server";
 
-const adminSections = [
-	{
-		href: "/admin/operations",
-		title: "Operacion",
-		description: "Herramientas operativas para carritos, lotes y envios.",
-		Icon: ShoppingBagIcon,
-	},
-	{
-		href: "/admin/payments",
-		title: "Pagos",
-		description: "Intentos de pago, eventos de proveedor y configuración.",
-		Icon: CreditCardIcon,
-	},
-	{
-		href: "/admin/crud-home",
-		title: "Administracion",
-		description: "Mantenimiento de entidades maestras del backoffice.",
-		Icon: WrenchIcon,
-	},
-];
+export const metadata: Metadata = {
+	title: "Inicio",
+};
 
-export default function AdminPage() {
+export default async function AdminPage() {
+	// The admin layout already gated this route with `requireAdmin()`.
+	const session = await getSession();
+	const firstName = session?.user.name.split(" ").at(0);
+
 	return (
-		<main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8">
-			<section className="flex flex-col gap-2">
-				<h1 className="font-heading font-semibold text-2xl tracking-normal">
-					Administrador
+		<div className="flex w-full flex-col gap-6">
+			<section className="flex flex-col gap-3 rounded-2xl bg-brand-ink px-6 py-8 text-brand-ink-foreground md:px-8 md:py-10">
+				<span className="font-semibold text-highlight text-xs uppercase tracking-wide">
+					Administración
+				</span>
+				<h1 className="text-balance font-heading font-semibold text-2xl md:text-3xl">
+					{firstName ? `Hola, ${firstName}` : "Hola"}
 				</h1>
-				<p className="text-muted-foreground text-sm/relaxed">
-					Dashboard principal del backoffice. Por ahora contiene accesos a los
-					modulos disponibles.
+				<p className="max-w-2xl text-brand-ink-foreground/75 text-sm/relaxed">
+					Panel de administración de Coco. Revisá el flujo operativo, los pagos
+					y el catálogo desde la navegación lateral.
 				</p>
 			</section>
 
-			<section className="grid gap-3 md:grid-cols-2">
-				{adminSections.map(({ href, title, description, Icon }) => (
-					<Card key={href}>
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Icon />
-								{title}
-							</CardTitle>
-							<CardDescription>{description}</CardDescription>
-							<CardAction>
-								<Button asChild size="sm" variant="outline">
-									<Link href={href}>
-										Abrir
-										<ArrowRightIcon data-icon="inline-end" />
-									</Link>
-								</Button>
-							</CardAction>
-						</CardHeader>
-						<CardContent>
-							<p className="text-muted-foreground text-xs/relaxed">
-								Disponible para usuarios con rol admin o superadmin.
-							</p>
-						</CardContent>
-					</Card>
+			<CartTraceabilitySearchCard />
+
+			<section className="flex flex-col gap-3">
+				<h2 className="font-heading font-semibold text-lg">Accesos rápidos</h2>
+				{adminNavGroups.map((group) => (
+					<div className="flex flex-col gap-2" key={group.label}>
+						<h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+							{group.label}
+						</h3>
+						<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+							{group.items.map((item) => {
+								const ItemIcon = item.icon;
+
+								return (
+									<Button
+										asChild
+										className="h-auto justify-start py-3"
+										key={item.href}
+										variant="outline"
+									>
+										<Link href={item.href}>
+											<ItemIcon data-icon="inline-start" />
+											{item.title}
+										</Link>
+									</Button>
+								);
+							})}
+						</div>
+					</div>
 				))}
 			</section>
-		</main>
+		</div>
 	);
 }

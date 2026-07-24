@@ -47,12 +47,12 @@ function QuantitySummary({ operation }: { operation: OperationListItem }) {
 const operationColumns: CrudColumn<OperationListItem>[] = [
 	{
 		key: "operation",
-		header: "Operacion",
+		header: "Operación",
 		className: "min-w-40",
 		cell: (operation) => (
 			<div className="flex flex-col gap-0.5">
 				<span className="font-medium text-foreground">{operation.code}</span>
-				<IdTooltip id={operation.id} label="Operacion" />
+				<IdTooltip id={operation.id} label="Operación" />
 			</div>
 		),
 	},
@@ -102,7 +102,7 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 	},
 	{
 		key: "createdAt",
-		header: "Ejecucion",
+		header: "Ejecución",
 		className: "w-40",
 		cell: (operation) => (
 			<div className="flex flex-col gap-0.5 text-xs">
@@ -169,7 +169,7 @@ export function OperationTable({
 				</div>
 			)}
 			columns={operationColumns}
-			getRowAriaLabel={(operation) => `Ver operacion ${operation.code}`}
+			getRowAriaLabel={(operation) => `Ver operación ${operation.code}`}
 			getRowKey={(operation) => operation.id}
 			items={operations}
 			onRowClick={onView}

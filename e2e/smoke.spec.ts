@@ -63,3 +63,33 @@ test("mobile navigation keeps purchase and public anchors accessible", async ({
 		page.getByRole("link", { name: "Preguntas frecuentes" }),
 	).toHaveAttribute("href", "/#preguntas-frecuentes");
 });
+
+test("the admin area redirects anonymous visitors to the login page", async ({
+	page,
+}) => {
+	await page.goto("/admin");
+
+	await expect(page).toHaveURL(/\/login$/);
+});
+
+test.describe("legacy admin URLs redirect to the flat routes", () => {
+	const redirects: Array<[from: string, to: string]> = [
+		["/admin/crud-home", "/admin"],
+		["/admin/crud-home/products", "/admin/products"],
+		["/admin/operations/user-carts", "/admin/carts"],
+		["/admin/operations/user-carts/42", "/admin/carts/42"],
+		["/admin/operations/operations", "/admin/operations"],
+		["/admin/operations/lots", "/admin/lots"],
+		["/admin/operations/tracking?lotId=7", "/admin/tracking?lotId=7"],
+	];
+
+	for (const [from, to] of redirects) {
+		test(`${from} -> ${to}`, async ({ page }) => {
+			// Asserted on the raw 307 so the auth gate does not mask the rewrite.
+			const response = await page.request.get(from, { maxRedirects: 0 });
+
+			expect(response.status()).toBe(307);
+			expect(response.headers().location).toBe(to);
+		});
+	}
+});

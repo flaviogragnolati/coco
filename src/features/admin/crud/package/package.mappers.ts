@@ -8,7 +8,7 @@ import { statusPresets } from "~/shared/common/admin-crud/status-presets";
 export const packageStatusLabelMap: Record<PackageStatus, string> = {
 	pending: "Pendiente",
 	packing: "Empacando",
-	readyForShipment: "Listo para envio",
+	readyForShipment: "Listo para envío",
 	inTransit: "En transito",
 	received: "Recibido",
 	delayed: "Demorado",

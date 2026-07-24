@@ -15,7 +15,7 @@ export function OperationalDiagnosticBadge({
 		return (
 			<StatusChip
 				config={{
-					label: "Sin diagnosticos",
+					label: "Sin diagnósticos",
 					variant: "outline",
 					icon: CheckCircle2,
 				}}
@@ -23,7 +23,7 @@ export function OperationalDiagnosticBadge({
 		);
 	}
 
-	const label = `${count} diagnostico${count === 1 ? "" : "s"}`;
+	const label = `${count} diagnóstico${count === 1 ? "" : "s"}`;
 
 	const config: StatusConfig =
 		severity === "critical"

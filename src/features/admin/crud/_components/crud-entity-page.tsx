@@ -106,7 +106,7 @@ export function CrudEntityPage<
 	);
 
 	const filterBar = (
-		<div className="flex flex-col gap-3 rounded-none border p-3 lg:flex-row lg:items-end lg:justify-between">
+		<div className="flex flex-col gap-3 rounded-2xl border p-3 lg:flex-row lg:items-end lg:justify-between">
 			<FieldGroup className="grid flex-1 gap-3 md:grid-cols-[minmax(14rem,1fr)_auto_auto] md:items-end">
 				<Field>
 					<FieldLabel htmlFor={searchId}>Buscar</FieldLabel>

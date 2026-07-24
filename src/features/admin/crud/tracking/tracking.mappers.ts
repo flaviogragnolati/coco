@@ -153,7 +153,7 @@ export function formatTrackingRefs(refs: {
 		refs.lotId ? `Lote #${refs.lotId}` : null,
 		refs.lotItemId ? `LotItem #${refs.lotItemId}` : null,
 		refs.packageId ? `Paq #${refs.packageId}` : null,
-		refs.shipmentId ? `Envio #${refs.shipmentId}` : null,
+		refs.shipmentId ? `Envío #${refs.shipmentId}` : null,
 		refs.rollOverId ? `Rollover #${refs.rollOverId}` : null,
 		refs.cartItemLotItemId ? `CILI #${refs.cartItemLotItemId}` : null,
 		refs.packageAllocationId ? `Alloc #${refs.packageAllocationId}` : null,

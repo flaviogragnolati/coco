@@ -78,8 +78,8 @@ export function ProductClientTermsFormDialog({
 	const active = Boolean(form.watch("active"));
 	const title =
 		mode === "create"
-			? "Agregar terminos de cliente"
-			: "Editar terminos de cliente";
+			? "Agregar términos de cliente"
+			: "Editar términos de cliente";
 
 	useEffect(() => {
 		if (!open) return;
@@ -154,7 +154,7 @@ export function ProductClientTermsFormDialog({
 								}
 							/>
 							<FieldContent>
-								<FieldLabel>Terminos activos</FieldLabel>
+								<FieldLabel>Términos activos</FieldLabel>
 								<FieldDescription>
 									{terms?.deleted ? (
 										<CrudStatusBadge

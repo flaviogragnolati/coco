@@ -27,19 +27,19 @@ import {
 function Resumen({ pkg }: { pkg: PackageDetail }) {
 	return (
 		<div className="flex flex-col gap-3">
-			<section className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
+			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
 				<div className="flex flex-col gap-1">
 					<p className="text-muted-foreground text-xs">Estado</p>
 					<StatusChip config={packageStatusConfig[pkg.status]} />
 				</div>
 				<div>
 					<p className="text-muted-foreground text-xs">Tracking</p>
-					<p className="font-medium">{pkg.trackingCode ?? "Sin codigo"}</p>
+					<p className="font-medium">{pkg.trackingCode ?? "Sin código"}</p>
 				</div>
 				<div>
-					<p className="text-muted-foreground text-xs">Envio</p>
+					<p className="text-muted-foreground text-xs">Envío</p>
 					<p className="font-medium">
-						{pkg.shipment?.internalCode ?? "Sin envio"}
+						{pkg.shipment?.internalCode ?? "Sin envío"}
 					</p>
 					<p className="text-muted-foreground text-xs">
 						{pkg.shipment?.name ?? ""}
@@ -56,9 +56,9 @@ function Resumen({ pkg }: { pkg: PackageDetail }) {
 				</div>
 			</section>
 
-			<section className="grid gap-3 rounded-none border p-3 md:grid-cols-3">
+			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-3">
 				<div>
-					<p className="text-muted-foreground text-xs">Lineas</p>
+					<p className="text-muted-foreground text-xs">Líneas</p>
 					<p className="font-medium">{pkg.packageLineQuantity}</p>
 				</div>
 				<div>
@@ -77,14 +77,14 @@ function Resumen({ pkg }: { pkg: PackageDetail }) {
 function Lineas({ pkg }: { pkg: PackageDetail }) {
 	if (pkg.packageLines.length === 0) {
 		return (
-			<p className="text-muted-foreground text-xs">Sin lineas de paquete</p>
+			<p className="text-muted-foreground text-xs">Sin líneas de paquete</p>
 		);
 	}
 
 	return (
 		<section className="flex flex-col gap-2">
 			{pkg.packageLines.map((line) => (
-				<div className="rounded-none border p-3" key={line.id}>
+				<div className="rounded-lg border p-3" key={line.id}>
 					<div className="flex flex-wrap justify-between gap-2">
 						<div className="flex flex-col gap-1">
 							<p className="font-medium">
@@ -109,7 +109,7 @@ function Lineas({ pkg }: { pkg: PackageDetail }) {
 							>
 								<Link
 									className="font-medium underline-offset-4 hover:underline"
-									href={`/admin/operations/tracking?cartItemId=${allocation.demandAllocation.cartItem.id}`}
+									href={`/admin/tracking?cartItemId=${allocation.demandAllocation.cartItem.id}`}
 								>
 									{allocation.demandAllocation.cartItem.cart.code} /{" "}
 									{allocation.demandAllocation.cartItem.code}
@@ -130,8 +130,8 @@ function Lineas({ pkg }: { pkg: PackageDetail }) {
 function Actividad({ pkg }: { pkg: PackageDetail }) {
 	return (
 		<section className="grid gap-3 md:grid-cols-2">
-			<div className="rounded-none border p-3">
-				<h3 className="font-medium text-sm">Ultimos eventos</h3>
+			<div className="rounded-2xl border p-3">
+				<h3 className="font-medium text-sm">Últimos eventos</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{pkg.trackingEvents.length > 0 ? (
 						pkg.trackingEvents.map((event) => (
@@ -145,8 +145,8 @@ function Actividad({ pkg }: { pkg: PackageDetail }) {
 					)}
 				</div>
 			</div>
-			<div className="rounded-none border p-3">
-				<h3 className="font-medium text-sm">Diagnosticos</h3>
+			<div className="rounded-2xl border p-3">
+				<h3 className="font-medium text-sm">Diagnósticos</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{pkg.diagnostics.length > 0 ? (
 						pkg.diagnostics.map((diagnostic) => (
@@ -159,7 +159,7 @@ function Actividad({ pkg }: { pkg: PackageDetail }) {
 							</div>
 						))
 					) : (
-						<p className="text-muted-foreground text-xs">Sin diagnosticos</p>
+						<p className="text-muted-foreground text-xs">Sin diagnósticos</p>
 					)}
 				</div>
 			</div>
@@ -219,7 +219,7 @@ export function PackageDetailDialog({
 				<DialogFooter>
 					{pkg ? (
 						<Button asChild size="sm" variant="outline">
-							<Link href={`/admin/operations/tracking?packageId=${pkg.id}`}>
+							<Link href={`/admin/tracking?packageId=${pkg.id}`}>
 								Ver tracking
 							</Link>
 						</Button>

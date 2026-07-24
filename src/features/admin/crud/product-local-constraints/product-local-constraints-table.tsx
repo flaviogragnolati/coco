@@ -14,8 +14,8 @@ import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const constraintTypeLabel: Record<string, string> = {
 	legal_restriction: "Legal",
-	max_quantity: "Maximo",
-	minimum_stock: "Stock minimo",
+	max_quantity: "Máximo",
+	minimum_stock: "Stock mínimo",
 	requires_internal_delivery: "Entrega interna",
 	restricted_destination: "Destino restringido",
 	seasonal_availability: "Estacional",

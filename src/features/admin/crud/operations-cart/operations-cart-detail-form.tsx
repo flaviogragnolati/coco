@@ -50,7 +50,7 @@ function JsonPreview({ value }: { value: unknown }) {
 	if (value === null || value === undefined) return <span>Sin datos</span>;
 
 	return (
-		<pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-none border bg-muted/30 p-2 text-[11px]">
+		<pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-2 text-[11px]">
 			{JSON.stringify(value, null, 2)}
 		</pre>
 	);
@@ -152,7 +152,7 @@ export function OperationsCartDetailForm({
 							{...form.register("id", { valueAsNumber: true })}
 						/>
 
-						<section className="grid gap-3 rounded-none border p-3 md:grid-cols-3">
+						<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-3">
 							<div className="flex flex-col gap-1">
 								<span className="text-muted-foreground text-xs">Usuario</span>
 								<span className="font-medium">{cart.user.name}</span>
@@ -215,7 +215,7 @@ export function OperationsCartDetailForm({
 							</div>
 							<FieldGroup className="gap-3">
 								{fields.length === 0 ? (
-									<div className="rounded-none border border-dashed p-3 text-muted-foreground text-xs">
+									<div className="rounded-lg border border-dashed p-3 text-muted-foreground text-xs">
 										El carrito no tiene items activos.
 									</div>
 								) : null}
@@ -227,7 +227,7 @@ export function OperationsCartDetailForm({
 											: undefined;
 									return (
 										<div
-											className="grid gap-3 rounded-none border p-3 lg:grid-cols-[minmax(16rem,1fr)_9rem_auto]"
+											className="grid gap-3 rounded-lg border p-3 lg:grid-cols-[minmax(16rem,1fr)_9rem_auto]"
 											key={field.fieldId}
 										>
 											{typeof field.id === "number" ? (
@@ -348,7 +348,7 @@ export function OperationsCartDetailForm({
 						{cart.cartItems.some((item) => item.deleted) ? (
 							<FieldSet>
 								<FieldLegend>Items removidos</FieldLegend>
-								<div className="grid gap-2 rounded-none border p-3">
+								<div className="grid gap-2 rounded-2xl border p-3">
 									{cart.cartItems
 										.filter((item) => item.deleted)
 										.map((item) => (
@@ -371,15 +371,15 @@ export function OperationsCartDetailForm({
 						) : null}
 
 						<FieldSet>
-							<FieldLegend>Ordenes y pagos</FieldLegend>
+							<FieldLegend>Órdenes y pagos</FieldLegend>
 							{cart.userOrders.length === 0 ? (
-								<div className="rounded-none border p-3 text-muted-foreground text-xs">
+								<div className="rounded-2xl border p-3 text-muted-foreground text-xs">
 									Este carrito todavia no tiene orden asociada.
 								</div>
 							) : (
 								<div className="grid gap-3">
 									{cart.userOrders.map((order) => (
-										<section className="rounded-none border p-3" key={order.id}>
+										<section className="rounded-2xl border p-3" key={order.id}>
 											<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 												<div className="flex flex-col gap-1">
 													<span className="font-medium">Orden #{order.id}</span>
@@ -398,7 +398,7 @@ export function OperationsCartDetailForm({
 													</span>
 													{order.items.map((item) => (
 														<div
-															className="rounded-none border bg-muted/20 p-2 text-xs"
+															className="rounded-lg border bg-muted/20 p-2 text-xs"
 															key={item.id}
 														>
 															<div className="flex justify-between gap-2">
@@ -417,7 +417,7 @@ export function OperationsCartDetailForm({
 													) : null}
 													{order.transactions.map((transaction) => (
 														<div
-															className="rounded-none border bg-muted/20 p-2 text-xs"
+															className="rounded-lg border bg-muted/20 p-2 text-xs"
 															key={transaction.id}
 														>
 															<div className="flex justify-between gap-2">
@@ -447,7 +447,7 @@ export function OperationsCartDetailForm({
 													<JsonPreview value={order.billingAddressSnapshot} />
 												</div>
 												<div>
-													<span className="font-medium text-xs">Envio</span>
+													<span className="font-medium text-xs">Envío</span>
 													<JsonPreview value={order.shippingAddressSnapshot} />
 												</div>
 											</div>
@@ -458,7 +458,7 @@ export function OperationsCartDetailForm({
 						</FieldSet>
 					</form>
 				) : (
-					<div className="rounded-none border p-3 text-muted-foreground text-xs">
+					<div className="rounded-2xl border p-3 text-muted-foreground text-xs">
 						Selecciona un carrito para ver su detalle.
 					</div>
 				)}

@@ -42,10 +42,10 @@ const constraintTypeOptions: Array<{
 	label: string;
 	value: ProductLocalConstraintType;
 }> = [
-	{ label: "Maximo por cantidad", value: "max_quantity" },
+	{ label: "Máximo por cantidad", value: "max_quantity" },
 	{ label: "Destino restringido", value: "restricted_destination" },
 	{ label: "Requiere entrega interna", value: "requires_internal_delivery" },
-	{ label: "Stock minimo", value: "minimum_stock" },
+	{ label: "Stock mínimo", value: "minimum_stock" },
 	{ label: "Restriccion legal", value: "legal_restriction" },
 	{ label: "Disponibilidad estacional", value: "seasonal_availability" },
 ];

@@ -26,9 +26,7 @@ function TrackingLink({ lot }: { lot: LotDetail }) {
 	const params = new URLSearchParams({ lotId: String(lot.id) });
 	return (
 		<Button asChild size="sm" variant="outline">
-			<Link href={`/admin/operations/tracking?${params.toString()}`}>
-				Ver tracking
-			</Link>
+			<Link href={`/admin/tracking?${params.toString()}`}>Ver tracking</Link>
 		</Button>
 	);
 }
@@ -36,15 +34,15 @@ function TrackingLink({ lot }: { lot: LotDetail }) {
 function Resumen({ lot }: { lot: LotDetail }) {
 	return (
 		<div className="flex flex-col gap-3">
-			<section className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
+			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
 				<div className="flex flex-col gap-1">
 					<p className="text-muted-foreground text-xs">Estado</p>
 					<StatusChip config={lotStatusConfig[lot.status]} />
 				</div>
 				<div>
-					<p className="text-muted-foreground text-xs">Operacion</p>
+					<p className="text-muted-foreground text-xs">Operación</p>
 					<p className="font-medium">{lot.operation.code}</p>
-					<IdTooltip id={lot.operation.id} label="Operacion" />
+					<IdTooltip id={lot.operation.id} label="Operación" />
 				</div>
 				<div>
 					<p className="text-muted-foreground text-xs">Proveedor</p>
@@ -64,9 +62,9 @@ function Resumen({ lot }: { lot: LotDetail }) {
 				</div>
 			</section>
 
-			<section className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
+			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
 				<div>
-					<p className="text-muted-foreground text-xs">Lineas</p>
+					<p className="text-muted-foreground text-xs">Líneas</p>
 					<p className="font-medium">{lot.lotItemQuantity}</p>
 				</div>
 				<div>
@@ -88,13 +86,13 @@ function Resumen({ lot }: { lot: LotDetail }) {
 
 function Lineas({ lot }: { lot: LotDetail }) {
 	if (lot.lotItems.length === 0) {
-		return <p className="text-muted-foreground text-xs">Sin lineas de lote</p>;
+		return <p className="text-muted-foreground text-xs">Sin líneas de lote</p>;
 	}
 
 	return (
 		<section className="flex flex-col gap-2">
 			{lot.lotItems.map((item) => (
-				<div className="rounded-none border p-3" key={item.id}>
+				<div className="rounded-lg border p-3" key={item.id}>
 					<div className="flex flex-wrap justify-between gap-2">
 						<div className="flex flex-col gap-1">
 							<p className="font-medium">
@@ -119,7 +117,7 @@ function Lineas({ lot }: { lot: LotDetail }) {
 							>
 								<Link
 									className="font-medium underline-offset-4 hover:underline"
-									href={`/admin/operations/tracking?cartItemId=${allocation.cartItem.id}`}
+									href={`/admin/tracking?cartItemId=${allocation.cartItem.id}`}
 								>
 									{allocation.cartItem.cart.code} / {allocation.cartItem.code}
 								</Link>
@@ -137,8 +135,8 @@ function Lineas({ lot }: { lot: LotDetail }) {
 function Actividad({ lot }: { lot: LotDetail }) {
 	return (
 		<section className="grid gap-3 md:grid-cols-2">
-			<div className="rounded-none border p-3">
-				<h3 className="font-medium text-sm">Ultimos eventos</h3>
+			<div className="rounded-2xl border p-3">
+				<h3 className="font-medium text-sm">Últimos eventos</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{lot.trackingEvents.length > 0 ? (
 						lot.trackingEvents.map((event) => (
@@ -152,8 +150,8 @@ function Actividad({ lot }: { lot: LotDetail }) {
 					)}
 				</div>
 			</div>
-			<div className="rounded-none border p-3">
-				<h3 className="font-medium text-sm">Diagnosticos</h3>
+			<div className="rounded-2xl border p-3">
+				<h3 className="font-medium text-sm">Diagnósticos</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{lot.diagnostics.length > 0 ? (
 						lot.diagnostics.map((diagnostic) => (
@@ -166,7 +164,7 @@ function Actividad({ lot }: { lot: LotDetail }) {
 							</div>
 						))
 					) : (
-						<p className="text-muted-foreground text-xs">Sin diagnosticos</p>
+						<p className="text-muted-foreground text-xs">Sin diagnósticos</p>
 					)}
 				</div>
 			</div>

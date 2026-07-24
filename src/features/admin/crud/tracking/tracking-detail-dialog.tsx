@@ -31,7 +31,7 @@ function SummaryGrid({ detail }: { detail: AdminTrackingCartItemDetail }) {
 	const { cartItem } = detail;
 
 	return (
-		<section className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
+		<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
 			<div className="flex flex-col gap-1">
 				<span className="text-muted-foreground text-xs">Usuario</span>
 				<span className="font-medium">{cartItem.cart.user.name}</span>
@@ -91,7 +91,7 @@ function RelatedSummary({ event }: { event: AdminTrackingTimelineDetailItem }) {
 			? `Actor ${related.actorUser.name} (${related.actorUser.email})`
 			: null,
 		related.operation
-			? `Operacion ${related.operation.code} (${related.operation.strategy})`
+			? `Operación ${related.operation.code} (${related.operation.strategy})`
 			: null,
 		related.lot
 			? `Lote ${related.lot.code} - ${related.lot.status} - ${related.lot.supplierName}`
@@ -103,16 +103,16 @@ function RelatedSummary({ event }: { event: AdminTrackingTimelineDetailItem }) {
 			? `Paquete ${related.package.name} - ${related.package.status}`
 			: null,
 		related.shipment
-			? `Envio ${related.shipment.internalCode} - ${related.shipment.status}`
+			? `Envío ${related.shipment.internalCode} - ${related.shipment.status}`
 			: null,
 		related.rollOver
 			? `Rollover ${related.rollOver.stage} - ${related.rollOver.status} - ${related.rollOver.quantity}`
 			: null,
 		related.cartItemLotItem
-			? `Asignacion de demanda #${related.cartItemLotItem.id} - ${related.cartItemLotItem.quantity}`
+			? `Asignación de demanda #${related.cartItemLotItem.id} - ${related.cartItemLotItem.quantity}`
 			: null,
 		related.packageAllocation
-			? `Asignacion empaquetada #${related.packageAllocation.id} - ${related.packageAllocation.quantity}`
+			? `Asignación empaquetada #${related.packageAllocation.id} - ${related.packageAllocation.quantity}`
 			: null,
 	].filter((entry): entry is string => Boolean(entry));
 
@@ -197,7 +197,7 @@ export function TrackingDetailDialog({
 									))}
 								</ol>
 							) : (
-								<div className="rounded-none border p-3 text-muted-foreground text-sm">
+								<div className="rounded-lg border p-3 text-muted-foreground text-sm">
 									Este cart item todavia no tiene eventos de tracking.
 								</div>
 							)}

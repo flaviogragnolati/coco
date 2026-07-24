@@ -2,9 +2,9 @@
 
 import { AlertTriangleIcon, ImageIcon } from "lucide-react";
 
-import { CartItemRow } from "~/app/cart/_components/cart-item-row";
-import { ProductCard } from "~/app/products/_components/product-card";
-import { ProductPriceBlock } from "~/app/products/_components/product-price-block";
+import { CartItemRow } from "~/app/(storefront)/cart/_components/cart-item-row";
+import { ProductCard } from "~/app/(storefront)/products/_components/product-card";
+import { ProductPriceBlock } from "~/app/(storefront)/products/_components/product-price-block";
 import { Badge } from "~/components/ui/badge";
 import {
 	Card,

@@ -36,7 +36,7 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 	},
 	{
 		key: "shipment",
-		header: "Envio",
+		header: "Envío",
 		className: "min-w-44",
 		cell: (pkg) =>
 			pkg.shipment ? (
@@ -47,7 +47,7 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 					</span>
 				</div>
 			) : (
-				<span className="text-muted-foreground text-xs">Sin envio</span>
+				<span className="text-muted-foreground text-xs">Sin envío</span>
 			),
 	},
 	{
@@ -64,7 +64,7 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 	},
 	{
 		key: "diagnostics",
-		header: "Diagnosticos",
+		header: "Diagnósticos",
 		className: "min-w-60",
 		cell: (pkg) => (
 			<div className="flex flex-col gap-1">

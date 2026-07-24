@@ -21,17 +21,17 @@ const carrierColumns: CrudColumn<CarrierListItem>[] = [
 	},
 	{
 		key: "name",
-		header: "Carrier",
+		header: "Transportista",
 		cell: (carrier) => (
 			<span className="font-medium text-foreground">{carrier.name}</span>
 		),
 	},
 	{
 		key: "description",
-		header: "Descripcion",
+		header: "Descripción",
 		cell: (carrier) => (
 			<span className="line-clamp-2 text-muted-foreground text-xs">
-				{carrier.description || "Sin descripcion"}
+				{carrier.description || "Sin descripción"}
 			</span>
 		),
 	},

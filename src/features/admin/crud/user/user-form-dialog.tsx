@@ -259,7 +259,7 @@ export function UserFormDialog({
 						</div>
 
 						{fields.length === 0 ? (
-							<div className="rounded-none border border-dashed p-4 text-muted-foreground text-xs/relaxed">
+							<div className="rounded-2xl border border-dashed p-4 text-muted-foreground text-xs/relaxed">
 								Todavía no hay direcciones cargadas para este perfil.
 							</div>
 						) : (
@@ -270,7 +270,7 @@ export function UserFormDialog({
 
 									return (
 										<div
-											className="flex flex-col gap-4 rounded-none border p-4"
+											className="flex flex-col gap-4 rounded-lg border p-4"
 											key={field.id}
 										>
 											<div className="flex items-center justify-between gap-3">

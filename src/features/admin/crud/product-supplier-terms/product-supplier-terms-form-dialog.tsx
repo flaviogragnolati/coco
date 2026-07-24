@@ -83,8 +83,8 @@ export function ProductSupplierTermsFormDialog({
 	const active = Boolean(form.watch("active"));
 	const title =
 		mode === "create"
-			? "Agregar terminos de proveedor"
-			: "Editar terminos de proveedor";
+			? "Agregar términos de proveedor"
+			: "Editar términos de proveedor";
 
 	useEffect(() => {
 		if (!open) return;
@@ -159,7 +159,7 @@ export function ProductSupplierTermsFormDialog({
 								}
 							/>
 							<FieldContent>
-								<FieldLabel>Terminos activos</FieldLabel>
+								<FieldLabel>Términos activos</FieldLabel>
 								<FieldDescription>
 									{terms?.deleted ? (
 										<CrudStatusBadge

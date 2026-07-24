@@ -8,7 +8,7 @@ import type { StatusConfig } from "~/shared/common/admin-crud/status-config";
 import { toDateTimeLocalValue } from "~/shared/common/date.helpers";
 
 export const operationStatusLabelMap: Record<OperationStatus, string> = {
-	running: "En ejecucion",
+	running: "En ejecución",
 	completed: "Completada",
 	failed: "Fallida",
 };
@@ -23,19 +23,19 @@ export const operationStatusConfig: Record<OperationStatus, StatusConfig> = {
 		label: operationStatusLabelMap.running,
 		variant: "warning",
 		icon: Clock,
-		hint: "Asignacion en curso",
+		hint: "Asignación en curso",
 	},
 	completed: {
 		label: operationStatusLabelMap.completed,
 		variant: "success",
 		icon: CheckCircle2,
-		hint: "Ejecucion tecnica exitosa",
+		hint: "Ejecución tecnica exitosa",
 	},
 	failed: {
 		label: operationStatusLabelMap.failed,
 		variant: "destructive",
 		icon: XCircle,
-		hint: "Error tecnico en la ejecucion",
+		hint: "Error tecnico en la ejecución",
 	},
 };
 
@@ -45,7 +45,7 @@ export const operationStrategyConfig: Record<OperationStrategy, StatusConfig> =
 			label: operationStrategyLabelMap.fifo,
 			variant: "info",
 			icon: ArrowDownUp,
-			hint: "Asignacion por orden de llegada",
+			hint: "Asignación por orden de llegada",
 		},
 		other: {
 			label: operationStrategyLabelMap.other,

@@ -50,7 +50,7 @@ function JsonPreview({ value }: { value: unknown }) {
 	}
 
 	return (
-		<pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-none border bg-muted/30 p-2 font-mono text-[11px]">
+		<pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-2 font-mono text-[11px]">
 			{JSON.stringify(value, null, 2)}
 		</pre>
 	);
@@ -76,12 +76,12 @@ function SummaryGrid({ operation }: { operation: OperationDetail }) {
 		[
 			"Salidas",
 			String(operation.lotCount),
-			`${operation.supplierOrderCount} ordenes`,
+			`${operation.supplierOrderCount} órdenes`,
 		],
 	] as const;
 
 	return (
-		<section className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
+		<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
 			{items.map(([label, value, description]) => (
 				<div className="flex flex-col gap-1" key={label}>
 					<span className="text-muted-foreground text-xs">{label}</span>
@@ -95,7 +95,7 @@ function SummaryGrid({ operation }: { operation: OperationDetail }) {
 
 function ConfigGrid({ operation }: { operation: OperationDetail }) {
 	return (
-		<section className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
+		<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
 			<div className="flex flex-col gap-1">
 				<span className="text-muted-foreground text-xs">Estado</span>
 				<StatusChip config={operationStatusConfig[operation.status]} />
@@ -137,19 +137,19 @@ function ConfigGrid({ operation }: { operation: OperationDetail }) {
 function SupplierOrders({ operation }: { operation: OperationDetail }) {
 	if (operation.supplierOrders.length === 0) {
 		return (
-			<section className="rounded-none border p-3">
-				<h3 className="font-medium text-sm">Ordenes proveedor</h3>
-				<p className="text-muted-foreground text-xs">Sin ordenes proveedor</p>
+			<section className="rounded-2xl border p-3">
+				<h3 className="font-medium text-sm">Órdenes proveedor</h3>
+				<p className="text-muted-foreground text-xs">Sin órdenes proveedor</p>
 			</section>
 		);
 	}
 
 	return (
-		<section className="flex flex-col gap-2 rounded-none border p-3">
-			<h3 className="font-medium text-sm">Ordenes proveedor</h3>
+		<section className="flex flex-col gap-2 rounded-2xl border p-3">
+			<h3 className="font-medium text-sm">Órdenes proveedor</h3>
 			<div className="grid gap-2 md:grid-cols-2">
 				{operation.supplierOrders.map((order) => (
-					<div className="rounded-none border bg-muted/20 p-2" key={order.id}>
+					<div className="rounded-lg border bg-muted/20 p-2" key={order.id}>
 						<div className="flex items-center justify-between gap-2">
 							<span className="font-medium">{order.code}</span>
 							<Badge variant="secondary">{order.status}</Badge>
@@ -167,7 +167,7 @@ function SupplierOrders({ operation }: { operation: OperationDetail }) {
 function Lots({ operation }: { operation: OperationDetail }) {
 	if (operation.lots.length === 0) {
 		return (
-			<section className="rounded-none border p-3">
+			<section className="rounded-2xl border p-3">
 				<h3 className="font-medium text-sm">Lotes</h3>
 				<p className="text-muted-foreground text-xs">Sin lotes</p>
 			</section>
@@ -175,11 +175,11 @@ function Lots({ operation }: { operation: OperationDetail }) {
 	}
 
 	return (
-		<section className="flex flex-col gap-2 rounded-none border p-3">
+		<section className="flex flex-col gap-2 rounded-2xl border p-3">
 			<h3 className="font-medium text-sm">Lotes</h3>
 			{operation.lots.map((lot) => (
 				<div
-					className="flex flex-col gap-2 rounded-none border bg-muted/20 p-2"
+					className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-2"
 					key={lot.id}
 				>
 					<div className="flex flex-wrap items-center justify-between gap-2">
@@ -196,7 +196,7 @@ function Lots({ operation }: { operation: OperationDetail }) {
 					<div className="grid gap-2">
 						{lot.lotItems.map((lotItem) => (
 							<div
-								className="rounded-none border bg-background p-2"
+								className="rounded-lg border bg-background p-2"
 								key={lotItem.id}
 							>
 								<div className="flex flex-wrap items-center justify-between gap-2">
@@ -234,7 +234,7 @@ function Lots({ operation }: { operation: OperationDetail }) {
 function RollOvers({ operation }: { operation: OperationDetail }) {
 	if (operation.rollOvers.length === 0) {
 		return (
-			<section className="rounded-none border p-3">
+			<section className="rounded-2xl border p-3">
 				<h3 className="font-medium text-sm">Rollovers</h3>
 				<p className="text-muted-foreground text-xs">Sin rollovers</p>
 			</section>
@@ -242,12 +242,12 @@ function RollOvers({ operation }: { operation: OperationDetail }) {
 	}
 
 	return (
-		<section className="flex flex-col gap-2 rounded-none border p-3">
+		<section className="flex flex-col gap-2 rounded-2xl border p-3">
 			<h3 className="font-medium text-sm">Rollovers</h3>
 			<div className="grid gap-2 md:grid-cols-2">
 				{operation.rollOvers.map((rollOver) => (
 					<div
-						className="rounded-none border bg-muted/20 p-2"
+						className="rounded-lg border bg-muted/20 p-2"
 						key={rollOver.id}
 					>
 						<div className="flex items-center justify-between gap-2">
@@ -285,7 +285,7 @@ export function OperationDetailDialog({
 			<DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-5xl">
 				<DialogHeader>
 					<DialogTitle>
-						{operation ? operation.code : "Detalle de operacion"}
+						{operation ? operation.code : "Detalle de operación"}
 					</DialogTitle>
 					<DialogDescription>
 						{operation
@@ -330,7 +330,7 @@ export function OperationDetailDialog({
 							<RollOvers operation={operation} />
 						</TabsContent>
 						<TabsContent value="tecnico">
-							<section className="flex flex-col gap-2 rounded-none border p-3">
+							<section className="flex flex-col gap-2 rounded-2xl border p-3">
 								<h3 className="font-medium text-sm">Resumen tecnico</h3>
 								<JsonPreview value={operation.summary} />
 							</section>

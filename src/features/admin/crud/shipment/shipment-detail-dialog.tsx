@@ -28,7 +28,7 @@ function JsonPreview({ value }: { value: unknown }) {
 	}
 
 	return (
-		<pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-none border bg-muted/30 p-2 font-mono text-[11px]">
+		<pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-2 font-mono text-[11px]">
 			{JSON.stringify(value, null, 2)}
 		</pre>
 	);
@@ -37,7 +37,7 @@ function JsonPreview({ value }: { value: unknown }) {
 function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 	return (
 		<div className="flex flex-col gap-3">
-			<section className="grid gap-3 rounded-none border p-3 md:grid-cols-4">
+			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
 				<div className="flex flex-col gap-1">
 					<p className="text-muted-foreground text-xs">Estado</p>
 					<StatusChip config={shipmentStatusConfig[shipment.status]} />
@@ -49,7 +49,7 @@ function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 				<div>
 					<p className="text-muted-foreground text-xs">Carrier</p>
 					<p className="font-medium">
-						{shipment.carrierOrder?.code ?? "Sin orden carrier"}
+						{shipment.carrierOrder?.code ?? "Sin orden de transporte"}
 					</p>
 					<p className="text-muted-foreground text-xs">
 						{shipment.carrierOrder?.carrier.name ?? ""}
@@ -66,13 +66,13 @@ function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 				</div>
 			</section>
 
-			<section className="grid gap-3 rounded-none border p-3 md:grid-cols-3">
+			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-3">
 				<div>
 					<p className="text-muted-foreground text-xs">Paquetes</p>
 					<p className="font-medium">{shipment.packageCount}</p>
 				</div>
 				<div>
-					<p className="text-muted-foreground text-xs">Lineas</p>
+					<p className="text-muted-foreground text-xs">Líneas</p>
 					<p className="font-medium">{shipment.transportedQuantity}</p>
 				</div>
 				<div>
@@ -81,7 +81,7 @@ function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 				</div>
 			</section>
 
-			<details className="rounded-none border p-3">
+			<details className="rounded-2xl border p-3">
 				<summary className="cursor-pointer font-medium text-sm">
 					Snapshots destino/contacto
 				</summary>
@@ -102,7 +102,7 @@ function Paquetes({ shipment }: { shipment: ShipmentDetail }) {
 	return (
 		<section className="flex flex-col gap-2">
 			{shipment.packages.map((pkg) => (
-				<div className="rounded-none border p-3" key={pkg.id}>
+				<div className="rounded-lg border p-3" key={pkg.id}>
 					<div className="flex flex-wrap justify-between gap-2">
 						<div>
 							<p className="font-medium">{pkg.name}</p>
@@ -138,8 +138,8 @@ function Paquetes({ shipment }: { shipment: ShipmentDetail }) {
 function Actividad({ shipment }: { shipment: ShipmentDetail }) {
 	return (
 		<section className="grid gap-3 md:grid-cols-2">
-			<div className="rounded-none border p-3">
-				<h3 className="font-medium text-sm">Ultimos eventos</h3>
+			<div className="rounded-2xl border p-3">
+				<h3 className="font-medium text-sm">Últimos eventos</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{shipment.trackingEvents.length > 0 ? (
 						shipment.trackingEvents.map((event) => (
@@ -153,8 +153,8 @@ function Actividad({ shipment }: { shipment: ShipmentDetail }) {
 					)}
 				</div>
 			</div>
-			<div className="rounded-none border p-3">
-				<h3 className="font-medium text-sm">Diagnosticos</h3>
+			<div className="rounded-2xl border p-3">
+				<h3 className="font-medium text-sm">Diagnósticos</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{shipment.diagnostics.length > 0 ? (
 						shipment.diagnostics.map((diagnostic) => (
@@ -167,7 +167,7 @@ function Actividad({ shipment }: { shipment: ShipmentDetail }) {
 							</div>
 						))
 					) : (
-						<p className="text-muted-foreground text-xs">Sin diagnosticos</p>
+						<p className="text-muted-foreground text-xs">Sin diagnósticos</p>
 					)}
 				</div>
 			</div>
@@ -193,7 +193,7 @@ export function ShipmentDetailDialog({
 			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
 				<DialogHeader>
 					<DialogTitle>
-						{shipment ? shipment.internalCode : "Detalle de envio"}
+						{shipment ? shipment.internalCode : "Detalle de envío"}
 					</DialogTitle>
 					<DialogDescription>
 						Visualizacion read-only de paquetes, lineas, tracking y
@@ -229,9 +229,7 @@ export function ShipmentDetailDialog({
 				<DialogFooter>
 					{shipment ? (
 						<Button asChild size="sm" variant="outline">
-							<Link
-								href={`/admin/operations/tracking?shipmentId=${shipment.id}`}
-							>
+							<Link href={`/admin/tracking?shipmentId=${shipment.id}`}>
 								Ver tracking
 							</Link>
 						</Button>

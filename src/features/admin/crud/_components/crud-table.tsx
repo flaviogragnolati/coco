@@ -54,7 +54,7 @@ export function CrudTable<TItem>({
 	getRowAriaLabel?: (item: TItem) => string;
 }) {
 	return (
-		<div className="rounded-none border">
+		<div className="overflow-hidden rounded-2xl border">
 			<Table>
 				<TableHeader>
 					<TableRow>

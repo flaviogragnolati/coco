@@ -26,12 +26,12 @@ const lotColumns: CrudColumn<LotListItem>[] = [
 	},
 	{
 		key: "operation",
-		header: "Operacion",
+		header: "Operación",
 		className: "min-w-44",
 		cell: (lot) => (
 			<div className="flex flex-col gap-1">
 				<span>{lot.operation.code}</span>
-				<IdTooltip id={lot.operation.id} label="Operacion" />
+				<IdTooltip id={lot.operation.id} label="Operación" />
 			</div>
 		),
 	},
@@ -69,7 +69,7 @@ const lotColumns: CrudColumn<LotListItem>[] = [
 	},
 	{
 		key: "diagnostics",
-		header: "Diagnosticos",
+		header: "Diagnósticos",
 		className: "min-w-60",
 		cell: (lot) => (
 			<div className="flex flex-col gap-1">
