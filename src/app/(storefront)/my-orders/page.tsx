@@ -1,16 +1,8 @@
-import { PackageSearchIcon, ShoppingBagIcon } from "lucide-react";
+import { PackageSearchIcon } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "~/components/ui/badge";
+import { PageHeader } from "~/components/page-header";
 import { Button } from "~/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "~/components/ui/card";
 import {
 	Empty,
 	EmptyContent,
@@ -20,60 +12,23 @@ import {
 	EmptyTitle,
 } from "~/components/ui/empty";
 import { requireUser } from "~/server/auth/route-guards";
-import type { OrderListItem } from "~/shared/common/checkout.types";
-import { formatCurrency } from "~/shared/common/commerce.helpers";
-import { formatDateTimeMedium } from "~/shared/common/date.helpers";
 import { api } from "~/trpc/server";
-
-function orderStatusLabel(status: OrderListItem["status"]) {
-	switch (status) {
-		case "processing":
-			return "En procesamiento";
-		case "completed":
-			return "Completado";
-		case "cancelled":
-			return "Cancelado";
-		case "failed":
-			return "Fallido";
-		case "refunded":
-			return "Reembolsado";
-		default:
-			return "Pendiente";
-	}
-}
-
-function paymentStatusLabel(status: OrderListItem["latestTransactionStatus"]) {
-	switch (status) {
-		case "completed":
-			return "Pago aprobado";
-		case "failed":
-			return "Pago rechazado";
-		case "refunded":
-			return "Pago reembolsado";
-		case "pending":
-			return "Pago pendiente";
-		default:
-			return "Sin pago";
-	}
-}
+import { MyOrdersClient } from "./_components/my-orders-client";
 
 export default async function MyOrdersPage() {
 	await requireUser();
 	const orders = await api.orders.listMine();
 
 	return (
-		<main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8">
-			<section className="flex flex-col gap-2">
-				<h1 className="font-heading font-semibold text-2xl tracking-normal">
-					Mis pedidos
-				</h1>
-				<p className="text-muted-foreground text-sm/relaxed">
-					Pedidos realizados y su estado comercial dentro de Coco.
-				</p>
-			</section>
+		<main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 md:px-6">
+			<PageHeader
+				description="Seguí el estado de cada pedido y su recorrido hasta la entrega."
+				eyebrow="Mi cuenta"
+				title="Mis pedidos"
+			/>
 
 			{orders.length === 0 ? (
-				<Empty className="border">
+				<Empty className="border bg-brand-warm text-brand-warm-foreground">
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<PackageSearchIcon />
@@ -84,63 +39,13 @@ export default async function MyOrdersPage() {
 						</EmptyDescription>
 					</EmptyHeader>
 					<EmptyContent>
-						<Button asChild>
+						<Button asChild variant="highlight">
 							<Link href="/products">Ver productos</Link>
 						</Button>
 					</EmptyContent>
 				</Empty>
 			) : (
-				<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-					{orders.map((order) => (
-						<Card key={order.id}>
-							<CardHeader>
-								<div className="flex items-start justify-between gap-3">
-									<div className="flex flex-col gap-1">
-										<CardTitle className="flex items-center gap-2">
-											<ShoppingBagIcon />
-											{order.code}
-										</CardTitle>
-										<CardDescription>
-											{formatDateTimeMedium(order.createdAt)}
-										</CardDescription>
-									</div>
-									<Badge
-										variant={
-											order.status === "failed" ? "destructive" : "secondary"
-										}
-									>
-										{orderStatusLabel(order.status)}
-									</Badge>
-								</div>
-							</CardHeader>
-							<CardContent className="flex flex-col gap-3 text-xs">
-								<div className="flex items-center justify-between gap-3">
-									<span className="text-muted-foreground">Items</span>
-									<span className="font-medium">{order.itemCount}</span>
-								</div>
-								<div className="flex items-center justify-between gap-3">
-									<span className="text-muted-foreground">Pago</span>
-									<span className="font-medium">
-										{paymentStatusLabel(order.latestTransactionStatus)}
-									</span>
-								</div>
-								<div className="flex items-center justify-between gap-3">
-									<span className="text-muted-foreground">Monto</span>
-									<span className="font-heading font-semibold text-base">
-										{order.currency
-											? formatCurrency(order.totalAmount, order.currency)
-											: "-"}
-									</span>
-								</div>
-							</CardContent>
-							<CardFooter>
-								<Button asChild className="w-full" variant="outline">
-									<Link href={`/my-orders/${order.id}`}>Ver pedido</Link>
-								</Button>
-							</CardFooter>
-						</Card>
-					))}
-				</section>
+				<MyOrdersClient orders={orders} />
 			)}
 		</main>
 	);

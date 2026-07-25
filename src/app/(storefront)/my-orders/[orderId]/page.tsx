@@ -12,47 +12,20 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
-import { CustomerCartItemTimeline } from "~/features/tracking/customer-cart-item-timeline";
+import { buildCustomerOrderJourneyView } from "~/features/tracking/customer-order-journey";
+import { CustomerOrderJourney } from "~/features/tracking/customer-order-journey-view";
 import { requireUser } from "~/server/auth/route-guards";
 import type { OrderDetail } from "~/shared/common/checkout.types";
 import {
 	formatCurrency,
 	formatQuantity,
 } from "~/shared/common/commerce.helpers";
+import {
+	orderStatusChipConfigMap,
+	paymentStatusLabelMap,
+} from "~/shared/common/order-display";
 import type { UserOrderItemTimeline } from "~/shared/common/tracking.types";
 import { api } from "~/trpc/server";
-
-function orderStatusLabel(status: OrderDetail["status"]) {
-	switch (status) {
-		case "processing":
-			return "En procesamiento";
-		case "completed":
-			return "Completado";
-		case "cancelled":
-			return "Cancelado";
-		case "failed":
-			return "Fallido";
-		case "refunded":
-			return "Reembolsado";
-		default:
-			return "Pendiente";
-	}
-}
-
-function transactionStatusLabel(
-	status: OrderDetail["transactions"][number]["status"],
-) {
-	switch (status) {
-		case "completed":
-			return "Aprobado";
-		case "failed":
-			return "Rechazado";
-		case "refunded":
-			return "Reembolsado";
-		default:
-			return "Pendiente";
-	}
-}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
 	return typeof value === "object" && value !== null
@@ -106,6 +79,10 @@ function getAddressLine(snapshot: unknown) {
 	return `${line1} · ${city}, ${state} ${postalCode}`;
 }
 
+function itemQuantityLabel(item: OrderDetail["items"][number]) {
+	return formatQuantity(item.quantity, getProductUnit(item) as never);
+}
+
 export default async function OrderDetailPage({
 	params,
 }: {
@@ -131,9 +108,19 @@ export default async function OrderDetailPage({
 	const timelineByCartItemId = new Map(
 		itemTimelines.map((timeline) => [timeline.cartItemId, timeline]),
 	);
+	const journeyView = buildCustomerOrderJourneyView(
+		order.items.map((item) => ({
+			cartItemId: item.sourceCartItemId,
+			productName: getProductName(item),
+			quantityLabel: itemQuantityLabel(item),
+			timeline: timelineByCartItemId.get(item.sourceCartItemId),
+		})),
+	);
+	const statusChip = orderStatusChipConfigMap[order.status];
+	const StatusIcon = statusChip.icon;
 
 	return (
-		<main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+		<main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 md:px-6">
 			<div className="flex items-center justify-between gap-3">
 				<Button asChild variant="outline">
 					<Link href="/my-orders">
@@ -141,10 +128,9 @@ export default async function OrderDetailPage({
 						Mis pedidos
 					</Link>
 				</Button>
-				<Badge
-					variant={order.status === "failed" ? "destructive" : "secondary"}
-				>
-					{orderStatusLabel(order.status)}
+				<Badge variant={statusChip.variant}>
+					<StatusIcon data-icon="inline-start" />
+					{statusChip.label}
 				</Badge>
 			</div>
 
@@ -157,6 +143,8 @@ export default async function OrderDetailPage({
 				</p>
 			</section>
 
+			<CustomerOrderJourney view={journeyView} />
+
 			<div className="grid gap-4 lg:grid-cols-[1fr_20rem] lg:items-start">
 				<Card>
 					<CardHeader>
@@ -168,28 +156,20 @@ export default async function OrderDetailPage({
 					<CardContent className="flex flex-col gap-3">
 						{order.items.map((item) => (
 							<div
-								className="grid gap-3 border p-3 sm:grid-cols-[1fr_auto]"
+								className="flex items-start justify-between gap-3 rounded-3xl border p-3"
 								key={item.id}
 							>
-								<div className="flex flex-col gap-1">
+								<div className="flex min-w-0 flex-col gap-1">
 									<span className="font-medium text-sm">
 										{getProductName(item)}
 									</span>
 									<span className="text-muted-foreground text-xs">
-										{formatQuantity(
-											item.quantity,
-											getProductUnit(item) as never,
-										)}
+										{itemQuantityLabel(item)}
 									</span>
 								</div>
 								<span className="font-heading font-semibold">
 									{formatCurrency(getLineTotal(item), getCurrency(item))}
 								</span>
-								<div className="sm:col-span-2">
-									<CustomerCartItemTimeline
-										timeline={timelineByCartItemId.get(item.sourceCartItemId)}
-									/>
-								</div>
 							</div>
 						))}
 					</CardContent>
@@ -214,12 +194,14 @@ export default async function OrderDetailPage({
 								</span>
 							</div>
 							<Separator />
-							<div className="flex flex-col gap-2">
-								<span className="flex items-center gap-2 text-muted-foreground">
-									<MapPinIcon />
-									Envío
+							<div className="flex items-start gap-3">
+								<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
+									<MapPinIcon className="size-4" />
 								</span>
-								<span>{getAddressLine(order.shippingAddressSnapshot)}</span>
+								<div className="flex min-w-0 flex-col gap-1">
+									<span className="text-muted-foreground">Envío</span>
+									<span>{getAddressLine(order.shippingAddressSnapshot)}</span>
+								</div>
 							</div>
 						</CardContent>
 					</Card>
@@ -227,7 +209,7 @@ export default async function OrderDetailPage({
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<CreditCardIcon />
+								<CreditCardIcon className="size-4" />
 								Pago
 							</CardTitle>
 						</CardHeader>
@@ -238,12 +220,14 @@ export default async function OrderDetailPage({
 										<span className="text-muted-foreground">Estado</span>
 										<Badge
 											variant={
-												latestTransaction.status === "failed"
-													? "destructive"
-													: "secondary"
+												latestTransaction.status === "completed"
+													? "success"
+													: latestTransaction.status === "failed"
+														? "destructive"
+														: "secondary"
 											}
 										>
-											{transactionStatusLabel(latestTransaction.status)}
+											{paymentStatusLabelMap[latestTransaction.status]}
 										</Badge>
 									</div>
 									<div className="flex items-center justify-between gap-3">

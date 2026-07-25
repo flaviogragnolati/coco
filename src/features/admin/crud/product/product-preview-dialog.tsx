@@ -2,7 +2,6 @@
 
 import { AlertTriangleIcon, ImageIcon } from "lucide-react";
 
-import { CartItemRow } from "~/app/(storefront)/cart/_components/cart-item-row";
 import { ProductCard } from "~/app/(storefront)/products/_components/product-card";
 import { ProductPriceBlock } from "~/app/(storefront)/products/_components/product-price-block";
 import { Badge } from "~/components/ui/badge";
@@ -21,6 +20,7 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { CartLineRow } from "~/features/cart/_components/cart-line-row";
 import { ProductImage } from "~/features/catalog/_components/product-image";
 import { HomeOfferCard } from "~/features/home/_components/home-offer-card";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
@@ -216,13 +216,14 @@ export function ProductPreviewDialog({
 							</TabsContent>
 							<TabsContent value="cart">
 								{preview.cartItem ? (
-									<CartItemRow
+									<CartLineRow
 										disabled
 										item={preview.cartItem}
 										onDecrement={ignoreCartItem}
 										onIncrement={ignoreCartItem}
 										onQuantityCommit={ignoreCartQuantity}
 										onRemove={ignoreRemove}
+										variant="full"
 									/>
 								) : (
 									<PreviewUnavailable

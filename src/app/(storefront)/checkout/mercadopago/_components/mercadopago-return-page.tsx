@@ -19,6 +19,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { cn } from "~/lib/utils";
 
 type MercadoPagoReturnTone = "success" | "failure" | "pending";
 
@@ -28,7 +29,7 @@ const copyByTone = {
 		description:
 			"Mercado Pago informó un retorno exitoso. La orden se confirma cuando recibimos y reconciliamos el webhook del proveedor.",
 		Icon: PackageCheckIcon,
-		iconClassName: "text-success",
+		chipClassName: "bg-success/10 text-success",
 		badgeLabel: "Retorno exitoso",
 		badgeVariant: "success",
 	},
@@ -37,7 +38,7 @@ const copyByTone = {
 		description:
 			"El retorno de Mercado Pago no confirma el pago. Podés revisar tus pedidos o intentar nuevamente si el intento queda fallido.",
 		Icon: AlertCircleIcon,
-		iconClassName: "text-destructive",
+		chipClassName: "bg-destructive/10 text-destructive",
 		badgeLabel: "No confirmado",
 		badgeVariant: "destructive",
 	},
@@ -46,7 +47,7 @@ const copyByTone = {
 		description:
 			"Mercado Pago dejó el pago pendiente. La orden avanza cuando el proveedor confirme la aprobación.",
 		Icon: ClockIcon,
-		iconClassName: "text-warning",
+		chipClassName: "bg-warning/10 text-warning",
 		badgeLabel: "Pendiente",
 		badgeVariant: "warning",
 	},
@@ -56,7 +57,7 @@ const copyByTone = {
 		title: string;
 		description: string;
 		Icon: typeof ClockIcon;
-		iconClassName: string;
+		chipClassName: string;
 		badgeLabel: string;
 		badgeVariant: NonNullable<ComponentProps<typeof Badge>["variant"]>;
 	}
@@ -75,12 +76,19 @@ export function MercadoPagoReturnPage({
 			<Card>
 				<CardHeader>
 					<div className="flex items-start justify-between gap-3">
-						<div className="flex flex-col gap-1">
-							<CardTitle className="flex items-center gap-2">
-								<ToneIcon className={`size-5 ${copy.iconClassName}`} />
-								{copy.title}
-							</CardTitle>
-							<CardDescription>{copy.description}</CardDescription>
+						<div className="flex items-start gap-3">
+							<span
+								className={cn(
+									"flex size-12 shrink-0 items-center justify-center rounded-full",
+									copy.chipClassName,
+								)}
+							>
+								<ToneIcon className="size-5" />
+							</span>
+							<div className="flex flex-col gap-1">
+								<CardTitle>{copy.title}</CardTitle>
+								<CardDescription>{copy.description}</CardDescription>
+							</div>
 						</div>
 						<Badge variant={copy.badgeVariant}>{copy.badgeLabel}</Badge>
 					</div>
@@ -103,7 +111,7 @@ export function MercadoPagoReturnPage({
 							Volver al inicio
 						</Link>
 					</Button>
-					<Button asChild>
+					<Button asChild variant="highlight">
 						<Link href="/my-orders">
 							<ReceiptTextIcon data-icon="inline-start" />
 							Ver mis pedidos

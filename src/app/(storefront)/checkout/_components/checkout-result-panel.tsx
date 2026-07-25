@@ -20,25 +20,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { cn } from "~/lib/utils";
 import type { CheckoutPaymentResult } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
+import { orderStatusLabelMap } from "~/shared/common/order-display";
 
-function orderStatusLabel(status: CheckoutPaymentResult["order"]["status"]) {
-	switch (status) {
-		case "processing":
-			return "En procesamiento";
-		case "failed":
-			return "Fallido";
-		case "completed":
-			return "Completado";
-		case "cancelled":
-			return "Cancelado";
-		case "refunded":
-			return "Reembolsado";
-		default:
-			return "Pendiente";
-	}
-}
+const toneChipClassName = {
+	succeeded: "bg-success/10 text-success",
+	failed: "bg-destructive/10 text-destructive",
+	pending: "bg-warning/10 text-warning",
+} satisfies Record<CheckoutPaymentResult["status"], string>;
 
 function ResultField({
 	label,
@@ -69,21 +60,30 @@ export function CheckoutResultPanel({
 			<Card>
 				<CardHeader>
 					<div className="flex items-start justify-between gap-3">
-						<div className="flex flex-col gap-1">
-							<CardTitle className="flex items-center gap-2">
-								{succeeded ? (
-									<PackageCheckIcon className="size-5 text-success" />
-								) : (
-									<AlertCircleIcon className="size-5 text-destructive" />
+						<div className="flex items-start gap-3">
+							<span
+								className={cn(
+									"flex size-12 shrink-0 items-center justify-center rounded-full",
+									toneChipClassName[result.status],
 								)}
-								{succeeded
-									? "Compra confirmada"
-									: "No se pudo confirmar el pago"}
-							</CardTitle>
-							<CardDescription>{result.message}</CardDescription>
+							>
+								{succeeded ? (
+									<PackageCheckIcon className="size-5" />
+								) : (
+									<AlertCircleIcon className="size-5" />
+								)}
+							</span>
+							<div className="flex flex-col gap-1">
+								<CardTitle>
+									{succeeded
+										? "Compra confirmada"
+										: "No se pudo confirmar el pago"}
+								</CardTitle>
+								<CardDescription>{result.message}</CardDescription>
+							</div>
 						</div>
 						<Badge variant={succeeded ? "success" : "destructive"}>
-							{orderStatusLabel(result.order.status)}
+							{orderStatusLabelMap[result.order.status]}
 						</Badge>
 					</div>
 				</CardHeader>
@@ -139,7 +139,7 @@ export function CheckoutResultPanel({
 							Volver al inicio
 						</Link>
 					</Button>
-					<Button asChild>
+					<Button asChild variant="highlight">
 						<Link href={`/my-orders/${result.order.id}`}>
 							<ShoppingBagIcon data-icon="inline-start" />
 							Ver mi pedido

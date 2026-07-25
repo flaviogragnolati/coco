@@ -111,13 +111,17 @@ function stageHint(stage: TrackingJourneyStepperStage) {
 
 export function TrackingJourneyStepper({
 	stages,
+	// Default kept identical to the pre-`ariaLabel` behaviour so the admin dialog
+	// (which does not pass it) announces exactly as before.
+	ariaLabel = "Recorrido del item",
 }: {
 	stages: TrackingJourneyStepperStage[];
+	ariaLabel?: string;
 }) {
 	if (stages.length === 0) return null;
 
 	return (
-		<nav aria-label="Recorrido del item">
+		<nav aria-label={ariaLabel}>
 			{/* Desktop: circles joined by connectors, truncated labels below. */}
 			<ol className="hidden items-start gap-1 sm:flex">
 				{stages.map((stage, index) => {

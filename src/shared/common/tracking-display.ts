@@ -88,32 +88,32 @@ export const userTrackingStageDefinitions: Array<{
 	{
 		key: "submitted",
 		label: "Pedido confirmado",
-		description: "Tu solicitud quedo registrada.",
+		description: "Tu solicitud quedó registrada.",
 	},
 	{
 		key: "preparation",
-		label: "Preparacion",
+		label: "Preparación",
 		description: "Estamos agrupando y preparando la compra.",
 	},
 	{
 		key: "supplier",
 		label: "Proveedor",
-		description: "El pedido esta siendo gestionado con el proveedor.",
+		description: "El pedido está siendo gestionado con el proveedor.",
 	},
 	{
 		key: "packaging",
 		label: "Empaque",
-		description: "El producto esta listo para entrar en logistica.",
+		description: "El producto está listo para entrar en logística.",
 	},
 	{
 		key: "shipping",
-		label: "Envio",
-		description: "El producto esta en movimiento.",
+		label: "Envío",
+		description: "El producto está en movimiento.",
 	},
 	{
 		key: "delivery",
 		label: "Entrega",
-		description: "El producto llego a destino.",
+		description: "El producto llegó a destino.",
 	},
 ];
 

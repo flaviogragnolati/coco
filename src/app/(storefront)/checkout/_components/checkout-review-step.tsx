@@ -184,6 +184,7 @@ export function CheckoutReviewStep({
 					disabled={!acceptedTerms || isSubmitting}
 					onClick={onConfirm}
 					type="button"
+					variant="highlight"
 				>
 					<ShieldCheckIcon data-icon="inline-start" />
 					{isSubmitting ? "Procesando pago..." : "Confirmar y pagar"}

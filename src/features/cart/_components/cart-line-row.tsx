@@ -39,7 +39,7 @@ function CartLineImage({
 		return (
 			<div
 				className={cn(
-					"flex shrink-0 items-center justify-center rounded-2xl bg-muted text-muted-foreground",
+					"flex shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand-soft-foreground",
 					className,
 				)}
 			>
@@ -54,7 +54,7 @@ function CartLineImage({
 		<div
 			aria-label={item.product.name}
 			className={cn(
-				"shrink-0 rounded-2xl bg-center bg-cover bg-muted",
+				"shrink-0 rounded-2xl bg-brand-soft bg-center bg-cover",
 				className,
 			)}
 			role="img"

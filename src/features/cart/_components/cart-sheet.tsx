@@ -130,14 +130,24 @@ export function CartSheet({
 							))}
 						</div>
 						{isAuthenticated ? (
-							<Button asChild className="w-full" onClick={closeMiniCart}>
+							<Button
+								asChild
+								className="w-full"
+								onClick={closeMiniCart}
+								variant="highlight"
+							>
 								<Link href="/checkout">
 									<ShoppingBagIcon data-icon="inline-start" />
-									Iniciar checkout
+									Ir a pagar
 								</Link>
 							</Button>
 						) : (
-							<Button asChild className="w-full" onClick={closeMiniCart}>
+							<Button
+								asChild
+								className="w-full"
+								onClick={closeMiniCart}
+								variant="highlight"
+							>
 								<Link href="/login?callbackURL=/checkout">
 									<LogInIcon data-icon="inline-start" />
 									Registrarme o iniciar sesión

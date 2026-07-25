@@ -66,7 +66,7 @@ export function CartSummary({
 			<CardContent className="flex flex-col gap-4">
 				<div className="grid gap-2 text-xs">
 					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">Lineas</span>
+						<span className="text-muted-foreground">Líneas</span>
 						<span className="font-medium">{cart.itemCount}</span>
 					</div>
 					<div className="flex items-center justify-between gap-3">
@@ -108,9 +108,9 @@ export function CartSummary({
 				) : (
 					<Alert>
 						<LogInIcon />
-						<AlertTitle>Inicia sesion para continuar</AlertTitle>
+						<AlertTitle>Iniciá sesión para continuar</AlertTitle>
 						<AlertDescription>
-							Podes armar el carrito como invitado. Para iniciar checkout,
+							Podés armar el carrito como invitado. Para iniciar checkout,
 							necesitamos asociarlo a tu usuario.
 						</AlertDescription>
 					</Alert>
@@ -118,17 +118,17 @@ export function CartSummary({
 			</CardContent>
 			<CardFooter className="flex flex-col gap-2">
 				{isAuthenticated ? (
-					<Button asChild className="w-full">
+					<Button asChild className="w-full" variant="highlight">
 						<Link href="/checkout">
 							<ShoppingBagIcon data-icon="inline-start" />
-							Iniciar checkout
+							Ir a pagar
 						</Link>
 					</Button>
 				) : (
-					<Button asChild className="w-full">
+					<Button asChild className="w-full" variant="highlight">
 						<Link href="/login?callbackURL=/checkout">
 							<LogInIcon data-icon="inline-start" />
-							Registrarme o iniciar sesion
+							Registrarme o iniciar sesión
 						</Link>
 					</Button>
 				)}

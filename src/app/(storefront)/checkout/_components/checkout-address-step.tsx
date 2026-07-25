@@ -24,8 +24,8 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
-import { cn } from "~/lib/utils";
 import type { CheckoutAddress } from "~/shared/common/checkout.types";
+import { SelectableTile } from "./selectable-tile";
 
 export function CheckoutAddressStep({
 	addresses,
@@ -81,53 +81,46 @@ export function CheckoutAddressStep({
 							const selected = address.id === selectedAddressId;
 
 							return (
-								<div
-									className={cn(
-										"flex flex-col gap-3 rounded-3xl bg-card p-3 shadow-sm ring-1 ring-foreground/5 transition-all md:flex-row md:items-start md:justify-between dark:ring-foreground/10",
-										selected && "ring-2 ring-success/40",
-									)}
-									key={address.id}
-								>
-									<button
-										aria-pressed={selected}
-										className="flex flex-1 flex-col gap-1 rounded-2xl text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
-										onClick={() => onSelect(address.id)}
-										type="button"
-									>
-										<span className="flex items-center gap-2 font-medium text-sm">
+								<SelectableTile
+									actions={
+										<>
 											{selected ? (
-												<CheckCircle2Icon className="size-4 text-success" />
-											) : (
-												<MapPinIcon className="size-4 text-muted-foreground" />
-											)}
-											{address.line1}
-										</span>
-										<span className="text-muted-foreground text-xs/relaxed">
-											{address.line2 ? `${address.line2}, ` : ""}
-											{address.city}, {address.state} {address.postalCode}
-										</span>
-										<span className="text-muted-foreground text-xs">
-											{address.country}
-										</span>
-									</button>
-									<div className="flex items-center gap-2">
+												<Badge variant="success">
+													<CheckCircle2Icon data-icon="inline-start" />
+													Seleccionada
+												</Badge>
+											) : null}
+											<Button
+												onClick={() => onEdit(address)}
+												size="sm"
+												type="button"
+												variant="outline"
+											>
+												<PencilIcon data-icon="inline-start" />
+												Editar
+											</Button>
+										</>
+									}
+									key={address.id}
+									onSelect={() => onSelect(address.id)}
+									selected={selected}
+								>
+									<span className="flex items-center gap-2 font-medium text-sm">
 										{selected ? (
-											<Badge variant="success">
-												<CheckCircle2Icon data-icon="inline-start" />
-												Seleccionada
-											</Badge>
-										) : null}
-										<Button
-											onClick={() => onEdit(address)}
-											size="sm"
-											type="button"
-											variant="outline"
-										>
-											<PencilIcon data-icon="inline-start" />
-											Editar
-										</Button>
-									</div>
-								</div>
+											<CheckCircle2Icon className="size-4 text-success" />
+										) : (
+											<MapPinIcon className="size-4 text-muted-foreground" />
+										)}
+										{address.line1}
+									</span>
+									<span className="text-muted-foreground text-xs/relaxed">
+										{address.line2 ? `${address.line2}, ` : ""}
+										{address.city}, {address.state} {address.postalCode}
+									</span>
+									<span className="text-muted-foreground text-xs">
+										{address.country}
+									</span>
+								</SelectableTile>
 							);
 						})}
 					</div>

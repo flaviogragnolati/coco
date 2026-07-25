@@ -26,8 +26,8 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
-import { cn } from "~/lib/utils";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
+import { SelectableTile } from "./selectable-tile";
 
 export function paymentTypeLabel(type: CheckoutPaymentMethod["type"]) {
 	switch (type) {
@@ -108,53 +108,46 @@ export function CheckoutPaymentStep({
 							const selected = paymentMethod.id === selectedPaymentMethodId;
 
 							return (
-								<div
-									className={cn(
-										"flex flex-col gap-3 rounded-3xl bg-card p-3 shadow-sm ring-1 ring-foreground/5 transition-all md:flex-row md:items-start md:justify-between dark:ring-foreground/10",
-										selected && "ring-2 ring-success/40",
-									)}
-									key={paymentMethod.id}
-								>
-									<button
-										aria-pressed={selected}
-										className="flex flex-1 flex-col gap-1 rounded-2xl text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
-										onClick={() => onSelect(paymentMethod.id)}
-										type="button"
-									>
-										<span className="flex items-center gap-2 font-medium text-sm">
+								<SelectableTile
+									actions={
+										<>
 											{selected ? (
-												<CheckCircle2Icon className="size-4 text-success" />
-											) : (
-												<CreditCardIcon className="size-4 text-muted-foreground" />
-											)}
-											{paymentMethod.label}
-										</span>
-										<span className="text-muted-foreground text-xs/relaxed">
-											{paymentTypeLabel(paymentMethod.type)} ·{" "}
-											{paymentMethod.details}
-										</span>
-										<span className="text-muted-foreground text-xs">
-											{paymentMethod.provider}
-										</span>
-									</button>
-									<div className="flex items-center gap-2">
+												<Badge variant="success">
+													<CheckCircle2Icon data-icon="inline-start" />
+													Seleccionado
+												</Badge>
+											) : null}
+											<Button
+												onClick={() => onEdit(paymentMethod)}
+												size="sm"
+												type="button"
+												variant="outline"
+											>
+												<PencilIcon data-icon="inline-start" />
+												Editar
+											</Button>
+										</>
+									}
+									key={paymentMethod.id}
+									onSelect={() => onSelect(paymentMethod.id)}
+									selected={selected}
+								>
+									<span className="flex items-center gap-2 font-medium text-sm">
 										{selected ? (
-											<Badge variant="success">
-												<CheckCircle2Icon data-icon="inline-start" />
-												Seleccionado
-											</Badge>
-										) : null}
-										<Button
-											onClick={() => onEdit(paymentMethod)}
-											size="sm"
-											type="button"
-											variant="outline"
-										>
-											<PencilIcon data-icon="inline-start" />
-											Editar
-										</Button>
-									</div>
-								</div>
+											<CheckCircle2Icon className="size-4 text-success" />
+										) : (
+											<CreditCardIcon className="size-4 text-muted-foreground" />
+										)}
+										{paymentMethod.label}
+									</span>
+									<span className="text-muted-foreground text-xs/relaxed">
+										{paymentTypeLabel(paymentMethod.type)} ·{" "}
+										{paymentMethod.details}
+									</span>
+									<span className="text-muted-foreground text-xs">
+										{paymentMethod.provider}
+									</span>
+								</SelectableTile>
 							);
 						})}
 					</div>

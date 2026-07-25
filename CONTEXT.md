@@ -86,6 +86,10 @@ _Avoid_: Status, operational state
 A deviation or annotation attached to the journey stage that was current when it happened — rollover, exception, cancellation, or quantity change. Spanish-facing UI labels it "Aviso".
 _Avoid_: Warning event, error
 
+**Order journey**:
+The customer-facing roll-up of one submitted order's item journeys. When every item shares the same current stage it collapses into a single six-stage journey; otherwise each item shows its own. Spanish-facing UI labels it "Seguimiento del pedido".
+_Avoid_: Order timeline, tracking screen
+
 ### Catalog and cart (customer-facing)
 
 **Catalog**:

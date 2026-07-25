@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 import { AddressFormDialog } from "~/app/(storefront)/checkout/_components/address-form-dialog";
 import { PaymentMethodFormDialog } from "~/app/(storefront)/checkout/_components/payment-method-form-dialog";
+import { PageHeader } from "~/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import {
@@ -379,28 +380,19 @@ export function CheckoutClient() {
 
 	return (
 		<main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 pb-28 md:px-6 lg:pb-8">
-			<section className="flex flex-col gap-2">
-				<span className="text-muted-foreground text-xs uppercase tracking-wide">
-					Checkout
-				</span>
-				<div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-					<div className="flex max-w-3xl flex-col gap-2">
-						<h1 className="font-heading font-semibold text-3xl tracking-normal">
-							Confirmá tu pedido compartido
-						</h1>
-						<p className="text-muted-foreground text-sm/relaxed">
-							Cuatro pasos para dejar tu pedido listo para la agregación
-							mayorista.
-						</p>
-					</div>
+			<PageHeader
+				actions={
 					<Button asChild variant="outline">
 						<Link href="/cart">
 							<ChevronLeftIcon data-icon="inline-start" />
 							Volver al carrito
 						</Link>
 					</Button>
-				</div>
-			</section>
+				}
+				description="Cuatro pasos para dejar tu pedido listo para la agregación mayorista."
+				eyebrow="Checkout"
+				title="Confirmá tu pedido compartido"
+			/>
 
 			<CheckoutStepper
 				currentStep={currentStep}

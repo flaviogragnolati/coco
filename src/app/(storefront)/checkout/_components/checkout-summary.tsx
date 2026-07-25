@@ -224,11 +224,13 @@ export function CheckoutMobileBar({
 						Ver resumen
 					</span>
 				</button>
+				{/* Amber marks the payment moment only — intermediate steps stay default. */}
 				<Button
 					className="flex-1"
 					disabled={primaryDisabled}
 					onClick={onPrimary}
 					type="button"
+					variant={isReview ? "highlight" : "default"}
 				>
 					{primaryLabel}
 				</Button>
