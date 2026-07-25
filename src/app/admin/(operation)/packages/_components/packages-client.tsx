@@ -40,7 +40,11 @@ function positiveIntOrUndefined(value: string) {
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-export function PackagesClient() {
+export function PackagesClient({
+	initialDetailId,
+}: {
+	initialDetailId?: number;
+}) {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] =
 		useState<(typeof pageSizeOptions)[number]>(25);
@@ -56,7 +60,7 @@ export function PackagesClient() {
 	const [createdFrom, setCreatedFrom] = useState("");
 	const [createdTo, setCreatedTo] = useState("");
 	const [selectedPackageId, setSelectedPackageId] = useState<number | null>(
-		null,
+		initialDetailId ?? null,
 	);
 
 	const updateFilter = <T,>(setter: (value: T) => void, value: T) => {

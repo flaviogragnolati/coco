@@ -90,8 +90,11 @@ export function TrackingClient({
 	);
 	const [createdFrom, setCreatedFrom] = useState("");
 	const [createdTo, setCreatedTo] = useState("");
+	// Arriving with `?cartItemId=` both filters the table and opens that item's
+	// journey modal — deep links from the lot/package/shipment dialogs land on the
+	// item itself. Initial read only: closing the modal does not touch the URL.
 	const [selectedCartItemId, setSelectedCartItemId] = useState<number | null>(
-		null,
+		() => positiveIntOrUndefined(initialFilters.cartItemId ?? "") ?? null,
 	);
 
 	const updateFilter = <T,>(setter: (value: T) => void, value: T) => {

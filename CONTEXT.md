@@ -74,6 +74,18 @@ _Avoid_: Correction, mutation, action
 A summary status intended for display, backed by more detailed operational records.
 _Avoid_: Source of truth, proof
 
+**Fulfillment journey**:
+The staged, display-oriented progression of a customer request through fulfillment, computed from tracking events (history). Stages read completed, current, pending, or skipped; deviations surface as notices and a terminal outcome, never as stages. Spanish-facing UI labels it "Recorrido".
+_Avoid_: Timeline, event log, fulfillment lineage
+
+**Journey stage**:
+One step on a journey's fixed axis. The admin journey has ten stages mapped 1:1 to happy-path fulfillment statuses; the customer journey groups them into six. Spanish-facing UI labels it "Etapa".
+_Avoid_: Status, operational state
+
+**Journey notice**:
+A deviation or annotation attached to the journey stage that was current when it happened — rollover, exception, cancellation, or quantity change. Spanish-facing UI labels it "Aviso".
+_Avoid_: Warning event, error
+
 ### Catalog and cart (customer-facing)
 
 **Catalog**:

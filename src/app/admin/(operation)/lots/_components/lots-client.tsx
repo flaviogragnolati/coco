@@ -40,7 +40,7 @@ function positiveIntOrUndefined(value: string) {
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-export function LotsClient() {
+export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] =
 		useState<(typeof pageSizeOptions)[number]>(25);
@@ -56,7 +56,9 @@ export function LotsClient() {
 	const [destinationId, setDestinationId] = useState("");
 	const [createdFrom, setCreatedFrom] = useState("");
 	const [createdTo, setCreatedTo] = useState("");
-	const [selectedLotId, setSelectedLotId] = useState<number | null>(null);
+	const [selectedLotId, setSelectedLotId] = useState<number | null>(
+		initialDetailId ?? null,
+	);
 
 	const updateFilter = <T,>(setter: (value: T) => void, value: T) => {
 		setter(value);

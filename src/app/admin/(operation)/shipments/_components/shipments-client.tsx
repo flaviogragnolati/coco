@@ -44,7 +44,11 @@ function positiveIntOrUndefined(value: string) {
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-export function ShipmentsClient() {
+export function ShipmentsClient({
+	initialDetailId,
+}: {
+	initialDetailId?: number;
+}) {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] =
 		useState<(typeof pageSizeOptions)[number]>(25);
@@ -60,7 +64,7 @@ export function ShipmentsClient() {
 	const [createdFrom, setCreatedFrom] = useState("");
 	const [createdTo, setCreatedTo] = useState("");
 	const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(
-		null,
+		initialDetailId ?? null,
 	);
 
 	const updateFilter = <T,>(setter: (value: T) => void, value: T) => {

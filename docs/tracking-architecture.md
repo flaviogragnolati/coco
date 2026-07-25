@@ -557,6 +557,15 @@ Rules:
 - `getCartItemTimelineDetail` returns the complete cart-item timeline ordered by
   `createdAt asc, id asc`, plus key related entity summaries for admin
   diagnosis.
+- `getCartItemTimelineDetail` also returns a `journey` field: the ten happy-path
+  fulfillment stages with per-stage status
+  (`completed | current | pending | skipped`), the notices attached to the stage
+  that was current when each deviation happened, and a terminal `outcome`. It is
+  derived from the events by `buildAdminTrackingJourney`
+  (`src/shared/common/tracking-journey.ts`) — history, not the
+  `CartItem.fulfillmentStatus` column, so the two can legitimately diverge when
+  the projector skipped a transition for missing evidence. The admin modal shows
+  the column as a chip next to the journey stepper.
 - Timeline detail endpoints use stable ordering: `createdAt asc, id asc`.
 
 Admin UI:
@@ -566,9 +575,12 @@ Admin UI:
 ```
 
 The v1 admin tracking page is read-only. It lists `CartItemTrackingEvent` rows
-with server-side pagination and opens a modal with the complete cart-item
-timeline. Future correction/edit flows must add explicit mutation contracts;
-this UI must not write `CartItemTrackingEvent` rows directly.
+with server-side pagination and opens a modal with the item's journey stepper,
+its outcome banner, links to the entities it passed through, and the raw event
+list collapsed behind an accordion. Arriving with `?cartItemId=` filters the
+table and opens that item's modal; the modal's outgoing links use `?detailId=`
+on the entity list pages. Future correction/edit flows must add explicit mutation
+contracts; this UI must not write `CartItemTrackingEvent` rows directly.
 
 ## Idempotency
 

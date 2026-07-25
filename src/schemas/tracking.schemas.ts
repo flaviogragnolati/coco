@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+	adminTrackingStageKeys,
 	trackingEventSources,
 	trackingEventTypes,
 	userTrackingNoticeKinds,
@@ -305,7 +306,50 @@ export const adminTrackingTimelineDetailItemSchema =
 		related: adminTrackingRelatedSchema,
 	});
 
+export const adminTrackingJourneyStageStatusSchema = z.enum([
+	"completed",
+	"current",
+	"pending",
+	"skipped",
+]);
+
+export const adminTrackingJourneyStageSchema = z.object({
+	key: z.enum(adminTrackingStageKeys),
+	label: z.string(),
+	description: z.string(),
+	status: adminTrackingJourneyStageStatusSchema,
+	warning: z.boolean(),
+	eventType: trackingEventTypeSchema.optional(),
+	quantity: decimalStringSchema.optional(),
+	createdAt: z.string().optional(),
+});
+
+export const adminTrackingJourneyNoticeSchema =
+	userTrackingTimelineNoticeSchema.extend({
+		stageKey: z.enum(adminTrackingStageKeys).nullable(),
+	});
+
+export const adminTrackingJourneyOutcomeSchema = z.object({
+	kind: z.enum([
+		"dropped",
+		"cancelled",
+		"rolledOver",
+		"partiallyRolledOver",
+		"exception",
+	]),
+	label: z.string(),
+	createdAt: z.string().optional(),
+});
+
+export const adminTrackingJourneySchema = z.object({
+	stages: z.array(adminTrackingJourneyStageSchema),
+	notices: z.array(adminTrackingJourneyNoticeSchema),
+	outcome: adminTrackingJourneyOutcomeSchema.nullable(),
+	currentStageKey: z.enum(adminTrackingStageKeys).nullable(),
+});
+
 export const adminTrackingCartItemDetailSchema = z.object({
 	cartItem: adminTrackingCartItemSummarySchema,
 	timeline: z.array(adminTrackingTimelineDetailItemSchema),
+	journey: adminTrackingJourneySchema,
 });

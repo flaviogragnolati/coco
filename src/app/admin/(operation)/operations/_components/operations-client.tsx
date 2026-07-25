@@ -36,13 +36,17 @@ import { api } from "~/trpc/react";
 
 const allValue = "all";
 
-export function OperationsClient() {
+export function OperationsClient({
+	initialDetailId,
+}: {
+	initialDetailId?: number;
+}) {
 	const utils = api.useUtils();
 	const [searchTerm, setSearchTerm] = useState("");
 	const [status, setStatus] = useState<OperationStatus | "all">("all");
 	const [createOpen, setCreateOpen] = useState(false);
 	const [selectedOperationId, setSelectedOperationId] = useState<number | null>(
-		null,
+		initialDetailId ?? null,
 	);
 
 	const listInput = useMemo(

@@ -21,6 +21,7 @@ import {
 	userTrackingStageByEventType,
 	userTrackingStageDefinitions,
 } from "~/shared/common/tracking-display";
+import { buildAdminTrackingJourney } from "~/shared/common/tracking-journey";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import type { TrackingCommand } from "./tracking-event-mapper";
 import { TrackingStatusProjector } from "./tracking-status-projector";
@@ -785,6 +786,15 @@ export class TrackingEventService {
 		return {
 			cartItem: toCartItemSummary(record),
 			timeline: record.trackingEvents.map(toAdminTrackingTimelineDetailItem),
+			journey: buildAdminTrackingJourney({
+				status: record.status,
+				fulfillmentStatus: record.fulfillmentStatus,
+				events: record.trackingEvents.map((event) => ({
+					eventType: event.eventType,
+					quantity: event.quantity?.toString(),
+					createdAt: event.createdAt.toISOString(),
+				})),
+			}),
 		};
 	}
 }

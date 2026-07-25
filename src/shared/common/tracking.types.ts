@@ -5,6 +5,10 @@ import type {
 	adminTrackingCartItemTimelineInputSchema,
 	adminTrackingCartTimelineInputSchema,
 	adminTrackingEventListItemSchema,
+	adminTrackingJourneyNoticeSchema,
+	adminTrackingJourneyOutcomeSchema,
+	adminTrackingJourneySchema,
+	adminTrackingJourneyStageSchema,
 	adminTrackingListFiltersSchema,
 	adminTrackingListInputSchema,
 	adminTrackingListOutputSchema,
@@ -63,3 +67,13 @@ export type AdminTrackingTimelineOutput = z.output<
 export type AdminTrackingCartItemDetail = z.output<
 	typeof adminTrackingCartItemDetailSchema
 >;
+export type AdminTrackingJourneyStage = z.output<
+	typeof adminTrackingJourneyStageSchema
+>;
+export type AdminTrackingJourneyNotice = z.output<
+	typeof adminTrackingJourneyNoticeSchema
+>;
+export type AdminTrackingJourneyOutcome = z.output<
+	typeof adminTrackingJourneyOutcomeSchema
+>;
+export type AdminTrackingJourney = z.output<typeof adminTrackingJourneySchema>;
