@@ -252,10 +252,12 @@ export async function listLotCandidates(
 	input: LotListInput,
 	options?: { skip?: number; take?: number },
 ) {
+	const direction = input.sortDirection;
+
 	return db.lot.findMany({
 		where: buildLotWhere(input),
 		select: lotSummarySelect,
-		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+		orderBy: [{ createdAt: direction }, { id: direction }],
 		skip: options?.skip,
 		take: options?.take,
 	});

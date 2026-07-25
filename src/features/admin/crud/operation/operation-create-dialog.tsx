@@ -83,6 +83,7 @@ export function OperationCreateDialog({
 						}
 						form="operation-create-form"
 						type="submit"
+						variant="highlight"
 					>
 						<PlayIcon data-icon="inline-start" />
 						Ejecutar

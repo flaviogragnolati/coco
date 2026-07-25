@@ -12,20 +12,21 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "~/components/ui/button";
 import { Combobox, type ComboboxOption } from "~/components/ui/combobox";
 import {
 	Field,
 	FieldContent,
 	FieldDescription,
-	FieldGroup,
 	FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import { CrudDeleteDialog } from "~/features/admin/crud/_components/crud-delete-dialog";
+import { CrudFilterPanel } from "~/features/admin/crud/_components/crud-filter-panel";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
+import { CrudPaginationBar } from "~/features/admin/crud/_components/crud-pagination-bar";
+import { CrudSortToggle } from "~/features/admin/crud/_components/crud-sort-toggle";
 import {
 	CrudEmptyState,
 	CrudErrorState,
@@ -42,6 +43,7 @@ import {
 } from "~/features/admin/crud/operations-cart/operations-cart.mappers";
 import { OperationsCartDetailForm } from "~/features/admin/crud/operations-cart/operations-cart-detail-form";
 import { OperationsCartTable } from "~/features/admin/crud/operations-cart/operations-cart-table";
+import type { CrudSortDirection } from "~/shared/common/admin-crud/crud.types";
 import type {
 	OperationsCartFormValues,
 	OperationsCartItemFulfillmentStatus,
@@ -54,14 +56,13 @@ import type {
 import { api } from "~/trpc/react";
 
 const allValue = "all";
-const pageSizeOptions = [10, 25, 50, 100] as const;
 
 export function UserCartsClient() {
 	const router = useRouter();
 	const utils = api.useUtils();
 	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] =
-		useState<(typeof pageSizeOptions)[number]>(25);
+	const [pageSize, setPageSize] = useState<number>(25);
+	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
 	const [includeDeleted, setIncludeDeleted] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [cartStatus, setCartStatus] = useState<OperationsCartStatus | "all">(
@@ -105,6 +106,7 @@ export function UserCartsClient() {
 		() => ({
 			page,
 			pageSize,
+			sortDirection,
 			includeDeleted,
 			search: searchTerm.trim().length > 0 ? searchTerm : undefined,
 			userId: userId === allValue ? undefined : userId,
@@ -132,9 +134,35 @@ export function UserCartsClient() {
 			productClientTermsId,
 			productId,
 			searchTerm,
+			sortDirection,
 			userId,
 		],
 	);
+
+	const activeAdvancedCount =
+		[
+			productId,
+			productClientTermsId,
+			cartItemStatus,
+			fulfillmentStatus,
+			orderStatus,
+			paymentStatus,
+		].filter((value) => value !== allValue).length + (includeDeleted ? 1 : 0);
+
+	const clearFilters = () => {
+		setSearchTerm("");
+		setUserId(allValue);
+		setProductId(allValue);
+		setProductClientTermsId(allValue);
+		setCartStatus(allValue);
+		setCartItemStatus(allValue);
+		setFulfillmentStatus(allValue);
+		setOrderStatus(allValue);
+		setPaymentStatus(allValue);
+		setIncludeDeleted(false);
+		setSortDirection("desc");
+		setPage(1);
+	};
 
 	const cartsQuery = api.admin.operationsCart.list.useQuery(listInput);
 	const statsQuery = api.admin.operationsCart.getStats.useQuery();
@@ -298,9 +326,6 @@ export function UserCartsClient() {
 		);
 	};
 
-	const pageCount = cartsQuery.data?.pageCount ?? 0;
-	const total = cartsQuery.data?.total ?? 0;
-
 	return (
 		<CrudPageShell
 			description="Revisión operacional de carritos, ítems, órdenes y pagos relacionados."
@@ -356,251 +381,226 @@ export function UserCartsClient() {
 			) : null}
 
 			<section className="flex flex-col gap-3">
-				<div className="rounded-2xl border p-3">
-					<FieldGroup className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-						<Field>
-							<FieldLabel htmlFor="operations-cart-search">Buscar</FieldLabel>
-							<div className="relative">
-								<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									id="operations-cart-search"
-									onChange={(event) =>
-										updateFilter(setSearchTerm, event.target.value)
-									}
-									placeholder="Código, usuario, email o producto"
-									value={searchTerm}
-								/>
-							</div>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-user">Usuario</FieldLabel>
-							<Combobox
-								id="operations-cart-user"
-								loading={userOptionsQuery.isLoading}
-								onChange={(next) => updateFilter(setUserId, next)}
-								onSearchChange={setUserSearch}
-								options={userComboOptions}
-								placeholder="Todos"
-								searchPlaceholder="Buscar usuario o email..."
-								value={userId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-product">
-								Producto
-							</FieldLabel>
-							<Combobox
-								id="operations-cart-product"
-								loading={productOptionsQuery.isLoading}
-								onChange={(next) => updateFilter(setProductId, next)}
-								onSearchChange={setProductSearch}
-								options={productComboOptions}
-								placeholder="Todos"
-								searchPlaceholder="Buscar producto..."
-								value={productId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-terms">
-								Terminos cliente
-							</FieldLabel>
-							<Combobox
-								id="operations-cart-terms"
-								loading={termsOptionsQuery.isLoading}
-								onChange={(next) => updateFilter(setProductClientTermsId, next)}
-								onSearchChange={setTermsSearch}
-								options={termsComboOptions}
-								placeholder="Todos"
-								searchPlaceholder="Buscar términos..."
-								value={productClientTermsId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-status-filter">
-								Estado carrito
-							</FieldLabel>
-							<Select
-								id="operations-cart-status-filter"
-								onChange={(event) =>
-									updateFilter(
-										setCartStatus,
-										event.target.value as OperationsCartStatus | "all",
-									)
-								}
-								value={cartStatus}
-							>
-								<option value={allValue}>Todos</option>
-								{cartStatusOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-item-status-filter">
-								Estado item
-							</FieldLabel>
-							<Select
-								id="operations-cart-item-status-filter"
-								onChange={(event) =>
-									updateFilter(
-										setCartItemStatus,
-										event.target.value as OperationsCartItemStatus | "all",
-									)
-								}
-								value={cartItemStatus}
-							>
-								<option value={allValue}>Todos</option>
-								{cartItemStatusOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-fulfillment-filter">
-								Fulfillment
-							</FieldLabel>
-							<Select
-								id="operations-cart-fulfillment-filter"
-								onChange={(event) =>
-									updateFilter(
-										setFulfillmentStatus,
-										event.target.value as
-											| OperationsCartItemFulfillmentStatus
-											| "all",
-									)
-								}
-								value={fulfillmentStatus}
-							>
-								<option value={allValue}>Todos</option>
-								{fulfillmentStatusOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-order-filter">
-								Orden
-							</FieldLabel>
-							<Select
-								id="operations-cart-order-filter"
-								onChange={(event) =>
-									updateFilter(
-										setOrderStatus,
-										event.target.value as OperationsUserOrderStatus | "all",
-									)
-								}
-								value={orderStatus}
-							>
-								<option value={allValue}>Todas</option>
-								{orderStatusOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-payment-filter">
-								Pago
-							</FieldLabel>
-							<Select
-								id="operations-cart-payment-filter"
-								onChange={(event) =>
-									updateFilter(
-										setPaymentStatus,
-										event.target.value as
-											| OperationsUserTransactionStatus
-											| "all",
-									)
-								}
-								value={paymentStatus}
-							>
-								<option value={allValue}>Todos</option>
-								{transactionStatusOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field className="self-end" orientation="horizontal">
-							<Switch
-								checked={includeDeleted}
-								id="operations-cart-include-deleted"
-								onCheckedChange={(checked) =>
-									updateFilter(setIncludeDeleted, checked)
-								}
-							/>
-							<FieldContent>
-								<FieldLabel htmlFor="operations-cart-include-deleted">
-									Mostrar eliminados
+				<CrudFilterPanel
+					actions={
+						<CrudSortToggle
+							oldestLabel="Más antiguos"
+							onChange={setSortDirection}
+							recentLabel="Actualizados recientes"
+							value={sortDirection}
+						/>
+					}
+					activeAdvancedCount={activeAdvancedCount}
+					advanced={
+						<>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-product">
+									Producto
 								</FieldLabel>
-								<FieldDescription>Baja logica</FieldDescription>
-							</FieldContent>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="operations-cart-page-size">
-								Tamaño pagina
-							</FieldLabel>
-							<Select
-								id="operations-cart-page-size"
-								onChange={(event) =>
-									updateFilter(
-										setPageSize,
-										Number(
-											event.target.value,
-										) as (typeof pageSizeOptions)[number],
-									)
-								}
-								value={String(pageSize)}
-							>
-								{pageSizeOptions.map((option) => (
-									<option key={option} value={option}>
-										{option}
-									</option>
-								))}
-							</Select>
-						</Field>
-					</FieldGroup>
-				</div>
+								<Combobox
+									id="operations-cart-product"
+									loading={productOptionsQuery.isLoading}
+									onChange={(next) => updateFilter(setProductId, next)}
+									onSearchChange={setProductSearch}
+									options={productComboOptions}
+									placeholder="Todos"
+									searchPlaceholder="Buscar producto..."
+									value={productId}
+								/>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-terms">
+									Términos cliente
+								</FieldLabel>
+								<Combobox
+									id="operations-cart-terms"
+									loading={termsOptionsQuery.isLoading}
+									onChange={(next) =>
+										updateFilter(setProductClientTermsId, next)
+									}
+									onSearchChange={setTermsSearch}
+									options={termsComboOptions}
+									placeholder="Todos"
+									searchPlaceholder="Buscar términos..."
+									value={productClientTermsId}
+								/>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-item-status-filter">
+									Estado item
+								</FieldLabel>
+								<Select
+									id="operations-cart-item-status-filter"
+									onChange={(event) =>
+										updateFilter(
+											setCartItemStatus,
+											event.target.value as OperationsCartItemStatus | "all",
+										)
+									}
+									value={cartItemStatus}
+								>
+									<option value={allValue}>Todos</option>
+									{cartItemStatusOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-fulfillment-filter">
+									Fulfillment
+								</FieldLabel>
+								<Select
+									id="operations-cart-fulfillment-filter"
+									onChange={(event) =>
+										updateFilter(
+											setFulfillmentStatus,
+											event.target.value as
+												| OperationsCartItemFulfillmentStatus
+												| "all",
+										)
+									}
+									value={fulfillmentStatus}
+								>
+									<option value={allValue}>Todos</option>
+									{fulfillmentStatusOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-order-filter">
+									Orden
+								</FieldLabel>
+								<Select
+									id="operations-cart-order-filter"
+									onChange={(event) =>
+										updateFilter(
+											setOrderStatus,
+											event.target.value as OperationsUserOrderStatus | "all",
+										)
+									}
+									value={orderStatus}
+								>
+									<option value={allValue}>Todas</option>
+									{orderStatusOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-payment-filter">
+									Pago
+								</FieldLabel>
+								<Select
+									id="operations-cart-payment-filter"
+									onChange={(event) =>
+										updateFilter(
+											setPaymentStatus,
+											event.target.value as
+												| OperationsUserTransactionStatus
+												| "all",
+										)
+									}
+									value={paymentStatus}
+								>
+									<option value={allValue}>Todos</option>
+									{transactionStatusOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field className="self-end" orientation="horizontal">
+								<Switch
+									checked={includeDeleted}
+									id="operations-cart-include-deleted"
+									onCheckedChange={(checked) =>
+										updateFilter(setIncludeDeleted, checked)
+									}
+								/>
+								<FieldContent>
+									<FieldLabel htmlFor="operations-cart-include-deleted">
+										Mostrar eliminados
+									</FieldLabel>
+									<FieldDescription>Baja lógica</FieldDescription>
+								</FieldContent>
+							</Field>
+						</>
+					}
+					onReset={clearFilters}
+					primary={
+						<>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-search">Buscar</FieldLabel>
+								<div className="relative">
+									<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+									<Input
+										className="pl-8"
+										id="operations-cart-search"
+										onChange={(event) =>
+											updateFilter(setSearchTerm, event.target.value)
+										}
+										placeholder="Código, usuario, email o producto"
+										value={searchTerm}
+									/>
+								</div>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-user">Usuario</FieldLabel>
+								<Combobox
+									id="operations-cart-user"
+									loading={userOptionsQuery.isLoading}
+									onChange={(next) => updateFilter(setUserId, next)}
+									onSearchChange={setUserSearch}
+									options={userComboOptions}
+									placeholder="Todos"
+									searchPlaceholder="Buscar usuario o email..."
+									value={userId}
+								/>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="operations-cart-status-filter">
+									Estado carrito
+								</FieldLabel>
+								<Select
+									id="operations-cart-status-filter"
+									onChange={(event) =>
+										updateFilter(
+											setCartStatus,
+											event.target.value as OperationsCartStatus | "all",
+										)
+									}
+									value={cartStatus}
+								>
+									<option value={allValue}>Todos</option>
+									{cartStatusOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+						</>
+					}
+				/>
 
-				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-					<span className="text-muted-foreground text-sm">
-						{cartsQuery.isLoading
-							? "Cargando carritos"
-							: `${total} carrito${total === 1 ? "" : "s"}`}
-					</span>
-					<div className="flex items-center gap-2">
-						<Button
-							disabled={page <= 1 || cartsQuery.isLoading}
-							onClick={() => setPage((current) => Math.max(1, current - 1))}
-							type="button"
-							variant="outline"
-						>
-							Anterior
-						</Button>
-						<span className="text-sm">
-							Pagina {page} de {Math.max(pageCount, 1)}
-						</span>
-						<Button
-							disabled={
-								pageCount === 0 || page >= pageCount || cartsQuery.isLoading
-							}
-							onClick={() => setPage((current) => current + 1)}
-							type="button"
-							variant="outline"
-						>
-							Siguiente
-						</Button>
-					</div>
-				</div>
+				<CrudPaginationBar
+					isLoading={cartsQuery.isLoading}
+					onPageChange={setPage}
+					onPageSizeChange={(value) => updateFilter(setPageSize, value)}
+					page={page}
+					pageCount={cartsQuery.data?.pageCount ?? 0}
+					pageSize={pageSize}
+					total={cartsQuery.data?.total ?? 0}
+					totalLabel={{ singular: "carrito", plural: "carritos" }}
+				/>
 
 				{renderTable()}
 			</section>

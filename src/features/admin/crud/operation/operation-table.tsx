@@ -10,12 +10,18 @@ import {
 
 import { Button } from "~/components/ui/button";
 import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "~/components/ui/tooltip";
+import {
 	DateTooltip,
 	IdTooltip,
 } from "~/features/admin/crud/_components/crud-cell-tooltips";
 import { CrudRowActions } from "~/features/admin/crud/_components/crud-row-actions";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
+import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import type {
 	CrudColumn,
 	CrudRowAction,
@@ -26,6 +32,8 @@ import {
 	operationStatusConfig,
 	operationStrategyConfig,
 } from "./operation.mappers";
+
+const unavailableHint = "Disponible próximamente";
 
 function QuantitySummary({ operation }: { operation: OperationListItem }) {
 	return (
@@ -101,6 +109,24 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 		cell: (operation) => <QuantitySummary operation={operation} />,
 	},
 	{
+		key: "diagnostics",
+		header: "Diagnósticos",
+		className: "min-w-60",
+		cell: (operation) => (
+			<div className="flex flex-col gap-1">
+				<OperationalDiagnosticBadge
+					count={operation.diagnosticCount}
+					severity={operation.highestDiagnosticSeverity}
+				/>
+				{operation.diagnosticMessages.map((message) => (
+					<span className="text-muted-foreground text-xs" key={message}>
+						{message}
+					</span>
+				))}
+			</div>
+		),
+	},
+	{
 		key: "createdAt",
 		header: "Ejecución",
 		className: "w-40",
@@ -137,12 +163,14 @@ export function OperationTable({
 			icon: BanIcon,
 			onSelect: () => onUnavailableAction("Cancelar"),
 			disabled: () => true,
+			hint: unavailableHint,
 		},
 		{
 			label: "Reejecutar",
 			icon: RefreshCwIcon,
 			onSelect: () => onUnavailableAction("Reejecutar"),
 			disabled: () => true,
+			hint: unavailableHint,
 		},
 		{
 			label: "Eliminar",
@@ -150,6 +178,7 @@ export function OperationTable({
 			onSelect: () => onUnavailableAction("Eliminar"),
 			disabled: () => true,
 			destructive: true,
+			hint: unavailableHint,
 		},
 	];
 
@@ -157,14 +186,23 @@ export function OperationTable({
 		<CrudTable
 			actions={(operation) => (
 				<div className="flex items-center justify-end gap-2">
-					<Button
-						disabled
-						size="icon-sm"
-						title="Reejecutar disponible en una version futura"
-						variant="outline"
-					>
-						<RotateCcwIcon />
-					</Button>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							{/* `aria-disabled` rather than `disabled`: the button has to stay
+							    hoverable and focusable for the tooltip to explain itself. */}
+							<Button
+								aria-disabled
+								aria-label="Reejecutar"
+								className="opacity-50"
+								onClick={(event) => event.preventDefault()}
+								size="icon-sm"
+								variant="outline"
+							>
+								<RotateCcwIcon />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Reejecutar — {unavailableHint}</TooltipContent>
+					</Tooltip>
 					<CrudRowActions actions={actions} item={operation} />
 				</div>
 			)}

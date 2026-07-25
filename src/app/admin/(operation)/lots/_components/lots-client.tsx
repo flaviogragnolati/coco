@@ -5,16 +5,17 @@ import {
 	ClockIcon,
 	LayersIcon,
 	PackageCheckIcon,
-	RotateCcwIcon,
 	SearchIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button } from "~/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "~/components/ui/field";
+import { Field, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
+import { CrudFilterPanel } from "~/features/admin/crud/_components/crud-filter-panel";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
+import { CrudPaginationBar } from "~/features/admin/crud/_components/crud-pagination-bar";
+import { CrudSortToggle } from "~/features/admin/crud/_components/crud-sort-toggle";
 import {
 	CrudEmptyState,
 	CrudErrorState,
@@ -24,6 +25,7 @@ import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-car
 import { lotStatusOptions } from "~/features/admin/crud/lot/lot.mappers";
 import { LotDetailDialog } from "~/features/admin/crud/lot/lot-detail-dialog";
 import { LotTable } from "~/features/admin/crud/lot/lot-table";
+import type { CrudSortDirection } from "~/shared/common/admin-crud/crud.types";
 import type {
 	LotListItem,
 	LotStatus,
@@ -32,7 +34,6 @@ import type { DiagnosticState } from "~/shared/common/admin-crud/operational-dia
 import { api } from "~/trpc/react";
 
 const allValue = "all";
-const pageSizeOptions = [10, 25, 50, 100] as const;
 
 function positiveIntOrUndefined(value: string) {
 	if (!/^\d+$/.test(value)) return undefined;
@@ -42,8 +43,8 @@ function positiveIntOrUndefined(value: string) {
 
 export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
 	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] =
-		useState<(typeof pageSizeOptions)[number]>(25);
+	const [pageSize, setPageSize] = useState<number>(25);
+	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
 	const [searchTerm, setSearchTerm] = useState("");
 	const [status, setStatus] = useState<LotStatus | "all">("all");
 	const [diagnosticState, setDiagnosticState] =
@@ -69,6 +70,7 @@ export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
 		() => ({
 			page,
 			pageSize,
+			sortDirection,
 			search: searchTerm.trim().length > 0 ? searchTerm : undefined,
 			status: status === allValue ? undefined : status,
 			diagnosticState,
@@ -92,11 +94,23 @@ export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
 			page,
 			pageSize,
 			searchTerm,
+			sortDirection,
 			status,
 			supplierId,
 			supplierOrderId,
 		],
 	);
+
+	const activeAdvancedCount = [
+		operationId,
+		lotId,
+		lotItemId,
+		supplierId,
+		supplierOrderId,
+		destinationId,
+		createdFrom,
+		createdTo,
+	].filter((value) => value.length > 0).length;
 
 	const listQuery = api.admin.lot.list.useQuery(listInput);
 	const statsQuery = api.admin.lot.getStats.useQuery();
@@ -117,6 +131,7 @@ export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
 		setDestinationId("");
 		setCreatedFrom("");
 		setCreatedTo("");
+		setSortDirection("desc");
 		setPage(1);
 	};
 
@@ -144,8 +159,19 @@ export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
 		);
 	};
 
-	const pageCount = listQuery.data?.pageCount ?? 0;
-	const total = listQuery.data?.total ?? 0;
+	const idFilters = [
+		["operationId", "Operation ID", operationId, setOperationId],
+		["lotId", "Lot ID", lotId, setLotId],
+		["lotItemId", "Lot item ID", lotItemId, setLotItemId],
+		["supplierId", "Supplier ID", supplierId, setSupplierId],
+		[
+			"supplierOrderId",
+			"Supplier order ID",
+			supplierOrderId,
+			setSupplierOrderId,
+		],
+		["destinationId", "Destination ID", destinationId, setDestinationId],
+	] as const;
 
 	return (
 		<CrudPageShell
@@ -190,182 +216,120 @@ export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
 			) : null}
 
 			<section className="flex flex-col gap-3">
-				<div className="rounded-2xl border p-3">
-					<FieldGroup className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-						<Field>
-							<FieldLabel htmlFor="lot-search">Buscar</FieldLabel>
-							<div className="relative">
-								<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+				<CrudFilterPanel
+					actions={
+						<CrudSortToggle onChange={setSortDirection} value={sortDirection} />
+					}
+					activeAdvancedCount={activeAdvancedCount}
+					advanced={
+						<>
+							{idFilters.map(([id, label, value, setter]) => (
+								<Field key={id}>
+									<FieldLabel htmlFor={`lot-${id}`}>{label}</FieldLabel>
+									<Input
+										id={`lot-${id}`}
+										inputMode="numeric"
+										onChange={(event) =>
+											updateFilter(setter, event.target.value)
+										}
+										value={value}
+									/>
+								</Field>
+							))}
+							<Field>
+								<FieldLabel htmlFor="lot-created-from">Desde</FieldLabel>
 								<Input
-									className="pl-8"
-									id="lot-search"
+									id="lot-created-from"
 									onChange={(event) =>
-										updateFilter(setSearchTerm, event.target.value)
+										updateFilter(setCreatedFrom, event.target.value)
 									}
-									placeholder="Lote, operación, proveedor u orden"
-									value={searchTerm}
-								/>
-							</div>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="lot-status">Estado</FieldLabel>
-							<Select
-								id="lot-status"
-								onChange={(event) =>
-									updateFilter(
-										setStatus,
-										event.target.value as LotStatus | "all",
-									)
-								}
-								value={status}
-							>
-								<option value={allValue}>Todos</option>
-								{lotStatusOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="lot-diagnostics">Diagnósticos</FieldLabel>
-							<Select
-								id="lot-diagnostics"
-								onChange={(event) =>
-									updateFilter(
-										setDiagnosticState,
-										event.target.value as DiagnosticState,
-									)
-								}
-								value={diagnosticState}
-							>
-								<option value="all">Todos</option>
-								<option value="withDiagnostics">Con diagnósticos</option>
-								<option value="withoutDiagnostics">Sin diagnósticos</option>
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="lot-page-size">Tamaño página</FieldLabel>
-							<Select
-								id="lot-page-size"
-								onChange={(event) =>
-									updateFilter(
-										setPageSize,
-										Number(
-											event.target.value,
-										) as (typeof pageSizeOptions)[number],
-									)
-								}
-								value={String(pageSize)}
-							>
-								{pageSizeOptions.map((option) => (
-									<option key={option} value={option}>
-										{option}
-									</option>
-								))}
-							</Select>
-						</Field>
-						{[
-							["operationId", "Operation ID", operationId, setOperationId],
-							["lotId", "Lot ID", lotId, setLotId],
-							["lotItemId", "Lot item ID", lotItemId, setLotItemId],
-							["supplierId", "Supplier ID", supplierId, setSupplierId],
-							[
-								"supplierOrderId",
-								"Supplier order ID",
-								supplierOrderId,
-								setSupplierOrderId,
-							],
-							[
-								"destinationId",
-								"Destination ID",
-								destinationId,
-								setDestinationId,
-							],
-						].map(([id, label, value, setter]) => (
-							<Field key={id as string}>
-								<FieldLabel htmlFor={`lot-${id}`}>{label as string}</FieldLabel>
-								<Input
-									id={`lot-${id}`}
-									inputMode="numeric"
-									onChange={(event) =>
-										updateFilter(
-											setter as (value: string) => void,
-											event.target.value,
-										)
-									}
-									value={value as string}
+									type="datetime-local"
+									value={createdFrom}
 								/>
 							</Field>
-						))}
-						<Field>
-							<FieldLabel htmlFor="lot-created-from">Desde</FieldLabel>
-							<Input
-								id="lot-created-from"
-								onChange={(event) =>
-									updateFilter(setCreatedFrom, event.target.value)
-								}
-								type="datetime-local"
-								value={createdFrom}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="lot-created-to">Hasta</FieldLabel>
-							<Input
-								id="lot-created-to"
-								onChange={(event) =>
-									updateFilter(setCreatedTo, event.target.value)
-								}
-								type="datetime-local"
-								value={createdTo}
-							/>
-						</Field>
-						<Field className="self-end">
-							<Button onClick={clearFilters} type="button" variant="outline">
-								<RotateCcwIcon data-icon="inline-start" />
-								Limpiar
-							</Button>
-						</Field>
-					</FieldGroup>
-				</div>
+							<Field>
+								<FieldLabel htmlFor="lot-created-to">Hasta</FieldLabel>
+								<Input
+									id="lot-created-to"
+									onChange={(event) =>
+										updateFilter(setCreatedTo, event.target.value)
+									}
+									type="datetime-local"
+									value={createdTo}
+								/>
+							</Field>
+						</>
+					}
+					onReset={clearFilters}
+					primary={
+						<>
+							<Field>
+								<FieldLabel htmlFor="lot-search">Buscar</FieldLabel>
+								<div className="relative">
+									<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+									<Input
+										className="pl-8"
+										id="lot-search"
+										onChange={(event) =>
+											updateFilter(setSearchTerm, event.target.value)
+										}
+										placeholder="Lote, operación, proveedor u orden"
+										value={searchTerm}
+									/>
+								</div>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="lot-status">Estado</FieldLabel>
+								<Select
+									id="lot-status"
+									onChange={(event) =>
+										updateFilter(
+											setStatus,
+											event.target.value as LotStatus | "all",
+										)
+									}
+									value={status}
+								>
+									<option value={allValue}>Todos</option>
+									{lotStatusOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="lot-diagnostics">Diagnósticos</FieldLabel>
+								<Select
+									id="lot-diagnostics"
+									onChange={(event) =>
+										updateFilter(
+											setDiagnosticState,
+											event.target.value as DiagnosticState,
+										)
+									}
+									value={diagnosticState}
+								>
+									<option value="all">Todos</option>
+									<option value="withDiagnostics">Con diagnósticos</option>
+									<option value="withoutDiagnostics">Sin diagnósticos</option>
+								</Select>
+							</Field>
+						</>
+					}
+				/>
 
-				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex flex-col gap-1">
-						<span className="text-muted-foreground text-sm">
-							{listQuery.isLoading
-								? "Cargando lotes"
-								: `${total} lote${total === 1 ? "" : "s"}`}
-						</span>
-						{listQuery.data?.truncated ? (
-							<span className="text-muted-foreground text-xs">
-								Resultados limitados a los 1000 mas recientes.
-							</span>
-						) : null}
-					</div>
-					<div className="flex items-center gap-2">
-						<Button
-							disabled={page <= 1 || listQuery.isLoading}
-							onClick={() => setPage((current) => Math.max(1, current - 1))}
-							type="button"
-							variant="outline"
-						>
-							Anterior
-						</Button>
-						<span className="text-sm">
-							Pagina {page} de {Math.max(pageCount, 1)}
-						</span>
-						<Button
-							disabled={
-								pageCount === 0 || page >= pageCount || listQuery.isLoading
-							}
-							onClick={() => setPage((current) => current + 1)}
-							type="button"
-							variant="outline"
-						>
-							Siguiente
-						</Button>
-					</div>
-				</div>
+				<CrudPaginationBar
+					isLoading={listQuery.isLoading}
+					onPageChange={setPage}
+					onPageSizeChange={(value) => updateFilter(setPageSize, value)}
+					page={page}
+					pageCount={listQuery.data?.pageCount ?? 0}
+					pageSize={pageSize}
+					total={listQuery.data?.total ?? 0}
+					totalLabel={{ singular: "lote", plural: "lotes" }}
+					truncated={listQuery.data?.truncated}
+				/>
 
 				{renderTable()}
 			</section>

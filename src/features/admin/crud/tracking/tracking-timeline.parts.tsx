@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { Badge } from "~/components/ui/badge";
 import { IdTooltip } from "~/features/admin/crud/_components/crud-cell-tooltips";
+import { JsonPreview } from "~/features/admin/crud/_components/crud-json-preview";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import type { AdminTrackingTimelineItem } from "~/shared/common/tracking.types";
@@ -14,18 +15,6 @@ import {
 const sourceLabelMap = Object.fromEntries(
 	trackingSourceOptions.map((option) => [option.value, option.label]),
 ) as Record<AdminTrackingTimelineItem["source"], string>;
-
-export function JsonPreview({ value }: { value: unknown }) {
-	if (value === null || value === undefined) {
-		return <span className="text-muted-foreground text-xs">Sin metadata</span>;
-	}
-
-	return (
-		<pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-2 font-mono text-[11px]">
-			{JSON.stringify(value, null, 2)}
-		</pre>
-	);
-}
 
 /**
  * Renders one tracking event as a timeline `<li>`. Shared by the tracking detail
@@ -82,7 +71,7 @@ export function TrackingTimelineItemCard({
 						Metadata
 					</summary>
 					<div className="mt-2">
-						<JsonPreview value={item.metadata} />
+						<JsonPreview emptyLabel="Sin metadata" value={item.metadata} />
 					</div>
 				</details>
 			</div>

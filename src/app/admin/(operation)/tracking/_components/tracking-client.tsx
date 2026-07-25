@@ -1,19 +1,15 @@
 "use client";
 
-import { RotateCcwIcon, SearchIcon } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button } from "~/components/ui/button";
-import {
-	Field,
-	FieldContent,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-} from "~/components/ui/field";
+import { Field, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
+import { CrudFilterPanel } from "~/features/admin/crud/_components/crud-filter-panel";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
+import { CrudPaginationBar } from "~/features/admin/crud/_components/crud-pagination-bar";
+import { CrudSortToggle } from "~/features/admin/crud/_components/crud-sort-toggle";
 import {
 	CrudEmptyState,
 	CrudErrorState,
@@ -25,6 +21,7 @@ import {
 } from "~/features/admin/crud/tracking/tracking.mappers";
 import { TrackingDetailDialog } from "~/features/admin/crud/tracking/tracking-detail-dialog";
 import { TrackingEventTable } from "~/features/admin/crud/tracking/tracking-table";
+import type { CrudSortDirection } from "~/shared/common/admin-crud/crud.types";
 import type { AdminTrackingEventListItem } from "~/shared/common/tracking.types";
 import type {
 	TrackingEventSource,
@@ -33,7 +30,6 @@ import type {
 import { api } from "~/trpc/react";
 
 const allValue = "all";
-const pageSizeOptions = [10, 25, 50, 100] as const;
 
 function positiveIntOrUndefined(value: string) {
 	if (!/^\d+$/.test(value)) return undefined;
@@ -60,8 +56,8 @@ export function TrackingClient({
 	initialFilters?: TrackingInitialFilters;
 }) {
 	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] =
-		useState<(typeof pageSizeOptions)[number]>(25);
+	const [pageSize, setPageSize] = useState<number>(25);
+	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
 	const [searchTerm, setSearchTerm] = useState("");
 	const [eventType, setEventType] = useState<TrackingEventType | "all">("all");
 	const [source, setSource] = useState<TrackingEventSource | "all">("all");
@@ -145,10 +141,30 @@ export function TrackingClient({
 		() => ({
 			page,
 			pageSize,
+			sortDirection,
 			filters,
 		}),
-		[filters, page, pageSize],
+		[filters, page, pageSize, sortDirection],
 	);
+
+	const advancedFilterValues = [
+		userId,
+		actorUserId,
+		cartId,
+		cartItemId,
+		orderId,
+		operationId,
+		lotId,
+		lotItemId,
+		packageId,
+		shipmentId,
+		rollOverId,
+		createdFrom,
+		createdTo,
+	];
+	const activeAdvancedCount = advancedFilterValues.filter(
+		(value) => value.length > 0 && value !== allValue,
+	).length;
 
 	const eventsQuery = api.admin.tracking.listEvents.useQuery(listInput);
 	const usersQuery = api.admin.user.list.useQuery({ includeDeleted: true });
@@ -174,6 +190,7 @@ export function TrackingClient({
 		setRollOverId("");
 		setCreatedFrom("");
 		setCreatedTo("");
+		setSortDirection("desc");
 		setPage(1);
 	};
 
@@ -209,8 +226,22 @@ export function TrackingClient({
 		return <TrackingEventTable events={events} onSelect={handleSelect} />;
 	};
 
-	const pageCount = eventsQuery.data?.pageCount ?? 0;
-	const total = eventsQuery.data?.total ?? 0;
+	const idFilters = [
+		["cart-id", "Cart ID", "Ej: 10", cartId, setCartId],
+		["cart-item-id", "Cart item ID", "Ej: 25", cartItemId, setCartItemId],
+		["order-id", "Order ID", "Ej: 5", orderId, setOrderId],
+		["operation-id", "Operation ID", "Ej: 3", operationId, setOperationId],
+		["lot-id", "Lot ID", "Ej: 4", lotId, setLotId],
+		["lot-item-id", "Lot item ID", "Ej: 8", lotItemId, setLotItemId],
+		["package-id", "Package ID", "Ej: 12", packageId, setPackageId],
+		["shipment-id", "Shipment ID", "Ej: 6", shipmentId, setShipmentId],
+		["rollover-id", "RollOver ID", "Ej: 2", rollOverId, setRollOverId],
+	] as const;
+
+	const userOptions = (usersQuery.data ?? []).map((user) => ({
+		id: user.id,
+		label: `${user.name} - ${user.email}${user.deleted ? " (eliminado)" : ""}`,
+	}));
 
 	return (
 		<CrudPageShell
@@ -218,305 +249,159 @@ export function TrackingClient({
 			title="Tracking"
 		>
 			<section className="flex flex-col gap-3">
-				<div className="rounded-2xl border p-3">
-					<FieldGroup className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-						<Field>
-							<FieldLabel htmlFor="tracking-search">Buscar</FieldLabel>
-							<div className="relative">
-								<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-								<Input
-									className="pl-8"
-									id="tracking-search"
+				<CrudFilterPanel
+					actions={
+						<CrudSortToggle onChange={setSortDirection} value={sortDirection} />
+					}
+					activeAdvancedCount={activeAdvancedCount}
+					advanced={
+						<>
+							<Field>
+								<FieldLabel htmlFor="tracking-user">Usuario carrito</FieldLabel>
+								<Select
+									disabled={usersQuery.isLoading}
+									id="tracking-user"
 									onChange={(event) =>
-										updateFilter(setSearchTerm, event.target.value)
+										updateFilter(setUserId, event.target.value)
 									}
-									placeholder="Evento, actor, usuario, carrito o producto"
-									value={searchTerm}
+									value={userId}
+								>
+									<option value={allValue}>Todos</option>
+									{userOptions.map((user) => (
+										<option key={user.id} value={user.id}>
+											{user.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="tracking-actor">Actor</FieldLabel>
+								<Select
+									disabled={usersQuery.isLoading}
+									id="tracking-actor"
+									onChange={(event) =>
+										updateFilter(setActorUserId, event.target.value)
+									}
+									value={actorUserId}
+								>
+									<option value={allValue}>Todos</option>
+									{userOptions.map((user) => (
+										<option key={user.id} value={user.id}>
+											{user.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							{idFilters.map(([id, label, placeholder, value, setter]) => (
+								<Field key={id}>
+									<FieldLabel htmlFor={`tracking-${id}`}>{label}</FieldLabel>
+									<Input
+										id={`tracking-${id}`}
+										inputMode="numeric"
+										onChange={(event) =>
+											updateFilter(setter, event.target.value)
+										}
+										placeholder={placeholder}
+										value={value}
+									/>
+								</Field>
+							))}
+							<Field>
+								<FieldLabel htmlFor="tracking-created-from">Desde</FieldLabel>
+								<Input
+									id="tracking-created-from"
+									onChange={(event) =>
+										updateFilter(setCreatedFrom, event.target.value)
+									}
+									type="datetime-local"
+									value={createdFrom}
 								/>
-							</div>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-event-type">Evento</FieldLabel>
-							<Select
-								id="tracking-event-type"
-								onChange={(event) =>
-									updateFilter(
-										setEventType,
-										event.target.value as TrackingEventType | "all",
-									)
-								}
-								value={eventType}
-							>
-								<option value={allValue}>Todos</option>
-								{trackingEventTypeOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-source">Fuente</FieldLabel>
-							<Select
-								id="tracking-source"
-								onChange={(event) =>
-									updateFilter(
-										setSource,
-										event.target.value as TrackingEventSource | "all",
-									)
-								}
-								value={source}
-							>
-								<option value={allValue}>Todas</option>
-								{trackingSourceOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-page-size">
-								Tamaño pagina
-							</FieldLabel>
-							<Select
-								id="tracking-page-size"
-								onChange={(event) =>
-									updateFilter(
-										setPageSize,
-										Number(
-											event.target.value,
-										) as (typeof pageSizeOptions)[number],
-									)
-								}
-								value={String(pageSize)}
-							>
-								{pageSizeOptions.map((option) => (
-									<option key={option} value={option}>
-										{option}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-user">Usuario carrito</FieldLabel>
-							<Select
-								disabled={usersQuery.isLoading}
-								id="tracking-user"
-								onChange={(event) =>
-									updateFilter(setUserId, event.target.value)
-								}
-								value={userId}
-							>
-								<option value={allValue}>Todos</option>
-								{(usersQuery.data ?? []).map((user) => (
-									<option key={user.id} value={user.id}>
-										{user.name} - {user.email}
-										{user.deleted ? " (eliminado)" : ""}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-actor">Actor</FieldLabel>
-							<Select
-								disabled={usersQuery.isLoading}
-								id="tracking-actor"
-								onChange={(event) =>
-									updateFilter(setActorUserId, event.target.value)
-								}
-								value={actorUserId}
-							>
-								<option value={allValue}>Todos</option>
-								{(usersQuery.data ?? []).map((user) => (
-									<option key={user.id} value={user.id}>
-										{user.name} - {user.email}
-										{user.deleted ? " (eliminado)" : ""}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-cart-id">Cart ID</FieldLabel>
-							<Input
-								id="tracking-cart-id"
-								inputMode="numeric"
-								onChange={(event) =>
-									updateFilter(setCartId, event.target.value)
-								}
-								placeholder="Ej: 10"
-								value={cartId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-cart-item-id">
-								Cart item ID
-							</FieldLabel>
-							<Input
-								id="tracking-cart-item-id"
-								inputMode="numeric"
-								onChange={(event) =>
-									updateFilter(setCartItemId, event.target.value)
-								}
-								placeholder="Ej: 25"
-								value={cartItemId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-order-id">Order ID</FieldLabel>
-							<Input
-								id="tracking-order-id"
-								inputMode="numeric"
-								onChange={(event) =>
-									updateFilter(setOrderId, event.target.value)
-								}
-								placeholder="Ej: 5"
-								value={orderId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-operation-id">
-								Operation ID
-							</FieldLabel>
-							<Input
-								id="tracking-operation-id"
-								inputMode="numeric"
-								onChange={(event) =>
-									updateFilter(setOperationId, event.target.value)
-								}
-								placeholder="Ej: 3"
-								value={operationId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-lot-id">Lot ID</FieldLabel>
-							<Input
-								id="tracking-lot-id"
-								inputMode="numeric"
-								onChange={(event) => updateFilter(setLotId, event.target.value)}
-								placeholder="Ej: 4"
-								value={lotId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-lot-item-id">
-								Lot item ID
-							</FieldLabel>
-							<Input
-								id="tracking-lot-item-id"
-								inputMode="numeric"
-								onChange={(event) =>
-									updateFilter(setLotItemId, event.target.value)
-								}
-								placeholder="Ej: 8"
-								value={lotItemId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-package-id">Package ID</FieldLabel>
-							<Input
-								id="tracking-package-id"
-								inputMode="numeric"
-								onChange={(event) =>
-									updateFilter(setPackageId, event.target.value)
-								}
-								placeholder="Ej: 12"
-								value={packageId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-shipment-id">
-								Shipment ID
-							</FieldLabel>
-							<Input
-								id="tracking-shipment-id"
-								inputMode="numeric"
-								onChange={(event) =>
-									updateFilter(setShipmentId, event.target.value)
-								}
-								placeholder="Ej: 6"
-								value={shipmentId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-rollover-id">
-								RollOver ID
-							</FieldLabel>
-							<Input
-								id="tracking-rollover-id"
-								inputMode="numeric"
-								onChange={(event) =>
-									updateFilter(setRollOverId, event.target.value)
-								}
-								placeholder="Ej: 2"
-								value={rollOverId}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-created-from">Desde</FieldLabel>
-							<Input
-								id="tracking-created-from"
-								onChange={(event) =>
-									updateFilter(setCreatedFrom, event.target.value)
-								}
-								type="datetime-local"
-								value={createdFrom}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="tracking-created-to">Hasta</FieldLabel>
-							<Input
-								id="tracking-created-to"
-								onChange={(event) =>
-									updateFilter(setCreatedTo, event.target.value)
-								}
-								type="datetime-local"
-								value={createdTo}
-							/>
-						</Field>
-						<Field className="self-end" orientation="horizontal">
-							<Button onClick={clearFilters} type="button" variant="outline">
-								<RotateCcwIcon data-icon="inline-start" />
-								Limpiar
-							</Button>
-							<FieldContent>
-								<FieldLabel>Filtros</FieldLabel>
-								<FieldDescription>Server-side</FieldDescription>
-							</FieldContent>
-						</Field>
-					</FieldGroup>
-				</div>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="tracking-created-to">Hasta</FieldLabel>
+								<Input
+									id="tracking-created-to"
+									onChange={(event) =>
+										updateFilter(setCreatedTo, event.target.value)
+									}
+									type="datetime-local"
+									value={createdTo}
+								/>
+							</Field>
+						</>
+					}
+					onReset={clearFilters}
+					primary={
+						<>
+							<Field>
+								<FieldLabel htmlFor="tracking-search">Buscar</FieldLabel>
+								<div className="relative">
+									<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+									<Input
+										className="pl-8"
+										id="tracking-search"
+										onChange={(event) =>
+											updateFilter(setSearchTerm, event.target.value)
+										}
+										placeholder="Evento, actor, usuario, carrito o producto"
+										value={searchTerm}
+									/>
+								</div>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="tracking-event-type">Evento</FieldLabel>
+								<Select
+									id="tracking-event-type"
+									onChange={(event) =>
+										updateFilter(
+											setEventType,
+											event.target.value as TrackingEventType | "all",
+										)
+									}
+									value={eventType}
+								>
+									<option value={allValue}>Todos</option>
+									{trackingEventTypeOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="tracking-source">Fuente</FieldLabel>
+								<Select
+									id="tracking-source"
+									onChange={(event) =>
+										updateFilter(
+											setSource,
+											event.target.value as TrackingEventSource | "all",
+										)
+									}
+									value={source}
+								>
+									<option value={allValue}>Todas</option>
+									{trackingSourceOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+						</>
+					}
+				/>
 
-				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-					<span className="text-muted-foreground text-sm">
-						{eventsQuery.isLoading
-							? "Cargando eventos"
-							: `${total} evento${total === 1 ? "" : "s"}`}
-					</span>
-					<div className="flex items-center gap-2">
-						<Button
-							disabled={page <= 1 || eventsQuery.isLoading}
-							onClick={() => setPage((current) => Math.max(1, current - 1))}
-							type="button"
-							variant="outline"
-						>
-							Anterior
-						</Button>
-						<span className="text-sm">
-							Pagina {page} de {Math.max(pageCount, 1)}
-						</span>
-						<Button
-							disabled={
-								pageCount === 0 || page >= pageCount || eventsQuery.isLoading
-							}
-							onClick={() => setPage((current) => current + 1)}
-							type="button"
-							variant="outline"
-						>
-							Siguiente
-						</Button>
-					</div>
-				</div>
+				<CrudPaginationBar
+					isLoading={eventsQuery.isLoading}
+					onPageChange={setPage}
+					onPageSizeChange={(value) => updateFilter(setPageSize, value)}
+					page={page}
+					pageCount={eventsQuery.data?.pageCount ?? 0}
+					pageSize={pageSize}
+					total={eventsQuery.data?.total ?? 0}
+					totalLabel={{ singular: "evento", plural: "eventos" }}
+				/>
 
 				{renderTable()}
 			</section>

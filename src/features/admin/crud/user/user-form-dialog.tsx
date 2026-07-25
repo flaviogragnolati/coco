@@ -115,6 +115,7 @@ export function UserFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingUser)}
 						form="user-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar

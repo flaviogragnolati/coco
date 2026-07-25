@@ -12,6 +12,7 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { JsonPreview } from "~/features/admin/crud/_components/crud-json-preview";
 import {
 	CrudErrorState,
 	CrudLoadingState,
@@ -21,18 +22,6 @@ import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnost
 import type { ShipmentDetail } from "~/shared/common/admin-crud/shipment.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { shipmentStatusConfig, shipmentTypeConfig } from "./shipment.mappers";
-
-function JsonPreview({ value }: { value: unknown }) {
-	if (value === null || value === undefined) {
-		return <span className="text-muted-foreground text-xs">Sin snapshot</span>;
-	}
-
-	return (
-		<pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-2 font-mono text-[11px]">
-			{JSON.stringify(value, null, 2)}
-		</pre>
-	);
-}
 
 function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 	return (
@@ -86,8 +75,14 @@ function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 					Snapshots destino/contacto
 				</summary>
 				<div className="mt-3 grid gap-3 md:grid-cols-2">
-					<JsonPreview value={shipment.destinationAddressSnapshot} />
-					<JsonPreview value={shipment.destinationContactSnapshot} />
+					<JsonPreview
+						emptyLabel="Sin snapshot"
+						value={shipment.destinationAddressSnapshot}
+					/>
+					<JsonPreview
+						emptyLabel="Sin snapshot"
+						value={shipment.destinationContactSnapshot}
+					/>
 				</div>
 			</details>
 		</div>
@@ -139,7 +134,9 @@ function Actividad({ shipment }: { shipment: ShipmentDetail }) {
 	return (
 		<section className="grid gap-3 md:grid-cols-2">
 			<div className="rounded-2xl border p-3">
-				<h3 className="font-medium text-sm">Últimos eventos</h3>
+				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+					Últimos eventos
+				</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{shipment.trackingEvents.length > 0 ? (
 						shipment.trackingEvents.map((event) => (
@@ -154,7 +151,9 @@ function Actividad({ shipment }: { shipment: ShipmentDetail }) {
 				</div>
 			</div>
 			<div className="rounded-2xl border p-3">
-				<h3 className="font-medium text-sm">Diagnósticos</h3>
+				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+					Diagnósticos
+				</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{shipment.diagnostics.length > 0 ? (
 						shipment.diagnostics.map((diagnostic) => (

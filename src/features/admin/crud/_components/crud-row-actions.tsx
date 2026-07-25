@@ -58,6 +58,11 @@ export function CrudRowActions<TItem>({
 							>
 								{Icon ? <Icon data-icon="inline-start" /> : null}
 								{action.label}
+								{disabled && action.hint ? (
+									<span className="ml-auto text-muted-foreground text-xs">
+										{action.hint}
+									</span>
+								) : null}
 							</DropdownMenuItem>
 						);
 					})}

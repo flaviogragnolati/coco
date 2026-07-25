@@ -199,6 +199,7 @@ export async function getStats(database: AdminDb): Promise<PackageStats> {
 			{
 				page: 1,
 				pageSize: DIAGNOSTIC_SCAN_LIMIT,
+				sortDirection: "desc",
 				search: undefined,
 				diagnosticState: "all",
 			},

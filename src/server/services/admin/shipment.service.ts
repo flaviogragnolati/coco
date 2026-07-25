@@ -211,6 +211,7 @@ export async function getStats(database: AdminDb): Promise<ShipmentStats> {
 			{
 				page: 1,
 				pageSize: DIAGNOSTIC_SCAN_LIMIT,
+				sortDirection: "desc",
 				search: undefined,
 				trackingCode: undefined,
 				diagnosticState: "all",

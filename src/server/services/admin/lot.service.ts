@@ -222,6 +222,7 @@ export async function getStats(database: AdminDb): Promise<LotStats> {
 			{
 				page: 1,
 				pageSize: DIAGNOSTIC_SCAN_LIMIT,
+				sortDirection: "desc",
 				search: undefined,
 				diagnosticState: "all",
 			},

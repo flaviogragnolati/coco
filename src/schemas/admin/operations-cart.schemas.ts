@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
-import { requiredDecimalString } from "~/schemas/admin/_crud-schema-helpers";
+import {
+	requiredDecimalString,
+	sortDirectionSchema,
+} from "~/schemas/admin/_crud-schema-helpers";
 import { userIdSchema } from "~/schemas/admin/address.schemas";
 import {
 	productIdSchema,
@@ -139,6 +142,7 @@ const operationsPaymentSummarySchema = z.object({
 export const operationsCartListInputSchema = z.object({
 	page: z.number().int().positive().default(1),
 	pageSize: z.number().int().min(1).max(100).default(25),
+	sortDirection: sortDirectionSchema,
 	includeDeleted: z.boolean().optional().default(false),
 	search: optionalTrimmedText,
 	userId: userIdSchema.optional(),

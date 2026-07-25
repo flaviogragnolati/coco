@@ -131,7 +131,9 @@ function Actividad({ pkg }: { pkg: PackageDetail }) {
 	return (
 		<section className="grid gap-3 md:grid-cols-2">
 			<div className="rounded-2xl border p-3">
-				<h3 className="font-medium text-sm">Últimos eventos</h3>
+				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+					Últimos eventos
+				</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{pkg.trackingEvents.length > 0 ? (
 						pkg.trackingEvents.map((event) => (
@@ -146,7 +148,9 @@ function Actividad({ pkg }: { pkg: PackageDetail }) {
 				</div>
 			</div>
 			<div className="rounded-2xl border p-3">
-				<h3 className="font-medium text-sm">Diagnósticos</h3>
+				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+					Diagnósticos
+				</h3>
 				<div className="mt-2 flex flex-col gap-2">
 					{pkg.diagnostics.length > 0 ? (
 						pkg.diagnostics.map((diagnostic) => (

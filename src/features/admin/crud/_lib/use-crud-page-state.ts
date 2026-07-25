@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 
+import type { CrudListSort } from "~/features/admin/crud/_lib/crud-list-sort";
 import type {
 	CrudEntityId,
 	CrudModalMode,
@@ -22,6 +23,8 @@ export type CrudPageState<TId extends CrudEntityId, TListItem> = {
 	setStatusFilter: (value: CrudStatusFilter) => void;
 	searchTerm: string;
 	setSearchTerm: (value: string) => void;
+	listSort: CrudListSort;
+	setListSort: (value: CrudListSort) => void;
 	formState: CrudModalState<TId>;
 	softDeleteTarget: TListItem | null;
 	setSoftDeleteTarget: (target: TListItem | null) => void;
@@ -35,10 +38,10 @@ export type CrudPageState<TId extends CrudEntityId, TListItem> = {
 };
 
 /**
- * Owns the six state slots every crud-home page declares: the two filter
- * controls, the search box, the create/edit modal state, and the two delete
- * targets. `TId` stays generic because `user` is keyed by string while every
- * other entity is keyed by number.
+ * Owns the state slots every crud-home page declares: the two filter controls,
+ * the search box, the list ordering, the create/edit modal state, and the two
+ * delete targets. `TId` stays generic because `user` is keyed by string while
+ * every other entity is keyed by number.
  */
 export function useCrudPageState<
 	TId extends CrudEntityId,
@@ -47,6 +50,7 @@ export function useCrudPageState<
 	const [includeDeleted, setIncludeDeleted] = useState(false);
 	const [statusFilter, setStatusFilter] = useState<CrudStatusFilter>("all");
 	const [searchTerm, setSearchTerm] = useState("");
+	const [listSort, setListSort] = useState<CrudListSort>("default");
 	const [formState, setFormState] =
 		useState<CrudModalState<TId>>(closedFormState);
 	const [softDeleteTarget, setSoftDeleteTarget] = useState<TListItem | null>(
@@ -79,12 +83,14 @@ export function useCrudPageState<
 			formState,
 			hardDeleteTarget,
 			includeDeleted,
+			listSort,
 			openCreate,
 			openEdit,
 			searchTerm,
 			selectedId,
 			setHardDeleteTarget,
 			setIncludeDeleted,
+			setListSort,
 			setSearchTerm,
 			setSoftDeleteTarget,
 			setStatusFilter,
@@ -97,6 +103,7 @@ export function useCrudPageState<
 			formState,
 			hardDeleteTarget,
 			includeDeleted,
+			listSort,
 			openCreate,
 			openEdit,
 			searchTerm,

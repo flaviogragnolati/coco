@@ -413,10 +413,13 @@ export async function listOperationCarts(
 	db: AdminDbClient,
 	input: OperationsCartListInput,
 ) {
+	const direction = input.sortDirection;
+
 	const records = await db.cart.findMany({
 		where: buildCartWhere(input),
 		select: operationsCartListSelect,
-		orderBy: [{ deleted: "asc" }, { updatedAt: "desc" }, { id: "desc" }],
+		// Live carts always precede deleted ones; the toggle only flips recency.
+		orderBy: [{ deleted: "asc" }, { updatedAt: direction }, { id: direction }],
 		skip: (input.page - 1) * input.pageSize,
 		take: input.pageSize,
 	});

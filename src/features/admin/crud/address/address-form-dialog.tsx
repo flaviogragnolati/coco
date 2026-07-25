@@ -101,6 +101,7 @@ export function AddressFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingAddress)}
 						form="address-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar

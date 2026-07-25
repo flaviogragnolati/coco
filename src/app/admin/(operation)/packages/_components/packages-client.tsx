@@ -5,16 +5,17 @@ import {
 	BoxesIcon,
 	LayersIcon,
 	PackageCheckIcon,
-	RotateCcwIcon,
 	SearchIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button } from "~/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "~/components/ui/field";
+import { Field, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
+import { CrudFilterPanel } from "~/features/admin/crud/_components/crud-filter-panel";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
+import { CrudPaginationBar } from "~/features/admin/crud/_components/crud-pagination-bar";
+import { CrudSortToggle } from "~/features/admin/crud/_components/crud-sort-toggle";
 import {
 	CrudEmptyState,
 	CrudErrorState,
@@ -24,6 +25,7 @@ import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-car
 import { packageStatusOptions } from "~/features/admin/crud/package/package.mappers";
 import { PackageDetailDialog } from "~/features/admin/crud/package/package-detail-dialog";
 import { PackageTable } from "~/features/admin/crud/package/package-table";
+import type { CrudSortDirection } from "~/shared/common/admin-crud/crud.types";
 import type { DiagnosticState } from "~/shared/common/admin-crud/operational-diagnostic.types";
 import type {
 	PackageListItem,
@@ -32,7 +34,6 @@ import type {
 import { api } from "~/trpc/react";
 
 const allValue = "all";
-const pageSizeOptions = [10, 25, 50, 100] as const;
 
 function positiveIntOrUndefined(value: string) {
 	if (!/^\d+$/.test(value)) return undefined;
@@ -46,8 +47,8 @@ export function PackagesClient({
 	initialDetailId?: number;
 }) {
 	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] =
-		useState<(typeof pageSizeOptions)[number]>(25);
+	const [pageSize, setPageSize] = useState<number>(25);
+	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
 	const [searchTerm, setSearchTerm] = useState("");
 	const [status, setStatus] = useState<PackageStatus | "all">("all");
 	const [diagnosticState, setDiagnosticState] =
@@ -72,6 +73,7 @@ export function PackagesClient({
 		() => ({
 			page,
 			pageSize,
+			sortDirection,
 			search: searchTerm.trim().length > 0 ? searchTerm : undefined,
 			status: status === allValue ? undefined : status,
 			diagnosticState,
@@ -95,9 +97,20 @@ export function PackagesClient({
 			productId,
 			searchTerm,
 			shipmentId,
+			sortDirection,
 			status,
 		],
 	);
+
+	const activeAdvancedCount = [
+		packageId,
+		shipmentId,
+		lotId,
+		lotItemId,
+		productId,
+		createdFrom,
+		createdTo,
+	].filter((value) => value.length > 0).length;
 
 	const listQuery = api.admin.package.list.useQuery(listInput);
 	const statsQuery = api.admin.package.getStats.useQuery();
@@ -117,6 +130,7 @@ export function PackagesClient({
 		setProductId("");
 		setCreatedFrom("");
 		setCreatedTo("");
+		setSortDirection("desc");
 		setPage(1);
 	};
 
@@ -143,8 +157,13 @@ export function PackagesClient({
 		);
 	};
 
-	const pageCount = listQuery.data?.pageCount ?? 0;
-	const total = listQuery.data?.total ?? 0;
+	const idFilters = [
+		["packageId", "Package ID", packageId, setPackageId],
+		["shipmentId", "Shipment ID", shipmentId, setShipmentId],
+		["lotId", "Lot ID", lotId, setLotId],
+		["lotItemId", "Lot item ID", lotItemId, setLotItemId],
+		["productId", "Product ID", productId, setProductId],
+	] as const;
 
 	return (
 		<CrudPageShell
@@ -189,175 +208,122 @@ export function PackagesClient({
 			) : null}
 
 			<section className="flex flex-col gap-3">
-				<div className="rounded-2xl border p-3">
-					<FieldGroup className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-						<Field>
-							<FieldLabel htmlFor="package-search">Buscar</FieldLabel>
-							<div className="relative">
-								<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+				<CrudFilterPanel
+					actions={
+						<CrudSortToggle onChange={setSortDirection} value={sortDirection} />
+					}
+					activeAdvancedCount={activeAdvancedCount}
+					advanced={
+						<>
+							{idFilters.map(([id, label, value, setter]) => (
+								<Field key={id}>
+									<FieldLabel htmlFor={`package-${id}`}>{label}</FieldLabel>
+									<Input
+										id={`package-${id}`}
+										inputMode="numeric"
+										onChange={(event) =>
+											updateFilter(setter, event.target.value)
+										}
+										value={value}
+									/>
+								</Field>
+							))}
+							<Field>
+								<FieldLabel htmlFor="package-created-from">Desde</FieldLabel>
 								<Input
-									className="pl-8"
-									id="package-search"
+									id="package-created-from"
 									onChange={(event) =>
-										updateFilter(setSearchTerm, event.target.value)
+										updateFilter(setCreatedFrom, event.target.value)
 									}
-									placeholder="Paquete, tracking o envío"
-									value={searchTerm}
-								/>
-							</div>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="package-status">Estado</FieldLabel>
-							<Select
-								id="package-status"
-								onChange={(event) =>
-									updateFilter(
-										setStatus,
-										event.target.value as PackageStatus | "all",
-									)
-								}
-								value={status}
-							>
-								<option value={allValue}>Todos</option>
-								{packageStatusOptions.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="package-diagnostics">
-								Diagnosticos
-							</FieldLabel>
-							<Select
-								id="package-diagnostics"
-								onChange={(event) =>
-									updateFilter(
-										setDiagnosticState,
-										event.target.value as DiagnosticState,
-									)
-								}
-								value={diagnosticState}
-							>
-								<option value="all">Todos</option>
-								<option value="withDiagnostics">Con diagnósticos</option>
-								<option value="withoutDiagnostics">Sin diagnósticos</option>
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="package-page-size">Tamaño página</FieldLabel>
-							<Select
-								id="package-page-size"
-								onChange={(event) =>
-									updateFilter(
-										setPageSize,
-										Number(
-											event.target.value,
-										) as (typeof pageSizeOptions)[number],
-									)
-								}
-								value={String(pageSize)}
-							>
-								{pageSizeOptions.map((option) => (
-									<option key={option} value={option}>
-										{option}
-									</option>
-								))}
-							</Select>
-						</Field>
-						{[
-							["packageId", "Package ID", packageId, setPackageId],
-							["shipmentId", "Shipment ID", shipmentId, setShipmentId],
-							["lotId", "Lot ID", lotId, setLotId],
-							["lotItemId", "Lot item ID", lotItemId, setLotItemId],
-							["productId", "Product ID", productId, setProductId],
-						].map(([id, label, value, setter]) => (
-							<Field key={id as string}>
-								<FieldLabel htmlFor={`package-${id}`}>
-									{label as string}
-								</FieldLabel>
-								<Input
-									id={`package-${id}`}
-									inputMode="numeric"
-									onChange={(event) =>
-										updateFilter(
-											setter as (value: string) => void,
-											event.target.value,
-										)
-									}
-									value={value as string}
+									type="datetime-local"
+									value={createdFrom}
 								/>
 							</Field>
-						))}
-						<Field>
-							<FieldLabel htmlFor="package-created-from">Desde</FieldLabel>
-							<Input
-								id="package-created-from"
-								onChange={(event) =>
-									updateFilter(setCreatedFrom, event.target.value)
-								}
-								type="datetime-local"
-								value={createdFrom}
-							/>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="package-created-to">Hasta</FieldLabel>
-							<Input
-								id="package-created-to"
-								onChange={(event) =>
-									updateFilter(setCreatedTo, event.target.value)
-								}
-								type="datetime-local"
-								value={createdTo}
-							/>
-						</Field>
-						<Field className="self-end">
-							<Button onClick={clearFilters} type="button" variant="outline">
-								<RotateCcwIcon data-icon="inline-start" />
-								Limpiar
-							</Button>
-						</Field>
-					</FieldGroup>
-				</div>
+							<Field>
+								<FieldLabel htmlFor="package-created-to">Hasta</FieldLabel>
+								<Input
+									id="package-created-to"
+									onChange={(event) =>
+										updateFilter(setCreatedTo, event.target.value)
+									}
+									type="datetime-local"
+									value={createdTo}
+								/>
+							</Field>
+						</>
+					}
+					onReset={clearFilters}
+					primary={
+						<>
+							<Field>
+								<FieldLabel htmlFor="package-search">Buscar</FieldLabel>
+								<div className="relative">
+									<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+									<Input
+										className="pl-8"
+										id="package-search"
+										onChange={(event) =>
+											updateFilter(setSearchTerm, event.target.value)
+										}
+										placeholder="Paquete, tracking o envío"
+										value={searchTerm}
+									/>
+								</div>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="package-status">Estado</FieldLabel>
+								<Select
+									id="package-status"
+									onChange={(event) =>
+										updateFilter(
+											setStatus,
+											event.target.value as PackageStatus | "all",
+										)
+									}
+									value={status}
+								>
+									<option value={allValue}>Todos</option>
+									{packageStatusOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="package-diagnostics">
+									Diagnósticos
+								</FieldLabel>
+								<Select
+									id="package-diagnostics"
+									onChange={(event) =>
+										updateFilter(
+											setDiagnosticState,
+											event.target.value as DiagnosticState,
+										)
+									}
+									value={diagnosticState}
+								>
+									<option value="all">Todos</option>
+									<option value="withDiagnostics">Con diagnósticos</option>
+									<option value="withoutDiagnostics">Sin diagnósticos</option>
+								</Select>
+							</Field>
+						</>
+					}
+				/>
 
-				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex flex-col gap-1">
-						<span className="text-muted-foreground text-sm">
-							{listQuery.isLoading
-								? "Cargando paquetes"
-								: `${total} paquete${total === 1 ? "" : "s"}`}
-						</span>
-						{listQuery.data?.truncated ? (
-							<span className="text-muted-foreground text-xs">
-								Resultados limitados a los 1000 mas recientes.
-							</span>
-						) : null}
-					</div>
-					<div className="flex items-center gap-2">
-						<Button
-							disabled={page <= 1 || listQuery.isLoading}
-							onClick={() => setPage((current) => Math.max(1, current - 1))}
-							type="button"
-							variant="outline"
-						>
-							Anterior
-						</Button>
-						<span className="text-sm">
-							Pagina {page} de {Math.max(pageCount, 1)}
-						</span>
-						<Button
-							disabled={
-								pageCount === 0 || page >= pageCount || listQuery.isLoading
-							}
-							onClick={() => setPage((current) => current + 1)}
-							type="button"
-							variant="outline"
-						>
-							Siguiente
-						</Button>
-					</div>
-				</div>
+				<CrudPaginationBar
+					isLoading={listQuery.isLoading}
+					onPageChange={setPage}
+					onPageSizeChange={(value) => updateFilter(setPageSize, value)}
+					page={page}
+					pageCount={listQuery.data?.pageCount ?? 0}
+					pageSize={pageSize}
+					total={listQuery.data?.total ?? 0}
+					totalLabel={{ singular: "paquete", plural: "paquetes" }}
+					truncated={listQuery.data?.truncated}
+				/>
 
 				{renderTable()}
 			</section>

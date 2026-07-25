@@ -111,6 +111,7 @@ export function ProductClientTermsFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingTerms)}
 						form="product-client-terms-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar

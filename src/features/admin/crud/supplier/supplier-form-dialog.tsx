@@ -90,6 +90,7 @@ export function SupplierFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingSupplier)}
 						form="supplier-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar

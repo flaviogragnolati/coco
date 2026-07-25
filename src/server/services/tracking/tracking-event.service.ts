@@ -747,13 +747,14 @@ export class TrackingEventService {
 		const pageSize = Math.min(input.pageSize, 100);
 		const page = input.page;
 		const where = buildAdminTrackingWhere(input);
+		const direction = input.sortDirection;
 
 		const [total, records] = await Promise.all([
 			db.cartItemTrackingEvent.count({ where }),
 			db.cartItemTrackingEvent.findMany({
 				where,
 				select: adminTrackingListEventSelect,
-				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+				orderBy: [{ createdAt: direction }, { id: direction }],
 				skip: (page - 1) * pageSize,
 				take: pageSize,
 			}),

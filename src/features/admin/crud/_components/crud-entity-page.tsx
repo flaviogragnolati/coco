@@ -12,6 +12,7 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { Select } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { CrudDeleteDialog } from "~/features/admin/crud/_components/crud-delete-dialog";
@@ -28,6 +29,10 @@ import {
 	type CrudEntityStats,
 	crudElementIds,
 } from "~/features/admin/crud/_lib/crud-entity-copy";
+import {
+	type CrudListSort,
+	crudListSortOptions,
+} from "~/features/admin/crud/_lib/crud-list-sort";
 import type { CrudQueryLike } from "~/features/admin/crud/_lib/use-crud-entity-page";
 import type { CrudStatusFilter } from "~/shared/common/admin-crud/crud.types";
 
@@ -38,6 +43,8 @@ type CrudEntityPageState<TListItem> = {
 	setStatusFilter: (value: CrudStatusFilter) => void;
 	searchTerm: string;
 	setSearchTerm: (value: string) => void;
+	listSort: CrudListSort;
+	setListSort: (value: CrudListSort) => void;
 	softDeleteTarget: TListItem | null;
 	setSoftDeleteTarget: (target: TListItem | null) => void;
 	hardDeleteTarget: TListItem | null;
@@ -85,6 +92,7 @@ export function CrudEntityPage<
 	extras?: ReactNode;
 }) {
 	const { includeDeletedId, searchId } = crudElementIds(copy);
+	const sortId = `${searchId}-sort`;
 	const stats = statsQuery.data;
 	const { hardDeleteTarget, softDeleteTarget } = state;
 
@@ -99,7 +107,7 @@ export function CrudEntityPage<
 	) : null;
 
 	const createButton = (
-		<Button onClick={state.openCreate}>
+		<Button onClick={state.openCreate} variant="highlight">
 			<PlusIcon data-icon="inline-start" />
 			{copy.createButtonLabel}
 		</Button>
@@ -107,7 +115,7 @@ export function CrudEntityPage<
 
 	const filterBar = (
 		<div className="flex flex-col gap-3 rounded-2xl border p-3 lg:flex-row lg:items-end lg:justify-between">
-			<FieldGroup className="grid flex-1 gap-3 md:grid-cols-[minmax(14rem,1fr)_auto_auto] md:items-end">
+			<FieldGroup className="grid flex-1 gap-3 md:grid-cols-[minmax(14rem,1fr)_auto_auto_auto] md:items-end">
 				<Field>
 					<FieldLabel htmlFor={searchId}>Buscar</FieldLabel>
 					<div className="relative">
@@ -139,6 +147,22 @@ export function CrudEntityPage<
 							{copy.statusLabels.inactive}
 						</ToggleGroupItem>
 					</ToggleGroup>
+				</Field>
+				<Field className="md:w-44">
+					<FieldLabel htmlFor={sortId}>Orden</FieldLabel>
+					<Select
+						id={sortId}
+						onChange={(event) =>
+							state.setListSort(event.target.value as CrudListSort)
+						}
+						value={state.listSort}
+					>
+						{crudListSortOptions.map((option) => (
+							<option key={option.value} value={option.value}>
+								{option.label}
+							</option>
+						))}
+					</Select>
 				</Field>
 				<Field orientation="horizontal">
 					<Switch

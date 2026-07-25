@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
-import { dateInputSchema } from "~/schemas/admin/_crud-schema-helpers";
+import {
+	dateInputSchema,
+	sortDirectionSchema,
+} from "~/schemas/admin/_crud-schema-helpers";
 import {
 	diagnosticStateSchema,
 	highestDiagnosticSeveritySchema,
@@ -157,6 +160,7 @@ const rollOverSchema = z.object({
 export const lotListInputSchema = z.object({
 	page: z.number().int().positive().default(1),
 	pageSize: z.number().int().min(1).max(100).default(25),
+	sortDirection: sortDirectionSchema,
 	search: optionalTrimmedText,
 	status: lotStatusSchema.optional(),
 	createdFrom: dateInputSchema.optional(),

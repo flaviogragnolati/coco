@@ -201,7 +201,9 @@ function JourneySection({ journey }: { journey: AdminTrackingJourney }) {
 
 	return (
 		<section className="rounded-2xl border p-4">
-			<h3 className="mb-3 font-medium text-sm">Recorrido</h3>
+			<h3 className="mb-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+				Recorrido
+			</h3>
 			<TrackingJourneyStepper stages={stages} />
 		</section>
 	);

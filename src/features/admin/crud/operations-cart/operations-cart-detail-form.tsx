@@ -27,6 +27,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
 import { Skeleton } from "~/components/ui/skeleton";
+import { JsonPreview } from "~/features/admin/crud/_components/crud-json-preview";
 import { operationsCartUpdateInputSchema } from "~/schemas/admin/operations-cart.schemas";
 import type {
 	OperationsCartDetail,
@@ -45,16 +46,6 @@ import {
 	orderStatusLabelMap,
 	transactionStatusLabelMap,
 } from "./operations-cart.mappers";
-
-function JsonPreview({ value }: { value: unknown }) {
-	if (value === null || value === undefined) return <span>Sin datos</span>;
-
-	return (
-		<pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-2 text-[11px]">
-			{JSON.stringify(value, null, 2)}
-		</pre>
-	);
-}
 
 function productTermsLabel(terms: ProductClientTermsListItem) {
 	return `${terms.product.name} - MOQ ${terms.moq} ${terms.product.unit} - ${terms.currency}`;

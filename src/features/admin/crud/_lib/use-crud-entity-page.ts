@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { applyCrudListSort } from "~/features/admin/crud/_lib/crud-list-sort";
 import {
 	matchesCrudStatus,
 	matchesSearch,
@@ -32,7 +33,12 @@ export type CrudMutationLike = { isPending: boolean };
  */
 export function useCrudEntityPage<
 	TId extends CrudEntityId,
-	TListItem extends { active: boolean; deleted?: boolean },
+	TListItem extends {
+		id: CrudEntityId;
+		updatedAt: Date;
+		active: boolean;
+		deleted?: boolean;
+	},
 	TDetail,
 >({
 	state,
@@ -51,7 +57,7 @@ export function useCrudEntityPage<
 	searchFields: (item: TListItem) => Array<number | string | null>;
 	detailErrorMessage: string;
 }) {
-	const { closeForm, formState, searchTerm, statusFilter } = state;
+	const { closeForm, formState, listSort, searchTerm, statusFilter } = state;
 	const { data: listData } = listQuery;
 	const { error: detailError, isError: detailIsError } = detailQuery;
 
@@ -71,14 +77,15 @@ export function useCrudEntityPage<
 
 	const filteredItems = useMemo(() => {
 		const search = normalizeSearch(searchTerm);
-
-		return (listData ?? []).filter((item) => {
+		const matching = (listData ?? []).filter((item) => {
 			return (
 				matchesCrudStatus(statusFilter, item) &&
 				matchesSearch(search, searchFields(item))
 			);
 		});
-	}, [listData, searchFields, searchTerm, statusFilter]);
+
+		return applyCrudListSort(matching, listSort);
+	}, [listData, listSort, searchFields, searchTerm, statusFilter]);
 
 	return {
 		filteredItems,

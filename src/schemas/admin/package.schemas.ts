@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
-import { dateInputSchema } from "~/schemas/admin/_crud-schema-helpers";
+import {
+	dateInputSchema,
+	sortDirectionSchema,
+} from "~/schemas/admin/_crud-schema-helpers";
 import {
 	diagnosticStateSchema,
 	highestDiagnosticSeveritySchema,
@@ -117,6 +120,7 @@ const packageLineSchema = z.object({
 export const packageListInputSchema = z.object({
 	page: z.number().int().positive().default(1),
 	pageSize: z.number().int().min(1).max(100).default(25),
+	sortDirection: sortDirectionSchema,
 	search: optionalTrimmedText,
 	status: packageStatusSchema.optional(),
 	createdFrom: dateInputSchema.optional(),

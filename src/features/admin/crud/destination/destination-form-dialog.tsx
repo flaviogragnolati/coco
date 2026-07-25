@@ -88,6 +88,7 @@ export function DestinationFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingDestination)}
 						form="destination-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar

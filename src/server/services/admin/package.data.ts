@@ -216,10 +216,12 @@ export async function listPackageCandidates(
 	input: PackageListInput,
 	options?: { skip?: number; take?: number },
 ) {
+	const direction = input.sortDirection;
+
 	return db.package.findMany({
 		where: buildPackageWhere(input),
 		select: packageSummarySelect,
-		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+		orderBy: [{ createdAt: direction }, { id: direction }],
 		skip: options?.skip,
 		take: options?.take,
 	});

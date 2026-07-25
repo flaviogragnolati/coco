@@ -58,7 +58,8 @@ export function CarrierFormDialog({
 
 	const errors = form.formState.errors;
 	const active = Boolean(form.watch("active"));
-	const title = mode === "create" ? "Agregar transportista" : "Editar transportista";
+	const title =
+		mode === "create" ? "Agregar transportista" : "Editar transportista";
 
 	useEffect(() => {
 		if (!open) return;
@@ -90,6 +91,7 @@ export function CarrierFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingCarrier)}
 						form="carrier-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar

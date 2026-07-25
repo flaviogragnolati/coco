@@ -5,6 +5,11 @@ import type {
 } from "~/shared/common/admin-crud/operation.types";
 import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 import { toPrismaInputJson } from "./_base/prisma-json";
+import type { OperationalDiagnostic } from "./operational-diagnostics.types";
+import {
+	diagnosticMessages,
+	highestSeverity,
+} from "./operational-diagnostics.types";
 
 type AdminDbClient = Prisma.TransactionClient;
 
@@ -59,6 +64,31 @@ const operationListSelect = {
 	triggeredByUser: {
 		select: operationUserSummarySelect,
 	},
+} satisfies Prisma.OperationSelect;
+
+/**
+ * The relations the diagnostic rules read, kept thin on purpose: the list pays
+ * for these joins on every page, so it selects ids and quantities only. The
+ * detail select below is a structural superset, which is what lets both feed
+ * `calculateOperationDiagnostics`.
+ */
+const operationDiagnosticsRelationSelect = {
+	lots: {
+		select: {
+			id: true,
+			code: true,
+			supplierOrder: { select: { id: true } },
+			lotItems: { select: { id: true, quantity: true } },
+		},
+	},
+	rollOvers: {
+		select: { id: true, status: true },
+	},
+} satisfies Prisma.OperationSelect;
+
+const operationSummarySelect = {
+	...operationListSelect,
+	...operationDiagnosticsRelationSelect,
 } satisfies Prisma.OperationSelect;
 
 const operationSupplierOrderSummarySelect = {
@@ -188,6 +218,10 @@ export type OperationListRecord = Prisma.OperationGetPayload<{
 	select: typeof operationListSelect;
 }>;
 
+export type OperationSummaryRecord = Prisma.OperationGetPayload<{
+	select: typeof operationSummarySelect;
+}>;
+
 export type OperationDetailRecord = Prisma.OperationGetPayload<{
 	select: typeof operationDetailSelect;
 }>;
@@ -215,16 +249,27 @@ function buildOperationWhere(
 	return and.length > 0 ? { AND: and } : {};
 }
 
-function toListItem(record: OperationListRecord) {
+export function toOperationListItem(
+	record: OperationSummaryRecord,
+	diagnostics: OperationalDiagnostic[],
+) {
+	const { lots: _lots, rollOvers: _rollOvers, ...rest } = record;
+
 	return {
-		...record,
+		...rest,
 		eligibleQuantity: record.eligibleQuantity.toString(),
 		assignedQuantity: record.assignedQuantity.toString(),
 		rollOverQuantity: record.rollOverQuantity.toString(),
+		diagnosticCount: diagnostics.length,
+		highestDiagnosticSeverity: highestSeverity(diagnostics),
+		diagnosticMessages: diagnosticMessages(diagnostics),
 	};
 }
 
-function toDetail(record: OperationDetailRecord) {
+export function toOperationDetail(
+	record: OperationDetailRecord,
+	diagnostics: OperationalDiagnostic[],
+) {
 	const supplierOrders = Array.from(
 		new Map(
 			record.lots
@@ -235,8 +280,9 @@ function toDetail(record: OperationDetailRecord) {
 	).sort((left, right) => left.id - right.id);
 
 	return {
-		...toListItem(record),
+		...toOperationListItem(record, diagnostics),
 		summary: record.summary,
+		diagnostics,
 		lots: record.lots.map((lot) => ({
 			...lot,
 			lotItems: lot.lotItems.map((lotItem) => ({
@@ -264,26 +310,34 @@ function toDetail(record: OperationDetailRecord) {
 	};
 }
 
-export async function listOperations(
+export async function listOperationCandidates(
+	db: AdminDbClient,
+	input: OperationListInput,
+	options?: { skip?: number; take?: number },
+) {
+	const direction = input.sortDirection;
+
+	return db.operation.findMany({
+		where: buildOperationWhere(input),
+		select: operationSummarySelect,
+		orderBy: [{ createdAt: direction }, { id: direction }],
+		skip: options?.skip,
+		take: options?.take,
+	});
+}
+
+export async function countOperationCandidates(
 	db: AdminDbClient,
 	input: OperationListInput,
 ) {
-	const records = await db.operation.findMany({
-		where: buildOperationWhere(input),
-		select: operationListSelect,
-		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-	});
-
-	return records.map(toListItem);
+	return db.operation.count({ where: buildOperationWhere(input) });
 }
 
 export async function findOperationById(db: AdminDbClient, id: number) {
-	const record = await db.operation.findUnique({
+	return db.operation.findUnique({
 		where: { id },
 		select: operationDetailSelect,
 	});
-
-	return record ? toDetail(record) : null;
 }
 
 export async function getOperationStats(db: AdminDbClient) {

@@ -1,31 +1,41 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { PageHeader } from "~/components/page-header";
+import { findAdminNavItem } from "~/features/admin/shell/admin-nav";
+
+/**
+ * Standalone admin page frame. The eyebrow defaults to the nav group that owns
+ * the current route ("Operación" on `/admin/lots`), so every admin page carries
+ * the same header language as the storefront without per-page wiring.
+ */
 export function CrudPageShell({
 	title,
 	description,
 	actions,
+	eyebrow,
 	children,
 }: {
 	title: string;
 	description?: string;
 	actions?: ReactNode;
+	eyebrow?: string;
 	children: ReactNode;
 }) {
+	const pathname = usePathname();
+	const resolvedEyebrow =
+		eyebrow ?? findAdminNavItem(pathname ?? "")?.group?.label;
+
 	return (
 		<div className="flex w-full flex-col gap-5">
-			<header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-				<div className="flex min-w-0 flex-col gap-1">
-					<h1 className="font-heading font-semibold text-2xl tracking-normal">
-						{title}
-					</h1>
-					{description ? (
-						<p className="max-w-3xl text-muted-foreground text-xs/relaxed">
-							{description}
-						</p>
-					) : null}
-				</div>
-				{actions ? <div className="flex shrink-0 gap-2">{actions}</div> : null}
-			</header>
+			<PageHeader
+				actions={actions}
+				description={description}
+				eyebrow={resolvedEyebrow}
+				title={title}
+			/>
 			{children}
 		</div>
 	);

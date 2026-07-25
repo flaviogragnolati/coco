@@ -117,6 +117,7 @@ export function ProductLocalConstraintsFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingConstraint)}
 						form="product-local-constraints-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar

@@ -202,10 +202,12 @@ export async function listShipmentCandidates(
 	input: ShipmentListInput,
 	options?: { skip?: number; take?: number },
 ) {
+	const direction = input.sortDirection;
+
 	return db.shipment.findMany({
 		where: buildShipmentWhere(input),
 		select: shipmentSummarySelect,
-		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+		orderBy: [{ createdAt: direction }, { id: direction }],
 		skip: options?.skip,
 		take: options?.take,
 	});

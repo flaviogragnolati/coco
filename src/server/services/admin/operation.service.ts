@@ -16,13 +16,23 @@ import type {
 } from "~/shared/common/admin-crud/operation.types";
 import { AdminCrudError, throwNotFound } from "./_base/admin-crud.errors";
 import {
+	countOperationCandidates,
 	createRunningOperation,
 	findActiveDestination,
 	findOperationById,
 	getOperationStats,
-	listOperations,
+	listOperationCandidates,
 	markOperationFailed,
+	type OperationDetailRecord,
+	type OperationSummaryRecord,
+	toOperationDetail,
+	toOperationListItem,
 } from "./operation.data";
+import { calculateOperationDiagnostics } from "./operation-diagnostics";
+import {
+	DIAGNOSTIC_SCAN_LIMIT,
+	resolveDiagnosticListPage,
+} from "./operational-diagnostics.types";
 
 type AdminDb = typeof db;
 
@@ -38,19 +48,49 @@ function errorMessage(error: unknown) {
 	return "Error tecnico desconocido";
 }
 
-function parseDetail(record: unknown): OperationDetail {
-	return operationDetailSchema.parse(record);
+function parseDetail(record: OperationDetailRecord): OperationDetail {
+	return operationDetailSchema.parse(
+		toOperationDetail(record, calculateOperationDiagnostics(record)),
+	);
+}
+
+function summarize(record: OperationSummaryRecord) {
+	return toOperationListItem(record, calculateOperationDiagnostics(record));
 }
 
 export async function list(input: OperationListInput, database: AdminDb) {
-	const records = await listOperations(database, input);
-	return operationListOutputSchema.parse(records);
+	if (input.diagnosticState === "all") {
+		const [total, records] = await Promise.all([
+			countOperationCandidates(database, input),
+			listOperationCandidates(database, input, {
+				skip: (input.page - 1) * input.pageSize,
+				take: input.pageSize,
+			}),
+		]);
+
+		return operationListOutputSchema.parse({
+			items: records.map(summarize),
+			page: input.page,
+			pageSize: input.pageSize,
+			total,
+			pageCount: total === 0 ? 0 : Math.ceil(total / input.pageSize),
+			truncated: false,
+		});
+	}
+
+	const records = await listOperationCandidates(database, input, {
+		take: DIAGNOSTIC_SCAN_LIMIT,
+	});
+
+	return operationListOutputSchema.parse(
+		resolveDiagnosticListPage(records.map(summarize), input, records.length),
+	);
 }
 
 export async function getById(id: number, database: AdminDb) {
-	const operation = await findOperationById(database, id);
-	if (!operation) throwNotFound("Operacion");
-	return parseDetail(operation);
+	const record = await findOperationById(database, id);
+	if (!record) throwNotFound("Operacion");
+	return parseDetail(record);
 }
 
 export async function getStats(database: AdminDb): Promise<OperationStats> {

@@ -28,7 +28,7 @@ export function CrudEmptyState({
 	description: string;
 }) {
 	return (
-		<Empty className="border">
+		<Empty className="border bg-brand-warm text-brand-warm-foreground">
 			<EmptyHeader>
 				<EmptyMedia variant="icon">
 					<InboxIcon />

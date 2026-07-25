@@ -36,6 +36,7 @@ import { Switch } from "~/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Textarea } from "~/components/ui/textarea";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
+import { CrudSortToggle } from "~/features/admin/crud/_components/crud-sort-toggle";
 import {
 	CrudEmptyState,
 	CrudErrorState,
@@ -44,7 +45,11 @@ import {
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
-import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
+import { sortByDate } from "~/features/admin/crud/_lib/crud-list-sort";
+import type {
+	CrudColumn,
+	CrudSortDirection,
+} from "~/shared/common/admin-crud/crud.types";
 import type {
 	MercadoPagoSettings,
 	PaymentAttemptDetail,
@@ -498,6 +503,7 @@ export function PaymentsAdminClient() {
 	);
 	const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 	const [ignoreReason, setIgnoreReason] = useState("");
+	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
 	const utils = api.useUtils();
 
 	const listInput = useMemo(
@@ -515,6 +521,28 @@ export function PaymentsAdminClient() {
 	const eventDetailQuery = api.admin.payment.getEventById.useQuery(
 		{ id: selectedEventId ?? 0 },
 		{ enabled: selectedEventId !== null },
+	);
+
+	// Both lists arrive unpaginated, so the toggle sorts them in memory.
+	const sortedAttempts = useMemo(
+		() =>
+			sortByDate(
+				attemptsQuery.data ?? [],
+				sortDirection,
+				(attempt) => attempt.createdAt,
+				(attempt) => attempt.id,
+			),
+		[attemptsQuery.data, sortDirection],
+	);
+	const sortedEvents = useMemo(
+		() =>
+			sortByDate(
+				eventsQuery.data ?? [],
+				sortDirection,
+				(event) => event.receivedAt,
+				(event) => event.id,
+			),
+		[eventsQuery.data, sortDirection],
 	);
 
 	const invalidatePayments = async () => {
@@ -699,7 +727,7 @@ export function PaymentsAdminClient() {
 					]}
 				/>
 			) : null}
-			<div className="rounded-2xl border p-3">
+			<div className="flex flex-col gap-3 rounded-2xl border p-3 lg:flex-row lg:items-end lg:justify-between">
 				<Field>
 					<FieldLabel htmlFor="payment-search">Buscar</FieldLabel>
 					<div className="relative">
@@ -713,6 +741,7 @@ export function PaymentsAdminClient() {
 						/>
 					</div>
 				</Field>
+				<CrudSortToggle onChange={setSortDirection} value={sortDirection} />
 			</div>
 			<Tabs defaultValue="attempts">
 				<TabsList>
@@ -731,11 +760,11 @@ export function PaymentsAdminClient() {
 							title="Sin intentos de pago"
 						/>
 					) : null}
-					{attemptsQuery.data && attemptsQuery.data.length > 0 ? (
+					{sortedAttempts.length > 0 ? (
 						<CrudTable
 							columns={attemptColumns}
 							getRowKey={(item) => item.id}
-							items={attemptsQuery.data}
+							items={sortedAttempts}
 							onRowClick={(item) => setSelectedAttemptId(item.id)}
 						/>
 					) : null}
@@ -756,11 +785,11 @@ export function PaymentsAdminClient() {
 							title="Sin eventos de proveedor"
 						/>
 					) : null}
-					{eventsQuery.data && eventsQuery.data.length > 0 ? (
+					{sortedEvents.length > 0 ? (
 						<CrudTable
 							columns={eventColumns}
 							getRowKey={(item) => item.id}
-							items={eventsQuery.data}
+							items={sortedEvents}
 							onRowClick={(item) => setSelectedEventId(item.id)}
 						/>
 					) : null}

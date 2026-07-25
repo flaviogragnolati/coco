@@ -207,6 +207,7 @@ export function ProductFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingProduct)}
 						form="product-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar

@@ -1,8 +1,16 @@
 import { z } from "zod";
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
-import { dateInputSchema } from "~/schemas/admin/_crud-schema-helpers";
+import {
+	dateInputSchema,
+	sortDirectionSchema,
+} from "~/schemas/admin/_crud-schema-helpers";
 import { userIdSchema } from "~/schemas/admin/address.schemas";
 import { destinationIdSchema } from "~/schemas/admin/destination.schemas";
+import {
+	diagnosticStateSchema,
+	highestDiagnosticSeveritySchema,
+	operationalDiagnosticSchema,
+} from "~/schemas/admin/operational-diagnostic.schemas";
 import { userRoleSchema } from "~/schemas/admin/user.schemas";
 
 export const operationIdSchema = z
@@ -13,6 +21,27 @@ export const operationIdSchema = z
 export const operationStatusSchema = z.enum(["running", "completed", "failed"]);
 
 export const operationStrategySchema = z.enum(["fifo", "other"]);
+
+export const operationSupplierOrderStatusSchema = z.enum([
+	"pending",
+	"requested",
+	"confirmed",
+	"readyForReceipt",
+	"completed",
+	"cancelled",
+]);
+
+export const operationRollOverStageSchema = z.enum([
+	"preAllocation",
+	"postAllocation",
+]);
+
+export const operationRollOverStatusSchema = z.enum([
+	"open",
+	"rebatched",
+	"resolved",
+	"cancelled",
+]);
 export const operationCreateStrategySchema = z.literal("fifo");
 
 const optionalTrimmedText = z
@@ -75,9 +104,13 @@ export const operationCreateInputSchema = z
 	});
 
 export const operationListInputSchema = z.object({
+	page: z.number().int().positive().default(1),
+	pageSize: z.number().int().min(1).max(100).default(25),
+	sortDirection: sortDirectionSchema,
 	search: optionalTrimmedText,
 	status: operationStatusSchema.optional(),
 	strategy: operationStrategySchema.optional(),
+	diagnosticState: diagnosticStateSchema,
 });
 
 export const operationGetByIdInputSchema = z.object({
@@ -107,19 +140,15 @@ export const operationListItemSchema = z.object({
 	supplierOrderCount: z.number().int().nonnegative(),
 	destination: destinationSummarySchema.nullable(),
 	triggeredByUser: userSummarySchema.nullable(),
+	diagnosticCount: z.number().int().nonnegative(),
+	highestDiagnosticSeverity: highestDiagnosticSeveritySchema,
+	diagnosticMessages: z.array(z.string()),
 });
 
 const supplierOrderSummarySchema = z.object({
 	id: z.number().int().positive(),
 	code: z.string(),
-	status: z.enum([
-		"pending",
-		"requested",
-		"confirmed",
-		"readyForReceipt",
-		"completed",
-		"cancelled",
-	]),
+	status: operationSupplierOrderStatusSchema,
 	supplier: supplierSummarySchema,
 	createdAt: z.date(),
 	updatedAt: z.date(),
@@ -194,8 +223,8 @@ const lotDetailSchema = z.object({
 
 const rollOverDetailSchema = z.object({
 	id: z.number().int().positive(),
-	stage: z.enum(["preAllocation", "postAllocation"]),
-	status: z.enum(["open", "rebatched", "resolved", "cancelled"]),
+	stage: operationRollOverStageSchema,
+	status: operationRollOverStatusSchema,
 	quantity: decimalOutputSchema,
 	reason: z.string(),
 	cartItem: z.object({
@@ -221,6 +250,7 @@ export const operationDetailSchema = operationListItemSchema.extend({
 	lots: z.array(lotDetailSchema),
 	rollOvers: z.array(rollOverDetailSchema),
 	supplierOrders: z.array(supplierOrderSummarySchema),
+	diagnostics: z.array(operationalDiagnosticSchema),
 });
 
 export const operationStatsSchema = z.object({
@@ -233,4 +263,11 @@ export const operationStatsSchema = z.object({
 	rollOverQuantity: decimalOutputSchema,
 });
 
-export const operationListOutputSchema = z.array(operationListItemSchema);
+export const operationListOutputSchema = z.object({
+	items: z.array(operationListItemSchema),
+	page: z.number().int().positive(),
+	pageSize: z.number().int().positive(),
+	total: z.number().int().nonnegative(),
+	pageCount: z.number().int().nonnegative(),
+	truncated: z.boolean(),
+});

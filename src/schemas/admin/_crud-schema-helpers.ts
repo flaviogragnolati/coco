@@ -3,6 +3,12 @@ import { z } from "zod";
 export const requiredText = (message: string) =>
 	z.string().trim().min(1, message);
 
+/**
+ * Date sort for the paginated admin lists. Defaults to `desc` so every existing
+ * caller keeps the newest-first order it had before the toggle existed.
+ */
+export const sortDirectionSchema = z.enum(["desc", "asc"]).default("desc");
+
 export const nullishText = z
 	.string()
 	.trim()

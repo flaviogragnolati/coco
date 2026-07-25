@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sortDirectionSchema } from "~/schemas/admin/_crud-schema-helpers";
 import {
 	adminTrackingStageKeys,
 	trackingEventSources,
@@ -134,6 +135,7 @@ export const adminTrackingListFiltersSchema = z.object({
 export const adminTrackingListInputSchema = z.object({
 	page: z.number().int().positive().default(1),
 	pageSize: z.number().int().min(1).max(100).default(25),
+	sortDirection: sortDirectionSchema,
 	filters: adminTrackingListFiltersSchema.default({}),
 });
 

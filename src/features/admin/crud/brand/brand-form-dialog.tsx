@@ -88,6 +88,7 @@ export function BrandFormDialog({
 						disabled={isSubmitting || (mode === "edit" && isLoadingBrand)}
 						form="brand-crud-form"
 						type="submit"
+						variant="highlight"
 					>
 						<SaveIcon data-icon="inline-start" />
 						Guardar
