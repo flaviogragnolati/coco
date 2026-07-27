@@ -536,9 +536,11 @@ stepFn(
 		);
 
 		const payload = (event?.payload ?? {}) as Record<string, unknown>;
+		// The builders stringify every id, so compare as strings rather than by
+		// identity: the assertion is about *which* package, not which JSON type.
 		checkEqual(
-			payload.packageId,
-			state.depotPackageId,
+			String(payload.packageId),
+			String(state.depotPackageId),
 			"delivery event packageId",
 		);
 		check(

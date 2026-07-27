@@ -2295,6 +2295,11 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 	// pickup point — the mode's whole point being several customers collecting from
 	// one arrival. They order the same two products so each lot line carries four
 	// demand allocations and LIFO absorption has something to order.
+	//
+	// **Every line clears its supplier MOQ on its own** (tomate 50 step 10, manzana
+	// 50 step 25). `calculateAssignableQuantity` is applied per cart item rather
+	// than to pooled demand, so a line below the MOQ rolls over pre-allocation and
+	// its customer never reaches fractionation at all.
 	await createPaidScenarioCart(tx, {
 		cartCode: "CART-SEED-AGGREGABLE-C",
 		orderCode: "ORD-SEED-AGGREGABLE-C",
@@ -2305,14 +2310,14 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		items: [
 			{
 				code: "CITEM-SEED-AGG-C-TOMATE",
-				quantity: "30.0000",
+				quantity: "50.0000",
 				fulfillmentStatus: "awaitingAggregation",
 				product: data.products.tomate,
 				terms: data.clientTerms.tomate,
 			},
 			{
 				code: "CITEM-SEED-AGG-C-MANZANA",
-				quantity: "25.0000",
+				quantity: "100.0000",
 				fulfillmentStatus: "awaitingAggregation",
 				product: data.products.manzana,
 				terms: data.clientTerms.manzana,
@@ -2329,14 +2334,14 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		items: [
 			{
 				code: "CITEM-SEED-AGG-D-TOMATE",
-				quantity: "20.0000",
+				quantity: "80.0000",
 				fulfillmentStatus: "awaitingAggregation",
 				product: data.products.tomate,
 				terms: data.clientTerms.tomate,
 			},
 			{
 				code: "CITEM-SEED-AGG-D-MANZANA",
-				quantity: "25.0000",
+				quantity: "50.0000",
 				fulfillmentStatus: "awaitingAggregation",
 				product: data.products.manzana,
 				terms: data.clientTerms.manzana,
@@ -2353,7 +2358,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		items: [
 			{
 				code: "CITEM-SEED-AGG-B-TOMATE",
-				quantity: "40.0000",
+				quantity: "70.0000",
 				fulfillmentStatus: "awaitingAggregation",
 				product: data.products.tomate,
 				terms: data.clientTerms.tomate,
