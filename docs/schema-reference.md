@@ -1,14 +1,24 @@
 # Schema Foundation Reference
 
-This document is the first implementation reference for the application domain defined in `prisma/schema.prisma`.
+> **Status:** updated 2026-07-27 against the implemented code. The original version of this
+> document predated the application layer; every capability it demanded now exists. Where it
+> used to prescribe, it now describes — and links the decision records that govern each rule.
+>
+> **Companion documents:**
+> - `docs/fulfillment-reference.md` — the as-built fulfillment lifecycle: command surfaces, guards, and business rules per entity
+> - `docs/tracking-architecture.md` — the event-driven tracking pipeline and status derivation
+> - `CONTEXT.md` — the canonical domain language (Spanish UI labels included)
+> - `docs/adr/` — the six accepted architecture decision records (mapped in the final section)
+
+This document is the implementation reference for the application domain defined in `prisma/schema.prisma`.
 
 Its purpose is to turn the current Prisma schema into the canonical description of:
 
 - the design philosophy behind the model
 - the responsibilities of each model and relationship
 - the primary and alternate information flows
-- the meaning of each status layer
-- the application rules that must exist outside the database
+- the meaning of each status layer and who owns it
+- the application rules that exist outside the database, and where they are implemented
 - the current modeling limits and assumptions that implementers must treat explicitly
 
 When this document and the schema disagree, the schema is the structural source of truth and this document is the behavioral source of truth for the application layer. If either needs to change, both should be updated together.
@@ -20,22 +30,30 @@ This reference covers domain modeling and workflow behavior derived from the sch
 It does not define:
 
 - UI behavior
-- API route shapes
+- API route shapes (see the router index in `docs/fulfillment-reference.md`)
 - authorization policy details beyond what the data model implies
-- background job topology
+- background job topology (there is none in v1 — see `docs/tracking-architecture.md`)
 - integration payload formats for suppliers, carriers, or external APIs
 
 ## Glossary
 
+The authoritative glossary lives in `CONTEXT.md`. The terms used most in this document:
+
 - Customer request: the user-facing demand captured by `Cart`, `CartItem`, `UserOrder`, and `UserOrderItem`
 - Commercial state: the status that answers whether the customer order and payment lifecycle is pending, processing, completed, failed, cancelled, refunded, or charged back
 - Operational state: the status that answers where demand is inside sourcing, packaging, shipment, and delivery
-- Aggregate status: a summary status intended for user or admin display, not the only detailed operational source of truth
+- Aggregate status: a summary status for display, **recomputed from the live records that back it** (ADR 0002), never carried forward by events
 - Snapshot: JSON data copied at the time of a meaningful business event so later mutations do not rewrite history
 - Operation: an aggregation batch for submitted customer demand
+- Operation draft: an operation created but not executed; holds parameters, the admin's omissions, and a fingerprint of the reviewed demand (ADR 0006). It materializes nothing and reserves no demand
 - Lot: a supplier-scoped grouping of aggregated demand inside one operation
 - Lot item: a supplier-facing requested line inside a lot
-- Roll over: quantity that dropped out of the current fulfillment path and must be rebatched or otherwise resolved
+- Demand allocation: the `CartItemLotItem` quantity bridge from a customer request to a lot item
+- Packaged allocation: the `PackageAllocation` quantity bridge from a demand allocation to a package line
+- Package leg: the direction a package travels — `inbound` (supplier → destination) or `outbound` (destination → end user) (ADR 0004)
+- Delivery mode: how an outbound package reaches its customer — home delivery, pickup point (both on an end-user shipment), or depot pickup (the absence of a shipment)
+- Roll over: quantity that dropped out of the current fulfillment path and must be rebatched or otherwise resolved (ADR 0005)
+- Demand conservation: the invariant that every unit of paid demand is always in exactly one active place or in an audited terminal resolution (ADR 0005)
 
 ## Design Philosophy
 
@@ -57,57 +75,56 @@ The core path is:
 
 `CartItem -> Operation -> Lot -> LotItem -> SupplierOrder`
 
-This means the app is not a simple one-order-per-supplier checkout system. Aggregation, MOQ logic, supplier-term selection, and rebatching are core business behavior and must live in the application layer.
+This means the app is not a simple one-order-per-supplier checkout system. Aggregation, MOQ logic, supplier-term selection, and rebatching are core business behavior and live in the application layer (`src/server/services/operations/`, `src/server/services/admin/`).
 
-### 3. Historical truth is preserved with snapshots
+### 3. Aggregate statuses are derived, never carried (ADR 0002)
+
+Domain events are facts; summaries are recomputed. `CartItem.fulfillmentStatus` is derived from the item's live lineage records on every projection, and `UserOrder.status` completion/cancellation is rolled up the same way. No event "sets" a status; the records left behind justify it. This makes projection idempotent and order-independent by construction.
+
+### 4. Demand conservation is the system invariant (ADR 0005)
+
+Every unit of paid demand is, at all times, in exactly one active place — unallocated original demand, an open roll over, or a live allocation — or in an audited terminal resolution (cancelled / resolved). Every quantity-moving command preserves this inside its transaction; diagnostics watch it but never repair it. Quantity drops are first-class `RollOver` records, never silent deltas.
+
+### 5. Historical truth is preserved with snapshots
 
 Mutable reference data is not trusted to preserve history.
 
-- `UserOrder.billingAddressSnapshot`
-- `UserOrder.shippingAddressSnapshot`
-- `UserOrderItem.productSnapshot`
-- `UserOrderItem.priceSnapshot`
-- `CartItem.productSnapshot`
-- `Shipment.destinationAddressSnapshot`
-- `Shipment.destinationContactSnapshot`
+- `UserOrder.billingAddressSnapshot`, `UserOrder.shippingAddressSnapshot` (nullable), `UserOrder.termsSnapshot` + `acceptedTermsAt`
+- `UserOrderItem.productSnapshot`, `UserOrderItem.priceSnapshot` (required)
+- `CartItem.productSnapshot` (required)
+- `Shipment.destinationAddressSnapshot`, `Shipment.destinationContactSnapshot` (nullable)
+- `UserTransaction.requestSnapshot`, `UserTransaction.responseSnapshot` (payment gateway exchange)
 
-The application must create these snapshots at the correct business moments and never recalculate old commercial or logistical records from current mutable tables.
+The application creates these snapshots at the correct business moments and never recalculates old commercial or logistical records from current mutable tables.
 
-### 4. Restrictive deletes are the default for commercial and operational history
+### 6. Records survive; statuses move
 
-Auth/session-style data may cascade, but commercial and operational entities generally use `onDelete: Restrict`.
+Commercial and operational entities use `onDelete: Restrict` and are retired through status changes, not deletion. This extends beyond deletes: a cancelled lot item keeps its quantity, a fully absorbed allocation survives at quantity 0, a compensated operation cancels its outputs in place. Cancelling never zeroes quantity — the status filter is what removes a record from live computations, and the row remains as history for tracking references and diagnostics.
 
-This reflects a deliberate bias toward preserving business history.
-
-- Users should not be deletable if their commercial history still depends on them
-- Products, suppliers, lots, orders, and shipments should be retired through business rules, not physical deletion
+- Users are not deletable while their commercial history depends on them
 - `active` and `deleted` are operational visibility flags, not substitutes for archival policy
+- The two hard deletes in fulfillment (`operation.remove` on `failed`/`draft` childless rows, `carrierOrder.hardDelete` on `pending` childless rows) are guarded to be history-safe
 
-### 5. Quantities and money are first-class business values
+### 7. Quantities and money are first-class business values
 
 The schema standardizes:
 
 - quantities on `Decimal(18,4)`
 - money on `Decimal(18,2)`
-- explicit `Currency`
+- explicit `Currency` (`ARS | USD | EUR | BRL`)
 
-The app must therefore use decimal-safe arithmetic everywhere that performs quantity or pricing logic. Floating-point math is not acceptable.
+All quantity and pricing logic uses decimal-safe arithmetic (`Prisma.Decimal`). Floating-point math is not acceptable; fingerprints and event payloads serialize decimals as strings.
 
-### 6. Roll overs are modeled explicitly, not as silent deltas
+### 8. Tracking and auditing are separated by intent
 
-When quantity drops out of the current sourcing path, the schema creates a first-class `RollOver` record rather than hiding the event in a status jump or net quantity adjustment.
+- `CartItemTrackingEvent` records fulfillment history for a specific customer demand line — written **only** by the tracking module, fed by domain events through the outbox (`docs/tracking-architecture.md`)
+- `AuditLog` records broader entity changes and actor context across the application — written directly by command services
 
-This is important because it keeps partial fulfillment, rebatched demand, and operational loss visible and auditable.
+Meaningful operational transitions produce both: domain events (which become tracking history) in the mutation's transaction, and an audit entry with effect summaries.
 
-### 7. Tracking and auditing are separated by intent
+### 9. An operation is reviewed before it executes (ADR 0006)
 
-- `CartItemTrackingEvent` records fulfillment lineage for a specific customer demand line
-- `AuditLog` records broader entity changes and actor context across the application
-
-The app should usually write both in meaningful operational transitions:
-
-- a tracking event for the affected cart item lineage
-- an audit log entry for the actor-driven or system-driven change itself
+Operations no longer execute on creation. A draft is created with its parameters, an admin reviews the live demand it would batch, marks omissions, and executes as a separate command that refuses (`CONFLICT`) if the effective demand no longer matches the reviewed fingerprint. Drafts reserve nothing; concurrency is safe by construction because whichever draft executes first takes the demand and the second one's fingerprint stops matching.
 
 ## Domain Map
 
@@ -115,7 +132,7 @@ The app should usually write both in meaningful operational transitions:
 
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
-| `User` | Core user identity | Has many `Session`, `Account`, `Cart`, `UserOrder`, `PaymentMethod`, `Address`, `AuditLog`, `CartItemTrackingEvent` | Also carries `role`, `active`, `deleted` |
+| `User` | Core user identity | Has many `Session`, `Account`, `Cart`, `UserOrder`, `PaymentMethod`, `Address`, `AuditLog`, `CartItemTrackingEvent` | Also carries `role` (`user \| admin \| superadmin`), `active`, `deleted` |
 | `Session` | Auth session | Belongs to `User` | Dependent auth data, safe to cascade |
 | `Account` | Linked identity provider account | Belongs to `User` | Provider credentials and refresh data |
 | `Verification` | Verification token/value records | Standalone | Auth support model |
@@ -124,8 +141,10 @@ The app should usually write both in meaningful operational transitions:
 
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
-| `Address` | User address book entry | Belongs to `User` | Never use directly as immutable order history; always snapshot |
+| `Address` | User address book entry | Belongs to `User` | Never used directly as immutable order history; always snapshotted |
 | `PaymentMethod` | Saved payment method | Belongs to `User`; referenced by `UserTransaction` | Historical payments remain attached even if method is later disabled |
+| `PaymentProviderConfig` | Payment provider configuration | Standalone | Mercado Pago mode (`sandbox \| production`) and credentials context; superadmin-managed (ADR 0001) |
+| `PaymentProviderEvent` | Inbound payment provider notification | Standalone (references by value) | Webhook ingestion record with status `received \| processed \| failed \| ignored \| rejected`; reconciliation input (ADR 0001) |
 
 ### Catalog, commercial pricing, and sourcing inputs
 
@@ -137,48 +156,49 @@ The app should usually write both in meaningful operational transitions:
 | `ProductClientTerms` | Customer-facing sell terms | Belongs to `Product`; referenced by `CartItem` | Source of MOQ, step, max, price, and currency used at request time |
 | `ProductSupplierTerms` | Supplier-facing buy terms | Belongs to `Product` and `Supplier`; referenced by `LotItem` | Source of sourcing MOQ and buy-side price logic |
 | `ProductLocalConstraints` | Context-sensitive restrictions | Belongs to `Product` | Flexible JSON-based rule container, interpreted in app code |
-| `Destination` | Internal warehouse or operational destination | Referenced by `LotItem` | Not the same as the end-user address |
+| `Destination` | Internal warehouse or operational destination | Referenced by `LotItem` and optionally by `Operation` | Not the same as the end-user address |
 
 ### Customer request and commercial records
 
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
 | `Cart` | Editable request container | Belongs to `User`; has many `CartItem`; can originate many `UserOrder` | Cart lifecycle stops at request submission |
-| `CartItem` | Requested product line | Belongs to `Cart` and one `ProductClientTerms`; has many allocations, tracking events, roll overs, and `UserOrderItem` records | Keeps the initial product snapshot for request-time display and traceability |
-| `UserOrder` | Commercial order record | Belongs to `User` and `Cart`; has many `UserOrderItem` and `UserTransaction` | Holds address snapshots |
-| `UserOrderItem` | Commercial order line | Belongs to `UserOrder`; must reference `sourceCartItem` | Manual order lines are out of scope for now |
-| `UserTransaction` | Customer payment record | Belongs to `UserOrder` and `PaymentMethod` | Payment lifecycle is separate from fulfillment lifecycle |
+| `CartItem` | Requested product line | Belongs to `Cart` and one `ProductClientTerms`; has many allocations, tracking events, roll overs, and `UserOrderItem` records | The root traceability record for a customer request line; keeps the initial product snapshot |
+| `UserOrder` | Commercial order record | Belongs to `User` and `Cart`; has many `UserOrderItem` and `UserTransaction` | Holds address and terms snapshots; closure is derived (ADR 0002) |
+| `UserOrderItem` | Commercial order line | Belongs to `UserOrder`; must reference `sourceCartItem` | Manual order lines are out of scope |
+| `UserTransaction` | Customer payment record | Belongs to `UserOrder` and `PaymentMethod` | Payment lifecycle is separate from fulfillment lifecycle; carries gateway request/response snapshots |
 
 ### Aggregation, sourcing, and rebatching
 
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
-| `Operation` | Aggregation batch | Has many `Lot`, `RollOver`, and tracking events | The orchestration root for sourcing work |
-| `Lot` | Supplier-scoped group inside one operation | Belongs to `Operation` and `Supplier`; optionally linked to `SupplierOrder`; has many `LotItem` | A lot summarizes supplier-facing demand |
+| `Operation` | Aggregation batch | Has many `Lot`, `RollOver`, and tracking events; back-relation `rebatchedRollOvers` for roll overs it consumed | Carries live counters (`eligible/assigned/rollOver` quantities and counts, `lotCount`, `supplierOrderCount`), the immutable execution `summary`, and `reviewState` (draft omissions + approved fingerprint, ADR 0006) |
+| `Lot` | Supplier-scoped group inside one operation | Belongs to `Operation` and `Supplier`; optionally linked to `SupplierOrder`; has many `LotItem` | Statuses cascade from supplier-order commands and are never edited directly (ADR 0003) |
 | `LotItem` | Supplier-facing requested line | Belongs to `Lot`, `Destination`, and `ProductSupplierTerms` | The primary unit of supplier request quantity |
-| `CartItemLotItem` | Quantity bridge from customer demand to supplier-facing line | Joins `CartItem` and `LotItem` with quantity | Key conservation checkpoint |
-| `RollOver` | Quantity removed from current path | Belongs to `CartItem` and `Operation` | Captures pre-allocation and post-allocation dropouts |
-| `SupplierOrder` | Outbound supplier request | Belongs to `Supplier`; has many `Lot` and `SupplierTransaction` | Supplier-side aggregate state, not a replacement for lot-item state |
+| `CartItemLotItem` | Demand allocation | Joins `CartItem` and `LotItem` with quantity | First conservation checkpoint; survives at quantity 0 when fully absorbed |
+| `RollOver` | Quantity removed from current path | Belongs to `CartItem` and the `Operation` that created it; `rebatchedIntoOperationId` back-links the operation that consumed it | Stage `preAllocation \| postAllocation`; status ladder in ADR 0005 |
+| `SupplierOrder` | Outbound supplier request | Belongs to `Supplier`; has many `Lot` and `SupplierTransaction` | The command aggregate of the supplier loop (ADR 0003); owns `externalReference` and `requestedAt/confirmedAt/cancelledAt` |
 | `SupplierTransaction` | Supplier payment record | Belongs to `SupplierOrder` | Finance and sourcing remain decoupled |
 
 ### Packaging and logistics
 
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
-| `Package` | Physical or logical package | Optional `Shipment`; has many `PackageLotItem` | Package status is aggregate, line status is separate |
-| `PackageLotItem` | Lot-item quantity inside a package | Joins `Package` and `LotItem`; has many `PackageAllocation` | This is the package-line scope |
-| `PackageAllocation` | Quantity bridge from `CartItemLotItem` to `PackageLotItem` | Joins customer-line allocation to packaged quantity | Second conservation checkpoint |
-| `Shipment` | Movement record | Optional `CarrierOrder`; has many `Package` | Supports both internal transfer and end-user delivery |
+| `Package` | Physical package | Optional `Shipment`; has many `PackageLotItem`; carries `leg` (`inbound \| outbound`) | Always represents a real physical bundle (ADR 0004); granularity is an operational choice with a consolidated default |
+| `PackageLotItem` | Lot-item quantity inside a package | Joins `Package` and `LotItem`; has many `PackageAllocation` | The package-line scope; unique on `(packageId, lotItemId)` |
+| `PackageAllocation` | Packaged allocation | Joins `CartItemLotItem` and `PackageLotItem` with quantity | Second conservation checkpoint, checked **per leg** (ADR 0004) |
+| `Shipment` | Movement record | Optional `CarrierOrder`; has many `Package`; carries `type` and `deliveryMode` | `deliveryMode` (`homeDelivery \| pickupPoint`) is only meaningful on `endUserDelivery`; depot pickup is deliberately the absence of a shipment |
 | `Carrier` | Carrier master data | Has many `CarrierOrder` | JSON address/contact remain flexible for now |
-| `CarrierOrder` | Outbound carrier request | Belongs to `Carrier`; has many `Shipment` | Carrier-side aggregate state, not shipment-line truth |
+| `CarrierOrder` | Carrier booking | Belongs to `Carrier`; has many `Shipment`; soft-delete flag `deleted` | Records the contracting, never the goods; publishes no fulfillment fact of its own |
 
-### Tracking, audit, and channels
+### Tracking, audit, events, and channels
 
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
-| `CartItemTrackingEvent` | Fulfillment lineage event | Must belong to `CartItem`; may point to actor, operation, lot item lineage, package, shipment, or roll over | Canonical event stream for cart-item fulfillment traceability |
+| `DomainEventOutbox` | Durable domain event log | Standalone (`cuid` string PK) | The transactional outbox behind all tracking writes; unique `eventKey`, status `pending \| processing \| processed \| failed` |
+| `CartItemTrackingEvent` | Fulfillment history event | Must belong to `CartItem`; may point to actor, operation, lot lineage, package, shipment, or roll over | Canonical event stream; runtime writes only through `TrackingEventService`; unique nullable `eventKey` |
 | `AuditLog` | Generic audit trail | Optional relation to `User`; generic entity references | Records actor and before/after context beyond fulfillment events |
-| `Channel` | Communication or outbound integration channel | Standalone today | Present in schema but not yet part of the modeled primary fulfillment path |
+| `Channel` | Communication or outbound integration channel | Standalone | Present in schema but not part of the modeled fulfillment path |
 
 ### Relationship chain that matters most
 
@@ -192,7 +212,7 @@ Supporting relationships that shape behavior around that chain are:
 - `LotItem -> ProductSupplierTerms -> Supplier`
 - `Lot -> SupplierOrder`
 - `Shipment -> CarrierOrder -> Carrier`
-- `CartItem -> RollOver`
+- `CartItem -> RollOver` (and `RollOver -> rebatchedIntoOperation`)
 - `CartItem -> CartItemTrackingEvent`
 - `UserOrder -> UserTransaction -> PaymentMethod`
 
@@ -200,806 +220,416 @@ Supporting relationships that shape behavior around that chain are:
 
 ### Status layers
 
-| Enum | Scope | Purpose | Aggregate or detailed | Primary owner |
+| Enum | Scope | Purpose | Aggregate or detailed | Owner (as implemented) |
 | --- | --- | --- | --- | --- |
-| `CartStatus` | Cart | Request lifecycle from drafting through checkout submission | Aggregate commercial/request summary | Checkout application layer |
-| `CartItemStatus` | Cart item | Whether the request line is still mutable, submitted, dropped, or cancelled | Detailed request state | Cart and checkout application layer |
-| `CartItemFulfillmentStatus` | Cart item | User/admin-facing fulfillment summary after submission | Aggregate fulfillment summary | Fulfillment orchestration layer |
-| `UserOrderStatus` | User order | Commercial summary across payment and fulfillment, including chargebacks | Aggregate commercial summary | Order orchestration layer |
-| `UserTransactionStatus` | User payment | Payment processing lifecycle | Detailed payment state | Payments integration layer |
-| `LotStatus` | Lot | Aggregate sourcing progress for a supplier-scoped lot | Aggregate operational summary | Sourcing orchestration layer |
-| `LotItemStatus` | Lot item | Supplier-facing line progress | Detailed operational state | Sourcing orchestration layer |
-| `SupplierOrderStatus` | Supplier order | Aggregate outbound supplier-order state | Aggregate operational summary | Supplier integration layer |
-| `SupplierTransactionStatus` | Supplier payment | Supplier payment lifecycle | Detailed finance state | Finance integration layer |
-| `PackageStatus` | Package | Aggregate packaging and package movement state | Aggregate operational summary | Packaging/logistics layer |
-| `PackageLotItemStatus` | Package lot item | Line-level packaging and receipt state | Detailed operational state | Packaging layer |
-| `ShipmentStatus` | Shipment | Shipment preparation and movement state | Aggregate operational summary | Logistics layer |
-| `CarrierOrderStatus` | Carrier order | Aggregate outbound carrier request state | Aggregate operational summary | Carrier integration layer |
-| `RollOverStage` | Roll over | Whether loss occurred before or after supplier-facing allocation | Classification value | Fulfillment orchestration layer |
-| `RollOverStatus` | Roll over | Lifecycle of the roll over record itself | Detailed remediation state | Rebatching/resolution layer |
+| `CartStatus` | Cart | Request lifecycle from drafting through checkout submission | Aggregate request summary | Cart/checkout services (`src/server/services/{cart,checkout}/`) |
+| `CartItemStatus` | Cart item | Whether the request line is still mutable, submitted, dropped, or cancelled | Detailed request state | Cart/checkout services and admin operations cart |
+| `CartItemFulfillmentStatus` | Cart item | User/admin-facing fulfillment summary after submission | Aggregate fulfillment summary | **Derived** by `TrackingStatusProjector` from live lineage (ADR 0002); creation paths seed `awaitingAggregation` only |
+| `UserOrderStatus` | User order | Commercial summary across payment and fulfillment | Aggregate commercial summary | Co-owned: payment services write payment outcomes; `UserOrderClosureProjector` derives `completed`/`cancelled` only from `processing` (ADR 0002) |
+| `UserTransactionStatus` | User payment | Payment processing lifecycle | Detailed payment state | Mercado Pago reconciliation (ADR 0001) |
+| `PaymentProviderEventStatus` | Provider webhook | Ingestion lifecycle of an inbound provider notification | Detailed integration state | Payment webhook/reconciliation services |
+| `OperationStatus` | Operation | Execution lifecycle of an aggregation batch: `draft \| running \| completed \| failed \| cancelled` | Technical execution state, not business outcome | Operation service; `draft` per ADR 0006, `cancelled` = compensated |
+| `LotStatus` | Lot | Aggregate sourcing progress for a supplier-scoped lot | Aggregate operational summary | Cascaded from supplier-order and packaging commands; never edited directly (ADR 0003) |
+| `LotItemStatus` | Lot item | Supplier-facing line progress | Detailed operational state | Cascaded from supplier-order and packaging commands (ADR 0003) |
+| `SupplierOrderStatus` | Supplier order | Outbound supplier-order state | Aggregate operational summary | `supplier-order.service.ts` commands via the shared ladder |
+| `SupplierTransactionStatus` | Supplier payment | Supplier payment lifecycle | Detailed finance state | Finance layer (not yet commanded) |
+| `PackageStatus` | Package | Package state across both legs | Aggregate operational summary | `package.service.ts` and shipment cascades via the shared ladder |
+| `PackageLotItemStatus` | Package lot item | Line-level packaging and receipt state | Detailed operational state | Packaging/shipment commands |
+| `ShipmentStatus` | Shipment | Shipment preparation and movement state | Aggregate operational summary | `shipment.service.ts` commands via the shared ladder |
+| `CarrierOrderStatus` | Carrier order | Carrier booking state | Aggregate booking state | `carrier-order.service.ts` guarded ladder; nothing derives from it |
+| `RollOverStage` | Roll over | Whether loss occurred before or after supplier-facing allocation | Classification value | Set at creation, immutable |
+| `RollOverStatus` | Roll over | Lifecycle of the roll over record: `open \| rebatched \| resolved \| cancelled` | Detailed remediation state | Execution (`rebatched`), admin resolve, cascade cancellation (ADR 0005) |
+| `PackageLeg` | Package | Direction of physical travel: `inbound \| outbound` | Classification value | Set at creation; flipped only by promotion (ADR 0004) |
+| `DeliveryMode` | Shipment | `homeDelivery \| pickupPoint`; null on internal transfers | Classification value | Set at end-user shipment creation; depot pickup is deliberately not a value |
+| `DomainEventOutboxStatus` | Outbox row | Dispatch lifecycle of a durable domain event | Infrastructure state | `DomainEventDispatcher` |
 
-### Aggregate status clarification
+### Legal transitions live in one shared module
 
-Aggregate statuses are summaries. They should never be the only evidence that an operational step happened.
+The schema stores state; the legal moves live in `src/shared/common/fulfillment-transitions.ts` as declarative ladders (`supplierOrderTransitions`, `lotTransitions`, `lotItemTransitions`, `packageTransitions`, `shipmentTransitions`, `carrierOrderTransitions`), aggregate↔lines compatibility tables, and per-entity `availableActions` matrices. The same data is consumed by:
 
-Required rule:
+- **services** — every status command guards with `isLegalTransition` before mutating
+- **diagnostics** — the six `calculate*Diagnostics` modules monitor aggregate-vs-lines compatibility and conservation
+- **UI** — list/detail responses carry server-computed `availableActions` (every command key on every call, disabled entries with a Spanish reason); the client renders them and re-derives nothing
 
-- an aggregate status change must be backed by the detailed records that justify it
+### Status values no runtime command produces
 
-Examples:
+Eight enum values are modelled but never written by any command; they exist as schema defaults or declared ladder entries only. Do not build fixtures or logic that depend on them being reachable:
 
-- `CartItemFulfillmentStatus.requestedFromSupplier` must correspond to lot and supplier-order state that shows supplier request creation
-- `CartItemFulfillmentStatus.packaged` must correspond to package allocations and package-line/package status reaching the packaging threshold
-- `CartItemFulfillmentStatus.inEndUserShipment` must correspond to an end-user `Shipment` in transit
-- `UserOrderStatus.completed` must correspond to all included request lines reaching successful terminal fulfillment and no unresolved commercial failure
-- `PackageStatus.received` must correspond to package-line or shipment evidence that the package reached destination
+- `LotStatus.pending` — execution creates lots at `assembling`
+- `PackageStatus.pending`, `PackageStatus.packing` — every package factory starts at `readyForShipment`
+- `PackageLotItemStatus.pending`, `PackageLotItemStatus.packing` — package lines start at `packed`
+- `ShipmentStatus.pending`, `ShipmentStatus.preparing` — every shipment starts at `readyForDispatch`
+- `ShipmentStatus.cancelled` — there is no `shipment.cancel` command
+
+Note the schema `@default` values (`Package.status = pending`, `Shipment.status = pending`, `Lot.status = pending`, `Operation.status = running`) are **not** what runtime code writes — commands always pass their creation status explicitly.
 
 ### Aggregate status source-of-truth rules
 
+Aggregate statuses are summaries. They are never the only evidence that an operational step happened: an aggregate status change must be backed by the detailed records that justify it, and for `CartItem.fulfillmentStatus` that backing is structural — the projector recomputes it from the records on every projection (ADR 0002).
+
 #### `CartItemFulfillmentStatus`
 
-This is the primary user/admin summary for one requested line after submission.
+The primary user/admin summary for one requested line after submission. Written only by:
 
-- `awaitingAggregation`: the item is submitted and not yet materially placed into an active sourcing path
-- `includedInOperation`: the item has been assigned to an `Operation`, but the surviving quantity is not yet fully represented by `CartItemLotItem`
-- `allocatedToSupplierItem`: the surviving quantity is allocated to one or more `LotItem` rows through `CartItemLotItem`
-- `requestedFromSupplier`: the corresponding lot/supplier order has been sent to the supplier
-- `supplierConfirmed`: the supplier-confirmed sourcing state exists for the corresponding lot items
-- `packaged`: the surviving quantity has been packaged sufficiently to leave sourcing and enter logistics
-- `inInternalShipment`: quantity is in a shipment whose `type = internalTransfer` and whose state is in movement
-- `atWarehouse`: internal transfer is received, and quantity is waiting for end-user shipment or local handoff
-- `inEndUserShipment`: quantity is in a shipment whose `type = endUserDelivery` and whose state is in movement
-- `delivered`: all surviving quantity for the item has reached successful customer delivery
-- `partiallyRolledOver`: some quantity is still progressing, but some quantity has an open or resolved roll over path that prevented full same-operation fulfillment
-- `rolledOver`: no quantity remains in the current successful path; the request continues only through roll over handling or later rebatched work
-- `cancelled`: the customer request line was cancelled after submission or forcibly stopped
-- `exception`: the item is blocked by an unresolved operational issue that should be visible to operators and possibly end users
+- creation/submission seeds (`awaitingAggregation`): cart item creation, checkout submission, payment reconciliation
+- `TrackingStatusProjector` for everything else, deriving from the live lineage snapshot
 
-Required rule:
+Derivation precedence (full detail in `docs/tracking-architecture.md`):
 
-- `CartItemFulfillmentStatus` must be updated only by orchestration code that also writes the detailed records and tracking event causing that summary to change
+1. cart item deleted or `status = cancelled` → `cancelled`
+2. live packaged allocation whose package **or** shipment is `delayed`/`failed` → `exception`
+3. nothing live, no open roll over, ≥1 resolved roll over → `cancelled` (resolving is terminal, ADR 0005)
+4. open roll over quantity with no live allocation → `rolledOver`; with live progress below `packaged` → `partiallyRolledOver`
+5. otherwise the furthest stage backed by a record: `delivered` ← `inEndUserShipment` ← `atWarehouse` ← `inInternalShipment` ← `packaged` ← `supplierConfirmed` ← `requestedFromSupplier` ← `allocatedToSupplierItem` ← `includedInOperation` ← `awaitingAggregation`
+
+Value semantics:
+
+- `awaitingAggregation`: submitted and not yet materially placed into an active sourcing path (also the floor a fully compensated item returns to)
+- `includedInOperation`: assigned to an `Operation`, surviving quantity not yet fully represented by `CartItemLotItem`
+- `allocatedToSupplierItem`: surviving quantity allocated to lot items through `CartItemLotItem`
+- `requestedFromSupplier`: the corresponding supplier order was requested
+- `supplierConfirmed`: supplier-confirmed sourcing state exists for the corresponding lot items
+- `packaged`: surviving quantity covered by live inbound package allocations, before the shipment departs
+- `inInternalShipment`: quantity moving on an `internalTransfer` shipment
+- `atWarehouse`: internal transfer received, or outbound package exists but has not departed
+- `inEndUserShipment`: quantity moving on an `endUserDelivery` shipment — including a pickup-point shipment that already arrived but whose package was not collected yet
+- `delivered`: the **package's own** `received` status records the handover (a pickup-point shipment arriving does not deliver its packages)
+- `partiallyRolledOver` / `rolledOver`: open roll over overlay as above; from `packaged` onward the stage ladder outranks an open roll over, which surfaces as a journey notice and a diagnostic instead
+- `cancelled`: demand cancelled, or terminally resolved without delivery
+- `exception`: live delayed/failed package or shipment touching live quantity; clears by derivation when records recover
 
 #### `UserOrderStatus`
 
-`UserOrderStatus` is a commercial summary, not a fulfillment machine.
+A commercial summary co-owned by two writers:
 
-- `pending`: the order exists but active processing has not yet started
-- `processing`: payment and/or fulfillment is underway
-- `completed`: the order is commercially closed and every included line is in a successful terminal outcome
-- `cancelled`: the order was cancelled before successful completion
-- `failed`: the order failed because commercial or orchestration prerequisites were not satisfied
-- `refunded`: money was refunded after a prior commercial attempt
-- `chargedBack`: a previously completed payment was disputed or externally reversed by the provider
+- the payment domain (checkout, Mercado Pago reconciliation) writes `pending`, `processing`, `failed`, `refunded`, `chargedBack`
+- `UserOrderClosureProjector` derives closure **only from `processing`**: all items terminal (`delivered`/`cancelled`) ∧ ≥1 delivered → `completed`; all cancelled → `cancelled`; anything else → no write. `rolledOver` is deliberately not terminal
 
-Required rule:
+The `processing`-only gate is enforced in the pure rule and in the SQL `where`, so the roll-up is structurally unable to downgrade a payment outcome.
 
-- `UserOrderStatus` should be derived from customer payment state and included item fulfillment outcomes, not used as a substitute for item-level operational tracking
+#### `PackageStatus` and `ShipmentStatus`
 
-#### `PackageStatus`
-
-`PackageStatus` is aggregate package state.
-
-- It summarizes `PackageLotItemStatus` plus shipment assignment and movement
-- It must not replace package-line truth
-- It should not advance to transit or receipt without matching shipment evidence when the package is actually attached to a shipment
+Aggregate movement state, commanded through the shared ladders. They must not contradict their lines: the compatibility tables in `fulfillment-transitions.ts` define which line statuses each aggregate status tolerates, and diagnostics report violations. A delivered `pickupPoint` shipment legitimately holds `inTransit` packages until each customer collects — that shape is exempted from the received-row diagnostics and reported as `shipment.pickupPoint.pendingCollection` instead.
 
 #### `SupplierOrderStatus` and `CarrierOrderStatus`
 
-These represent external aggregate request state.
+External aggregate request state.
 
-- They summarize the outbound request lifecycle for the supplier or carrier integration
+- They summarize the outbound request lifecycle for the supplier or carrier relationship
 - They do not replace `LotItemStatus` or `ShipmentStatus`
 - A confirmed supplier order does not mean every lot item is complete
-- A confirmed or in-transit carrier order does not mean every shipment is delivered
+- A carrier order records the contracting only; no customer-facing state derives from it, which is why its rules are warnings and it publishes no domain events
 
 ## Primary End-to-End Flow
 
-The primary path below assumes the common successful case:
-
-- the user selects valid sell terms
-- the item is submitted
-- demand is aggregated successfully
-- the supplier confirms
-- quantity is packaged and shipped
-- final delivery succeeds
+The primary path below is the common successful case, as implemented. Every step names its commands; guards and quantity semantics are detailed in `docs/fulfillment-reference.md`.
 
 ### 1. Catalog selection and request eligibility
 
-Records in play:
+Records in play: `Product`, `ProductClientTerms`, `ProductSupplierTerms`, `ProductLocalConstraints`, `Supplier`.
 
-- `Product`
-- `ProductClientTerms`
-- `ProductSupplierTerms`
-- `ProductLocalConstraints`
-- `Supplier`
+App behavior (`src/server/services/catalog/`):
 
-Expected status context:
-
-- no cart or order status is required yet
-- only active, non-deleted, time-valid terms and constraints are eligible
-
-App actions:
-
-- resolve the active `ProductClientTerms` for the customer context
+- resolve the active `ProductClientTerms` for the customer context (active, non-deleted, time-valid)
 - evaluate `ProductLocalConstraints` against destination, timing, quantity, and legal context
-- reject products that are inactive, deleted, out of term range, or blocked by local constraints
 - calculate display price and allowed quantity increments from MOQ, step, max, and currency
 
 Clarifications:
 
-- `defaultSupplierId` on `Product` is only a default hint
-- actual sourcing may still choose another supplier through `ProductSupplierTerms`
-- overlapping active terms are allowed structurally but should be treated as an application error unless explicitly supported
+- `defaultSupplierId` on `Product` is only a hint; sourcing chooses through `ProductSupplierTerms`
+- overlapping active terms are structurally possible and treated as an application error
 
 ### 2. Cart creation and cart-item mutation
 
-Records created or updated:
+Records: `Cart`, `CartItem` (`src/server/services/cart/`).
 
-- `Cart`
-- `CartItem`
-
-Expected status changes:
-
-- `Cart.status = draft` while the request is being assembled without a durable checkout flow
-- `Cart.status = pending` once associated with the user and ready for active review/editing
-- `CartItem.status = inCart`
-- `CartItem.fulfillmentStatus = awaitingAggregation` by default, but it is not operationally meaningful until submission
-
-App actions:
-
-- create or select the active mutable cart for the user according to product policy
-- enforce quantity validity against client MOQ, step, and max
-- copy enough request-time data into `CartItem.productSnapshot` for display and later comparison
-- keep cart items mutable while still in request scope
-- write audit entries for meaningful cart mutations when needed
-
-Clarifications:
-
-- the schema does not enforce one active cart per user
-- the app must decide whether multiple draft or pending carts are allowed
-- `CartItem.fulfillmentStatus` should not be treated as fulfillment truth while `CartItem.status = inCart`
+- `Cart.status = draft` → `pending` once associated with the user and active
+- `CartItem.status = inCart`, `fulfillmentStatus = awaitingAggregation` (not operationally meaningful until submission)
+- quantity validity enforced against client MOQ, step, and max
+- `CartItem.productSnapshot` written at creation
 
 ### 3. Checkout start and order materialization
 
-Records created or updated:
+Records: `Cart`, `UserOrder`, `UserOrderItem`, `UserTransaction` (`src/server/services/checkout/`).
 
-- `Cart`
-- `UserOrder`
-- `UserOrderItem`
-- optional `UserTransaction`
+- `Cart.status` moves `pending → atCheckout`
+- checkout start creates `UserOrder(pending)` with billing/shipping/terms snapshots, `UserOrderItem` rows frozen from cart items, and the payment attempt
+- `confirmAndPay` creates the Mercado Pago Checkout Pro preference and redirects (ADR 0001)
 
-Expected status changes:
+### 4. Payment reconciliation gates fulfillment (ADR 0001)
 
-- `Cart.status` moves from `pending` to `atCheckout`
-- on successful submission, `Cart.status = submitted`
-- each included `CartItem.status = submitted`
-- `UserOrder.status = pending`
-- each `CartItem.fulfillmentStatus = awaitingAggregation`
+Records: `UserTransaction`, `UserOrder`, `PaymentProviderEvent`, `Cart`, `CartItem`.
 
-App actions:
+The final payment result is reconciled through signed webhooks followed by a Mercado Pago resource lookup — redirect query parameters are never payment truth. On approval, in one transaction:
 
-- validate the cart is still editable and internally consistent
-- resolve billing and shipping addresses and write order snapshots
-- freeze commercial terms into `UserOrderItem.productSnapshot` and `UserOrderItem.priceSnapshot`
-- create `UserOrderItem` rows from submitted `CartItem` rows
-- create initial `UserTransaction` rows if payment is initiated at checkout
-- write tracking events for submission and audit logs for checkout confirmation
+- `UserTransaction.status = completed`
+- `CartItem.status = submitted`, `fulfillmentStatus` seeded `awaitingAggregation`
+- `Cart.status = submitted`
+- `UserOrder.status = processing`
+- one `cart.item.submittedToOrder` domain event per cart item; `DomainEventDispatcher.wake()` after commit
 
-Clarifications:
+Payment-before-fulfillment is therefore explicit: demand only becomes aggregable once its submission events exist.
 
-- `UserOrderItem.sourceCartItemId` is required, so manual order lines are currently out of scope
-- the schema intentionally allows multiple `UserOrder` rows for one cart; the application should use that only for retries, recovery, or explicit multi-order policy
-- only one active commercial lineage from a cart should be treated as authoritative unless business policy explicitly says otherwise
+### 5. Aggregation: draft, review, execute (ADR 0006)
 
-### 4. Payment gating and move into processing
+Records: `Operation`, then on execution `Lot`, `LotItem`, `CartItemLotItem`, `RollOver`, `SupplierOrder`.
 
-Records created or updated:
+Commands (`admin.operation`):
 
-- `UserTransaction`
-- `UserOrder`
+- `createDraft` — creates `Operation(status = draft)` with its parameters (`from`/`to` window, `includeRollOver` defaulting `true` per ADR 0005, strategy, destination). Drafts materialize nothing and reserve no demand
+- `review` — recomputes the live demand the draft would batch (original demand plus open roll overs), applies the stored omissions, and returns rows, groups, totals, and the **fingerprint** of the effective set (sha256 over sorted `sourceKey:quantity` lines)
+- `updateDraft` — edits parameters and omissions; omissions are stored as source keys **and** user ids in `Operation.reviewState`, and pruned (with an explicit report) when the window changes
+- `execute {id, fingerprint}` — in one serializable transaction: recompute demand, apply omissions, **refuse with `CONFLICT` if the fingerprint no longer matches** (the draft survives untouched and the diff is handed back), otherwise materialize:
+  - `SupplierOrder(pending)` per supplier, `Lot(assembling)`, `LotItem(pending)` — one lot per supplier order in the executed shape
+  - `CartItemLotItem` allocations for assignable quantity
+  - `RollOver(preAllocation, open)` for demand that could not be assigned
+  - consumed open roll overs marked `rebatched` with the `rebatchedIntoOperationId` back-link
+  - live counters computed; `summary` frozen; `reviewState.approved` stamped
+  - events `operation.cartItem.included`, `operation.cartItem.allocatedToLotItem`, `rollover.preAllocation.created`; `wake()` after commit
 
-Expected status changes:
+Cart items derive `includedInOperation` → `allocatedToSupplierItem`. An omission writes nothing onto the demand — omitted quantity stays exactly where it was and re-enters the next aggregation (conservation holds without a compensating record).
 
-- `UserTransaction.status` moves through `pending`, `inProcess`, `completed`, `failed`, `cancelled`, `refunded`, or `chargedBack`
-- `UserOrder.status` typically moves from `pending` to `processing` once payment or fulfillment handling begins
+### 6. Supplier loop: request and confirmation (ADR 0003)
 
-App actions:
+Records: `SupplierOrder`, `Lot`, `LotItem`, `RollOver` (`admin.supplierOrder`).
 
-- decide whether fulfillment may begin before payment capture, after authorization, or only after completed payment
-- persist payment gateway references outside or alongside the schema as needed
-- promote the order into processing when commercial prerequisites are satisfied
-- hold, cancel, or fail the order if payment prerequisites are not met
+- `request` — `pending → requested` (+ `requestedAt`, optional `externalReference`), cascading lots `assembling → requested` and lot items `pending → requested`; requires every lot's operation `completed`. Items derive `requestedFromSupplier`
+- `confirm` — `requested → confirmed`, with per-line confirmed quantities covering **every** live line exactly once:
+  - full confirmation: statuses only
+  - partial: the cut is absorbed onto specific demand allocations, LIFO by payment date (manual overrides replace LIFO entirely); `LotItem.quantity` reduced; one `RollOver(postAllocation, open)` per reduction
+  - zero: line `cancelled`, full roll over, quantities kept as history
+  - operation live counters recomputed in-transaction; cut items derive `partiallyRolledOver`/`rolledOver`, surviving quantity `supplierConfirmed`
 
-Clarifications:
+### 7. Goods inbound: dispatch registration and receipt (ADR 0004)
 
-- the schema does not enforce payment-before-fulfillment
-- that gating rule must be explicit in the application layer and documented in payment orchestration code
+Records: `Shipment(internalTransfer)`, `Package(leg = inbound)`, `PackageLotItem`, `PackageAllocation`, `RollOver`.
 
-### 5. Aggregate submitted demand into operations and lots
+- `supplierOrder.registerDispatch` — from `confirmed` or `readyForReceipt` (partial dispatches are first-class): creates the internal shipment at `readyForDispatch` and one consolidated inbound package at `readyForShipment`, with lines at `packed` and FIFO-by-payment-date packaged coverage. Items derive `packaged`. Registration and departure are deliberately two steps
+- `shipment.dispatch` — `readyForDispatch → inTransit`, packages → `inTransit`, lines → `shipped`; items derive `inInternalShipment`
+- `shipment.receive` — records actual per-line quantities:
+  - full: statuses to `received`
+  - shortfall (receipt discrepancy): four reductions (`PackageAllocation → CartItemLotItem → PackageLotItem → LotItem`) plus a `RollOver(postAllocation)` per cut, mandatory reason
+  - a supplier order closes (→ `completed`, lots/lot items → `readyForPackaging`) when nothing is outstanding and every live inbound line sits on a received package; `final: true` abandons a remainder explicitly
+  - items derive `atWarehouse`
 
-Records created or updated:
+### 8. Outbound packaging: fractionation (ADR 0004)
 
-- `Operation`
-- `Lot`
-- `LotItem`
-- `CartItemLotItem`
-- `CartItemTrackingEvent`
+Records: `Package(leg = outbound)`, `PackageLotItem`, `PackageAllocation` (`admin.package`).
 
-Expected status changes:
+- `fractionate` — over a selection of received inbound packages, creates one outbound package per customer (`readyForShipment`), partial and incremental; sources are never mutated — they stay `received` as arrival history. Conservation is per leg: outbound allocations may never exceed received inbound coverage of the same demand
+- `promote` — a mono-customer inbound package flips leg and resets `received → readyForShipment`, preserving physical identity
+- `split` — re-groups quantity across sibling packages so records match real bundles; moves quantity, never loses it
+- lot roll-up: lot items and lots reach `completed` when every demand allocation is fully fractionated
+- items still derive `atWarehouse` — nothing is delivered before it leaves
 
-- `CartItem.fulfillmentStatus` moves from `awaitingAggregation` to `includedInOperation` and then `allocatedToSupplierItem`
-- `Lot.status` moves from `pending` to `assembling`
-- `LotItem.status = pending`
+### 9. Delivery: three modes
 
-App actions:
+Records: `Shipment(endUserDelivery, deliveryMode)`, `Package`, `CarrierOrder` optionally (`admin.shipment`, `admin.package`).
 
-- select or create an `Operation` for the submitted demand
-- group demand into supplier-scoped `Lot` records
-- choose `ProductSupplierTerms` based on supplier strategy, MOQ, locality, and availability
-- create `LotItem` rows for supplier-facing request lines
-- allocate `CartItem` quantity into `CartItemLotItem` rows
-- write tracking events for inclusion and allocation
+- **Home delivery** — `shipment.createEndUser({deliveryMode: homeDelivery})` claims outbound packages (exactly one customer per shipment); `dispatch` → items derive `inEndUserShipment`; `deliver` cascades shipment, packages, and lines to `received` → `delivered`
+- **Pickup point** — same construction with `pickupPoint`, multi-customer allowed; `deliver` marks **only the shipment** `received` (arrival is not a handover — packages stay `inTransit`, items stay `inEndUserShipment` with a "Disponible para retirar" notice) and each customer's `package.confirmDelivery` produces `delivered`
+- **Depot pickup** — no shipment at all (that absence *is* the mode): `package.confirmDelivery` on the never-shipped outbound package moves `readyForShipment → received` → `delivered`
 
-Clarifications:
+Delivery confirmation is per package: automatic only for home delivery, explicit for the other two modes.
 
-- allocation policy is not in the schema
-- the app must decide whether to append to an existing open lot or create a new lot
-- quantity may be split across multiple lot items if business rules allow it
+### 10. Commercial closure (ADR 0002)
 
-### 6. Request the supplier and capture supplier confirmation
-
-Records created or updated:
-
-- `SupplierOrder`
-- `Lot`
-- `LotItem`
-- `CartItemTrackingEvent`
-- optional `SupplierTransaction`
-
-Expected status changes:
-
-- `SupplierOrder.status` moves from `pending` to `requested`, then `confirmed`
-- `Lot.status` moves from `assembling` to `requested`, then `confirmed`
-- `LotItem.status` moves from `pending` to `requested`, then `confirmed`
-- `CartItem.fulfillmentStatus` moves from `allocatedToSupplierItem` to `requestedFromSupplier`, then `supplierConfirmed`
-
-App actions:
-
-- create or update the supplier order that owns the lot set
-- send the outbound supplier request and persist `externalReference` if applicable
-- reconcile supplier responses at lot and lot-item granularity
-- create supplier payment records if the commercial model requires them
-- write tracking events for supplier request and confirmation
-
-Clarifications:
-
-- `SupplierOrderStatus` is not fine-grained enough to replace `LotItemStatus`
-- partial supplier confirmation must be handled at lot-item or allocation scope and reflected back into cart-item summaries
-
-### 7. Package confirmed quantity
-
-Records created or updated:
-
-- `Package`
-- `PackageLotItem`
-- `PackageAllocation`
-- `CartItemTrackingEvent`
-
-Expected status changes:
-
-- `Lot.status` and `LotItem.status` eventually reach `readyForPackaging`
-- `Package.status` moves from `pending` to `packing` and later `readyForShipment`
-- `PackageLotItem.status` moves from `pending` to `packing` to `packed`
-- `CartItem.fulfillmentStatus = packaged` once the surviving quantity is sufficiently packaged for shipment
-
-App actions:
-
-- create packages for confirmed lot-item quantity
-- split or consolidate `LotItem` quantity into `PackageLotItem` rows
-- bridge customer demand to packaged quantity through `PackageAllocation`
-- enforce that packaging does not create or destroy quantity
-- write tracking events when packaging becomes operationally meaningful
-
-Clarifications:
-
-- `Package.status` is aggregate
-- package-line truth lives on `PackageLotItem.status`
-- full traceability from customer request to package requires both `CartItemLotItem` and `PackageAllocation`
-
-### 8. Dispatch internal transfer when required
-
-Records created or updated:
-
-- `Shipment`
-- `Package`
-- `CarrierOrder` when a carrier is involved
-- `CartItemTrackingEvent`
-
-Expected status changes:
-
-- `Shipment.type = internalTransfer`
-- `Shipment.status` moves from `pending` to `preparing`, then `readyForDispatch`, then `inTransit`, then `received`
-- `Package.status` moves into shipment-related states
-- `CartItem.fulfillmentStatus` moves to `inInternalShipment`, then `atWarehouse`
-
-App actions:
-
-- decide whether internal transfer is required from constraints, packaging policy, or network topology
-- create the internal-transfer shipment and assign packages
-- create carrier order records if an external carrier handles the internal movement
-- write shipment snapshots for destination/contact context where appropriate
-- mark warehouse receipt before moving to end-user dispatch
-
-Clarifications:
-
-- `Destination` on `LotItem` is the operational internal destination
-- `Shipment.destinationAddressSnapshot` is the shipment-time location snapshot
-- not every flow requires this phase
-
-### 9. Dispatch end-user shipment
-
-Records created or updated:
-
-- `Shipment`
-- `CarrierOrder`
-- `Package`
-- `CartItemTrackingEvent`
-
-Expected status changes:
-
-- `Shipment.type = endUserDelivery`
-- `Shipment.status` moves from `pending` to `preparing`, `readyForDispatch`, `inTransit`, and `received`
-- `Package.status` moves from `readyForShipment` to `inTransit`, then `received`
-- `PackageLotItem.status` moves from `packed` to `shipped`, then `received`
-- `CartItem.fulfillmentStatus = inEndUserShipment`
-
-App actions:
-
-- create the final-mile shipment using order or handoff snapshots
-- assign packages to the shipment
-- create or update the carrier order and external references
-- consume external carrier updates without losing local state traceability
-- write shipment and delivery tracking events
-
-Clarifications:
-
-- a carrier order is an external request aggregate, not the shipment itself
-- multiple shipments may exist for one order or one cart lineage if the app permits splits
-
-### 10. Delivery completion and commercial closure
-
-Records created or updated:
-
-- `Shipment`
-- `Package`
-- `PackageLotItem`
-- `CartItem`
-- `UserOrder`
-- `CartItemTrackingEvent`
-- `AuditLog`
-
-Expected status changes:
-
-- `Shipment.status = received`
-- `Package.status = received`
-- `PackageLotItem.status = received`
-- `CartItem.fulfillmentStatus = delivered` when all surviving quantity is delivered
-- `UserOrder.status = completed` when all included lines are successfully closed and no unresolved commercial issue remains
-
-App actions:
-
-- confirm delivery at shipment, package, and item-summary layers
-- write final tracking events for delivery
-- derive order completion from included items and commercial reconciliation state
-- write audit entries for final completion or notable exceptions
-
-Clarifications:
-
-- `UserOrder.status = completed` is a commercial close state, not a detailed proof of fulfillment
-- item and shipment lineage remain the operational source of truth even after order completion
+After every projection, `UserOrderClosureProjector` re-derives closure per affected order: all items terminal ∧ ≥1 delivered → `completed`; all cancelled → `cancelled`; otherwise no write, and only ever from `processing`. Item and shipment lineage remain the operational source of truth after closure.
 
 ## Normal Alternate Flows
 
-### Cart is abandoned before checkout
+### Cart is abandoned or cancelled before submission
 
-Typical status changes:
+- `Cart.status = abandoned` (inactivity) or `cancelled`/`aborted`; items not submitted become `dropped`
+- no `UserOrder` processing continues; payment intents are not reconciled into submission
 
-- `Cart.status = abandoned`
-- `CartItem.status` usually remains `inCart` until cleanup policy removes or archives it
+### Payment fails, is refunded, or charged back
 
-App actions:
+- `UserTransaction.status = failed | refunded | chargedBack`, mirrored on `UserOrder` by the payment services
+- fulfillment never starts for unpaid demand (step 4 gates it); post-fulfillment refund/chargeback is a commercial state change that preserves fulfillment history
+- the closure projector cannot touch these outcomes — its source set is `processing` only
 
-- detect inactivity according to product policy
-- stop treating the cart as the active mutable cart
-- decide whether cart items remain visible, restorable, or archived
+### Supplier cuts or cancels demand (post-allocation roll over)
 
-### Cart or checkout is cancelled before submission
+- `supplierOrder.confirm` with partial/zero lines, `cancel`, or `cancelLine` (both refuse once live inbound packaged quantity exists — write-off is the way out)
+- every cut is a `RollOver(postAllocation, open)` with a mandatory reason; affected items derive `partiallyRolledOver`, `rolledOver`, or keep progressing on the surviving quantity
+- open roll overs re-enter the next aggregation by default (`includeRollOver: true`, ADR 0005)
 
-Typical status changes:
+### Receipt discrepancy
 
-- `Cart.status = cancelled` or `aborted`
-- affected `CartItem.status = dropped` if they never became submitted request lines
+- `shipment.receive` with received < declared: the shortfall is absorbed onto specific demand allocations and becomes a post-allocation roll over — never a silent delta
 
-App actions:
+### Disruption, retry, write-off, recovery
 
-- prevent `UserOrder` creation if submission did not happen
-- release any temporary checkout reservations or payment intents
-- write audit entries when cancellation is actor-driven or system-forced
+- `markDelayed`/`markFailed` exist at both shipment and package level; affected items derive `exception`
+- a failed shipment's follow-up is `retry` (packages reassigned to a new shipment, identity preserved) or `package.writeOff` (the four reductions + roll over; a fully written-off package becomes `cancelled`)
+- a delayed package that turns up is `package.recover` — the target is derived from the record (not departed → `readyForShipment`; travelling → `inTransit`); refused while the shipment itself is disrupted
+- exceptions are a derived condition, not a table: derivation clears them when the records recover
 
-### Payment fails before fulfillment starts
+### Roll over resolution
 
-Typical status changes:
+- `rollOver.resolve` (mandatory reason) settles an open roll over outside re-aggregation: terminal, moves no money (ADR 0005)
+- an item left with nothing live, no open roll over, and a resolved one derives `cancelled` ("Resuelto sin entrega"), which lets its order close
 
-- `UserTransaction.status = failed`
-- `UserOrder.status = failed` or remains `pending` if retry is allowed before failure is finalized
-- `Cart.status` may remain `submitted` if the app supports retry against the same request lineage
+### Operation compensation and re-run
 
-App actions:
-
-- decide whether the order may be retried, replaced, or cancelled
-- prevent operational sourcing from starting if payment is a hard prerequisite
-- ensure any retry does not duplicate `UserOrderItem` or fulfillment state accidentally
-
-### Payment fails after some fulfillment work exists
-
-Typical status changes:
-
-- `UserTransaction.status = failed`
-- `UserOrder.status = failed` or `cancelled` depending on business policy
-- related `CartItem.fulfillmentStatus` may move to `cancelled` or `exception` depending on whether rollback is still possible
-
-App actions:
-
-- decide whether to halt future fulfillment only, or unwind active sourcing and logistics
-- create audit records for the failure and operator decision
-- if a refund or reversal is required later, create the corresponding financial state change rather than overwriting history
-
-### Supplier rejects or cancels demand before packaging
-
-Typical status changes:
-
-- affected `LotItem.status = cancelled` or remains unresolved until reassigned
-- `Lot.status` may remain active if other lines continue, or become `cancelled` if the whole lot is lost
-- `CartItem.fulfillmentStatus` becomes `exception`, `partiallyRolledOver`, or `rolledOver` depending on remaining quantity
-
-App actions:
-
-- create `RollOver` records for lost quantity where the demand should continue later
-- optionally create replacement lot allocation under a new or existing operation
-- write tracking events that distinguish rejection from rebatched continuation
-
-### Pre-allocation roll over
-
-Definition:
-
-- quantity drops out before it is allocated into `CartItemLotItem`
-
-Typical status changes:
-
-- create `RollOver(stage = preAllocation)`
-- `RollOver.status = open`
-- `CartItem.fulfillmentStatus = partiallyRolledOver` or `rolledOver`
-
-App actions:
-
-- record the dropped quantity explicitly
-- keep remaining quantity in the current aggregation flow if only partial loss occurred
-- rebatch or resolve the roll over through dedicated orchestration, not silent quantity mutation
-
-### Post-allocation roll over
-
-Definition:
-
-- quantity drops out after it was already represented in supplier-facing allocation
-
-Typical status changes:
-
-- create `RollOver(stage = postAllocation)`
-- reduce or cancel the affected allocation path according to app logic
-- move the cart-item summary into `partiallyRolledOver`, `rolledOver`, or `exception`
-
-App actions:
-
-- preserve the original allocation history
-- create new replacement allocations if rebatched
-- avoid mutating old tracking lineage in place without a compensating event
+- `operation.cancel` exists only inside the **administrative window** (every live supplier order still `pending`). Compensation is status-only, nothing is deleted: lot items/lots/supplier orders → `cancelled`, own open roll overs → `cancelled`, consumed roll overs revert `rebatched → open` via the back-link, counters recomputed, one `operation.cartItem.excluded` per item carrying the same quantity its inclusion carried. Demand re-enters aggregation exactly (ADR 0005)
+- `operation.rerun` — one command, three paths by status: `failed` re-executes in place; `completed` compensates then creates and executes a new operation (same window rule); `cancelled` creates and executes only. Atomic: a failed re-run rolls back its compensation
+- `operation.remove` — hard delete for `failed` or `draft` operations with no children
 
 ### Partial fulfillment
 
-Typical status changes:
+- summary state is computed from quantity outcomes, not line existence: some quantity can be `delivered` while the cut remainder lives in an open or resolved roll over
+- from `packaged` onward the stage ladder outranks an open roll over, so a partially cut order can still reach `delivered` and close; the open roll over stays visible as a notice and a diagnostic
 
-- some quantity reaches `delivered`
-- some quantity remains in `partiallyRolledOver`, `exception`, or later rebatched processing
+### Direct delivery without warehouse stop
 
-App actions:
-
-- compute summary state from quantity outcomes, not line existence alone
-- keep quantity accounting explicit so operators can see how much was delivered versus deferred or lost
-- do not mark the whole order complete until business policy for partial completion is satisfied
-
-### Direct end-user delivery without warehouse stop
-
-Typical status changes:
-
-- no internal transfer shipment is created
-- `CartItem.fulfillmentStatus` moves from `packaged` directly to `inEndUserShipment`, then `delivered`
-
-App actions:
-
-- explicitly evaluate whether local constraints or operational policy require warehouse routing
-- create only the end-user shipment path when direct delivery is allowed
-
-### Shipment or package is delayed or fails
-
-Typical status changes:
-
-- `Package.status = delayed` or `failed`
-- `Shipment.status = delayed` or `failed`
-- `CartItem.fulfillmentStatus = exception` unless a more specific summary is immediately derivable
-
-App actions:
-
-- write tracking events for the disruption
-- decide whether to retry, replace, reroute, or roll over affected quantity
-- preserve the failed path as history; do not overwrite it as if it never existed
-
-### Refund after commercial failure or post-delivery issue
-
-Typical status changes:
-
-- `UserTransaction.status = refunded`
-- `UserOrder.status = refunded`
-
-App actions:
-
-- record the refund as a separate state transition
-- decide whether fulfillment history remains successful while the commercial result becomes refunded
-- write audit entries for the refund decision and actor
-
-### Chargeback after completed payment
-
-Typical status changes:
-
-- `UserTransaction.status = chargedBack`
-- `UserOrder.status = chargedBack`
-
-App actions:
-
-- preserve the original completed payment attempt and record the chargeback as a separate state transition
-- decide whether fulfillment continues, is halted, or requires an operator exception
-- write audit entries for the chargeback evidence and operator decision
-
-### Exception is resolved
-
-Typical status changes:
-
-- `CartItemTrackingEvent.eventType = exceptionResolved`
-- `CartItem.fulfillmentStatus` returns to the summary implied by current detailed records
-
-App actions:
-
-- resolve the underlying operational cause first
-- derive the new summary from actual lot, package, shipment, or rollover state
-- avoid treating `exceptionResolved` as an endpoint by itself
+The modeled flow always passes through the inbound leg (supplier dispatch → receipt → fractionation/promotion). Depot pickup and promotion cover the "supplier already packed per customer" case; a true supplier-to-customer drop shipment is not modeled.
 
 ## App-Layer Validation, Restrictions, and Required Invariants
 
-This section is normative. The database alone does not enforce these rules.
+This section is normative, and each rule now names its implementation. The database alone does not enforce these rules.
 
-### 1. Active and valid records must be filtered consistently
+### 1. Active and valid records are filtered consistently
 
-Required rules:
+- user-facing queries filter `deleted = true` and respect `active` flags
+- temporal term selection enforces `fromDate <= now` and `(toDate is null or toDate >= now)`
+- implemented by the shared helpers in `src/server/services/_base/terms-validity.ts` and the query builders per service
 
-- every user-facing product query must filter out `deleted = true` records
-- every operational selection of products, suppliers, carriers, brands, addresses, and terms must respect `active` flags where present
-- temporal term selection must enforce `fromDate <= now` and `(toDate is null or toDate >= now)`
-- overlapping active terms or constraints for the same scope must either be forbidden by application validation or resolved by explicit precedence rules
+### 2. Quantity validity is checked before persistence
 
-### 2. Quantity validity must be checked before persistence
+- sell-side MOQ/step/max from `ProductClientTerms` at cart time; buy-side rules from `ProductSupplierTerms` at aggregation time
+- decimal-safe helpers everywhere (`Prisma.Decimal`); zero or negative effective quantity is never persisted as live state (quantity-0 allocations survive only as absorbed history)
 
-Required rules:
+### 3. Quantity conservation holds across the whole lineage (ADR 0005)
 
-- requested quantity must satisfy sell-side MOQ, step, and max rules from `ProductClientTerms`
-- sourcing quantity must satisfy buy-side MOQ and supplier-term rules from `ProductSupplierTerms`
-- quantity comparisons and arithmetic must use decimal-safe helpers
-- zero or negative effective quantity must never be persisted in request, allocation, package, or roll-over rows unless a future schema change explicitly models that concept
+- surviving allocated quantity plus roll overs and terminal resolutions never exceeds the original request
+- packaged allocations never exceed their demand allocation, **checked per leg** (ADR 0004); outbound coverage never exceeds received inbound coverage
+- every compensation path is explicit rows and events, never silent mutation
+- implemented inside the transactional commands via the pure planners (`supplier-order-absorption.ts`, `package-allocation-planner.ts`, `packaged-shortfall.ts`, `package-fractionation.ts`, `operation-compensation.ts`); watched by the diagnostics modules; asserted end-to-end by `pnpm fulfillment:e2e` and `pnpm db:seed-verify`
 
-### 3. Quantity conservation must hold across the whole lineage
+### 4. Status transitions are guarded
 
-Required rules:
-
-- submitted `CartItem.quantity` is the starting requested quantity
-- the surviving quantity represented by `CartItemLotItem` plus resolved cancellations and roll overs must never exceed the original request quantity
-- the quantity represented by `PackageAllocation` must never exceed the quantity represented by its source `CartItemLotItem`
-- the quantity represented by `PackageLotItem` allocations must never exceed the lot-item quantity that actually exists for packaging
-- every compensation path must be explicit through new rows and events, not silent mutation that destroys historical traceability
-
-Recommended implementation stance:
-
-- enforce these checks inside transactional application services, not scattered controller code
-
-### 4. Status transitions must be guarded
-
-Required rules:
-
-- statuses may only move through allowed workflow transitions
-- terminal states must not become mutable again without an explicit compensating workflow
-- aggregate statuses must not advance unless the detailed records justifying them already exist in the same transaction or guaranteed follow-up unit of work
-- request-scope statuses and operational statuses must not be used interchangeably
-
-Minimum transition expectations:
-
-- `CartItem.status` should not move back from `submitted` to `inCart`
-- `Cart.status` should not move from `submitted` back to editable states without an explicit recovery workflow
-- `LotItem.status` should not reach `confirmed` unless the supplier-facing request exists
-- `PackageLotItem.status` should not reach `shipped` without package-to-shipment assignment
-- `CartItem.fulfillmentStatus = delivered` requires final shipment receipt evidence for the surviving quantity
+- statuses move only through the declarative ladders in `src/shared/common/fulfillment-transitions.ts`; terminal states do not become mutable again without an explicit compensating workflow
+- aggregate statuses never advance without the backing records in the same transaction — and `CartItem.fulfillmentStatus` cannot, because it is derived (ADR 0002)
+- `CartItem.status` never moves back from `submitted` to `inCart`; submitted carts do not silently become editable
 
 ### 5. Snapshots are mandatory at business boundaries
 
-Required rules:
+- checkout snapshots billing/shipping addresses and accepted terms into `UserOrder`; order items freeze product and price; cart items freeze request-time product data; shipments snapshot destination/contact
+- payment attempts persist gateway request/response snapshots (ADR 0001)
 
-- checkout must snapshot billing and shipping address data into `UserOrder`
-- order item creation must snapshot product and commercial pricing context into `UserOrderItem`
-- cart creation or update must write enough product information into `CartItem.productSnapshot` for later user-facing continuity
-- shipment creation must snapshot shipment destination/contact information if fulfillment depends on time-sensitive delivery context
+### 6. Deletion and mutability are controlled by the app
 
-### 6. Deletion and mutability must be controlled by the app
+- cancellation is a status change; records survive with their quantities as history
+- after submission the request row is immutable except through admin operations-cart commands, which publish compensating events
+- after supplier confirmation lot content changes only through explicit commands (cuts, discrepancies, write-offs) that mint roll overs
 
-Required rules:
+### 7. Payment and fulfillment gating is explicit
 
-- do not physically delete historical commercial or operational records to represent cancellation
-- use status changes, `active`, and `deleted` flags as the normal business-level visibility tools
-- after a cart item is submitted, the original request row should become immutable except for allowed orchestration fields and summary updates
-- after supplier confirmation, lot content should be treated as immutable except through explicit correction workflows
-
-### 7. Payment and fulfillment gating must be explicit
-
-Required rules:
-
-- define whether sourcing can start before customer payment is completed
-- define whether packaging can start before supplier confirmation is fully complete
-- define whether end-user shipment can start before supplier-side finance is reconciled
-- enforce those gates in orchestration services rather than assuming status coincidence will prevent invalid transitions
+- sourcing starts only after payment reconciliation submits the demand (step 4)
+- packaging starts only from `confirmed`/`readyForReceipt` supplier orders; requesting requires the operation `completed`
+- gates live in the command guards, not in status coincidence
 
 ### 8. Concurrency and idempotency are required concerns
 
-Required rules:
-
-- checkout submission must be protected against duplicate order creation
-- external callbacks from payment gateways, suppliers, and carriers must be idempotent
-- allocation and rebatching logic must handle concurrent workers without double-allocating quantity
-- only one authoritative workflow should advance the same aggregate status at a time
-
-Recommended implementation stance:
-
-- centralize status mutation in application services under `src/server/services/`
-- use transaction boundaries around allocation, packaging, and status derivation
+- the thirteen quantity-moving commands run through `runSerializable` (`admin/_base/serializable-transaction.ts`) — the only place `Serializable` isolation is requested — with a bounded retry on serialization failures (P2034 / SQLSTATE 40001); callbacks read their state inside the transaction so a retry re-plans
+- external callbacks (payment webhooks) are idempotent through `PaymentProviderEvent` and deterministic reconciliation
+- domain events and tracking rows are idempotent by deterministic `eventKey` at both layers
+- draft execution is safe under concurrency by fingerprint refusal, not by locks (ADR 0006)
+- the interactive-transaction timeout is raised in `src/server/db.ts` — the default 5s aborted real multi-round-trip commands against a remote database
 
 ### 9. Tracking and audit writes are not optional side effects
 
-Required rules:
-
-- every meaningful cart-item fulfillment transition must create a `CartItemTrackingEvent`
-- events must carry the actor source and actor reference where known
-- `AuditLog` should capture before/after or at least actor/entity context for material state changes, especially actor-driven overrides and exception handling
-- tracking and audit writes should happen in the same unit of work as the state transition when feasible
+- every meaningful fulfillment transition publishes domain events in the mutation's transaction; the tracking module derives history and status from them (`docs/tracking-architecture.md`)
+- every admin command writes an audit entry with effect summaries (`writeAdminAuditLog`)
+- the one deliberate exception: `carrier-order.service.ts` publishes nothing — a booking records contracting, never goods
 
 ### 10. Address, contact, and locale validation live in application code
 
-Required rules:
-
-- validate postal code, region, and country structure in the app layer
-- validate shipment contact completeness before dispatch
-- validate that requested destination context is compatible with local constraints and delivery topology
+- postal/region/country structure, shipment contact completeness, and destination compatibility with local constraints are app-layer validations
 
 ## Schema Modeling Limits and Implicit Assumptions
 
-These are current boundaries of the model and should be treated as explicit implementation considerations.
-
 ### 1. Some business structures intentionally remain flexible JSON
 
-Current JSONB fields include:
+Supplier/carrier address and contact info, product local constraint values, snapshots, tracking metadata, audit payloads, `CarrierOrder.metadata`, and `Operation.reviewState`. The app defines Zod schemas for the structures it owns (`operationReviewStateSchema`, domain event payloads); the `TODO`s on `Carrier.address`/`contactInfo` foresee structured schemas later.
 
-- supplier address and contact information
-- carrier address and contact information
-- product local constraint value and scope
-- snapshots across orders and shipments
-- tracking metadata
-- audit before/after payloads
+### 2. The schema does not implement a state machine — the shared transitions module does
 
-Implication:
-
-- the app must define validation schemas and versioning expectations around these structures
-
-### 2. The schema does not implement a state machine
-
-The schema stores state, but it does not enforce legal transitions.
-
-Implication:
-
-- a dedicated workflow or state-transition layer is required in `src/server/services/`
+The database stores state and enforces nothing about legal moves. The dedicated layer the original version of this document demanded exists: `src/shared/common/fulfillment-transitions.ts` (data) + the command services (enforcement) + diagnostics (monitoring). Any new status value starts there.
 
 ### 3. Foreign keys do not enforce workflow order
 
-A relation existing does not mean the workflow is in a valid stage.
-
-Examples:
-
-- a shipment row can exist before packaging is complete
-- a supplier transaction can exist before supplier confirmation
-- a user transaction can exist without successful payment completion
-
-Implication:
-
-- orchestration code must enforce sequencing
+A relation existing does not mean the workflow is in a valid stage; orchestration code enforces sequencing through guards. Diagnostics detect hand-edited or drifted shapes (e.g. `supplierOrder.readyForReceipt.noPackages`).
 
 ### 4. Aggregate statuses are derived, not self-validating
 
-Fields such as `CartItem.fulfillmentStatus`, `UserOrder.status`, `Package.status`, `Shipment.status`, `SupplierOrder.status`, and `CarrierOrder.status` summarize state but do not independently prove it.
+For `CartItem.fulfillmentStatus` and `UserOrder` closure this is now structural (ADR 0002). For the operational aggregates (lot, package, shipment, supplier order, carrier order) the compatibility tables plus diagnostics are the check — the UI shows the summary, the diagnostics prove it.
 
-Implication:
+### 5. The schema allows overlapping commercial history shapes the app constrains
 
-- implementers must always identify the lower-level records that justify the summary shown in the UI
-
-### 5. The schema allows overlapping commercial history shapes the app must constrain
-
-Examples:
-
-- many carts per user are structurally possible
-- many user orders per cart are structurally possible
-- overlapping active term windows are structurally possible
-
-Implication:
-
-- the app must define acceptable multiplicity and reject unsupported overlaps
+Many carts per user, many user orders per cart, overlapping term windows: structurally possible, constrained by application policy. Only one active commercial lineage from a cart is treated as authoritative.
 
 ### 6. Manual order entry is intentionally out of scope
 
-`UserOrderItem.sourceCartItemId` is required.
-
-Implication:
-
-- every commercial line must originate from a cart item under the current model
+`UserOrderItem.sourceCartItemId` is required; every commercial line originates from a cart item.
 
 ### 7. Inventory and stock reservation are not modeled directly
 
-There is no standalone inventory, stock ledger, or reservation model in the current schema.
+Availability is inferred from sourcing/packaging state. Operation drafts deliberately reserve nothing (ADR 0006) — there is no reservation model to lean on, and the fingerprint refusal replaces a lock.
 
-Implication:
+### 8. External integration lifecycle details are minimally modeled
 
-- availability and reservation logic must either be inferred from sourcing/packaging state or added later as a new domain model
+`externalReference` on supplier and carrier orders stays manual. Payment is the exception: `PaymentProviderEvent` + `PaymentProviderConfig` model webhook ingestion and reconciliation for Mercado Pago (ADR 0001). Supplier/carrier API integrations remain out of scope by decision.
 
-### 8. External integration lifecycle details are not fully modeled
+### 9. Migration history is not a schema source
 
-`externalReference` exists for supplier and carrier orders, but retry history, sync timestamps, payload versions, and reconciliation state are not separately modeled.
+`prisma/migrations/` holds a single unapplied baseline artifact; the schema has been applied with `db:push` during development and migration baselining is owner-managed out of band. Read `prisma/schema.prisma`, never the migrations directory, for structure.
 
-Implication:
+### 10. Two recorded pre-execution findings
 
-- the app must implement idempotent integration handling and decide where richer sync metadata lives
+Documented in the architecture doc's closure (§21.10), owned by future work, not by this reference:
 
-## First Implementation Checklist
+- `listOriginalDemand` excludes only `open` roll overs, so demand whose roll over was **resolved** (terminal) is aggregable again while its derived status is `cancelled`
+- the supplier MOQ is applied per cart item, not to pooled demand — arguably contrary to the purpose of a group-buying operation
 
-The first application layer should implement these capabilities before feature work spreads across routes and components.
+## Implementation Map
 
-1. A central status-transition and orchestration layer under `src/server/services/`
-2. Decimal-safe helpers for quantity and money comparisons
-3. Shared query helpers for active, non-deleted, time-valid products and terms
-4. Checkout submission service that creates `UserOrder`, `UserOrderItem`, snapshots, and initial tracking/audit records atomically
-5. Allocation service for `Operation`, `Lot`, `LotItem`, and `CartItemLotItem`
-6. Supplier request service that manages `SupplierOrder`, confirmation reconciliation, and supplier-side tracking
-7. Packaging service that enforces quantity conservation across `PackageLotItem` and `PackageAllocation`
-8. Shipment service for internal transfer and end-user delivery paths
-9. Roll-over and rebatching service that preserves history instead of mutating it away
-10. Tracking-event and audit-log writer utilities used by all orchestrators
-11. Validation schemas for addresses, contact snapshots, local constraints, and integration payload metadata
+Where each capability the original checklist demanded now lives:
 
-## Implementation Stance to Keep Stable Early
+| Capability | Implementation |
+| --- | --- |
+| Status-transition and orchestration layer | `src/shared/common/fulfillment-transitions.ts` + command services under `src/server/services/admin/` and `src/server/services/operations/` |
+| Decimal-safe quantity/money helpers | `Prisma.Decimal` throughout; pure planners under `src/server/services/admin/` |
+| Active/valid record query helpers | `src/server/services/_base/terms-validity.ts` |
+| Checkout submission service | `src/server/services/checkout/checkout.service.ts` + `mercadopago-reconciliation.service.ts` (ADR 0001) |
+| Aggregation service (draft/review/execute) | `src/server/services/admin/operation.service.ts` + `src/server/services/operations/{operation-execution.service,operation-review,operation-counters}.ts` (ADR 0006) |
+| Supplier request service | `src/server/services/admin/supplier-order.service.ts` + `supplier-order-absorption.ts` (ADR 0003) |
+| Packaging service with per-leg conservation | `src/server/services/admin/package.service.ts` + `package-allocation-planner.ts`, `package-fractionation.ts`, `packaged-shortfall.ts` (ADR 0004) |
+| Shipment service (internal + end-user) | `src/server/services/admin/shipment.service.ts` |
+| Roll-over and rebatching service | `src/server/services/admin/roll-over.service.ts` + compensation in `operation-compensation.ts` (ADR 0005) |
+| Carrier booking service | `src/server/services/admin/carrier-order.service.ts` (deliberately event-free) |
+| Tracking-event and audit writers | `src/server/services/tracking/` + `src/server/services/audit/` behind the outbox (`docs/tracking-architecture.md`) |
+| Status projection | `TrackingStatusProjector` (cart items) + `UserOrderClosureProjector` (orders) (ADR 0002) |
+| Operational diagnostics | six `calculate*Diagnostics` modules under `src/server/services/admin/` |
+| End-to-end verification | `pnpm fulfillment:e2e` (twelve-step run through the real service layer) and `pnpm db:seed-verify` (stored-equals-derived, counters, zero criticals, per-enum coverage) |
 
-Until the project adopts a more formal ADR process, the app should treat the following as stable working rules:
+## ADR Map
+
+| ADR | Decision | Where it binds this document |
+| --- | --- | --- |
+| `0001-mercadopago-checkout-pro-reconciliation` | Checkout Pro preferences + webhook reconciliation; redirect params are never payment truth | Flow steps 3–4; `PaymentProviderConfig`/`PaymentProviderEvent`; invariant 7 |
+| `0002-fulfillment-status-derived-from-lineage` | Events are facts; `fulfillmentStatus` and order closure derived from live lineage | Design philosophy 3; status architecture; flow step 10; invariant 4 |
+| `0003-supplier-order-commands-the-supplier-loop` | SupplierOrder is the command aggregate; lot/lot-item statuses cascade, never edited directly | Domain map; status ownership; flow step 6 |
+| `0004-physical-packages-with-legs` | Packages are physical, carry a leg, conservation checked per leg; consolidated default, fractionation/promotion | Domain map; flow steps 7–8; invariant 3 |
+| `0005-demand-conservation-and-rollover-reaggregation` | Conservation invariant; roll over status ladder; re-aggregation by default (`includeRollOver: true`) | Design philosophy 4; alternate flows; invariant 3 |
+| `0006-operation-draft-and-reviewed-fingerprint` | Draft → review (omissions) → execute with fingerprint refusal; drafts reserve nothing | Design philosophy 9; flow step 5; modeling limit 7 |
+
+Stable working rules that predate the ADRs and still hold:
 
 - one cart item stays the root traceability record for a customer request line
 - aggregate statuses summarize state but never replace detailed lineage
 - history is preserved through snapshots, tracking events, and explicit compensation records
-- retries and recovery should create new records or explicit transitions, not rewrite the old path into invisibility
+- retries and recovery create new records or explicit transitions, never rewrite the old path into invisibility
 - fulfillment orchestration belongs in server-side services, not in controllers or UI code

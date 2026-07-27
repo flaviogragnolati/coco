@@ -1,13 +1,21 @@
 # Tracking Architecture
 
+> **Status:** updated 2026-07-27 against the implemented code (fulfillment series
+> closure + ADR 0006). Companion documents: `docs/schema-reference.md` (domain
+> model), `docs/fulfillment-reference.md` (command surfaces that produce the
+> events), `docs/adr/0002-fulfillment-status-derived-from-lineage.md` (the
+> decision this pipeline implements).
+
 This document describes the event-driven cart item tracking architecture used by
 the application.
 
-The goal is to keep fulfillment traceability centralized. Checkout, admin cart
-operations, fulfillment orchestration, supplier integration, packaging,
-shipments, rollovers, and exception handling publish domain facts. The tracking
-module decides how those facts become `CartItemTrackingEvent` rows and derives
-`CartItem.fulfillmentStatus` from the records they left behind.
+The goal is to keep fulfillment traceability centralized. Checkout, payment
+reconciliation, admin cart operations, operation execution, supplier
+integration, packaging, shipments, rollovers, and exception handling publish
+domain facts. The tracking module decides how those facts become
+`CartItemTrackingEvent` rows, derives `CartItem.fulfillmentStatus` from the
+records they left behind, and rolls order closure up into `UserOrder.status`
+(ADR 0002).
 
 ## Core Rule
 
@@ -28,6 +36,8 @@ Domain service
   -> CartItemTrackingEvent
   -> TrackingStatusProjector
   -> CartItem.fulfillmentStatus derived from the item's live lineage
+  -> UserOrderClosureProjector (per affected order, deduped)
+  -> UserOrder.status closure derived, written only from `processing`
 ```
 
 Seed scripts may create fixture tracking rows. Runtime application services must
@@ -351,6 +361,11 @@ distinct `cartItemId`** — projection recomputes from lineage, so N commands fo
 one cart item would otherwise recompute the same status N times. The returned
 array stays in input order; only the projections are deduplicated.
 
+After the per-item projections, both record methods run the order closure
+projection once per distinct affected `UserOrder`
+(`UserOrderClosureProjector`, below) — always after `TrackingStatusProjector`,
+because closure derives from the freshly projected item statuses.
+
 Public API:
 
 ```ts
@@ -370,6 +385,11 @@ class TrackingEventService {
     orderId: number,
   ): Promise<UserTrackingTimelineItem[]>;
 
+  static getUserOrderItemTimelines(
+    userId: string,
+    orderId: number,
+  ): Promise<UserOrderItemTimeline[]>;
+
   static getAdminCartTimeline(
     cartId: number,
   ): Promise<AdminTrackingTimelineItem[]>;
@@ -377,6 +397,12 @@ class TrackingEventService {
   static getAdminCartItemTimeline(
     cartItemId: number,
   ): Promise<AdminTrackingTimelineItem[]>;
+
+  static listAdminEvents(input): Promise<AdminTrackingEventListPage>;
+
+  static getAdminCartItemTimelineDetail(
+    cartItemId: number,
+  ): Promise<AdminCartItemTimelineDetail>;
 }
 ```
 
@@ -409,16 +435,32 @@ when neither its package line nor its package is `cancelled`):
 | --- | --- | --- |
 | 0 | cart item deleted or `status === "cancelled"` | `cancelled` |
 | 1 | a live packaged allocation whose package **or** shipment is `delayed`/`failed` | `exception` |
-| 2 | open rollover quantity > 0 **and** live allocated quantity = 0 | `rolledOver` |
-| 3 | open rollover quantity > 0 **and** stage below `packaged` | `partiallyRolledOver` |
-| 4 | otherwise | the furthest stage backed by a record |
+| 2 | nothing live, no `open` rollover, ≥1 `resolved` rollover | `cancelled` — resolving is terminal and moves no money (ADR 0005); this is what lets the order close |
+| 3 | open rollover quantity > 0 **and** live allocated quantity = 0 | `rolledOver` |
+| 4 | open rollover quantity > 0 **and** stage below `packaged` | `partiallyRolledOver` |
+| 5 | otherwise | the furthest stage backed by a record |
 
-Stage ladder, highest backed by a record wins: `delivered` (live packaged
-allocation on an `endUserDelivery` shipment where the package or the shipment is
-`received`) → `inEndUserShipment` → `atWarehouse` (`internalTransfer` received)
-→ `inInternalShipment` → `packaged` → `supplierConfirmed` /
-`requestedFromSupplier` (from the lot item, falling back to its supplier order)
-→ `allocatedToSupplierItem` → `includedInOperation` → `awaitingAggregation`.
+Stage ladder, highest backed by a record wins. The stage of a packaged
+allocation is decided by the **package's leg** (`Package.leg`, ADR 0004) and its
+distance travelled, taking the max rank over all live packaged allocations:
+
+- `delivered` — an outbound package whose **own** status is `received`. A
+  pickup-point shipment arriving does **not** deliver its packages: the
+  shipment turns `received` while the packages stay `inTransit`, so the item
+  keeps deriving `inEndUserShipment` until its own package is confirmed
+  collected. Home delivery and depot pickup cascade the package, so nothing
+  else changes for them
+- `inEndUserShipment` — an outbound package on a departed `endUserDelivery`
+  shipment
+- `atWarehouse` — an `internalTransfer` received, **or** an outbound package
+  that has not departed yet
+- `inInternalShipment` — an inbound package on a departed internal shipment
+- `packaged` — inbound package allocations exist, before departure
+- `supplierConfirmed` / `requestedFromSupplier` — from the lot item, falling
+  back to its supplier order
+- `allocatedToSupplierItem` → `includedInOperation` (floor counts
+  non-`cancelled` rollovers only, so a fully compensated item falls through) →
+  `awaitingAggregation`
 
 From `packaged` onward the ladder outranks an open rollover, so a partially cut
 order can still reach `delivered`; the open rollover surfaces as a journey
@@ -433,6 +475,33 @@ derivation-shaped trigger: it fires at `warn` when the arriving event implies a
 stage (`adminTrackingStageByEventType`) ahead of the derived status. Deviations
 (`cancelled`, `exception`, `rolledOver`, `partiallyRolledOver`) are legitimate
 and stay silent.
+
+### `UserOrderClosureProjector`
+
+Files:
+
+- `src/server/services/tracking/user-order-closure.projector.ts`
+- `src/server/services/tracking/user-order-closure.data.ts`
+- `src/shared/common/user-order-closure.ts` (pure rule + tests)
+
+Responsibilities:
+
+- Resolve the distinct `UserOrder` ids affected by a batch of projected cart
+  items (`findUserOrderIdsForCartItems`).
+- Load each order's item fulfillment statuses and derive closure with the pure
+  `deriveUserOrderClosure`: terminal statuses are `{delivered, cancelled}`
+  (`rolledOver` is deliberately **not** terminal); all items terminal ∧ ≥1
+  `delivered` → `completed`; all `cancelled` → `cancelled`; anything else →
+  no write.
+- Write the closure **only from `processing`** — the gate lives in the pure
+  rule *and* in the SQL `where`, so the roll-up is structurally unable to
+  downgrade a payment outcome (`refunded`, `chargedBack`, `failed` are outside
+  its source set). `UserOrder.status` is co-owned with the payment domain
+  (`checkout.data.ts`, `mercadopago-reconciliation.service.ts`); this projector
+  owns closure only.
+
+It is invoked exclusively by `TrackingEventService` after the per-item
+projections, deduped per order.
 
 ### `AuditLogService`
 
@@ -479,6 +548,42 @@ Checkout event key shape:
 
 ```txt
 checkout:order:{orderId}:transaction:{transactionId}:cartItem:{cartItemId}:submittedToOrder
+```
+
+The Mercado Pago webhook reconciliation path
+(`src/server/services/payments/mercadopago/mercadopago-reconciliation.service.ts`,
+ADR 0001) publishes the **same** `cart.item.submittedToOrder` facts with the
+**same key shape** when the payment confirmation arrives asynchronously, so a
+payment confirmed on redirect and one confirmed by webhook produce one
+submission event either way — the shared deterministic key is the dedupe.
+
+### Operation Aggregation
+
+Files:
+
+- `src/server/services/operations/operation-execution.service.ts`
+- `src/server/services/admin/operation.service.ts` (the `execute` command)
+
+Executing an operation (ADR 0006: `admin.operation.execute` on a reviewed
+draft, or the `completed`/`cancelled` paths of `operation.rerun`) publishes, in
+the same serializable transaction that materializes lots, allocations, and
+pre-allocation roll overs:
+
+- `operation.cartItem.included` — one per demand source included
+- `operation.cartItem.allocatedToLotItem` — one per allocation created
+- `rollover.preAllocation.created` — one per unassignable remainder
+
+`createDraft`, `review`, and `updateDraft` publish **nothing**: a draft
+materializes no rows and reserves no demand, and an omission writes nothing
+onto the demand it excludes — the audit trail lives on the operation row
+(`operation.updateDraft` audit metadata), not in the event stream.
+
+Keys are deterministic with no timestamp component:
+
+```txt
+operation:{operationId}:cartItem:{cartItemId}:source:{sourceKey}:included
+operation:{operationId}:cartItem:{cartItemId}:lotItem:{lotItemId}:allocated
+operation:{operationId}:cartItem:{cartItemId}:rollover:{rollOverId}:created
 ```
 
 ### Admin Operations Cart
@@ -628,9 +733,17 @@ internal shape predates the outbound leg and is already in the outbox, so it is
 byte-identical; the end-user leg inserts `endUser:` so the two can never collide
 even on hand-edited data.
 
-**Every declared domain event type now has a producer.** The count of
-declared-without-producer types is zero as of Phase 4b (2026-07-26); it was 8 at
-the start of the fulfillment series.
+**Every declared domain event type has a producer**: 21 declared, 21 produced,
+re-verified at the series closure (2026-07-27); the declared-without-producer
+count was 8 at the start of the fulfillment series and reached zero in Phase 4b.
+Two deliberate absences keep it that way:
+
+- `carrier-order.service.ts` publishes **no** domain event of any kind — a
+  booking records the contracting of transport, never the goods, so no
+  customer-visible fact derives from it.
+- The operation draft/review feature (ADR 0006) added **no** event type:
+  drafts and omissions publish nothing (see the Operation Aggregation producer
+  above).
 
 ## Event Mapping
 
@@ -817,13 +930,33 @@ Before merging tracking-related changes, verify:
 - User timeline output remains redacted.
 - Admin timeline output remains complete.
 
+## Verification Harnesses
+
+Two scripts exercise this pipeline against the real database (both need
+`--conditions=react-server`, wired into their `pnpm` scripts, so `server-only`
+imports resolve outside Next):
+
+- `pnpm fulfillment:e2e` (`scripts/fulfillment-e2e.ts`) — drives the twelve-step
+  fulfillment run through the real service layer, draining the outbox with a
+  `wake()` loop between steps, and asserts the derived statuses and a clean
+  diagnostics sweep at each stage.
+- `pnpm db:seed-verify` (`scripts/seed-verify.ts`) — asserts stored-equals-derived
+  for every seeded cart item (the stored `fulfillmentStatus` must equal what
+  derivation returns), stored-equals-computed operation counters, zero critical
+  diagnostics, and per-enum state coverage.
+
+Run both after any change to derivation, the mapper, the listener, the ladders,
+or the seed.
+
 ## Current Limitations
 
 - There is no autonomous worker. Stuck pending events require a later
-  application operation to call `DomainEventDispatcher.wake()`.
+  application operation to call `DomainEventDispatcher.wake()` (the e2e harness
+  drains explicitly for the same reason).
 - Retry delay constants from the broader plan are not implemented as timers in
   v1 because there is no scheduler.
 - Listener ordering is registration order.
 - Listener fan-out is currently small and synchronous within a wake batch.
-- Manual database migrations are still required for schema changes. This
-  implementation updates Prisma schema/client only.
+- Schema changes have been applied with `db:push`; migration baselining is
+  owner-managed out of band (see the architecture doc §21.9 A3). Do not read
+  `prisma/migrations/` as schema state.
