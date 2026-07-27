@@ -1,13 +1,18 @@
 import type { z } from "zod";
 
 import type {
+	operationCancelInputSchema,
+	operationCommandKeySchema,
+	operationCreateFieldsSchema,
 	operationCreateInputSchema,
+	operationDeleteInputSchema,
 	operationDetailSchema,
 	operationGetByIdInputSchema,
 	operationIdSchema,
 	operationListInputSchema,
 	operationListItemSchema,
 	operationListOutputSchema,
+	operationRerunInputSchema,
 	operationRollOverStageSchema,
 	operationRollOverStatusSchema,
 	operationStatsSchema,
@@ -43,3 +48,10 @@ export type OperationCreateFormInput = z.input<
 export type OperationCreateFormValues = z.output<
 	typeof operationCreateInputSchema
 >;
+export type OperationCommandKey = z.output<typeof operationCommandKeySchema>;
+export type OperationCancelInput = z.output<typeof operationCancelInputSchema>;
+export type OperationRerunInput = z.output<typeof operationRerunInputSchema>;
+export type OperationRerunFormValues = z.output<
+	typeof operationCreateFieldsSchema
+>;
+export type OperationDeleteInput = z.output<typeof operationDeleteInputSchema>;

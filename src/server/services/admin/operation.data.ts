@@ -4,6 +4,7 @@ import type {
 	OperationListInput,
 } from "~/shared/common/admin-crud/operation.types";
 import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
+import { operationAvailableActions } from "~/shared/common/fulfillment-transitions";
 import { toPrismaInputJson } from "./_base/prisma-json";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
 import {
@@ -77,8 +78,11 @@ const operationDiagnosticsRelationSelect = {
 		select: {
 			id: true,
 			code: true,
-			supplierOrder: { select: { id: true } },
-			lotItems: { select: { id: true, quantity: true } },
+			status: true,
+			// `status` is here for `operationAvailableActions`, which measures the
+			// administrative window over the live supplier orders (architecture §8).
+			supplierOrder: { select: { id: true, status: true } },
+			lotItems: { select: { id: true, status: true, quantity: true } },
 		},
 	},
 	rollOvers: {
@@ -214,6 +218,58 @@ const operationDetailSelect = {
 	},
 } satisfies Prisma.OperationSelect;
 
+/**
+ * What compensation needs and nothing else: the live records it moves, the
+ * allocations whose quantity returns to the pool, and each supplier order's full
+ * lot list so an order spanning operations can be refused (architecture §19).
+ */
+const operationCommandSelect = {
+	id: true,
+	code: true,
+	status: true,
+	lots: {
+		select: {
+			id: true,
+			status: true,
+			supplierOrder: {
+				select: {
+					id: true,
+					code: true,
+					status: true,
+					lots: { select: { id: true, operationId: true } },
+				},
+			},
+			lotItems: {
+				select: {
+					id: true,
+					status: true,
+					cartItemLotItems: {
+						select: {
+							id: true,
+							quantity: true,
+							cartItem: {
+								select: { id: true, cart: { select: { id: true } } },
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	rollOvers: {
+		select: {
+			id: true,
+			status: true,
+			quantity: true,
+			cartItem: { select: { id: true, cart: { select: { id: true } } } },
+		},
+	},
+} satisfies Prisma.OperationSelect;
+
+export type OperationCommandRecord = Prisma.OperationGetPayload<{
+	select: typeof operationCommandSelect;
+}>;
+
 export type OperationListRecord = Prisma.OperationGetPayload<{
 	select: typeof operationListSelect;
 }>;
@@ -249,6 +305,24 @@ function buildOperationWhere(
 	return and.length > 0 ? { AND: and } : {};
 }
 
+/**
+ * Statuses of the supplier orders the operation still owns, one entry per order.
+ * Cancelled orders are dropped here rather than inside
+ * `operationAvailableActions`: an order cancelled through the supplier loop does
+ * not close the administrative window (architecture §8).
+ */
+function liveSupplierOrderStatuses(record: OperationSummaryRecord) {
+	return Array.from(
+		new Map(
+			record.lots
+				.filter((lot) => lot.status !== "cancelled")
+				.flatMap((lot) => (lot.supplierOrder ? [lot.supplierOrder] : []))
+				.filter((order) => order.status !== "cancelled")
+				.map((order) => [order.id, order.status]),
+		).values(),
+	);
+}
+
 export function toOperationListItem(
 	record: OperationSummaryRecord,
 	diagnostics: OperationalDiagnostic[],
@@ -263,6 +337,12 @@ export function toOperationListItem(
 		diagnosticCount: diagnostics.length,
 		highestDiagnosticSeverity: highestSeverity(diagnostics),
 		diagnosticMessages: diagnosticMessages(diagnostics),
+		availableActions: operationAvailableActions({
+			status: record.status,
+			liveSupplierOrderStatuses: liveSupplierOrderStatuses(record),
+			lotCount: record.lots.length,
+			rollOverCount: record.rollOvers.length,
+		}),
 	};
 }
 
@@ -340,26 +420,52 @@ export async function findOperationById(db: AdminDbClient, id: number) {
 	});
 }
 
+/**
+ * How many completed operations must have run after a batch before its still
+ * open roll overs stop looking like normal turnaround.
+ */
+const STALE_ROLLOVER_OPERATION_LAG = 2;
+
+/**
+ * `createdAt` of the N-th most recent completed operation, or null while fewer
+ * than N exist. One query per request feeds every row's stale-roll over rule —
+ * the rule itself stays pure.
+ */
+export async function findStaleOpenRollOverThreshold(db: AdminDbClient) {
+	const recent = await db.operation.findMany({
+		where: { status: "completed" },
+		select: { createdAt: true },
+		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+		take: STALE_ROLLOVER_OPERATION_LAG,
+	});
+
+	if (recent.length < STALE_ROLLOVER_OPERATION_LAG) return null;
+	return recent[recent.length - 1]?.createdAt ?? null;
+}
+
 export async function getOperationStats(db: AdminDbClient) {
-	const [total, running, completed, failed, aggregate] = await Promise.all([
-		db.operation.count(),
-		db.operation.count({ where: { status: "running" } }),
-		db.operation.count({ where: { status: "completed" } }),
-		db.operation.count({ where: { status: "failed" } }),
-		db.operation.aggregate({
-			_sum: {
-				eligibleQuantity: true,
-				assignedQuantity: true,
-				rollOverQuantity: true,
-			},
-		}),
-	]);
+	const [total, running, completed, failed, cancelled, aggregate] =
+		await Promise.all([
+			db.operation.count(),
+			db.operation.count({ where: { status: "running" } }),
+			db.operation.count({ where: { status: "completed" } }),
+			db.operation.count({ where: { status: "failed" } }),
+			db.operation.count({ where: { status: "cancelled" } }),
+			db.operation.aggregate({
+				_sum: {
+					eligibleQuantity: true,
+					assignedQuantity: true,
+					rollOverQuantity: true,
+				},
+			}),
+		]);
 
 	return {
 		total,
 		running,
 		completed,
 		failed,
+		cancelled,
 		eligibleQuantity:
 			aggregate._sum.eligibleQuantity?.toString() ?? decimalZero().toString(),
 		assignedQuantity:
@@ -402,6 +508,104 @@ export async function createRunningOperation(
 		},
 		select: operationListSelect,
 	});
+}
+
+export async function findOperationForCommand(db: AdminDbClient, id: number) {
+	return db.operation.findUnique({
+		where: { id },
+		select: operationCommandSelect,
+	});
+}
+
+/**
+ * The status-only compensation write (architecture §8). No quantity is touched:
+ * a cancelled record keeps it as history and the counter rules exclude it by
+ * status, exactly as Phase 1 settled.
+ */
+export async function applyOperationCompensation(
+	db: AdminDbClient,
+	input: {
+		operationId: number;
+		lotIds: number[];
+		lotItemIds: number[];
+		supplierOrderIds: number[];
+		createdRollOverIds: number[];
+	},
+) {
+	if (input.lotItemIds.length > 0) {
+		await db.lotItem.updateMany({
+			where: { id: { in: input.lotItemIds } },
+			data: { status: "cancelled" },
+		});
+	}
+
+	if (input.lotIds.length > 0) {
+		await db.lot.updateMany({
+			where: { id: { in: input.lotIds } },
+			data: { status: "cancelled" },
+		});
+	}
+
+	if (input.supplierOrderIds.length > 0) {
+		await db.supplierOrder.updateMany({
+			where: { id: { in: input.supplierOrderIds } },
+			data: { status: "cancelled", cancelledAt: new Date() },
+		});
+	}
+
+	if (input.createdRollOverIds.length > 0) {
+		await db.rollOver.updateMany({
+			where: { id: { in: input.createdRollOverIds } },
+			data: { status: "cancelled" },
+		});
+	}
+
+	// The roll overs this operation consumed go back to `open` so their quantity
+	// re-enters aggregation. No counter recompute for the operations that own
+	// them: `computeOperationCounters` counts `open` and `rebatched` alike.
+	return db.rollOver.updateMany({
+		where: {
+			rebatchedIntoOperationId: input.operationId,
+			status: "rebatched",
+		},
+		data: { status: "open", rebatchedIntoOperationId: null },
+	});
+}
+
+export async function markOperationCancelled(db: AdminDbClient, id: number) {
+	await db.operation.update({
+		where: { id },
+		data: { status: "cancelled" },
+	});
+}
+
+export async function updateOperationForRerun(
+	db: AdminDbClient,
+	input: OperationCreateInput & { id: number },
+) {
+	await db.operation.update({
+		where: { id: input.id },
+		data: {
+			status: "running",
+			failureReason: null,
+			finishedAt: null,
+			from: fromDateTimeLocalValue(input.from),
+			to: fromDateTimeLocalValue(input.to),
+			includeRollOver: input.includeRollOver,
+			strategy: input.strategy,
+			notes: input.notes,
+			destinationId: input.destinationId,
+			summary: toPrismaInputJson({
+				source: "operation.rerun",
+				status: "running",
+				startedAt: new Date().toISOString(),
+			}),
+		},
+	});
+}
+
+export async function deleteOperation(db: AdminDbClient, id: number) {
+	await db.operation.delete({ where: { id } });
 }
 
 export async function markOperationFailed(

@@ -1,19 +1,7 @@
 "use client";
 
-import {
-	BanIcon,
-	EyeIcon,
-	RefreshCwIcon,
-	RotateCcwIcon,
-	Trash2Icon,
-} from "lucide-react";
+import { BanIcon, EyeIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 
-import { Button } from "~/components/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "~/components/ui/tooltip";
 import {
 	DateTooltip,
 	IdTooltip,
@@ -26,14 +14,16 @@ import type {
 	CrudColumn,
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
-import type { OperationListItem } from "~/shared/common/admin-crud/operation.types";
+import type {
+	OperationCommandKey,
+	OperationListItem,
+} from "~/shared/common/admin-crud/operation.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
+	operationActionLabelMap,
 	operationStatusConfig,
 	operationStrategyConfig,
 } from "./operation.mappers";
-
-const unavailableHint = "Disponible próximamente";
 
 function QuantitySummary({ operation }: { operation: OperationListItem }) {
 	return (
@@ -143,67 +133,54 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 	},
 ];
 
+const commandKeys = ["cancel", "rerun", "delete"] as const;
+
+const commandIcons: Record<OperationCommandKey, typeof BanIcon> = {
+	cancel: BanIcon,
+	rerun: RefreshCwIcon,
+	delete: Trash2Icon,
+};
+
 export function OperationTable({
 	operations,
 	onView,
-	onUnavailableAction,
+	onCommand,
 }: {
 	operations: OperationListItem[];
 	onView: (operation: OperationListItem) => void;
-	onUnavailableAction: (action: string) => void;
+	onCommand: (operation: OperationListItem, key: OperationCommandKey) => void;
 }) {
-	const actions: CrudRowAction<OperationListItem>[] = [
+	// Built from the server's `availableActions`: the row menu re-derives no
+	// legality rule of its own, it only renders what the server declared.
+	const actions = (
+		operation: OperationListItem,
+	): CrudRowAction<OperationListItem>[] => [
 		{
 			label: "Ver detalle",
 			icon: EyeIcon,
 			onSelect: onView,
 		},
-		{
-			label: "Cancelar",
-			icon: BanIcon,
-			onSelect: () => onUnavailableAction("Cancelar"),
-			disabled: () => true,
-			hint: unavailableHint,
-		},
-		{
-			label: "Reejecutar",
-			icon: RefreshCwIcon,
-			onSelect: () => onUnavailableAction("Reejecutar"),
-			disabled: () => true,
-			hint: unavailableHint,
-		},
-		{
-			label: "Eliminar",
-			icon: Trash2Icon,
-			onSelect: () => onUnavailableAction("Eliminar"),
-			disabled: () => true,
-			destructive: true,
-			hint: unavailableHint,
-		},
+		...commandKeys.map((key) => {
+			const state = operation.availableActions.find(
+				(entry) => entry.action === key,
+			);
+
+			return {
+				label: operationActionLabelMap[key],
+				icon: commandIcons[key],
+				onSelect: (item: OperationListItem) => onCommand(item, key),
+				disabled: () => !state?.enabled,
+				destructive: key !== "rerun",
+				hint: state?.enabled ? undefined : state?.reason,
+			};
+		}),
 	];
 
 	return (
 		<CrudTable
 			actions={(operation) => (
 				<div className="flex items-center justify-end gap-2">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							{/* `aria-disabled` rather than `disabled`: the button has to stay
-							    hoverable and focusable for the tooltip to explain itself. */}
-							<Button
-								aria-disabled
-								aria-label="Reejecutar"
-								className="opacity-50"
-								onClick={(event) => event.preventDefault()}
-								size="icon-sm"
-								variant="outline"
-							>
-								<RotateCcwIcon />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Reejecutar — {unavailableHint}</TooltipContent>
-					</Tooltip>
-					<CrudRowActions actions={actions} item={operation} />
+					<CrudRowActions actions={actions(operation)} item={operation} />
 				</div>
 			)}
 			columns={operationColumns}

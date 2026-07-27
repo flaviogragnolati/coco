@@ -2,6 +2,7 @@ import { z } from "zod";
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 import {
 	dateInputSchema,
+	requiredText,
 	sortDirectionSchema,
 } from "~/schemas/admin/_crud-schema-helpers";
 import { userIdSchema } from "~/schemas/admin/address.schemas";
@@ -18,7 +19,20 @@ export const operationIdSchema = z
 	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
-export const operationStatusSchema = z.enum(["running", "completed", "failed"]);
+export const operationStatusSchema = z.enum([
+	"running",
+	"completed",
+	"failed",
+	"cancelled",
+]);
+
+export const operationCommandKeySchema = z.enum(["cancel", "rerun", "delete"]);
+
+export const operationAvailableActionSchema = z.object({
+	action: operationCommandKeySchema,
+	enabled: z.boolean(),
+	reason: z.string().optional(),
+});
 
 export const operationStrategySchema = z.enum(["fifo", "other"]);
 
@@ -84,24 +98,55 @@ const productSupplierTermsSummarySchema = z.object({
 	supplier: supplierSummarySchema,
 });
 
-export const operationCreateInputSchema = z
-	.object({
-		from: dateInputSchema,
-		to: dateInputSchema,
-		destinationId: destinationIdSchema,
-		includeRollOver: z.boolean().optional().default(false),
-		strategy: operationCreateStrategySchema.optional().default("fifo"),
-		notes: optionalTrimmedText,
+/**
+ * The bare object body of the create input. Extracted so `rerun` can extend it:
+ * `operationCreateInputSchema` is a `ZodEffects` once refined, and `.extend` does
+ * not exist on that type, which would leave the date-order rule duplicated.
+ */
+export const operationCreateFieldsSchema = z.object({
+	from: dateInputSchema,
+	to: dateInputSchema,
+	destinationId: destinationIdSchema,
+	includeRollOver: z.boolean().optional().default(true),
+	strategy: operationCreateStrategySchema.optional().default("fifo"),
+	notes: optionalTrimmedText,
+});
+
+const refineDateOrder = (
+	value: { from: string; to: string },
+	ctx: z.RefinementCtx,
+) => {
+	if (new Date(value.to) < new Date(value.from)) {
+		ctx.addIssue({
+			code: "custom",
+			message: "La fecha hasta no puede ser anterior a la fecha desde",
+			path: ["to"],
+		});
+	}
+};
+
+export const operationCreateInputSchema =
+	operationCreateFieldsSchema.superRefine(refineDateOrder);
+
+export const operationCancelInputSchema = z.object({
+	id: operationIdSchema,
+	reason: requiredText("El motivo es obligatorio"),
+});
+
+/**
+ * The source operation plus the parameters to run with. One command, three
+ * internal paths by source status — see the service (ADR 0005, architecture §8).
+ */
+export const operationRerunInputSchema = operationCreateFieldsSchema
+	.extend({
+		id: operationIdSchema,
+		reason: optionalTrimmedText,
 	})
-	.superRefine((value, ctx) => {
-		if (new Date(value.to) < new Date(value.from)) {
-			ctx.addIssue({
-				code: "custom",
-				message: "La fecha hasta no puede ser anterior a la fecha desde",
-				path: ["to"],
-			});
-		}
-	});
+	.superRefine(refineDateOrder);
+
+export const operationDeleteInputSchema = z.object({
+	id: operationIdSchema,
+});
 
 export const operationListInputSchema = z.object({
 	page: z.number().int().positive().default(1),
@@ -143,6 +188,8 @@ export const operationListItemSchema = z.object({
 	diagnosticCount: z.number().int().nonnegative(),
 	highestDiagnosticSeverity: highestDiagnosticSeveritySchema,
 	diagnosticMessages: z.array(z.string()),
+	// On the list item, not only the detail: the row menu renders from it too.
+	availableActions: z.array(operationAvailableActionSchema),
 });
 
 const supplierOrderSummarySchema = z.object({
@@ -258,6 +305,7 @@ export const operationStatsSchema = z.object({
 	running: z.number().int().nonnegative(),
 	completed: z.number().int().nonnegative(),
 	failed: z.number().int().nonnegative(),
+	cancelled: z.number().int().nonnegative(),
 	eligibleQuantity: decimalOutputSchema,
 	assignedQuantity: decimalOutputSchema,
 	rollOverQuantity: decimalOutputSchema,

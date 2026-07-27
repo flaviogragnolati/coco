@@ -1,9 +1,14 @@
+import { z } from "zod";
 import {
+	operationCancelInputSchema,
 	operationCreateInputSchema,
+	operationDeleteInputSchema,
 	operationDetailSchema,
 	operationGetByIdInputSchema,
+	operationIdSchema,
 	operationListInputSchema,
 	operationListOutputSchema,
+	operationRerunInputSchema,
 	operationStatsSchema,
 } from "~/schemas/admin/operation.schemas";
 import { mapServiceError } from "~/server/api/_shared/map-service-error";
@@ -38,6 +43,52 @@ export const operationRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			try {
 				return await operationService.createAndExecute(
+					input,
+					toAdminActor(ctx.session.user),
+					ctx.db,
+				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	cancel: adminProcedure
+		.input(operationCancelInputSchema)
+		.output(operationDetailSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await operationService.cancel(
+					input,
+					toAdminActor(ctx.session.user),
+					ctx.db,
+				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	/** May return a *different* operation than the one it was called on. */
+	rerun: adminProcedure
+		.input(operationRerunInputSchema)
+		.output(operationDetailSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await operationService.rerun(
+					input,
+					toAdminActor(ctx.session.user),
+					ctx.db,
+				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	remove: adminProcedure
+		.input(operationDeleteInputSchema)
+		.output(z.object({ id: operationIdSchema }))
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await operationService.remove(
 					input,
 					toAdminActor(ctx.session.user),
 					ctx.db,

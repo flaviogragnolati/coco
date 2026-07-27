@@ -2,6 +2,7 @@
 
 import { BoxesIcon, HistoryIcon } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import {
 	Accordion,
@@ -41,17 +42,22 @@ import {
 	lotItemStatusConfig,
 	lotStatusConfig,
 } from "~/features/admin/crud/lot/lot.mappers";
-import type { OperationDetail } from "~/shared/common/admin-crud/operation.types";
+import { supplierOrderStatusConfig } from "~/features/admin/crud/supplier-order/supplier-order.mappers";
+import type {
+	OperationCommandKey,
+	OperationDetail,
+} from "~/shared/common/admin-crud/operation.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
+	operationActionLabelMap,
 	operationStatusConfig,
 	operationStrategyConfig,
 	rollOverStageLabelMap,
 	rollOverStatusConfig,
-	supplierOrderStatusConfig,
 } from "./operation.mappers";
+import { RollOverResolveDialog } from "./roll-over-resolve-dialog";
 
-const unavailableHint = "Disponible próximamente";
+type OperationRollOver = OperationDetail["rollOvers"][number];
 
 const sectionTitleClass =
 	"font-semibold text-muted-foreground text-xs uppercase tracking-wide";
@@ -278,13 +284,36 @@ function LotSection({ lot }: { lot: OperationLot }) {
 	);
 }
 
-function DisabledAction({
-	label,
-	destructive,
+/**
+ * Footer actions come straight from the server's `availableActions`, like the
+ * supplier-order dialog: the UI never re-derives the legality rules.
+ */
+function ActionButton({
+	action,
+	enabled,
+	reason,
+	onClick,
 }: {
-	label: string;
-	destructive?: boolean;
+	action: OperationCommandKey;
+	enabled: boolean;
+	reason?: string;
+	onClick: () => void;
 }) {
+	const label = operationActionLabelMap[action];
+	const destructive = action !== "rerun";
+
+	if (enabled) {
+		return (
+			<Button
+				onClick={onClick}
+				type="button"
+				variant={destructive ? "destructive" : "outline"}
+			>
+				{label}
+			</Button>
+		);
+	}
+
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -300,12 +329,18 @@ function DisabledAction({
 					{label}
 				</Button>
 			</TooltipTrigger>
-			<TooltipContent>{unavailableHint}</TooltipContent>
+			<TooltipContent>{reason ?? "Acción no disponible"}</TooltipContent>
 		</Tooltip>
 	);
 }
 
-function DetailBody({ operation }: { operation: OperationDetail }) {
+function DetailBody({
+	operation,
+	onResolveRollOver,
+}: {
+	operation: OperationDetail;
+	onResolveRollOver: (rollOver: OperationRollOver) => void;
+}) {
 	return (
 		<div className="flex flex-col gap-3">
 			{operation.failureReason ? (
@@ -394,6 +429,17 @@ function DetailBody({ operation }: { operation: OperationDetail }) {
 										{rollOverStageLabelMap[rollOver.stage]}
 									</p>
 									<p className="text-xs">{rollOver.reason}</p>
+									{rollOver.status === "open" ? (
+										<Button
+											className="mt-2"
+											onClick={() => onResolveRollOver(rollOver)}
+											size="sm"
+											type="button"
+											variant="outline"
+										>
+											Resolver
+										</Button>
+									) : null}
 								</div>
 							))
 						)}
@@ -417,13 +463,19 @@ export function OperationDetailDialog({
 	isLoading,
 	errorMessage,
 	onOpenChange,
+	onCommand,
 }: {
 	open: boolean;
 	operation?: OperationDetail;
 	isLoading?: boolean;
 	errorMessage?: string;
 	onOpenChange: (open: boolean) => void;
+	onCommand: (operation: OperationDetail, key: OperationCommandKey) => void;
 }) {
+	const [resolveTarget, setResolveTarget] = useState<OperationRollOver | null>(
+		null,
+	);
+
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-6xl">
@@ -447,17 +499,44 @@ export function OperationDetailDialog({
 				) : errorMessage ? (
 					<CrudErrorState message={errorMessage} />
 				) : operation ? (
-					<DetailBody operation={operation} />
+					<DetailBody
+						onResolveRollOver={setResolveTarget}
+						operation={operation}
+					/>
 				) : null}
 
 				<DialogFooter>
-					<DisabledAction label="Cancelar" />
-					<DisabledAction label="Reejecutar" />
-					<DisabledAction destructive label="Eliminar" />
+					{operation
+						? operation.availableActions.map((entry) => (
+								<ActionButton
+									action={entry.action}
+									enabled={entry.enabled}
+									key={entry.action}
+									onClick={() => onCommand(operation, entry.action)}
+									reason={entry.reason}
+								/>
+							))
+						: null}
 					<Button onClick={() => onOpenChange(false)} type="button">
 						Cerrar
 					</Button>
 				</DialogFooter>
+
+				<RollOverResolveDialog
+					onOpenChange={(nextOpen) => {
+						if (!nextOpen) setResolveTarget(null);
+					}}
+					open={resolveTarget !== null}
+					rollOver={
+						resolveTarget
+							? {
+									id: resolveTarget.id,
+									quantity: resolveTarget.quantity,
+									cartItemCode: resolveTarget.cartItem.code,
+								}
+							: undefined
+					}
+				/>
 			</DialogContent>
 		</Dialog>
 	);

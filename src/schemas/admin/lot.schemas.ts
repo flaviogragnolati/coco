@@ -18,6 +18,23 @@ const optionalTrimmedText = z
 
 const positiveIdSchema = z.number().int().positive();
 
+/**
+ * Structurally identical to `supplierOrderAvailableActionSchema` and declared
+ * here on purpose: `supplier-order.schemas` imports this module for the lot
+ * enums, so importing back would close a cycle that breaks the build.
+ */
+export const lotAvailableActionSchema = z.object({
+	action: z.enum([
+		"request",
+		"confirm",
+		"registerDispatch",
+		"cancel",
+		"cancelLine",
+	]),
+	enabled: z.boolean(),
+	reason: z.string().optional(),
+});
+
 export const lotStatusSchema = z.enum([
 	"pending",
 	"assembling",
@@ -62,7 +79,7 @@ const destinationSummarySchema = z.object({
 const operationSummarySchema = z.object({
 	id: positiveIdSchema,
 	code: z.string(),
-	status: z.enum(["running", "completed", "failed"]),
+	status: z.enum(["running", "completed", "failed", "cancelled"]),
 });
 
 const supplierOrderSummarySchema = z.object({
@@ -193,6 +210,10 @@ export const lotListItemSchema = z.object({
 	diagnosticCount: z.number().int().nonnegative(),
 	highestDiagnosticSeverity: highestDiagnosticSeveritySchema,
 	diagnosticMessages: z.array(z.string()),
+	// Always disabled: a lot is commanded through its supplier order (ADR 0003).
+	// The shape is declared here rather than imported from `supplier-order.schemas`
+	// because that module already imports this one — the cycle breaks the build.
+	availableActions: z.array(lotAvailableActionSchema),
 	createdAt: z.date(),
 	updatedAt: z.date(),
 });

@@ -2,6 +2,7 @@ import { Prisma } from "~/prisma/client";
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
 import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
+import { runSerializable } from "~/server/services/admin/_base/serializable-transaction";
 import {
 	calculateAssignableQuantity,
 	type OperationSupplierTermCandidate,
@@ -266,8 +267,21 @@ async function listOriginalDemand(
 					deleted: false,
 					status: "submitted",
 				},
-				cartItemLotItems: { none: {} },
-				rollOvers: { none: {} },
+				// Only *live* allocations exclude a cart item. A compensated one keeps
+				// its cancelled bridge rows as history and must become aggregable again
+				// (architecture §8). Safety rests on the open-roll over clause below,
+				// which is what keeps a supplier-cancelled item — whose cancellation
+				// always mints an open roll over — from being counted twice. Never
+				// weaken the two together.
+				cartItemLotItems: {
+					none: {
+						lotItem: {
+							status: { not: "cancelled" },
+							lot: { status: { not: "cancelled" } },
+						},
+					},
+				},
+				rollOvers: { none: { status: "open" } },
 			},
 		},
 		select: {
@@ -730,25 +744,33 @@ async function materializeRollOvers(
 	if (rebatchedIds.length > 0) {
 		await db.rollOver.updateMany({
 			where: { id: { in: rebatchedIds } },
-			data: { status: "rebatched" },
+			data: {
+				status: "rebatched",
+				rebatchedIntoOperationId: input.operationId,
+			},
 		});
 	}
 
 	return createdRollOvers;
 }
 
+/**
+ * The back-link is what lets a later compensation of this operation return the
+ * consumed roll overs to `open`: `RollOver.operationId` records only the
+ * operation that created them (ADR 0005, architecture §11).
+ */
 async function markAssignedSourceRollOversRebatched(
 	db: OperationDb,
-	assignments: ResolvedAssignment[],
+	input: { operationId: number; assignments: ResolvedAssignment[] },
 ) {
-	const ids = assignments
+	const ids = input.assignments
 		.map((assignment) => assignment.demand.sourceRollOverId)
 		.filter((id): id is number => id !== undefined);
 	if (ids.length === 0) return;
 
 	await db.rollOver.updateMany({
 		where: { id: { in: Array.from(new Set(ids)) } },
-		data: { status: "rebatched" },
+		data: { status: "rebatched", rebatchedIntoOperationId: input.operationId },
 	});
 }
 
@@ -870,63 +892,73 @@ function buildSummary(input: {
 	};
 }
 
+/**
+ * The execution body, joined to the caller's transaction. It opens none of its
+ * own so a compound command — `operation.rerun`, which compensates and then
+ * executes — can be atomic. `executeOperation` is the standalone entry point.
+ */
+export async function runOperationExecution(
+	tx: OperationDb,
+	input: OperationExecutionInput,
+) {
+	const operation = await validateOperation(tx, input.operationId);
+	const destinationId = operation.destinationId;
+	if (destinationId === null)
+		throw new Error("Operation destination is required");
+	const demandItems = await buildDemand(tx, operation);
+	const resolved = resolveAssignments(demandItems, new Date());
+	const materializedAssignments = await materializeAssignments(tx, {
+		operationId: operation.id,
+		destinationId,
+		assignments: resolved.assignments,
+	});
+	const materializedRollOvers = await materializeRollOvers(tx, {
+		operationId: operation.id,
+		rollOvers: resolved.rollOvers,
+	});
+
+	await markAssignedSourceRollOversRebatched(tx, {
+		operationId: operation.id,
+		assignments: resolved.assignments,
+	});
+
+	const summary = buildSummary({
+		demandItems,
+		assignments: resolved.assignments,
+		rollOvers: resolved.rollOvers,
+		lotCount: materializedAssignments.lotCount,
+		supplierOrderCount: materializedAssignments.supplierOrderCount,
+	});
+
+	await dbOperationComplete(tx, {
+		operationId: operation.id,
+		summary,
+		eligibleQuantity: summary.demand.quantity,
+		assignedQuantity: summary.assigned.quantity,
+		rollOverQuantity: summary.rollOver.quantity,
+		eligibleItemCount: summary.demand.itemCount,
+		assignedItemCount: summary.assigned.itemCount,
+		rollOverItemCount: summary.rollOver.itemCount,
+		lotCount: summary.outputs.lotCount,
+		supplierOrderCount: summary.outputs.supplierOrderCount,
+	});
+
+	await publishEvents(tx, {
+		operationId: operation.id,
+		actor: input.actor,
+		demandItems,
+		allocations: materializedAssignments.allocations,
+		rollOvers: materializedRollOvers,
+	});
+}
+
 export async function executeOperation(
 	database: { $transaction: typeof import("~/server/db").db.$transaction },
 	input: OperationExecutionInput,
 ) {
-	await database.$transaction(
-		async (tx) => {
-			const operation = await validateOperation(tx, input.operationId);
-			const destinationId = operation.destinationId;
-			if (destinationId === null)
-				throw new Error("Operation destination is required");
-			const demandItems = await buildDemand(tx, operation);
-			const resolved = resolveAssignments(demandItems, new Date());
-			const materializedAssignments = await materializeAssignments(tx, {
-				operationId: operation.id,
-				destinationId,
-				assignments: resolved.assignments,
-			});
-			const materializedRollOvers = await materializeRollOvers(tx, {
-				operationId: operation.id,
-				rollOvers: resolved.rollOvers,
-			});
-
-			await markAssignedSourceRollOversRebatched(tx, resolved.assignments);
-
-			const summary = buildSummary({
-				demandItems,
-				assignments: resolved.assignments,
-				rollOvers: resolved.rollOvers,
-				lotCount: materializedAssignments.lotCount,
-				supplierOrderCount: materializedAssignments.supplierOrderCount,
-			});
-
-			await dbOperationComplete(tx, {
-				operationId: operation.id,
-				summary,
-				eligibleQuantity: summary.demand.quantity,
-				assignedQuantity: summary.assigned.quantity,
-				rollOverQuantity: summary.rollOver.quantity,
-				eligibleItemCount: summary.demand.itemCount,
-				assignedItemCount: summary.assigned.itemCount,
-				rollOverItemCount: summary.rollOver.itemCount,
-				lotCount: summary.outputs.lotCount,
-				supplierOrderCount: summary.outputs.supplierOrderCount,
-			});
-
-			await publishEvents(tx, {
-				operationId: operation.id,
-				actor: input.actor,
-				demandItems,
-				allocations: materializedAssignments.allocations,
-				rollOvers: materializedRollOvers,
-			});
-		},
-		{
-			isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-		},
-	);
+	await runSerializable(database, async (tx) => {
+		await runOperationExecution(tx, input);
+	});
 }
 
 async function dbOperationComplete(

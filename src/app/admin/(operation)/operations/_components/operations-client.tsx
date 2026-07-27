@@ -31,11 +31,15 @@ import {
 	operationStatusOptions,
 	operationStrategyOptions,
 } from "~/features/admin/crud/operation/operation.mappers";
+import { OperationCancelDialog } from "~/features/admin/crud/operation/operation-cancel-dialog";
 import { OperationCreateDialog } from "~/features/admin/crud/operation/operation-create-dialog";
+import { OperationDeleteDialog } from "~/features/admin/crud/operation/operation-delete-dialog";
 import { OperationDetailDialog } from "~/features/admin/crud/operation/operation-detail-dialog";
+import { OperationRerunDialog } from "~/features/admin/crud/operation/operation-rerun-dialog";
 import { OperationTable } from "~/features/admin/crud/operation/operation-table";
 import type { CrudSortDirection } from "~/shared/common/admin-crud/crud.types";
 import type {
+	OperationCommandKey,
 	OperationCreateFormValues,
 	OperationListItem,
 	OperationStatus,
@@ -64,6 +68,10 @@ export function OperationsClient({
 	const [selectedOperationId, setSelectedOperationId] = useState<number | null>(
 		initialDetailId ?? null,
 	);
+	const [command, setCommand] = useState<{
+		id: number;
+		key: OperationCommandKey;
+	} | null>(null);
 
 	const debouncedSearch = useDebouncedValue(searchTerm, 250);
 
@@ -112,11 +120,21 @@ export function OperationsClient({
 		{ enabled: selectedOperationId !== null },
 	);
 
+	// Commands act on the row or on the open detail; both resolve through the same
+	// `getById` query, which react-query dedupes when the two ids agree.
+	const commandDetailQuery = api.admin.operation.getById.useQuery(
+		{ id: command?.id ?? 0 },
+		{ enabled: command !== null },
+	);
+
 	const invalidateOperationQueries = async () => {
 		await Promise.all([
 			utils.admin.operation.list.invalidate(),
 			utils.admin.operation.getStats.invalidate(),
 			utils.admin.operation.getById.invalidate(),
+			// Compensation cancels the operation's supplier orders and reopens the
+			// roll overs it consumed.
+			utils.admin.supplierOrder.invalidate(),
 		]);
 	};
 
@@ -132,12 +150,61 @@ export function OperationsClient({
 		},
 	});
 
+	const closeCommand = (open: boolean) => {
+		if (!open) setCommand(null);
+	};
+
+	const cancelMutation = api.admin.operation.cancel.useMutation({
+		onSuccess: async (operation) => {
+			toast.success("Operación cancelada");
+			setCommand(null);
+			setSelectedOperationId(operation.id);
+			await invalidateOperationQueries();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo cancelar la operación");
+		},
+	});
+
+	const rerunMutation = api.admin.operation.rerun.useMutation({
+		// `rerun` may return a *different* operation than the one acted on — the
+		// selection follows the result, which is the point of the compound command.
+		onSuccess: async (operation) => {
+			toast.success("Operación reejecutada");
+			setCommand(null);
+			setSelectedOperationId(operation.id);
+			await invalidateOperationQueries();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo reejecutar la operación");
+		},
+	});
+
+	const removeMutation = api.admin.operation.remove.useMutation({
+		onSuccess: async () => {
+			toast.success("Operación eliminada");
+			setCommand(null);
+			setSelectedOperationId(null);
+			await invalidateOperationQueries();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo eliminar la operación");
+		},
+	});
+
 	const handleCreate = (values: OperationCreateFormValues) => {
 		createMutation.mutate(values);
 	};
 
 	const handleView = (operation: OperationListItem) => {
 		setSelectedOperationId(operation.id);
+	};
+
+	const handleCommand = (
+		operation: { id: number },
+		key: OperationCommandKey,
+	) => {
+		setCommand({ id: operation.id, key });
 	};
 
 	const renderTable = () => {
@@ -167,9 +234,7 @@ export function OperationsClient({
 
 		return (
 			<OperationTable
-				onUnavailableAction={(action) =>
-					toast.info(`${action} estara disponible en una version futura`)
-				}
+				onCommand={handleCommand}
 				onView={handleView}
 				operations={operations}
 			/>
@@ -354,11 +419,47 @@ export function OperationsClient({
 			<OperationDetailDialog
 				errorMessage={detailQuery.error?.message}
 				isLoading={detailQuery.isPending && selectedOperationId !== null}
+				onCommand={handleCommand}
 				onOpenChange={(open) => {
 					if (!open) setSelectedOperationId(null);
 				}}
 				open={selectedOperationId !== null}
 				operation={detailQuery.data}
+			/>
+
+			<OperationCancelDialog
+				isSubmitting={cancelMutation.isPending}
+				onOpenChange={closeCommand}
+				onSubmit={({ reason }) => {
+					if (!command) return;
+					cancelMutation.mutate({ id: command.id, reason });
+				}}
+				open={command?.key === "cancel"}
+				operation={commandDetailQuery.data}
+			/>
+
+			<OperationRerunDialog
+				destinations={destinationsQuery.data ?? []}
+				isLoadingDestinations={destinationsQuery.isLoading}
+				isSubmitting={rerunMutation.isPending}
+				onOpenChange={closeCommand}
+				onSubmit={(values) => {
+					if (!command) return;
+					rerunMutation.mutate({ id: command.id, ...values });
+				}}
+				open={command?.key === "rerun"}
+				operation={commandDetailQuery.data}
+			/>
+
+			<OperationDeleteDialog
+				isSubmitting={removeMutation.isPending}
+				onOpenChange={closeCommand}
+				onSubmit={() => {
+					if (!command) return;
+					removeMutation.mutate({ id: command.id });
+				}}
+				open={command?.key === "delete"}
+				operation={commandDetailQuery.data}
 			/>
 		</CrudPageShell>
 	);

@@ -1,11 +1,11 @@
-import { ArrowDownUp, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { ArrowDownUp, CheckCircle2, Clock, Undo2, XCircle } from "lucide-react";
 import type {
+	OperationCommandKey,
 	OperationCreateFormValues,
 	OperationRollOverStage,
 	OperationRollOverStatus,
 	OperationStatus,
 	OperationStrategy,
-	OperationSupplierOrderStatus,
 } from "~/shared/common/admin-crud/operation.types";
 import type { StatusConfig } from "~/shared/common/admin-crud/status-config";
 import { statusPresets } from "~/shared/common/admin-crud/status-presets";
@@ -15,6 +15,13 @@ export const operationStatusLabelMap: Record<OperationStatus, string> = {
 	running: "En ejecución",
 	completed: "Completada",
 	failed: "Fallida",
+	cancelled: "Cancelada",
+};
+
+export const operationActionLabelMap: Record<OperationCommandKey, string> = {
+	cancel: "Cancelar",
+	rerun: "Reejecutar",
+	delete: "Eliminar",
 };
 
 export const operationStrategyLabelMap: Record<OperationStrategy, string> = {
@@ -41,6 +48,12 @@ export const operationStatusConfig: Record<OperationStatus, StatusConfig> = {
 		icon: XCircle,
 		hint: "Error tecnico en la ejecución",
 	},
+	cancelled: {
+		label: operationStatusLabelMap.cancelled,
+		variant: "outline",
+		icon: Undo2,
+		hint: "Compensada: su demanda volvió a la cola",
+	},
 };
 
 export const operationStrategyConfig: Record<OperationStrategy, StatusConfig> =
@@ -56,48 +69,6 @@ export const operationStrategyConfig: Record<OperationStrategy, StatusConfig> =
 			variant: "outline",
 		},
 	};
-
-export const supplierOrderStatusLabelMap: Record<
-	OperationSupplierOrderStatus,
-	string
-> = {
-	pending: "Pendiente",
-	requested: "Solicitada",
-	confirmed: "Confirmada",
-	readyForReceipt: "Lista para recepción",
-	completed: "Completada",
-	cancelled: "Cancelada",
-};
-
-export const supplierOrderStatusConfig: Record<
-	OperationSupplierOrderStatus,
-	StatusConfig
-> = {
-	pending: {
-		...statusPresets.inProgress,
-		label: supplierOrderStatusLabelMap.pending,
-	},
-	requested: {
-		...statusPresets.inProgress,
-		label: supplierOrderStatusLabelMap.requested,
-	},
-	confirmed: {
-		...statusPresets.inProgress,
-		label: supplierOrderStatusLabelMap.confirmed,
-	},
-	readyForReceipt: {
-		...statusPresets.inProgress,
-		label: supplierOrderStatusLabelMap.readyForReceipt,
-	},
-	completed: {
-		...statusPresets.success,
-		label: supplierOrderStatusLabelMap.completed,
-	},
-	cancelled: {
-		...statusPresets.failed,
-		label: supplierOrderStatusLabelMap.cancelled,
-	},
-};
 
 export const rollOverStageLabelMap: Record<OperationRollOverStage, string> = {
 	preAllocation: "Previo a la asignación",
@@ -145,6 +116,26 @@ export const operationStrategyOptions = Object.entries(
 	value: value as OperationStrategy,
 	label,
 }));
+
+/**
+ * Preloads the re-run form from the source operation, except `includeRollOver`,
+ * which is forced to `true`: a re-run that excluded roll overs would strand the
+ * demand the compensation just released (architecture §8).
+ */
+export const rerunOperationFormValues = (operation: {
+	from: Date;
+	to: Date;
+	destinationId?: number | null;
+	destination: { id: number } | null;
+	notes: string | null;
+}): OperationCreateFormValues => ({
+	from: toDateTimeLocalValue(operation.from),
+	to: toDateTimeLocalValue(operation.to),
+	destinationId: operation.destination?.id ?? 0,
+	includeRollOver: true,
+	strategy: "fifo",
+	notes: operation.notes ?? undefined,
+});
 
 export const defaultOperationCreateFormValues = (
 	destinationId = 0,
