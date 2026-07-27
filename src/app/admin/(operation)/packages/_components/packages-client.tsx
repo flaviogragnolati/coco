@@ -2,12 +2,14 @@
 
 import {
 	AlertTriangleIcon,
+	ArrowLeftRightIcon,
 	BoxesIcon,
 	LayersIcon,
 	PackageCheckIcon,
 	SearchIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { Field, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
@@ -22,12 +24,24 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
-import { packageStatusOptions } from "~/features/admin/crud/package/package.mappers";
+import {
+	packageLegOptions,
+	packageStatusOptions,
+} from "~/features/admin/crud/package/package.mappers";
+import { PackageConfirmDeliveryDialog } from "~/features/admin/crud/package/package-confirm-delivery-dialog";
 import { PackageDetailDialog } from "~/features/admin/crud/package/package-detail-dialog";
+import { PackageExceptionDialog } from "~/features/admin/crud/package/package-exception-dialog";
+import { PackageFractionateDialog } from "~/features/admin/crud/package/package-fractionate-dialog";
+import { PackagePromoteDialog } from "~/features/admin/crud/package/package-promote-dialog";
+import { PackageRecoverDialog } from "~/features/admin/crud/package/package-recover-dialog";
+import { PackageSplitDialog } from "~/features/admin/crud/package/package-split-dialog";
 import { PackageTable } from "~/features/admin/crud/package/package-table";
+import { PackageWriteOffDialog } from "~/features/admin/crud/package/package-write-off-dialog";
 import type { CrudSortDirection } from "~/shared/common/admin-crud/crud.types";
 import type { DiagnosticState } from "~/shared/common/admin-crud/operational-diagnostic.types";
 import type {
+	PackageCommandKey,
+	PackageLeg,
 	PackageListItem,
 	PackageStatus,
 } from "~/shared/common/admin-crud/package.types";
@@ -51,6 +65,7 @@ export function PackagesClient({
 	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
 	const [searchTerm, setSearchTerm] = useState("");
 	const [status, setStatus] = useState<PackageStatus | "all">("all");
+	const [leg, setLeg] = useState<PackageLeg | "all">("all");
 	const [diagnosticState, setDiagnosticState] =
 		useState<DiagnosticState>("all");
 	const [packageId, setPackageId] = useState("");
@@ -60,6 +75,9 @@ export function PackagesClient({
 	const [productId, setProductId] = useState("");
 	const [createdFrom, setCreatedFrom] = useState("");
 	const [createdTo, setCreatedTo] = useState("");
+	const [openCommand, setOpenCommand] = useState<PackageCommandKey | null>(
+		null,
+	);
 	const [selectedPackageId, setSelectedPackageId] = useState<number | null>(
 		initialDetailId ?? null,
 	);
@@ -76,6 +94,7 @@ export function PackagesClient({
 			sortDirection,
 			search: searchTerm.trim().length > 0 ? searchTerm : undefined,
 			status: status === allValue ? undefined : status,
+			leg: leg === allValue ? undefined : leg,
 			diagnosticState,
 			packageId: positiveIntOrUndefined(packageId),
 			shipmentId: positiveIntOrUndefined(shipmentId),
@@ -89,6 +108,7 @@ export function PackagesClient({
 			createdFrom,
 			createdTo,
 			diagnosticState,
+			leg,
 			lotId,
 			lotItemId,
 			packageId,
@@ -112,6 +132,7 @@ export function PackagesClient({
 		createdTo,
 	].filter((value) => value.length > 0).length;
 
+	const utils = api.useUtils();
 	const listQuery = api.admin.package.list.useQuery(listInput);
 	const statsQuery = api.admin.package.getStats.useQuery();
 	const detailQuery = api.admin.package.getById.useQuery(
@@ -119,9 +140,121 @@ export function PackagesClient({
 		{ enabled: selectedPackageId !== null },
 	);
 
+	// A package command reaches beyond the packages list: roll overs, lot closing
+	// and shipment coverage all read the rows it touches.
+	const invalidateNeighbours = () =>
+		Promise.all([
+			utils.admin.package.invalidate(),
+			utils.admin.shipment.invalidate(),
+			utils.admin.supplierOrder.invalidate(),
+			utils.admin.lot.invalidate(),
+			utils.admin.operation.invalidate(),
+		]);
+
+	const closeCommand = () => setOpenCommand(null);
+
+	const writeOffMutation = api.admin.package.writeOff.useMutation({
+		onSuccess: async () => {
+			toast.warning("Paquete dado de baja");
+			closeCommand();
+			await invalidateNeighbours();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo dar de baja el paquete");
+		},
+	});
+
+	const fractionateMutation = api.admin.package.fractionate.useMutation({
+		onSuccess: async (result) => {
+			toast.success(
+				`Fraccionado en ${result.createdPackageIds.length} paquete(s) de salida`,
+			);
+			closeCommand();
+			// The command creates rows the current selection does not describe, and can
+			// touch several sources at once — the whole list has to drop, not one row.
+			setSelectedPackageId(null);
+			await invalidateNeighbours();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo fraccionar el paquete");
+		},
+	});
+
+	const promoteMutation = api.admin.package.promote.useMutation({
+		onSuccess: async () => {
+			toast.success("Paquete promovido a la pata de salida");
+			closeCommand();
+			await invalidateNeighbours();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo promover el paquete");
+		},
+	});
+
+	const splitMutation = api.admin.package.split.useMutation({
+		onSuccess: async (result) => {
+			toast.success(
+				`Dividido en ${result.createdPackageIds.length} paquete(s)`,
+			);
+			closeCommand();
+			setSelectedPackageId(null);
+			await invalidateNeighbours();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo dividir el paquete");
+		},
+	});
+
+	const markDelayedMutation = api.admin.package.markDelayed.useMutation({
+		onSuccess: async () => {
+			toast.warning("Paquete marcado como demorado");
+			closeCommand();
+			await invalidateNeighbours();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo demorar el paquete");
+		},
+	});
+
+	const markFailedMutation = api.admin.package.markFailed.useMutation({
+		onSuccess: async () => {
+			toast.error("Paquete marcado como fallido");
+			closeCommand();
+			await invalidateNeighbours();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo marcar el paquete como fallido");
+		},
+	});
+
+	const confirmDeliveryMutation = api.admin.package.confirmDelivery.useMutation(
+		{
+			onSuccess: async () => {
+				toast.success("Entrega confirmada");
+				closeCommand();
+				await invalidateNeighbours();
+			},
+			onError: (error) => {
+				toast.error(error.message || "No se pudo confirmar la entrega");
+			},
+		},
+	);
+
+	const recoverMutation = api.admin.package.recover.useMutation({
+		onSuccess: async () => {
+			toast.success("Paquete recuperado");
+			closeCommand();
+			await invalidateNeighbours();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo recuperar el paquete");
+		},
+	});
+
 	const clearFilters = () => {
 		setSearchTerm("");
 		setStatus("all");
+		setLeg("all");
 		setDiagnosticState("all");
 		setPackageId("");
 		setShipmentId("");
@@ -186,6 +319,12 @@ export function PackagesClient({
 							label: "Listos envío",
 							value: statsQuery.data.byStatus.readyForShipment,
 							icon: PackageCheckIcon,
+							accent: "info",
+						},
+						{
+							label: "Entrada / salida",
+							value: `${statsQuery.data.byLeg.inbound ?? 0} / ${statsQuery.data.byLeg.outbound ?? 0}`,
+							icon: ArrowLeftRightIcon,
 							accent: "info",
 						},
 						{
@@ -291,6 +430,26 @@ export function PackagesClient({
 								</Select>
 							</Field>
 							<Field>
+								<FieldLabel htmlFor="package-leg">Pata</FieldLabel>
+								<Select
+									id="package-leg"
+									onChange={(event) =>
+										updateFilter(
+											setLeg,
+											event.target.value as PackageLeg | "all",
+										)
+									}
+									value={leg}
+								>
+									<option value={allValue}>Todas</option>
+									{packageLegOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
+							</Field>
+							<Field>
 								<FieldLabel htmlFor="package-diagnostics">
 									Diagnósticos
 								</FieldLabel>
@@ -331,10 +490,103 @@ export function PackagesClient({
 			<PackageDetailDialog
 				errorMessage={detailQuery.error?.message}
 				isLoading={detailQuery.isFetching}
+				onAction={setOpenCommand}
 				onOpenChange={(open) => {
 					if (!open) setSelectedPackageId(null);
 				}}
 				open={selectedPackageId !== null}
+				pkg={detailQuery.data}
+			/>
+
+			<PackageWriteOffDialog
+				isSubmitting={writeOffMutation.isPending}
+				onOpenChange={(open) => {
+					if (!open) closeCommand();
+				}}
+				onSubmit={(values) => writeOffMutation.mutate(values)}
+				open={openCommand === "writeOff"}
+				pkg={detailQuery.data}
+			/>
+
+			<PackageFractionateDialog
+				isSubmitting={fractionateMutation.isPending}
+				onOpenChange={(open) => {
+					if (!open) closeCommand();
+				}}
+				onSubmit={(values) => fractionateMutation.mutate(values)}
+				open={openCommand === "fractionate"}
+				pkg={detailQuery.data}
+			/>
+
+			<PackagePromoteDialog
+				isSubmitting={promoteMutation.isPending}
+				onOpenChange={(open) => {
+					if (!open) closeCommand();
+				}}
+				onSubmit={(values) =>
+					promoteMutation.mutate({
+						id: detailQuery.data?.id ?? 0,
+						name: values.name,
+					})
+				}
+				open={openCommand === "promote"}
+				pkg={detailQuery.data}
+			/>
+
+			<PackageSplitDialog
+				isSubmitting={splitMutation.isPending}
+				onOpenChange={(open) => {
+					if (!open) closeCommand();
+				}}
+				onSubmit={(values) => splitMutation.mutate(values)}
+				open={openCommand === "split"}
+				pkg={detailQuery.data}
+			/>
+
+			<PackageExceptionDialog
+				isSubmitting={
+					markDelayedMutation.isPending || markFailedMutation.isPending
+				}
+				onOpenChange={(open) => {
+					if (!open) closeCommand();
+				}}
+				onSubmit={({ reason }) => {
+					const id = detailQuery.data?.id ?? 0;
+					if (openCommand === "markFailed") {
+						markFailedMutation.mutate({ id, reason });
+						return;
+					}
+					markDelayedMutation.mutate({ id, reason });
+				}}
+				open={openCommand === "markDelayed" || openCommand === "markFailed"}
+				pkg={detailQuery.data}
+				target={openCommand === "markFailed" ? "failed" : "delayed"}
+			/>
+
+			<PackageConfirmDeliveryDialog
+				isSubmitting={confirmDeliveryMutation.isPending}
+				onOpenChange={(open) => {
+					if (!open) closeCommand();
+				}}
+				onSubmit={({ notes }) =>
+					confirmDeliveryMutation.mutate({
+						id: detailQuery.data?.id ?? 0,
+						notes,
+					})
+				}
+				open={openCommand === "confirmDelivery"}
+				pkg={detailQuery.data}
+			/>
+
+			<PackageRecoverDialog
+				isSubmitting={recoverMutation.isPending}
+				onOpenChange={(open) => {
+					if (!open) closeCommand();
+				}}
+				onSubmit={({ notes }) =>
+					recoverMutation.mutate({ id: detailQuery.data?.id ?? 0, notes })
+				}
+				open={openCommand === "recover"}
 				pkg={detailQuery.data}
 			/>
 		</CrudPageShell>
