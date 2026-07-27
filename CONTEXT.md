@@ -22,6 +22,14 @@ _Avoid_: Refund, payment failure
 An aggregation batch for submitted customer demand.
 _Avoid_: Job, run
 
+**Administrative window**:
+The period while every live supplier order of an operation is still pending, during which the operation can be compensated. A supplier order already cancelled through the supplier loop does not close the window.
+_Avoid_: Grace period
+
+**Operation compensation**:
+The administrative undo of an executed operation: its lots, lot items and supplier orders are cancelled, the roll overs it created are cancelled, the roll overs it consumed return to open, and the demand re-enters aggregation. Records are never deleted.
+_Avoid_: Rollback, reversal, revert
+
 **Lot**:
 A supplier-scoped grouping of aggregated demand inside one operation.
 _Avoid_: Batch, package
@@ -34,9 +42,25 @@ _Avoid_: Package item, customer item
 The quantity bridge that connects a customer request to a supplier-facing lot item.
 _Avoid_: CartItemLotItem, customer item
 
+**Supplier order**:
+The per-supplier commercial order that requests one or more lots from a wholesale supplier. It is the command aggregate of the supplier loop: request, confirmation, and cancellation are commanded here and cascade to lots and lot items.
+_Avoid_: Purchase order, wholesale order
+
+**Supplier dispatch**:
+The announced sending of goods for a supplier order. Registering it creates an internal shipment and its consolidated inbound package; a separate action confirms the departure. A supplier order may have several dispatches.
+_Avoid_: Delivery note, remito
+
+**Receipt discrepancy**:
+The gap between the quantity a dispatch declared and the quantity actually received. It is absorbed onto specific demand allocations and becomes a post-allocation roll over with a mandatory reason, never a silent delta.
+_Avoid_: Faltante, merma, shortfall
+
 **Package**:
-A physical or logical package containing sourced quantity prepared for movement.
-_Avoid_: Shipment, carrier order
+A physical package moving sourced quantity in a single leg, at the granularity the team chooses to trace — one consolidated package per supplier order by default, split into the real bundles when the detail matters.
+_Avoid_: Shipment, carrier order, logical package
+
+**Package leg**:
+The direction a package moves: inbound (supplier to destination) or outbound (destination to end user). Quantity conservation is checked per leg.
+_Avoid_: Generation, direction
 
 **Package line**:
 The quantity of a lot item represented inside a package.
@@ -46,17 +70,65 @@ _Avoid_: Lot item, package allocation
 The quantity bridge that connects a demand allocation to a package line.
 _Avoid_: PackageAllocation, package line
 
+**Fractionation**:
+The destination-side action that turns received inbound quantity into outbound packages, one per customer by default, over a selection of received inbound packages. It creates outbound records and leaves the inbound ones as arrival history; it may run in several passes as goods arrive. Spanish-facing UI labels it "Fraccionamiento".
+_Avoid_: Repackaging, splitting
+
+**Package promotion**:
+Reassigning a mono-customer inbound package to the outbound leg while preserving its physical identity, used when the supplier already fractionated per customer. The package returns to ready-for-shipment: its received status recorded the inbound arrival, not the outbound one.
+_Avoid_: Re-shipment
+
+**Package split**:
+Dividing one package into several so the records match the real physical bundles. It changes how quantity is grouped, never how much is packed.
+_Avoid_: Fractionation, package promotion
+
 **Shipment**:
 A movement record for packages, either between internal locations or toward the end user.
 _Avoid_: Package, carrier order
+
+**Delivery mode**:
+How an outbound package reaches its customer: home delivery and pickup point both travel on an end-user shipment and are distinguished by the shipment's recorded mode, while depot pickup is the absence of a shipment. Spanish-facing UI labels it "Modo de entrega".
+_Avoid_: Shipping method, delivery type
+
+**Pickup point**:
+A shared address an end-user shipment travels to, where each customer collects their own package afterwards. Its arrival is not a handover, so every package on it still needs its own delivery confirmation. Spanish-facing UI labels it "Punto de retiro".
+_Avoid_: Depot, warehouse, destination
+
+**Package recovery**:
+Returning a delayed package to the state it was in before the disruption — waiting at the destination if it had not left, moving if its shipment already departed. Spanish-facing UI labels it "Recuperar".
+_Avoid_: Retry, un-delay
 
 **Carrier**:
 A logistics provider that moves shipments. Code, URLs, and data keep `carrier`; Spanish-facing UI labels it "Transportista".
 _Avoid_: Courier, shipping company
 
+**Carrier order**:
+The booking of a carrier to move one or more shipments, carrying the carrier's own reference. It records the contracting, never the goods: quantity, packages and delivery evidence stay on the shipments it groups, and it publishes no fulfillment fact of its own. Spanish-facing UI labels it "Orden de transporte".
+_Avoid_: Freight order, carrier booking, shipment
+
+**Delivery confirmation**:
+The per-package action recording the physical handover of an outbound package to its customer. Automatic for home delivery, where the shipment's arrival confirms every package it carries; explicit for depot pickup and pickup point, where each customer collects separately. Spanish-facing UI labels it "Confirmar entrega".
+_Avoid_: Proof of delivery
+
+**Order closure**:
+The derived commercial close of a user order: completed once every one of its items reached a terminal fulfillment state and at least one was delivered, cancelled when all of them ended cancelled. It is never set by hand and never overrides a state the payment domain owns.
+_Avoid_: Order completion, manual close
+
 **Roll over**:
 Quantity that dropped out of the current fulfillment path and must be rebatched or otherwise resolved.
 _Avoid_: Remainder, leftover, silent quantity delta
+
+**Demand conservation**:
+The invariant that every unit of paid demand is always in exactly one active place — unallocated original demand, an open roll over, or a live allocation — or in an audited terminal resolution.
+_Avoid_: Quantity balance
+
+**Cut absorption**:
+The reassignment of a supplier's shortfall onto specific demand allocations, LIFO by payment date by default and manually adjustable per allocation.
+_Avoid_: Prorating, reallocation
+
+**Write-off**:
+The terminal follow-up of a failed package or shipment that converts the affected quantity into a post-allocation roll over with a reason. Spanish-facing UI labels it "Dar de baja".
+_Avoid_: Loss, shrinkage
 
 **Fulfillment lineage**:
 The traceable path of a customer request through aggregation, sourcing, packaging, shipment, and delivery. Concretely: rollovers, lot-item allocations, and order items. Tracking events are **history, not lineage** — an item added and then removed by an admin carries an `addedToCart` event and has no lineage at all. Encoded in `hasFulfillmentLineage` (`operations-cart.data.ts`).
@@ -70,9 +142,13 @@ _Avoid_: Commercial state, request state
 A read-only signal with a stable code and severity that compares operational records, quantities, and statuses to reveal missing evidence or inconsistent fulfillment lineage.
 _Avoid_: Correction, mutation, action
 
+**Fulfillment exception**:
+A derived condition: demand whose lineage has a delayed or failed package or shipment touching live quantity. It clears automatically when the records recover or the quantity is rerouted.
+_Avoid_: Incident, error state
+
 **Aggregate status**:
-A summary status intended for display, backed by more detailed operational records.
-_Avoid_: Source of truth, proof
+A summary status intended for display, recomputed from the live operational records that back it instead of being carried forward by the events that moved it.
+_Avoid_: Source of truth, proof, event-carried status
 
 **Fulfillment journey**:
 The staged, display-oriented progression of a customer request through fulfillment, computed from tracking events (history). Stages read completed, current, pending, or skipped; deviations surface as notices and a terminal outcome, never as stages. Spanish-facing UI labels it "Recorrido".

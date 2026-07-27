@@ -6,8 +6,8 @@ the application.
 The goal is to keep fulfillment traceability centralized. Checkout, admin cart
 operations, fulfillment orchestration, supplier integration, packaging,
 shipments, rollovers, and exception handling publish domain facts. The tracking
-module decides how those facts become `CartItemTrackingEvent` rows and when a
-`CartItem.fulfillmentStatus` projection is justified.
+module decides how those facts become `CartItemTrackingEvent` rows and derives
+`CartItem.fulfillmentStatus` from the records they left behind.
 
 ## Core Rule
 
@@ -27,7 +27,7 @@ Domain service
   -> TrackingEventService
   -> CartItemTrackingEvent
   -> TrackingStatusProjector
-  -> CartItem.fulfillmentStatus when evidence exists
+  -> CartItem.fulfillmentStatus derived from the item's live lineage
 ```
 
 Seed scripts may create fixture tracking rows. Runtime application services must
@@ -346,6 +346,11 @@ Responsibilities:
 - Call `TrackingStatusProjector.project()` after the tracking row is written.
 - Load user and admin timelines.
 
+`recordManyFromCommands` writes every row first and then projects **once per
+distinct `cartItemId`** — projection recomputes from lineage, so N commands for
+one cart item would otherwise recompute the same status N times. The returned
+array stays in input order; only the projections are deduplicated.
+
 Public API:
 
 ```ts
@@ -384,28 +389,50 @@ File: `src/server/services/tracking/tracking-status-projector.ts`
 
 Responsibilities:
 
-- Decide whether a tracking command implies a `CartItem.fulfillmentStatus`
-  update.
-- Verify detailed evidence before changing aggregate fulfillment status.
-- Skip projection and log a warning when evidence is missing.
+- Load the cart item's live lineage snapshot
+  (`fulfillment-lineage.data.ts`, one nested `findUnique` on the caller's `tx`).
+- Derive `CartItem.fulfillmentStatus` from that snapshot
+  (`fulfillment-status.derivation.ts`, pure).
+- Write the derived value when it differs from the stored one.
 
-Projection examples:
+The projector takes `{ cartItemId, eventKey?, eventType? }` — the arriving event
+is **not** an input to the status, only to the log line below. Derivation is
+total: an item with no backing record floors at `awaitingAggregation`, which is
+what lets a stale `exception` clear. See ADR 0002
+(`docs/adr/0002-fulfillment-status-derived-from-lineage.md`).
 
-| Tracking event | Target fulfillment status | Evidence check |
+Derivation precedence, over **live** records only (an allocation is live when
+neither its lot item nor its lot is `cancelled`; a packaged allocation is live
+when neither its package line nor its package is `cancelled`):
+
+| # | Rule | Result |
 | --- | --- | --- |
-| `submittedToOrder` | `awaitingAggregation` | Matching `UserOrderItem` exists |
-| `includedInOperation` | `includedInOperation` | Referenced `Operation` exists |
-| `allocatedToLotItem` | `allocatedToSupplierItem` | Matching `CartItemLotItem` exists |
-| `includedInSupplierOrder` | `requestedFromSupplier` | Referenced `Lot` has `supplierOrderId` |
-| `supplierConfirmed` | `supplierConfirmed` | Referenced `LotItem` is `confirmed` |
-| `packaged` | `packaged` | Matching package allocation exists |
-| shipment movement events | shipment-related statuses | Matching package allocation on shipment exists |
-| rollover events | `partiallyRolledOver` | Matching `RollOver` exists |
-| `cartItemCancelled` | `cancelled` | Cart item is deleted or cancelled |
-| `fulfillmentException` | `exception` | Cart item exists |
+| 0 | cart item deleted or `status === "cancelled"` | `cancelled` |
+| 1 | a live packaged allocation whose package **or** shipment is `delayed`/`failed` | `exception` |
+| 2 | open rollover quantity > 0 **and** live allocated quantity = 0 | `rolledOver` |
+| 3 | open rollover quantity > 0 **and** stage below `packaged` | `partiallyRolledOver` |
+| 4 | otherwise | the furthest stage backed by a record |
 
-The projector intentionally does not blindly trust the event. Aggregate
-fulfillment status is only updated when detailed records justify the status.
+Stage ladder, highest backed by a record wins: `delivered` (live packaged
+allocation on an `endUserDelivery` shipment where the package or the shipment is
+`received`) → `inEndUserShipment` → `atWarehouse` (`internalTransfer` received)
+→ `inInternalShipment` → `packaged` → `supplierConfirmed` /
+`requestedFromSupplier` (from the lot item, falling back to its supplier order)
+→ `allocatedToSupplierItem` → `includedInOperation` → `awaitingAggregation`.
+
+From `packaged` onward the ladder outranks an open rollover, so a partially cut
+order can still reach `delivered`; the open rollover surfaces as a journey
+notice and an operational diagnostic instead.
+
+There is no monotonic guard: the write is idempotent by construction (a retried
+event recomputes the same status) and a legitimate regression — a rollover
+cutting allocated demand — must be able to move the status down.
+
+`trackingStatusProjectionSkipped` remains the missing-evidence signal, with a
+derivation-shaped trigger: it fires at `warn` when the arriving event implies a
+stage (`adminTrackingStageByEventType`) ahead of the derived status. Deviations
+(`cancelled`, `exception`, `rolledOver`, `partiallyRolledOver`) are legitimate
+and stay silent.
 
 ### `AuditLogService`
 
@@ -484,6 +511,127 @@ Admin event key shape:
 admin:cart:{cartId}:cartItem:{cartItemId}:{action}:{occurredAtIso}
 ```
 
+### Supplier Loop
+
+Files:
+
+- `src/server/services/admin/supplier-order.service.ts`
+- `src/server/services/admin/roll-over.service.ts`
+- `src/server/services/admin/operations-effects/supplier-order-effects.ts`
+- `src/server/services/admin/operations-effects/roll-over-effects.ts`
+
+The four supplier-order commands (`request`, `confirm`, `cancel`, `cancelLine`)
+and `rollOver.resolve` publish through the same side-effect hook the admin cart
+commands use, with `source: "supplierOrder"` / `"rollOver"`.
+
+Current domain events:
+
+- `supplier.cartItem.requested`
+- `supplier.lotItem.confirmed`
+- `rollover.postAllocation.created`
+- `rollover.resolved`
+
+Keys are deterministic with no timestamp component: the transition ladders in
+`src/shared/common/fulfillment-transitions.ts` make each fact publishable at most
+once per (order, line, cart item).
+
+```txt
+supplier:order:{orderId}:lotItem:{lotItemId}:cartItem:{cartItemId}:requested
+supplier:order:{orderId}:lotItem:{lotItemId}:cartItem:{cartItemId}:confirmed
+operation:{operationId}:cartItem:{cartItemId}:rollover:{rollOverId}:created
+rollover:{rollOverId}:resolved
+```
+
+Only allocations that survive a cut with quantity `> 0` get a
+`supplier.lotItem.confirmed` event; a fully absorbed allocation gets its roll
+over event instead, so the journey never shows "confirmed" for quantity that no
+longer exists.
+
+### Operation Compensation
+
+Files:
+
+- `src/server/services/admin/operation.service.ts`
+- `src/server/services/admin/operations-effects/operation-effects.ts`
+
+`operation.cancel` and `operation.rerun` from a `completed` source publish one
+event per affected cart item, with `source: "operation"`:
+
+- `operation.cartItem.excluded`
+
+The quantity it carries is the same the item's `operation.cartItem.included`
+carried — the conservation property compensation rests on (ADR 0005). Reverting
+a consumed roll over to `open` and cancelling a created one publish nothing: the
+notice carries the narrative and no new demand record exists.
+
+An operation leaves `completed` at most once, so the key needs no timestamp:
+
+```txt
+operation:{operationId}:cartItem:{cartItemId}:excluded
+```
+
+### Goods Inbound And Outbound
+
+Files:
+
+- `src/server/services/admin/shipment.service.ts`
+- `src/server/services/admin/package.service.ts`
+- `src/server/services/admin/operations-effects/shipment-effects.ts`
+- `src/server/services/admin/operations-effects/package-effects.ts`
+- `src/server/services/admin/operations-effects/fulfillment-event-builders.ts`
+
+The physical-movement commands publish through the same side-effect hook, with
+`source: "shipment"` / `"package"`. The pure builders live apart from the two
+handler classes so their payloads and keys are unit-testable without reaching for
+the `server-only` publisher.
+
+Current domain events:
+
+- `package.cartItem.packaged` — two producers: `supplierOrder.registerDispatch`
+  on the inbound leg and `package.fractionate` on the outbound one. Promotion
+  publishes **nothing**: it keeps the package id, so the deterministic key for
+  that row was already consumed by `registerDispatch`. Derivation is unaffected
+  (status comes from lineage, not events), but the raw event list differs
+  between the two outbound producers — a settled decision, not a gap.
+- `shipment.internal.dispatched` / `shipment.internal.received`
+- `shipment.endUser.dispatched` — `shipment.dispatch` on an `endUserDelivery`
+  shipment
+- `shipment.endUser.delivered` — two producers: `shipment.deliver` on a
+  `homeDelivery` shipment, and `package.confirmDelivery` for depot pickup and
+  pickup-point collection
+- `shipment.endUser.arrivedAtPickupPoint` — `shipment.deliver` on a
+  `pickupPoint` shipment. **Not** a handover: the packages stay `inTransit` and
+  each customer confirms their own collection
+- `fulfillment.exception.created` / `fulfillment.exception.resolved` — at both
+  shipment and package level, with package-namespaced keys so a disrupted
+  package and its shipment record two distinct facts for the same cart item
+
+Keys are deterministic with no timestamp component. The outbound leg anchors on
+the **package**, because depot pickup emits a delivery fact with no shipment at
+all — which is why `shipment.endUser.*` requires `packageId` and makes
+`shipmentId` optional, the inverse of its `shipment.internal.*` siblings.
+
+```txt
+package:{packageId}:line:{packageLotItemId}:cartItem:{cartItemId}:packaged
+shipment:{shipmentId}:package:{packageId}:cartItem:{cartItemId}:{dispatched|received}
+shipment:{shipmentId}:package:{packageId}:cartItem:{cartItemId}:endUser:{dispatched|received}
+shipment:{shipmentId}:cartItem:{cartItemId}:arrivedAtPickupPoint
+package:{packageId}:cartItem:{cartItemId}:delivered
+shipment:{shipmentId}:cartItem:{cartItemId}:exception:{delayed|failed}
+shipment:{shipmentId}:cartItem:{cartItemId}:exception:resolved:{receipt|retry}
+package:{packageId}:cartItem:{cartItemId}:exception:{delayed|failed}
+package:{packageId}:cartItem:{cartItemId}:exception:resolved:{writeOff|recover}
+```
+
+The internal and end-user movement keys differ by one segment on purpose. The
+internal shape predates the outbound leg and is already in the outbox, so it is
+byte-identical; the end-user leg inserts `endUser:` so the two can never collide
+even on hand-edited data.
+
+**Every declared domain event type now has a producer.** The count of
+declared-without-producer types is zero as of Phase 4b (2026-07-26); it was 8 at
+the start of the fulfillment series.
+
 ## Event Mapping
 
 Current domain-to-tracking mappings:
@@ -498,15 +646,19 @@ Current domain-to-tracking mappings:
 | `fulfillment.exception.created` | `fulfillmentException` |
 | `fulfillment.exception.resolved` | `exceptionResolved` |
 | `operation.cartItem.included` | `includedInOperation` |
+| `operation.cartItem.excluded` | `excludedFromOperation` |
 | `operation.cartItem.allocatedToLotItem` | `allocatedToLotItem` |
+| `supplier.cartItem.requested` | `includedInSupplierOrder` |
 | `supplier.lotItem.confirmed` | `supplierConfirmed` |
 | `package.cartItem.packaged` | `packaged` |
 | `shipment.internal.dispatched` | `movedInInternalShipment` |
 | `shipment.internal.received` | `receivedAtWarehouse` |
 | `shipment.endUser.dispatched` | `movedInEndUserShipment` |
 | `shipment.endUser.delivered` | `delivered` |
+| `shipment.endUser.arrivedAtPickupPoint` | `arrivedAtPickupPoint` |
 | `rollover.preAllocation.created` | `rolledOverPreAllocation` |
 | `rollover.postAllocation.created` | `rolledOverPostAllocation` |
+| `rollover.resolved` | `rollOverResolved` |
 
 ## Timeline APIs
 
@@ -563,9 +715,10 @@ Rules:
   that was current when each deviation happened, and a terminal `outcome`. It is
   derived from the events by `buildAdminTrackingJourney`
   (`src/shared/common/tracking-journey.ts`) — history, not the
-  `CartItem.fulfillmentStatus` column, so the two can legitimately diverge when
-  the projector skipped a transition for missing evidence. The admin modal shows
-  the column as a chip next to the journey stepper.
+  `CartItem.fulfillmentStatus` column, so the two can legitimately diverge: the
+  journey remembers where the item has been, the column reports what its live
+  lineage backs today. The admin modal shows the column as a chip next to the
+  journey stepper.
 - Timeline detail endpoints use stable ordering: `createdAt asc, id asc`.
 
 Admin UI:
@@ -638,8 +791,9 @@ Use this sequence when adding a new tracked fulfillment fact:
 6. Add a mapping in `mapDomainEventToTrackingCommands()`.
 7. Add a new `CartItemTrackingEventType` enum value in Prisma if the tracking
    event type is new.
-8. Add or update projection evidence checks in `TrackingStatusProjector` if the
-   tracking event changes `CartItem.fulfillmentStatus`.
+8. If the new capability makes a new fulfillment state reachable, extend
+   `deriveFulfillmentStatus` and the lineage snapshot query that feeds it — the
+   projector registers no per-event target status.
 9. Add timeline labels in `TrackingEventService` if the event should be readable
    to users/admins.
 10. Regenerate Prisma client after schema changes.
@@ -659,7 +813,7 @@ Before merging tracking-related changes, verify:
   `src/server/services/tracking/`.
 - New event payloads are JSON-safe and decimal-safe.
 - New tracking events have deterministic `eventKey` values.
-- Fulfillment status projection verifies detailed evidence first.
+- Fulfillment status is derived from lineage records, never carried by an event.
 - User timeline output remains redacted.
 - Admin timeline output remains complete.
 

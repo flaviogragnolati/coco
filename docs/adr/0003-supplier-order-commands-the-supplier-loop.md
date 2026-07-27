@@ -1,0 +1,5 @@
+# SupplierOrder is the command aggregate of the supplier loop
+
+Request, confirmation (full or partial), and cancellation of wholesale sourcing are commanded at the SupplierOrder level and cascade to its Lots and LotItems; line-level detail exists only where reality varies (per-line partial confirmation quantities and per-line cancellation). Lot and LotItem statuses are never edited directly — they follow the commands, and aggregate statuses must never lead their lines (the rule the lot/package/shipment diagnostics already monitor). We chose SupplierOrder because it is the commercial artifact of the conversation with the wholesaler — it owns `externalReference` and the `requestedAt`/`confirmedAt`/`cancelledAt` timestamps — and a single action must move the whole bundle coherently.
+
+Considered options: Lot-level commands (leaves the supplier order's commercial fields orphaned and breaks if one supplier order ever holds several lots); LotItem-level commands (maximum flexibility, unusable UX for the common case, aggregates would need deriving anyway).
