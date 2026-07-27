@@ -173,6 +173,21 @@ export const operationCartItemIncludedEventSchema =
 		}),
 	});
 
+/**
+ * An operation compensation returned this cart item's demand to the pool. Mirrors
+ * `operation.cartItem.included` and carries the same quantity that inclusion did,
+ * which is the conservation property compensation rests on (ADR 0005).
+ */
+export const operationCartItemExcludedEventSchema =
+	baseDomainEventSchema.extend({
+		type: z.literal("operation.cartItem.excluded"),
+		aggregateType: z.literal("CartItem"),
+		payload: cartItemOperationEventPayloadSchema.extend({
+			operationId: z.string(),
+			reason: z.string(),
+		}),
+	});
+
 export const operationCartItemAllocatedToLotItemEventSchema =
 	baseDomainEventSchema.extend({
 		type: z.literal("operation.cartItem.allocatedToLotItem"),
@@ -196,6 +211,22 @@ export const supplierLotItemConfirmedEventSchema = baseDomainEventSchema.extend(
 		}),
 	},
 );
+
+/**
+ * One demand allocation was sent to a supplier as part of a supplier order. The
+ * supplier order id and code travel in `metadata`: `CartItemTrackingEvent` has
+ * no supplier-order column, so there is nothing for a ref to resolve to.
+ */
+export const supplierCartItemRequestedEventSchema =
+	baseDomainEventSchema.extend({
+		type: z.literal("supplier.cartItem.requested"),
+		aggregateType: z.literal("CartItem"),
+		payload: cartItemOperationEventPayloadSchema.extend({
+			lotId: z.string(),
+			lotItemId: z.string(),
+			quantity: decimalStringSchema,
+		}),
+	});
 
 export const packageCartItemPackagedEventSchema = baseDomainEventSchema.extend({
 	type: z.literal("package.cartItem.packaged"),
@@ -228,13 +259,22 @@ export const shipmentInternalReceivedEventSchema = baseDomainEventSchema.extend(
 	},
 );
 
+/**
+ * The outbound leg anchors on `packageId`, not `shipmentId` — the inverse of its
+ * `shipment.internal.*` siblings. Depot pickup emits a delivery fact with no
+ * shipment at all (`package.confirmDelivery` on a package that never moved), so
+ * the package is the only reference every outbound fact carries.
+ *
+ * `aggregateType` stays `"Shipment"` deliberately: the aggregate is still
+ * conceptually the movement, and changing it would churn the outbox for no gain.
+ */
 export const shipmentEndUserDispatchedEventSchema =
 	baseDomainEventSchema.extend({
 		type: z.literal("shipment.endUser.dispatched"),
 		aggregateType: z.literal("Shipment"),
 		payload: cartItemOperationEventPayloadSchema.extend({
-			shipmentId: z.string(),
-			packageId: z.string().optional(),
+			packageId: z.string(),
+			shipmentId: z.string().optional(),
 		}),
 	});
 
@@ -243,11 +283,25 @@ export const shipmentEndUserDeliveredEventSchema = baseDomainEventSchema.extend(
 		type: z.literal("shipment.endUser.delivered"),
 		aggregateType: z.literal("Shipment"),
 		payload: cartItemOperationEventPayloadSchema.extend({
-			shipmentId: z.string(),
-			packageId: z.string().optional(),
+			packageId: z.string(),
+			shipmentId: z.string().optional(),
 		}),
 	},
 );
+
+/**
+ * A pickup-point shipment reached its collection point. Not a handover: the
+ * customer still has to collect, which `package.confirmDelivery` records.
+ */
+export const shipmentEndUserArrivedAtPickupPointEventSchema =
+	baseDomainEventSchema.extend({
+		type: z.literal("shipment.endUser.arrivedAtPickupPoint"),
+		aggregateType: z.literal("Shipment"),
+		payload: cartItemOperationEventPayloadSchema.extend({
+			packageId: z.string(),
+			shipmentId: z.string().optional(),
+		}),
+	});
 
 export const rolloverPreAllocationCreatedEventSchema =
 	baseDomainEventSchema.extend({
@@ -271,6 +325,21 @@ export const rolloverPostAllocationCreatedEventSchema =
 		}),
 	});
 
+/**
+ * An operator closed an open roll over with an explicit decision. Records the
+ * decision only — it moves no money and creates no demand (ADR 0005).
+ */
+export const rolloverResolvedEventSchema = baseDomainEventSchema.extend({
+	type: z.literal("rollover.resolved"),
+	aggregateType: z.literal("RollOver"),
+	payload: cartItemOperationEventPayloadSchema.extend({
+		operationId: z.string(),
+		rolloverId: z.string(),
+		quantity: decimalStringSchema,
+		reason: z.string(),
+	}),
+});
+
 export const domainEventSchema = z.discriminatedUnion("type", [
 	cartItemSubmittedToOrderEventSchema,
 	adminCartItemAddedEventSchema,
@@ -280,15 +349,19 @@ export const domainEventSchema = z.discriminatedUnion("type", [
 	fulfillmentExceptionCreatedEventSchema,
 	fulfillmentExceptionResolvedEventSchema,
 	operationCartItemIncludedEventSchema,
+	operationCartItemExcludedEventSchema,
 	operationCartItemAllocatedToLotItemEventSchema,
+	supplierCartItemRequestedEventSchema,
 	supplierLotItemConfirmedEventSchema,
 	packageCartItemPackagedEventSchema,
 	shipmentInternalDispatchedEventSchema,
 	shipmentInternalReceivedEventSchema,
 	shipmentEndUserDispatchedEventSchema,
 	shipmentEndUserDeliveredEventSchema,
+	shipmentEndUserArrivedAtPickupPointEventSchema,
 	rolloverPreAllocationCreatedEventSchema,
 	rolloverPostAllocationCreatedEventSchema,
+	rolloverResolvedEventSchema,
 ]);
 
 export const domainEventTypeSchema = z.enum([
@@ -300,15 +373,19 @@ export const domainEventTypeSchema = z.enum([
 	"fulfillment.exception.created",
 	"fulfillment.exception.resolved",
 	"operation.cartItem.included",
+	"operation.cartItem.excluded",
 	"operation.cartItem.allocatedToLotItem",
+	"supplier.cartItem.requested",
 	"supplier.lotItem.confirmed",
 	"package.cartItem.packaged",
 	"shipment.internal.dispatched",
 	"shipment.internal.received",
 	"shipment.endUser.dispatched",
 	"shipment.endUser.delivered",
+	"shipment.endUser.arrivedAtPickupPoint",
 	"rollover.preAllocation.created",
 	"rollover.postAllocation.created",
+	"rollover.resolved",
 ]);
 
 export type DomainEventInput = z.infer<typeof domainEventSchema>;

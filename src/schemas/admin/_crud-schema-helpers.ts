@@ -83,6 +83,21 @@ export function requiredDecimalString(label: string, scale: number) {
 		});
 }
 
+/**
+ * Zero-allowing decimal input. `requiredDecimalString` refuses `0`, but zero is a
+ * first-class outcome across the fulfillment commands: a supplier refusing a
+ * line, a line left out of a dispatch, a line received at nothing.
+ */
+export function nonNegativeDecimalString(label: string, scale: number) {
+	const pattern = new RegExp(`^\\d+(?:\\.\\d{1,${scale}})?$`);
+
+	return z
+		.string()
+		.trim()
+		.min(1, `${label} es obligatorio`)
+		.regex(pattern, `${label} debe tener hasta ${scale} decimales`);
+}
+
 export function optionalDecimalString(label: string, scale: number) {
 	const pattern = new RegExp(`^\\d+(?:\\.\\d{1,${scale}})?$`);
 

@@ -11,6 +11,7 @@ import type {
 	LotListItem,
 	LotStats,
 } from "~/shared/common/admin-crud/lot.types";
+import { lotAvailableActions } from "~/shared/common/fulfillment-transitions";
 import { trackingEventLabelMap } from "~/shared/common/tracking-display";
 import { throwNotFound } from "./_base/admin-crud.errors";
 import {
@@ -95,6 +96,9 @@ function summarizeLot(record: LotSummaryRecord): LotListItem & {
 		},
 		supplier: record.supplier,
 		supplierOrder: record.supplierOrder,
+		availableActions: lotAvailableActions({
+			supplierOrderCode: record.supplierOrder?.code ?? null,
+		}),
 		lotItemCount: record.lotItems.length,
 		lotItemQuantity: lotItemQuantity.toString(),
 		demandAllocationQuantity: demandAllocationQuantity.toString(),

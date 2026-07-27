@@ -11,6 +11,7 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { CrudAvailableAction } from "~/features/admin/crud/_components/crud-available-action";
 import { IdTooltip } from "~/features/admin/crud/_components/crud-cell-tooltips";
 import {
 	CrudErrorState,
@@ -20,6 +21,7 @@ import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
 import type { LotDetail } from "~/shared/common/admin-crud/lot.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
+import { supplierOrderActionLabelMap } from "../supplier-order/supplier-order.mappers";
 import { lotItemStatusConfig, lotStatusConfig } from "./lot.mappers";
 
 function TrackingLink({ lot }: { lot: LotDetail }) {
@@ -28,6 +30,37 @@ function TrackingLink({ lot }: { lot: LotDetail }) {
 		<Button asChild size="sm" variant="outline">
 			<Link href={`/admin/tracking?${params.toString()}`}>Ver tracking</Link>
 		</Button>
+	);
+}
+
+/**
+ * Information, not a footer of clickable-looking buttons: a lot is never
+ * commanded directly, it follows its supplier order (ADR 0003). Every entry
+ * comes back disabled from the server, each naming the order to use instead.
+ */
+function AccionesDeLaOrden({ lot }: { lot: LotDetail }) {
+	return (
+		<section className="flex flex-col gap-2 rounded-2xl border p-3">
+			<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+				Acciones de la orden de proveedor
+			</h3>
+			<p className="text-muted-foreground text-xs">
+				El lote sigue a su orden de proveedor
+				{lot.supplierOrder ? ` ${lot.supplierOrder.code}` : ""}; no se comanda
+				por separado.
+			</p>
+			<div className="flex flex-wrap gap-2">
+				{lot.availableActions.map((entry) => (
+					<CrudAvailableAction
+						enabled={entry.enabled}
+						key={entry.action}
+						label={supplierOrderActionLabelMap[entry.action]}
+						onClick={() => undefined}
+						reason={entry.reason}
+					/>
+				))}
+			</div>
+		</section>
 	);
 }
 
@@ -80,6 +113,8 @@ function Resumen({ lot }: { lot: LotDetail }) {
 					<p className="font-medium">{lot.pendingQuantity}</p>
 				</div>
 			</section>
+
+			<AccionesDeLaOrden lot={lot} />
 		</div>
 	);
 }

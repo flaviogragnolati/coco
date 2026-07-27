@@ -1,36 +1,10 @@
+import {
+	lotStatusLineCompatibility,
+	unresolvedDemandFulfillmentStatuses,
+} from "~/shared/common/fulfillment-transitions";
 import type { LotSummaryRecord } from "./lot.data";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
 import { decimal, sumDecimals } from "./operational-diagnostics.types";
-
-const activeDemandStatuses = new Set([
-	"awaitingAggregation",
-	"includedInOperation",
-	"allocatedToSupplierItem",
-	"requestedFromSupplier",
-	"supplierConfirmed",
-	"packaged",
-	"inInternalShipment",
-	"atWarehouse",
-	"inEndUserShipment",
-	"delivered",
-	"partiallyRolledOver",
-	"rolledOver",
-	"exception",
-]);
-
-const compatibleLotItemStatuses: Partial<
-	Record<LotSummaryRecord["status"], Set<string>>
-> = {
-	requested: new Set([
-		"requested",
-		"confirmed",
-		"readyForPackaging",
-		"completed",
-	]),
-	confirmed: new Set(["confirmed", "readyForPackaging", "completed"]),
-	readyForPackaging: new Set(["readyForPackaging", "completed"]),
-	completed: new Set(["completed"]),
-};
 
 export function calculateLotDiagnostics(
 	lot: LotSummaryRecord,
@@ -46,9 +20,15 @@ export function calculateLotDiagnostics(
 		});
 	}
 
-	const compatibleStatuses = compatibleLotItemStatuses[lot.status];
+	// Cancelled lines are excluded throughout: a partially cancelled lot is a
+	// correct outcome of a supplier refusal, not an inconsistency.
+	const liveLotItems = lot.lotItems.filter(
+		(item) => item.status !== "cancelled",
+	);
+
+	const compatibleStatuses = lotStatusLineCompatibility[lot.status];
 	if (compatibleStatuses) {
-		const incompatible = lot.lotItems.filter(
+		const incompatible = liveLotItems.filter(
 			(item) => !compatibleStatuses.has(item.status),
 		);
 		if (incompatible.length > 0) {
@@ -61,7 +41,7 @@ export function calculateLotDiagnostics(
 		}
 	}
 
-	for (const lotItem of lot.lotItems) {
+	for (const lotItem of liveLotItems) {
 		const demandQuantity = sumDecimals(
 			lotItem.cartItemLotItems.map((allocation) => allocation.quantity),
 		);
@@ -86,13 +66,17 @@ export function calculateLotDiagnostics(
 	}
 
 	if (lot.status === "cancelled") {
-		const hasActiveDemand = lot.lotItems.some((lotItem) =>
+		// `unresolvedDemand…`, not `activeDemand…`: the latter counts `rolledOver`,
+		// which is exactly what a correct cancellation produces.
+		const hasUnresolvedDemand = lot.lotItems.some((lotItem) =>
 			lotItem.cartItemLotItems.some((allocation) =>
-				activeDemandStatuses.has(allocation.cartItem.fulfillmentStatus),
+				unresolvedDemandFulfillmentStatuses.has(
+					allocation.cartItem.fulfillmentStatus,
+				),
 			),
 		);
 
-		if (hasActiveDemand) {
+		if (hasUnresolvedDemand) {
 			diagnostics.push({
 				code: "lot.cancelledWithActiveDemand",
 				severity: "critical",
