@@ -1,4 +1,6 @@
 import type {
+	PackageCommandKey,
+	PackageLeg,
 	PackageLotItemStatus,
 	PackageStatus,
 } from "~/shared/common/admin-crud/package.types";
@@ -92,3 +94,33 @@ export const packageStatusOptions = Object.entries(packageStatusLabelMap).map(
 		label,
 	}),
 );
+
+export const packageLegLabelMap: Record<PackageLeg, string> = {
+	inbound: "Entrada",
+	outbound: "Salida",
+};
+
+// A leg is a category, not a lifecycle — informational `inert` chips rather than
+// lifecycle colours, the convention `shipmentTypeConfig` established.
+export const packageLegConfig: Record<PackageLeg, StatusConfig> = {
+	inbound: { ...statusPresets.inert, label: packageLegLabelMap.inbound },
+	outbound: { ...statusPresets.inert, label: packageLegLabelMap.outbound },
+};
+
+export const packageLegOptions = Object.entries(packageLegLabelMap).map(
+	([value, label]) => ({
+		value: value as PackageLeg,
+		label,
+	}),
+);
+
+export const packageActionLabelMap: Record<PackageCommandKey, string> = {
+	fractionate: "Fraccionar",
+	promote: "Promover a salida",
+	split: "Dividir",
+	confirmDelivery: "Confirmar entrega",
+	recover: "Recuperar",
+	markDelayed: "Marcar demorado",
+	markFailed: "Marcar fallido",
+	writeOff: "Dar de baja",
+};

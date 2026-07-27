@@ -11,18 +11,31 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { CrudAvailableAction } from "~/features/admin/crud/_components/crud-available-action";
 import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
-import type { PackageDetail } from "~/shared/common/admin-crud/package.types";
+import type {
+	PackageCommandKey,
+	PackageDetail,
+} from "~/shared/common/admin-crud/package.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
+	packageActionLabelMap,
+	packageLegConfig,
 	packageLotItemStatusConfig,
 	packageStatusConfig,
 } from "./package.mappers";
+
+/** Only the commands that take quantity away read as destructive. */
+const destructiveActions: ReadonlySet<PackageCommandKey> = new Set([
+	"markDelayed",
+	"markFailed",
+	"writeOff",
+]);
 
 function Resumen({ pkg }: { pkg: PackageDetail }) {
 	return (
@@ -31,6 +44,10 @@ function Resumen({ pkg }: { pkg: PackageDetail }) {
 				<div className="flex flex-col gap-1">
 					<p className="text-muted-foreground text-xs">Estado</p>
 					<StatusChip config={packageStatusConfig[pkg.status]} />
+				</div>
+				<div className="flex flex-col gap-1">
+					<p className="text-muted-foreground text-xs">Pata</p>
+					<StatusChip config={packageLegConfig[pkg.leg]} />
 				</div>
 				<div>
 					<p className="text-muted-foreground text-xs">Tracking</p>
@@ -56,7 +73,7 @@ function Resumen({ pkg }: { pkg: PackageDetail }) {
 				</div>
 			</section>
 
-			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-3">
+			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-5">
 				<div>
 					<p className="text-muted-foreground text-xs">Líneas</p>
 					<p className="font-medium">{pkg.packageLineQuantity}</p>
@@ -68,6 +85,14 @@ function Resumen({ pkg }: { pkg: PackageDetail }) {
 				<div>
 					<p className="text-muted-foreground text-xs">Sin asignar</p>
 					<p className="font-medium">{pkg.unallocatedQuantity}</p>
+				</div>
+				<div>
+					<p className="text-muted-foreground text-xs">Sin fraccionar</p>
+					<p className="font-medium">{pkg.fractionableQuantity}</p>
+				</div>
+				<div>
+					<p className="text-muted-foreground text-xs">Clientes</p>
+					<p className="font-medium">{pkg.distinctCartCount}</p>
 				</div>
 			</section>
 		</div>
@@ -177,12 +202,14 @@ export function PackageDetailDialog({
 	isLoading,
 	errorMessage,
 	onOpenChange,
+	onAction,
 }: {
 	open: boolean;
 	pkg?: PackageDetail;
 	isLoading: boolean;
 	errorMessage?: string;
 	onOpenChange: (open: boolean) => void;
+	onAction: (action: PackageCommandKey) => void;
 }) {
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
@@ -228,6 +255,16 @@ export function PackageDetailDialog({
 							</Link>
 						</Button>
 					) : null}
+					{pkg?.availableActions.map((entry) => (
+						<CrudAvailableAction
+							destructive={destructiveActions.has(entry.action)}
+							enabled={entry.enabled}
+							key={entry.action}
+							label={packageActionLabelMap[entry.action]}
+							onClick={() => onAction(entry.action)}
+							reason={entry.reason}
+						/>
+					))}
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

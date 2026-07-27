@@ -1,6 +1,8 @@
 import { ArrowLeftRight, Truck } from "lucide-react";
 
 import type {
+	DeliveryMode,
+	ShipmentCommandKey,
 	ShipmentStatus,
 	ShipmentType,
 } from "~/shared/common/admin-crud/shipment.types";
@@ -21,6 +23,11 @@ export const shipmentStatusLabelMap: Record<ShipmentStatus, string> = {
 export const shipmentTypeLabelMap: Record<ShipmentType, string> = {
 	internalTransfer: "Transferencia interna",
 	endUserDelivery: "Entrega a usuario",
+};
+
+export const deliveryModeLabelMap: Record<DeliveryMode, string> = {
+	homeDelivery: "A domicilio",
+	pickupPoint: "Punto de retiro",
 };
 
 // Same lifecycle convention as packages: `received` terminal-good (green),
@@ -85,3 +92,13 @@ export const shipmentTypeOptions = Object.entries(shipmentTypeLabelMap).map(
 		label,
 	}),
 );
+
+export const shipmentActionLabelMap: Record<ShipmentCommandKey, string> = {
+	dispatch: "Despachar",
+	receive: "Recibir",
+	deliver: "Entregar",
+	addPackages: "Agregar paquetes",
+	markDelayed: "Marcar demorado",
+	markFailed: "Marcar fallido",
+	retry: "Reintentar",
+};

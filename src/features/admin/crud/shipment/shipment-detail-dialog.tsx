@@ -12,6 +12,7 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { CrudAvailableAction } from "~/features/admin/crud/_components/crud-available-action";
 import { JsonPreview } from "~/features/admin/crud/_components/crud-json-preview";
 import {
 	CrudErrorState,
@@ -19,9 +20,18 @@ import {
 } from "~/features/admin/crud/_components/crud-state";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
-import type { ShipmentDetail } from "~/shared/common/admin-crud/shipment.types";
+import { packageLegLabelMap } from "~/features/admin/crud/package/package.mappers";
+import type {
+	ShipmentCommandKey,
+	ShipmentDetail,
+} from "~/shared/common/admin-crud/shipment.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
-import { shipmentStatusConfig, shipmentTypeConfig } from "./shipment.mappers";
+import {
+	deliveryModeLabelMap,
+	shipmentActionLabelMap,
+	shipmentStatusConfig,
+	shipmentTypeConfig,
+} from "./shipment.mappers";
 
 function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 	return (
@@ -34,6 +44,13 @@ function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 				<div className="flex flex-col gap-1">
 					<p className="text-muted-foreground text-xs">Tipo</p>
 					<StatusChip config={shipmentTypeConfig[shipment.type]} />
+					{shipment.type === "endUserDelivery" ? (
+						<p className="text-muted-foreground text-xs">
+							{shipment.deliveryMode
+								? deliveryModeLabelMap[shipment.deliveryMode]
+								: "Sin modo de entrega"}
+						</p>
+					) : null}
 				</div>
 				<div>
 					<p className="text-muted-foreground text-xs">Carrier</p>
@@ -102,7 +119,8 @@ function Paquetes({ shipment }: { shipment: ShipmentDetail }) {
 						<div>
 							<p className="font-medium">{pkg.name}</p>
 							<p className="text-muted-foreground text-xs">
-								Paquete #{pkg.id} / Estado {pkg.status}
+								Paquete #{pkg.id} / Estado {pkg.status} /{" "}
+								{packageLegLabelMap[pkg.leg]}
 							</p>
 						</div>
 						<p className="text-sm">{pkg.lineQuantity}</p>
@@ -180,12 +198,14 @@ export function ShipmentDetailDialog({
 	isLoading,
 	errorMessage,
 	onOpenChange,
+	onAction,
 }: {
 	open: boolean;
 	shipment?: ShipmentDetail;
 	isLoading: boolean;
 	errorMessage?: string;
 	onOpenChange: (open: boolean) => void;
+	onAction: (action: ShipmentCommandKey) => void;
 }) {
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
@@ -233,6 +253,18 @@ export function ShipmentDetailDialog({
 							</Link>
 						</Button>
 					) : null}
+					{shipment?.availableActions.map((entry) => (
+						<CrudAvailableAction
+							destructive={
+								entry.action === "markDelayed" || entry.action === "markFailed"
+							}
+							enabled={entry.enabled}
+							key={entry.action}
+							label={shipmentActionLabelMap[entry.action]}
+							onClick={() => onAction(entry.action)}
+							reason={entry.reason}
+						/>
+					))}
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

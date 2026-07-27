@@ -10,7 +10,7 @@ import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/op
 import type { CrudColumn } from "~/shared/common/admin-crud/crud.types";
 import type { PackageListItem } from "~/shared/common/admin-crud/package.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
-import { packageStatusConfig } from "./package.mappers";
+import { packageLegConfig, packageStatusConfig } from "./package.mappers";
 
 const packageColumns: CrudColumn<PackageListItem>[] = [
 	{
@@ -33,6 +33,11 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 		key: "status",
 		header: "Estado",
 		cell: (pkg) => <StatusChip config={packageStatusConfig[pkg.status]} />,
+	},
+	{
+		key: "leg",
+		header: "Pata",
+		cell: (pkg) => <StatusChip config={packageLegConfig[pkg.leg]} />,
 	},
 	{
 		key: "shipment",

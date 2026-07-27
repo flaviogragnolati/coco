@@ -1,6 +1,7 @@
 import type { Prisma } from "~/prisma/client";
 import type { ShipmentListInput } from "~/shared/common/admin-crud/shipment.types";
 import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
+import { toPrismaInputJson } from "./_base/prisma-json";
 
 type AdminDbClient = Prisma.TransactionClient;
 
@@ -24,6 +25,7 @@ const shipmentDetailSelect = {
 	internalCode: true,
 	trackingCode: true,
 	type: true,
+	deliveryMode: true,
 	status: true,
 	destinationAddressSnapshot: true,
 	destinationContactSnapshot: true,
@@ -50,6 +52,7 @@ const shipmentDetailSelect = {
 			name: true,
 			trackingCode: true,
 			status: true,
+			leg: true,
 			packageLotItems: {
 				orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 				select: {
@@ -111,6 +114,7 @@ const shipmentSummarySelect = {
 	internalCode: true,
 	name: true,
 	type: true,
+	deliveryMode: true,
 	status: true,
 	trackingCode: true,
 	createdAt: true,
@@ -170,6 +174,7 @@ function buildShipmentWhere(
 	if (input.carrierOrderId !== undefined) {
 		and.push({ carrierOrderId: input.carrierOrderId });
 	}
+	if (input.unassigned === true) and.push({ carrierOrderId: null });
 	if (input.carrierId !== undefined) {
 		and.push({ carrierOrder: { carrierId: input.carrierId } });
 	}
@@ -258,6 +263,261 @@ export async function listShipmentsByIds(
 	return db.shipment.findMany({
 		where: { id: { in: ids } },
 		select: shipmentDetailSelect,
+	});
+}
+
+/**
+ * The command shape for the ladder-only moves (`dispatch`, `markDelayed`,
+ * `markFailed`, `retry`): the packages, their lines, and each line's demand down
+ * to `cartId`, which every event payload carries. Deliberately narrower than
+ * `shipmentReceiveSelect` — none of these commands absorbs anything, so none of
+ * them needs payment dates.
+ */
+const shipmentCommandSelect = {
+	id: true,
+	name: true,
+	internalCode: true,
+	trackingCode: true,
+	type: true,
+	deliveryMode: true,
+	status: true,
+	packages: {
+		orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+		select: {
+			id: true,
+			name: true,
+			status: true,
+			leg: true,
+			packageLotItems: {
+				orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+				select: {
+					id: true,
+					status: true,
+					quantity: true,
+					lotItemId: true,
+					packageAllocations: {
+						select: {
+							id: true,
+							quantity: true,
+							cartItemLotItem: {
+								select: {
+									id: true,
+									quantity: true,
+									cartItem: { select: { id: true, code: true, cartId: true } },
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+} satisfies Prisma.ShipmentSelect;
+
+export type ShipmentCommandRecord = Prisma.ShipmentGetPayload<{
+	select: typeof shipmentCommandSelect;
+}>;
+
+/**
+ * The receive shape: `shipmentCommandSelect` widened with the payment dates the
+ * shortfall absorption orders by, and with the lot each line belongs to so a roll
+ * over attaches to that lot's own operation rather than to a "current" one.
+ */
+const shipmentReceiveSelect = {
+	...shipmentCommandSelect,
+	packages: {
+		orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+		select: {
+			id: true,
+			name: true,
+			status: true,
+			leg: true,
+			packageLotItems: {
+				orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+				select: {
+					id: true,
+					status: true,
+					quantity: true,
+					lotItemId: true,
+					lotItem: {
+						select: {
+							id: true,
+							code: true,
+							status: true,
+							quantity: true,
+							lot: {
+								select: {
+									id: true,
+									status: true,
+									operationId: true,
+									supplierOrderId: true,
+								},
+							},
+						},
+					},
+					packageAllocations: {
+						orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+						select: {
+							id: true,
+							quantity: true,
+							cartItemLotItem: {
+								select: {
+									id: true,
+									quantity: true,
+									cartItem: {
+										select: {
+											id: true,
+											code: true,
+											cartId: true,
+											userOrderItems: {
+												orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+												select: {
+													createdAt: true,
+													userOrder: {
+														select: {
+															transactions: {
+																where: {
+																	status: "completed",
+																	completedAt: { not: null },
+																},
+																orderBy: [
+																	{ completedAt: "asc" },
+																	{ id: "asc" },
+																],
+																select: { completedAt: true },
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+} satisfies Prisma.ShipmentSelect;
+
+export type ShipmentReceiveRecord = Prisma.ShipmentGetPayload<{
+	select: typeof shipmentReceiveSelect;
+}>;
+
+export async function findShipmentForCommand(db: AdminDbClient, id: number) {
+	return db.shipment.findUnique({
+		where: { id },
+		select: shipmentCommandSelect,
+	});
+}
+
+export async function findShipmentForReceipt(db: AdminDbClient, id: number) {
+	return db.shipment.findUnique({
+		where: { id },
+		select: shipmentReceiveSelect,
+	});
+}
+
+/**
+ * The only shipment constructor. `type`, `deliveryMode` and `status` are taken
+ * explicitly rather than hardcoded so `retry` can reproduce its source's shape:
+ * hardcoding `internalTransfer` here is what silently turned a retried end-user
+ * shipment into an internal one.
+ *
+ * The P2002 collision on `internalCode` stays with the callers — the operator
+ * message is command-specific.
+ */
+export async function createShipment(
+	db: AdminDbClient,
+	data: {
+		name: string;
+		internalCode: string;
+		trackingCode?: string;
+		type: Prisma.ShipmentCreateInput["type"];
+		deliveryMode?: Prisma.ShipmentCreateInput["deliveryMode"];
+		status: Prisma.ShipmentCreateInput["status"];
+		destinationAddressSnapshot?: Record<string, unknown>;
+		destinationContactSnapshot?: Record<string, unknown>;
+	},
+) {
+	return db.shipment.create({
+		data: {
+			name: data.name,
+			internalCode: data.internalCode,
+			trackingCode: data.trackingCode,
+			type: data.type,
+			deliveryMode: data.deliveryMode,
+			status: data.status,
+			destinationAddressSnapshot:
+				data.destinationAddressSnapshot === undefined
+					? undefined
+					: toPrismaInputJson(data.destinationAddressSnapshot),
+			destinationContactSnapshot:
+				data.destinationContactSnapshot === undefined
+					? undefined
+					: toPrismaInputJson(data.destinationContactSnapshot),
+		},
+		select: { id: true, internalCode: true },
+	});
+}
+
+export async function updateShipmentState(
+	db: AdminDbClient,
+	id: number,
+	data: {
+		status?: Prisma.ShipmentUpdateInput["status"];
+		trackingCode?: string;
+	},
+) {
+	await db.shipment.update({
+		where: { id },
+		data: { status: data.status, trackingCode: data.trackingCode },
+	});
+}
+
+const carrierOrderAssignmentSelect = {
+	id: true,
+	internalCode: true,
+	name: true,
+	type: true,
+	status: true,
+	carrierOrderId: true,
+} satisfies Prisma.ShipmentSelect;
+
+export type ShipmentCarrierOrderAssignmentRecord = Prisma.ShipmentGetPayload<{
+	select: typeof carrierOrderAssignmentSelect;
+}>;
+
+export async function findShipmentsForCarrierOrderAssignment(
+	db: AdminDbClient,
+	ids: number[],
+): Promise<ShipmentCarrierOrderAssignmentRecord[]> {
+	if (ids.length === 0) return [];
+
+	return db.shipment.findMany({
+		where: { id: { in: ids } },
+		select: carrierOrderAssignmentSelect,
+		orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+	});
+}
+
+/**
+ * Point shipments at a carrier order, or detach them with `null`. The FK lives on
+ * `Shipment`, so its write lives here — the rule `reassignPackagesToShipment`
+ * sets. The assignability guard belongs to the carrier order service.
+ */
+export async function reassignShipmentsToCarrierOrder(
+	db: AdminDbClient,
+	shipmentIds: number[],
+	carrierOrderId: number | null,
+) {
+	if (shipmentIds.length === 0) return;
+
+	await db.shipment.updateMany({
+		where: { id: { in: shipmentIds } },
+		data: { carrierOrderId },
 	});
 }
 

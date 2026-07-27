@@ -1,31 +1,116 @@
+import {
+	shipmentStatusLineCompatibility,
+	shipmentStatusPackageCompatibility,
+} from "~/shared/common/fulfillment-transitions";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
 import type { ShipmentSummaryRecord } from "./shipment.data";
 
-const shipmentPackageCompatibility: Partial<
-	Record<ShipmentSummaryRecord["status"], Set<string>>
-> = {
-	inTransit: new Set(["inTransit", "received"]),
-	received: new Set(["received"]),
-};
-
-const shipmentLineCompatibility: Partial<
-	Record<ShipmentSummaryRecord["status"], Set<string>>
-> = {
-	inTransit: new Set(["shipped", "received"]),
-	received: new Set(["received"]),
-};
+const disruptedPackageStatuses: ReadonlySet<string> = new Set([
+	"delayed",
+	"failed",
+]);
 
 export function calculateShipmentDiagnostics(
 	shipment: ShipmentSummaryRecord,
 	hasTrackingEvents: boolean,
 ): OperationalDiagnostic[] {
 	const diagnostics: OperationalDiagnostic[] = [];
+	const livePackages = shipment.packages.filter(
+		(pkg) => pkg.status !== "cancelled",
+	);
+	const liveLines = (pkg: ShipmentSummaryRecord["packages"][number]) =>
+		pkg.packageLotItems.filter((line) => line.status !== "cancelled");
 
-	if (shipment.packages.length === 0) {
+	// `retry` deliberately empties the source shipment — the packages move to a new
+	// one and this row stays `failed` as history (architecture §8). A cancelled
+	// shipment is emptied for the same reason.
+	if (
+		shipment.packages.length === 0 &&
+		shipment.status !== "failed" &&
+		shipment.status !== "cancelled"
+	) {
 		diagnostics.push({
 			code: "shipment.package.missing",
 			severity: "warning",
 			message: "El envio no tiene paquetes asociados.",
+			refs: { shipmentId: shipment.id },
+		});
+	}
+
+	// §15 #12's "a failed shipment requires retry-or-write-off", enforced as a
+	// worklist signal rather than a hard block: diagnostics never mutate (§14).
+	if (
+		shipment.status === "failed" &&
+		livePackages.some((pkg) => liveLines(pkg).length > 0)
+	) {
+		diagnostics.push({
+			code: "shipment.failedWithoutFollowUp",
+			severity: "warning",
+			message:
+				"El envio fallido conserva paquetes activos; falta reintentar o dar de baja.",
+			refs: { shipmentId: shipment.id, packageCount: livePackages.length },
+		});
+	}
+
+	// A `received` pickup-point shipment legitimately holds packages that are still
+	// `inTransit`: reaching the collection point is not the handover, and each
+	// customer confirms their own collection with `package.confirmDelivery`. Every
+	// `received`-row rule below would read that correct state as a contradiction,
+	// so the mode is exempted from all three — and `pendingCollection` replaces the
+	// signal rather than removing it.
+	//
+	// Scoped to `pickupPoint` **only**: on a home delivery `received` genuinely does
+	// mean every package arrived, and exempting that would blind the rule that says so.
+	const awaitingCollection =
+		shipment.status === "received" &&
+		shipment.type === "endUserDelivery" &&
+		shipment.deliveryMode === "pickupPoint";
+
+	if (shipment.status === "received" && !awaitingCollection) {
+		const notReceived = livePackages.reduce(
+			(count, pkg) =>
+				count +
+				liveLines(pkg).filter((line) => line.status !== "received").length,
+			0,
+		);
+
+		if (notReceived > 0) {
+			diagnostics.push({
+				code: "shipment.received.linesNotReceived",
+				severity: "critical",
+				message: "El envio recibido conserva lineas activas sin recibir.",
+				refs: { shipmentId: shipment.id, packageLineCount: notReceived },
+			});
+		}
+	}
+
+	if (awaitingCollection) {
+		const pendingPackages = livePackages.filter(
+			(pkg) => pkg.status !== "received",
+		);
+
+		if (pendingPackages.length > 0) {
+			diagnostics.push({
+				code: "shipment.pickupPoint.pendingCollection",
+				severity: "warning",
+				message:
+					"El envio llego al punto de retiro y espera que los clientes retiren.",
+				refs: { shipmentId: shipment.id, packageCount: pendingPackages.length },
+			});
+		}
+	}
+
+	// Prisma cannot express a conditional NOT NULL, so this is the enforcement of
+	// "an end-user delivery always carries a mode" — the field `deliver` branches on.
+	if (
+		shipment.type === "endUserDelivery" &&
+		shipment.deliveryMode === null &&
+		shipment.status !== "cancelled"
+	) {
+		diagnostics.push({
+			code: "shipment.endUser.noDeliveryMode",
+			severity: "critical",
+			message: "El envio al cliente no tiene modo de entrega.",
 			refs: { shipmentId: shipment.id },
 		});
 	}
@@ -39,9 +124,43 @@ export function calculateShipmentDiagnostics(
 		});
 	}
 
-	const compatiblePackages = shipmentPackageCompatibility[shipment.status];
+	// A package can be `delayed` or `failed` on its own now (Phase 4a): a single
+	// lost box inside an otherwise-fine shipment. That is a real signal but not a
+	// contradiction, so it is exempted from the two compatibility rules — the way
+	// cancelled packages already are — and reported under its own name and
+	// severity. Do **not** widen `shipmentStatusPackageCompatibility` instead: the
+	// same table feeds the `received` case, where a disrupted package genuinely is
+	// a contradiction.
+	const disruptedPackages = livePackages.filter((pkg) =>
+		disruptedPackageStatuses.has(pkg.status),
+	);
+	const undisruptedPackages = livePackages.filter(
+		(pkg) => !disruptedPackageStatuses.has(pkg.status),
+	);
+
+	// A disrupted shipment cascades its status to every package, so the rule would
+	// be pure noise there — `shipment.failedWithoutFollowUp` already covers it. It
+	// only means something when the shipment itself is fine.
+	const shipmentItselfDisrupted = disruptedPackageStatuses.has(shipment.status);
+
+	if (
+		disruptedPackages.length > 0 &&
+		!shipmentItselfDisrupted &&
+		shipment.status !== "received"
+	) {
+		diagnostics.push({
+			code: "shipment.package.disrupted",
+			severity: "warning",
+			message: "El envio tiene paquetes demorados o fallidos.",
+			refs: { shipmentId: shipment.id, packageCount: disruptedPackages.length },
+		});
+	}
+
+	const compatiblePackages = awaitingCollection
+		? undefined
+		: shipmentStatusPackageCompatibility[shipment.status];
 	if (compatiblePackages) {
-		const incompatible = shipment.packages.filter(
+		const incompatible = undisruptedPackages.filter(
 			(pkg) => !compatiblePackages.has(pkg.status),
 		);
 		if (incompatible.length > 0) {
@@ -54,12 +173,14 @@ export function calculateShipmentDiagnostics(
 		}
 	}
 
-	const compatibleLines = shipmentLineCompatibility[shipment.status];
+	const compatibleLines = awaitingCollection
+		? undefined
+		: shipmentStatusLineCompatibility[shipment.status];
 	if (compatibleLines) {
-		const incompatibleLineCount = shipment.packages.reduce(
+		const incompatibleLineCount = undisruptedPackages.reduce(
 			(count, pkg) =>
 				count +
-				pkg.packageLotItems.filter((line) => !compatibleLines.has(line.status))
+				liveLines(pkg).filter((line) => !compatibleLines.has(line.status))
 					.length,
 			0,
 		);
