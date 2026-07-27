@@ -2,6 +2,7 @@ import {
 	AlertTriangleIcon,
 	CheckCircle2Icon,
 	type LucideIcon,
+	PackageCheckIcon,
 	RefreshCwIcon,
 	RotateCcwIcon,
 } from "lucide-react";
@@ -39,6 +40,7 @@ const noticeConfigMap: Record<
 	rollover: { variant: "warning", icon: RotateCcwIcon },
 	resolved: { variant: "outline", icon: CheckCircle2Icon },
 	quantity: { variant: "outline", icon: RefreshCwIcon },
+	info: { variant: "outline", icon: PackageCheckIcon },
 };
 
 function NoticeList({ notices }: { notices: CustomerJourneyNoticeView[] }) {

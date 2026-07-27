@@ -76,6 +76,7 @@ export type AdminTrackingJourneyNotice = {
 export type AdminTrackingJourneyOutcomeKind =
 	| "dropped"
 	| "cancelled"
+	| "resolved"
 	| "rolledOver"
 	| "partiallyRolledOver"
 	| "exception";
@@ -102,6 +103,7 @@ const adminStageIndexByKey = new Map<AdminTrackingStageKey, number>(
 const outcomeLabelMap: Record<AdminTrackingJourneyOutcomeKind, string> = {
 	dropped: "Item eliminado del carrito",
 	cancelled: "Item cancelado",
+	resolved: "Resuelto sin entrega",
 	rolledOver: "Reprogramado",
 	partiallyRolledOver: "Parcialmente reprogramado",
 	exception: "Con incidencia activa",
@@ -234,6 +236,15 @@ function resolveOutcome({
 	const cancelled = latestEventByType.get("cartItemCancelled");
 	if (status === "cancelled" || cancelled) {
 		return outcomeOf("cancelled", cancelled);
+	}
+
+	// A resolved roll over derives `cancelled` (ADR 0005) without the request ever
+	// being cancelled, so the terminal badge would otherwise sit above a journey
+	// with no outcome at all. Runs after the branch above so a genuine cancellation
+	// still wins.
+	const rollOverResolved = latestEventByType.get("rollOverResolved");
+	if (fulfillmentStatus === "cancelled" && rollOverResolved) {
+		return outcomeOf("resolved", rollOverResolved);
 	}
 
 	const exception = latestEventByType.get("fulfillmentException");

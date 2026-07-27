@@ -190,6 +190,58 @@ describe("buildAdminTrackingJourney", () => {
 		expect(journey.currentStageKey).toBeNull();
 	});
 
+	it("reads a resolved roll over as its own outcome, not a cancellation", () => {
+		const journey = build({
+			status: "submitted",
+			fulfillmentStatus: "cancelled",
+			events: [
+				event("submittedToOrder"),
+				event("rolledOverPostAllocation"),
+				event("rollOverResolved"),
+			],
+		});
+
+		expect(journey.outcome).toMatchObject({
+			kind: "resolved",
+			label: "Resuelto sin entrega",
+		});
+	});
+
+	it("prioritises a genuine cancellation over a resolved roll over", () => {
+		const journey = build({
+			status: "cancelled",
+			fulfillmentStatus: "cancelled",
+			events: [
+				event("submittedToOrder"),
+				event("rollOverResolved"),
+				event("cartItemCancelled"),
+			],
+		});
+
+		expect(journey.outcome).toMatchObject({ kind: "cancelled" });
+	});
+
+	it("reads a pickup-point arrival as a non-warning notice, never a stage", () => {
+		const journey = build({
+			fulfillmentStatus: "inEndUserShipment",
+			events: [
+				event("submittedToOrder"),
+				event("movedInEndUserShipment"),
+				event("arrivedAtPickupPoint"),
+			],
+		});
+
+		expect(journey.notices).toHaveLength(1);
+		expect(journey.notices.at(0)).toMatchObject({
+			kind: "info",
+			label: "Disponible para retirar",
+			stageKey: "inEndUserShipment",
+		});
+		expect(journey.stages.every((stage) => !stage.warning)).toBe(true);
+		expect(journey.currentStageKey).toBe("inEndUserShipment");
+		expect(journey.outcome).toBeNull();
+	});
+
 	it("prioritises the dropped outcome over a rollover", () => {
 		const journey = build({
 			status: "dropped",
