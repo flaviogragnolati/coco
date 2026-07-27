@@ -2288,8 +2288,85 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 
 	// ── Scenario carts ───────────────────────────────────────────────────────────
 	// Every cart below is submitted and paid, which is the only shape fulfillment
-	// reaches. The `AGGREGABLE` one is deliberately left unallocated: it is the pool
-	// `scripts/fulfillment-e2e.ts` aggregates from.
+	// reaches. The four `AGGREGABLE` ones are deliberately left unallocated: they
+	// are the pool `scripts/fulfillment-e2e.ts` aggregates from. There are four
+	// because fractionation groups by **cart**, and §21.7's run needs one outbound
+	// package for the depot pickup, one for the home delivery and two for the
+	// pickup point — the mode's whole point being several customers collecting from
+	// one arrival. They order the same two products so each lot line carries four
+	// demand allocations and LIFO absorption has something to order.
+	await createPaidScenarioCart(tx, {
+		cartCode: "CART-SEED-AGGREGABLE-C",
+		orderCode: "ORD-SEED-AGGREGABLE-C",
+		userId: data.users.superadmin.id,
+		shippingAddress: data.addresses.adminShipping,
+		paymentMethodId: data.paymentMethods.adminTransfer.id,
+		paidAt: AGGREGABLE_PAID_AT,
+		items: [
+			{
+				code: "CITEM-SEED-AGG-C-TOMATE",
+				quantity: "30.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.tomate,
+				terms: data.clientTerms.tomate,
+			},
+			{
+				code: "CITEM-SEED-AGG-C-MANZANA",
+				quantity: "25.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.manzana,
+				terms: data.clientTerms.manzana,
+			},
+		],
+	});
+	await createPaidScenarioCart(tx, {
+		cartCode: "CART-SEED-AGGREGABLE-D",
+		orderCode: "ORD-SEED-AGGREGABLE-D",
+		userId: data.users.buyer.id,
+		shippingAddress: data.addresses.buyerShipping,
+		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paidAt: AGGREGABLE_PAID_AT,
+		items: [
+			{
+				code: "CITEM-SEED-AGG-D-TOMATE",
+				quantity: "20.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.tomate,
+				terms: data.clientTerms.tomate,
+			},
+			{
+				code: "CITEM-SEED-AGG-D-MANZANA",
+				quantity: "25.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.manzana,
+				terms: data.clientTerms.manzana,
+			},
+		],
+	});
+	await createPaidScenarioCart(tx, {
+		cartCode: "CART-SEED-AGGREGABLE-B",
+		orderCode: "ORD-SEED-AGGREGABLE-B",
+		userId: data.users.admin.id,
+		shippingAddress: data.addresses.adminShipping,
+		paymentMethodId: data.paymentMethods.adminTransfer.id,
+		paidAt: AGGREGABLE_PAID_AT,
+		items: [
+			{
+				code: "CITEM-SEED-AGG-B-TOMATE",
+				quantity: "40.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.tomate,
+				terms: data.clientTerms.tomate,
+			},
+			{
+				code: "CITEM-SEED-AGG-B-MANZANA",
+				quantity: "50.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.manzana,
+				terms: data.clientTerms.manzana,
+			},
+		],
+	});
 	await createPaidScenarioCart(tx, {
 		cartCode: "CART-SEED-AGGREGABLE",
 		orderCode: "ORD-SEED-AGGREGABLE",
