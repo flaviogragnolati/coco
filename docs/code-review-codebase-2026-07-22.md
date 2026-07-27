@@ -20,9 +20,9 @@ Around it sits a cluster that compounds: a mock payment gateway reachable in pro
 
 > **Status note (2026-07-22):** the MercadoPago / money cluster is **deliberately deferred to a separate session** at the owner's direction. It is parked, not dismissed. (The numbering in the original note read "#2–#9"; per §5 those numbers are the structural findings, and the money cluster is **#10, #15, #25–#34**. Corrected here.)
 >
-> **Remediation note (2026-07-22):** findings **#2, #3, #4, #5, #6, #7, #8** are **resolved** — see the per-finding notes in §5 and the full log in §10. Finding **#9** (CRUD-client consolidation) is **resolved** in a follow-up session; see its note in §5.1, which also records a refutation of one claim in the finding. Findings **#35** and **#36** (Batch 2 — session boundary and environment) are **resolved** in a third session; see §12, which also records two corrections to #36's text and an explicit list of what was left unverified. Findings **#20, #21, #22, #23, #24, #39, #40** (Batch 6 — consolidation and naming) are **resolved** in a fourth session; see §13, which records nine corrections to the review's own text, five deliberate behaviour changes, and what was left unverified. Finding **#1** (money-path tests) remains open.
+> **Remediation note (2026-07-22):** findings **#2, #3, #4, #5, #6, #7, #8** are **resolved** — see the per-finding notes in §5 and the full log in §10. Finding **#9** (CRUD-client consolidation) is **resolved** in a follow-up session; see its note in §5.1, which also records a refutation of one claim in the finding. Findings **#35** and **#36** (Batch 2 — session boundary and environment) are **resolved** in a third session; see §12, which also records two corrections to #36's text and an explicit list of what was left unverified. Findings **#20, #21, #22, #23, #24, #39, #40** (Batch 6 — consolidation and naming) are **resolved** in a fourth session; see §13, which records nine corrections to the review's own text, five deliberate behaviour changes, and what was left unverified. Findings **#17, #18, #37, #38, #44, #45** (Batch 5 — performance) are **resolved** in a fifth session; see §14, which records three corrections to the review's own text, the diagnostics-filter compromise, one deviation on #38, and what was left unverified. Finding **#1** (money-path tests) remains open.
 >
-> **Running total: 17 of 58 findings resolved** — #2–#9, #20–#24, #35, #36, #39, #40. Open: **#1** (Critical), the parked money cluster (**#10, #15, #25–#34**), and the Medium/Low remainder. Dead code (**#55–#58**) is deferred, and **#55** is deliberately *kept* rather than pending — see §9.
+> **Running total: 23 of 58 findings resolved** — #2–#9, #17, #18, #20–#24, #35, #36, #37, #38, #39, #40, #44, #45. Open: **#1** (Critical), the parked money cluster (**#10, #15, #25–#34**), and the Medium/Low remainder. Dead code (**#55–#58**) is deferred, and **#55** is deliberately *kept* rather than pending — see §9. **#57** closed incidentally inside the Batch 5 #44 rewrite (see §14).
 
 ## 2. Scope & Methodology
 
@@ -71,8 +71,8 @@ Sorted by computed risk descending. **✅** marks findings resolved on 2026-07-2
 | 14 | Aggregate status is last-event-wins with one evidence branch | MAINT-1 | `tracking-status-projector.ts:195` | S3 | F2 | 🟡 Medium (6) | | 🟠 Strong |
 | 15 | Payment→submit transition duplicated per gateway | MAINT-4 | `mercadopago-reconciliation.service.ts:112` | S3 | F2 | 🟡 Medium (6) | | 🟠 Strong |
 | 16 | Diagnostics substitute for write-time invariants | DATA-1 | `operations-cart.service.ts:198` | S3 | F2 | 🟡 Medium (6) | | 🟠 Strong |
-| 17 | `syncLocal` unbounded input, 3 serial queries per item in a txn | SEC-7 | `cart.schemas.ts:75` | S3 | F2 | 🟡 Medium (6) | | 🟠 Strong |
-| 18 | Unbounded admin list queries, phantom `pageSize` | PERF-1 | `admin/lot.data.ts:194` | S2 | F3 | 🟡 Medium (6) | | 🟠 Strong |
+| ✅ 17 | `syncLocal` unbounded input, 3 serial queries per item in a txn | SEC-7 | `cart.schemas.ts:75` | S3 | F2 | 🟡 Medium (6) | | 🟠 Strong |
+| ✅ 18 | Unbounded admin list queries, phantom `pageSize` | PERF-1 | `admin/lot.data.ts:194` | S2 | F3 | 🟡 Medium (6) | | 🟠 Strong |
 | 19 | Biome fails on checked-in source (29 errors) | TEST-4 | `supplier-form-dialog.tsx:23` | S2 | F3 | 🟡 Medium (6) | | 🟠 Strong |
 | ✅ 20 | `selectProductImage` defined 5× with two behaviours | MAINT-3 | `checkout.service.ts:78` | S2 | F3 | 🟡 Medium (6) | | 🟠 Strong |
 | ✅ 21 | `decimalStringSchema` redeclared in 5 schema files | MAINT-4 | `cart.schemas.ts:8` | S2 | F3 | 🟡 Medium (6) | | 🟡 Preferable |
@@ -91,15 +91,15 @@ Sorted by computed risk descending. **✅** marks findings resolved on 2026-07-2
 | 34 | Rolled-over demand excluded from all future operations | DATA-4 | `operation-execution.service.ts:262` | S4 | F1 | 🟡 Medium (4) | ⚡ | 🔴 Must-fix |
 | ✅ 35 | Cart survives logout, merges into the next user's cart | SEC-6 | `use-cart-sync.ts:56` | S4 | F1 | 🟡 Medium (4) | ⚡ | 🔴 Must-fix |
 | ✅ 36 | `APP_ENV` fails open; security branch on a Spanish substring | OPS-3 | `env.js:18` | S4 | F1 | 🟡 Medium (4) | ⚡ | 🔴 Must-fix |
-| 37 | N+1 in cart traceability diagnostics | PERF-1 | `cart-traceability.service.ts:29` | S2 | F2 | 🟡 Medium (4) | | 🟠 Strong |
-| 38 | Filter dropdowns download whole dimension tables | PERF-1 | `user-carts-client.tsx:117` | S2 | F2 | 🟡 Medium (4) | | 🟠 Strong |
+| ✅ 37 | N+1 in cart traceability diagnostics | PERF-1 | `cart-traceability.service.ts:29` | S2 | F2 | 🟡 Medium (4) | | 🟠 Strong |
+| ✅ 38 | Filter dropdowns download whole dimension tables | PERF-1 | `user-carts-client.tsx:117` | S2 | F2 | 🟡 Medium (4) | | 🟠 Strong |
 | ✅ 39 | `home-formatters.ts` is a fork of `commerce.helpers.ts` | MAINT-4 | `home-formatters.ts:7` | S2 | F2 | 🟡 Medium (4) | | 🟡 Preferable |
 | ✅ 40 | Duplicated tooltip components + 25 copies of a date formatter | MAINT-4 | `operation-table.tsx:40` | S1 | F4 | 🟡 Medium (4) | | 🔵 Optional |
 | 41 | `billingAddressSnapshot` populated with the shipping address | DATA-6 | `checkout.data.ts:391` | S3 | F1 | 🟢 Low (3) | | 🟠 Strong |
 | 42 | Diagnostics attributed at lot, not lot-item, granularity | DATA-4 | `cart-traceability.assembler.ts:65` | S3 | F1 | 🟢 Low (3) | | 🟠 Strong |
 | 43 | Unhandled outbox events marked `processed` (latent) | ERR-1 | `domain-event-dispatcher.ts:145` | S3 | F1 | 🟢 Low (3) | | 🟠 Strong |
-| 44 | Sequential creates inside a Serializable transaction | PERF-5 | `operation-execution.service.ts:556` | S3 | F1 | 🟢 Low (3) | | 🟠 Strong |
-| 45 | `RollOver` has no index covering `status` | PERF-1 | `prisma/schema.prisma:855` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
+| ✅ 44 | Sequential creates inside a Serializable transaction | PERF-5 | `operation-execution.service.ts:556` | S3 | F1 | 🟢 Low (3) | | 🟠 Strong |
+| ✅ 45 | `RollOver` has no index covering `status` | PERF-1 | `prisma/schema.prisma:855` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
 | 46 | Order page masks every failure as 404 | ERR-2 | `my-orders/[orderId]/page.tsx:126` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
 | 47 | User can rewrite `type` on the managed MP payment method | DATA-5 | `checkout.data.ts:341` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
 | 48 | Second hand-rolled inbox beside the outbox | MAINT-4 | `mercadopago-reconciliation.service.ts:258` | S2 | F1 | 🟢 Low (2) | | 🟡 Preferable |
@@ -579,6 +579,8 @@ return fulfillmentStatusByTrackingEvent[command.eventType];
 
 **Fix** — Add `.max(200)` to both schemas. Hoist the two reads out of the loop into one `findMany({ where: { id: { in: ids } } })` each, keyed into Maps, leaving only writes in the loop.
 
+> **Resolved (2026-07-22).** Batch 5, Phase 1 (§14). `.max(200)` added to `cartSyncInputSchema.items` and `operationsCartUpdateInputSchema.items`. `syncLocal` now issues two batched `findMany` reads (`listProductClientTermsForCart` + `listActiveCartItemsByTerms`, in one `Promise.all`) before the write loop; the loop body contains only the write. **Correction to the finding's text: it was four serial queries per item, not three** — `findActiveCartItemByTerms` was issued twice (once for the merge arithmetic, again inside `upsertCartItem`); the redundant read was removed by passing the already-resolved item into `upsertCartItem`. Deliberate behaviour change: a >200-item local cart now fails the login merge with a toast and is **not** retried (`use-cart-sync.ts` sets `bootstrapCompleted` before the mutation fires) — accepted as the abuse-resistance fix.
+
 **References** — `.agents/skills/codebase-review/references/generic-standards.md` (SEC-7, PERF-1)
 
 ---
@@ -604,6 +606,8 @@ const records = await listLotCandidates(database, { page: 1, pageSize: 100, … 
 
 **Fix** — Push `skip`/`take`/`orderBy` into Prisma alongside a `count()` in one `Promise.all`. Rewrite `getStats` as `groupBy({ by: ["status"], _count: true })` — `operations-cart.data.ts:419` already does this correctly with six `db.cart.count()` aggregates and is the model to copy. One honest caveat: `list` filters on a computed `diagnosticCount` that SQL cannot express, so *some* over-fetch is by design — but the deep select and missing `count` are not.
 
+> **Resolved (2026-07-22).** Batch 5, Phases 4–5 (§14). All four entities now paginate in SQL. **Lot/package/shipment (18a):** `list*Candidates` gained `{ skip, take }` over a **narrow summary select** that no longer joins `Cart`, `User`, `Product` or `Destination`; on the unfiltered `diagnosticState: "all"` path `skip`/`take`/`count()` go into Prisma; the two computed-filter paths scan at most `DIAGNOSTIC_SCAN_LIMIT` (1000) rows and surface `truncated` to the clients. `getStats` is now exact `count`/`groupBy`/`aggregate` for every field except `withDiagnostics` (the one stat needing per-row diagnostics, capped the same way) — each aggregate's row-set equivalence verified against `schema.prisma`. **Operations cart (18b):** `operationsCartListInputSchema` gained `page`/`pageSize`, the output is now an `{ items, page, pageSize, total, pageCount }` envelope, and the user-carts page has working prev/next controls. **Correction to the finding's four locations: `operationsCart.list` has a second, unlisted consumer** — `cart-traceability-search-card.tsx` reads it as a bare array; it was migrated to `.items` in the same phase. Diagnostics behaviour is unchanged: the `calculate*Diagnostics` signatures were narrowed to the summary record type (a structural subset of the detail record), guarded by `operational-diagnostics.test.ts`.
+
 **References** — [Prisma — pagination](https://www.prisma.io/docs/orm/prisma-client/queries/pagination)
 
 ---
@@ -627,6 +631,8 @@ const records = await listLotCandidates(database, { page: 1, pageSize: 100, … 
 
 ### 20. `selectProductImage` exists five times with two different behaviours
 
+> **Resolved (2026-07-22).** Batch 6, Phase 2 of `tmp/implementation-plan-consolidation-batch-6.md` (§13). One context-parameterized `selectProductImage(product, "cart" | "catalog")` in `commerce.helpers.ts` replaces the five service copies, **precedence preserved per context** — cart/checkout keep `cartImageUrl ?? cardImageUrl`, and two of those sites feed the persisted `productSnapshot` JSON, so flipping them would have diverged stored data silently. No default was given to `context`; that would reinstate the ambiguity the finding names. **`termsToClientTerms` was duplicated four times, not two** — `mapTerms` (`catalog.service.ts`) and `mapPreviewTerms` (`admin/product.service.ts`) have byte-identical bodies under different names; all four now call `_base/client-terms.mapper.ts`. **The count was six, not five:** `prisma/seed.ts:159` still carries a sixth copy, deferred (§13, open remnants). The located lines are `checkout.service.ts:77` and `cart.service.ts:56`.
+
 - **Recommendation:** 🟠 Strong
 - **Risk:** 🟡 Medium (6) — S2 × F3
 - **Standard:** `MAINT-3` Naming & clarity
@@ -644,6 +650,8 @@ const records = await listLotCandidates(database, { page: 1, pageSize: 100, … 
 
 ### 21. `decimalStringSchema` is redeclared in five schema files
 
+> **Resolved (2026-07-22).** Batch 6, Phase 1 (§13). `decimalOutputSchema` hoisted out of `admin/_crud-schema-helpers.ts` into the neutral `src/schemas/_schema-helpers.ts` — the contract is Prisma serialization, not a CRUD concept, and 5 of its consumers sit outside `admin/`. The five local copies were verified character-identical, so the deletion is behaviour-preserving; all ~20 references were renamed rather than aliased, and the 8 existing importers repointed. **Seven declarations existed, not five:** `tracking.schemas.ts:24` (a bare `z.string()`) and `domain-events.schemas.ts:49` (regex-validated) share only the name — different contracts, deliberately left in place.
+
 - **Recommendation:** 🟡 Preferable
 - **Risk:** 🟡 Medium (6) — S2 × F3
 - **Standard:** `MAINT-4` DRY vs premature abstraction
@@ -658,6 +666,8 @@ const records = await listLotCandidates(database, { page: 1, pageSize: 100, … 
 ---
 
 ### 22. Local `requiredText`/`optionalUrl` copies have already drifted
+
+> **Resolved (2026-07-22).** Batch 6, Phase 1 (§13). All local `requiredText` / `optionalText` / `nullishText` / `optionalUrl` copies deleted from the five admin schemas in favour of `_crud-schema-helpers.ts`. **The drift ran the opposite way from what the finding implies:** the *shared* helper was the outlier — 1 unaccented site against 4 accented, with an app-wide convention of 11:5 and 15:3 — so importing it naively would have regressed copy on three live admin forms. The shared messages were moved to the accented convention **first**, then the copies deleted, which made the dedup behaviour-preserving. `optionalUrl` was duplicated in **three** files (`brand`, `product`, `user`), not five; `address` and `supplier` carry `optionalEmail` instead. One contract change: `brand`/`product` `description` widened `.optional()` → `.nullish()`, which broke `product-form-dialog.tsx`'s `useForm` typing — resolved through the `toInlineBrandValues` helper that already existed for that purpose (§13, deviations). Two further `requiredText` copies in `checkout.schemas.ts:5` / `profile.schemas.ts:5`, and the `emptyStringToNull` helpers the shared module does not cover, remain **open** outside the finding's five files.
 
 - **Recommendation:** 🟡 Preferable
 - **Risk:** 🟡 Medium (6) — S2 × F3
@@ -675,6 +685,8 @@ const records = await listLotCandidates(database, { page: 1, pageSize: 100, … 
 ---
 
 ### 23. Forbidden domain names surface in the admin UI
+
+> **Resolved (2026-07-22) — the UI half.** Batch 6, Phase 4 (§13). The two badges now read `Asignacion de demanda #…` and `Asignacion empaquetada #…`, CONTEXT.md's terms for *Demand allocation* (`:33-35`) and *Packaged allocation* (`:45-47`). **Unaccented deliberately** — every sibling badge in the same array is ("Operacion", "Lote", "Paquete", "Envio"), as is the wider admin-operations copy; the accent decision made in #22 applies to validation messages, not here. Only the label strings changed; the `related.cartItemLotItem` property access is untouched. **The deeper half remains open:** renaming the Prisma models `CartItemLotItem` → `DemandAllocation` and `PackageAllocation` → `PackagedAllocation` is 73 and 59 call sites plus a migration, and deserves its own PR.
 
 - **Recommendation:** 🟡 Preferable
 - **Risk:** 🟡 Medium (6) — S2 × F3
@@ -699,6 +711,8 @@ CONTEXT.md:33-35 — *"**Demand allocation**: … _Avoid_: CartItemLotItem"*. CO
 ---
 
 ### 24. `/my-operations` overloads the reserved term "Operation"
+
+> **Resolved (2026-07-22).** Batch 6, Phase 4 (§13). Both pages moved via `git mv` to `/my-orders`; headings read "Mis pedidos"; `MyOperationsPage` → `MyOrdersPage`. **Nine external referrers plus two self-links, not eight** — and four hold the path in a ternary-assigned `const`, so a `href="/my-operations"` grep misses them; the bare string is what to grep. Seven copy strings changed rather than the five scoped, because `"Ver mis operaciones"` also appears in `join-section.tsx` and `home-hero.tsx`. **No redirect was added** — an explicit decision, so `/my-operations` now 404s for any bookmark or previously emailed link; `next.config.js` is where a `permanent: true` redirect goes if that call changes. The finding's text below still reads `/my-operations` throughout: that is the state it describes, and rewriting it would erase what was found. Open finding **#46** was repointed to `my-orders/[orderId]/page.tsx:126`, the rename having moved the file out from under it.
 
 - **Recommendation:** 🟡 Preferable
 - **Risk:** 🟡 Medium (6) — S2 × F3
@@ -1037,6 +1051,8 @@ if (!signatureValid && !rejectedReason?.includes("procesada")) {
 
 **Fix** — One `findMany({ where: { id: { in: ids } }, select: … })` per entity type, one `cartItemTrackingEvent.findMany` for shipments, and group the cart timeline by `cartItemId` in memory instead of refetching.
 
+> **Resolved (2026-07-22).** Batch 5, Phase 2 (§14). `getCartTraceability` now issues one `listLotsByIds` / `listPackagesByIds` / `listShipmentsByIds` `findMany` per entity type, plus one `listShipmentIdsWithTrackingEvents` (a single `cartItemTrackingEvent.findMany` with `distinct: ["shipmentId"]` — presence is all `calculateShipmentDiagnostics` consumes), and one `getAdminCartTimeline`. The per-item `getAdminCartItemTimeline` calls are gone: the new pure helper `groupTimelineByCartItem` buckets the cart timeline (a strict superset) by `cartItemId` in memory, covered by a unit test. The `collectLineageEntityIds` doc comment's promise of batched reads is now true. `assembleCartTraceability`'s signature and `cart-traceability.service.test.ts` are untouched.
+
 ---
 
 ### 38. Filter dropdowns download whole dimension tables
@@ -1052,6 +1068,8 @@ if (!signatureValid && !rejectedReason?.includes("procesada")) {
 
 **Fix** — Back these selects with a searchable endpoint taking a `search` term and `take: 50`. The repo already has a `ProductCombobox` component built for exactly this shape.
 
+> **Resolved (2026-07-22).** Batch 5, Phase 6 (§14). Three new `adminProcedure` endpoints — `admin.{user,product,productClientTerms}.options` — take `search` + `take: 50` (default) + `selectedValue` (so the currently-chosen filter still renders its label even when it falls outside the first 50). `Combobox` gained an opt-in server-search mode (`onSearchChange` turns off cmdk's client filter; `loading` renders a "Buscando..." row); a `useDebouncedValue` hook (250 ms) throttles typing. The three user-carts filter dropdowns are now search-backed comboboxes. **Correction to the finding's text: `ProductCombobox` was *not* "built for exactly this shape"** — it takes the whole `ProductListItem[]` array and filters client-side through cmdk, solving the DOM-node count but not the download; a server-search mode had to be added. **Deviation:** `admin.user.list` and `admin.product.list` are gone from the page, but `admin.productClientTerms.list` remains — the edit form (`OperationsCartDetailForm`) needs the full client-terms records (product, moq, pricing) that the lightweight `options` endpoint omits, so that one list query is kept solely for the form, not the filter. The finding's "purely to fill option lists" premise held for user/product but not for client-terms.
+
 ---
 
 ### 5.3 Low-band findings (condensed)
@@ -1065,8 +1083,8 @@ Each is real and verified; none warrants a full narrative.
 | 41 | `billingAddressSnapshot` is populated with the *shipping* snapshot; `createUserOrder`'s input type has no billing field at all, and no billing address is collected anywhere in checkout. Not out of scope — `AddressType.billing` exists and the seed creates a distinct `buyerBilling`. | `checkout.data.ts:391` | Orders permanently assert the wrong billing address; a chargeback is defended with fabricated evidence. Collect billing (defaulting to shipping) and snapshot it. `docs/schema-reference.md:66,842`. |
 | 42 | `attributeItemDiagnostics` attributes at *lot* granularity while `calculateLotDiagnostics` emits at *lot-item* granularity. The test claiming to verify this uses a fixture where no two items share a lot, so it passes either way. | `cart-traceability.assembler.ts:65` | Customer A sees a critical diagnostic caused by customer B's line. Key by `lotItemId`; fix the fixture so it can fail. |
 | 43 | An outbox event with zero matching listeners is marked `processed`. Eligibility is gated by a hand-maintained `supportedEventTypes` Set duplicating the mapper's 17 `case` labels. Currently latent — all lists match — and the mapper's exhaustive switch is a partial canary, but the Set is not type-enforced. | `domain-event-dispatcher.ts:145` | Add a distinct "unhandled" outcome; derive `supports()` from the mapper's coverage instead of a parallel list. |
-| 44 | `materializeAssignments`/`materializeRollOvers` create rows one at a time in sequential loops inside a **Serializable** transaction, plus a per-assignment `lotItem.update({ increment })` where the map is already accumulating. | `operation-execution.service.ts:556,603` | ~600 sequential round-trips for a 200-item operation, lengthening the Serializable window and raising retry rates. Use `createManyAndReturn`; write summed quantities once. |
-| 45 | `RollOver` is indexed on `cartItemId`/`operationId` only, none on `status`. `listOpenRollOverDemand` filters `status: "open"` with a non-sargable `operationId: { not: … }` and sorts by `createdAt, id`. | `prisma/schema.prisma:855` | Seq-scan of a table that only grows (rows are transitioned, never deleted), inside the Serializable transaction. Add `@@index([status, createdAt, id])`. |
+| 44 | **Resolved 2026-07-22 (§14).** `materializeAssignments`/`materializeRollOvers` create rows one at a time in sequential loops inside a **Serializable** transaction, plus a per-assignment `lotItem.update({ increment })` where the map is already accumulating. | `operation-execution.service.ts:556,603` | ~600 sequential round-trips for a 200-item operation, lengthening the Serializable window and raising retry rates. Use `createManyAndReturn`; write summed quantities once. **Fixed:** a pure `groupAssignments` pass generates every code, then four bulk `createManyAndReturn` writes (supplier orders → lots → lot items → demand allocations, FK order) join returned ids by `code`/`lotItemId`; roll overs bulk-insert with a filter-then-zip + length assertion. ~600 → ~12 statements. #57 (dead `includedSourceRollOverIds.add`) deleted incidentally. |
+| 45 | **Resolved 2026-07-22 (§14) — schema declared, migration deferred to the owner.** `RollOver` is indexed on `cartItemId`/`operationId` only, none on `status`. `listOpenRollOverDemand` filters `status: "open"` with a non-sargable `operationId: { not: … }` and sorts by `createdAt, id`. | `prisma/schema.prisma:855` | Seq-scan of a table that only grows (rows are transitioned, never deleted), inside the Serializable transaction. Add `@@index([status, createdAt, id])`. **Done:** `@@index([status, createdAt, id])` declared and `pnpm db:generate` run; **no migration was created or applied** — the owner applies it manually. Inert until then; the query is correct either way. |
 | 46 | Bare `catch { notFound(); }` around two API calls converts DB outages and Zod output-parse failures into 404s, unlogged (`createCaller` has no `onError`). | `my-orders/[orderId]/page.tsx:126` | Incidents are invisible; users are told their order does not exist. Catch and rethrow non-`NOT_FOUND` errors. |
 | 47 | `updateCheckoutPaymentMethod` lets a user rewrite `type` on the provider-managed MercadoPago method, breaking the `find` half of `findOrCreateMercadoPagoPaymentMethod` (which requires both `type` and `provider` to equal `"mercadopago"`). | `checkout.data.ts:341` | A new `PaymentMethod` row is created on every `checkout.start()` thereafter — unbounded growth. Exclude provider-managed rows from user updates. |
 | 48 | `PaymentProviderEvent` is a second hand-rolled inbox (`status`/`retryCount`/`lastError`) beside the outbox, with the failure-bookkeeping bug of #10. | `mercadopago-reconciliation.service.ts:258` | Record receipt, publish a domain event, and let the dispatcher's claim/retry/audit machinery drive reconciliation. |
@@ -1078,7 +1096,7 @@ Each is real and verified; none warrants a full narrative.
 | 54 | `payment.service.ts` is the only admin service writing `db.auditLog.create` raw and outside the transaction; 14 siblings use `writeAdminAuditLog`. | `admin/payment.service.ts:117,136` | Audit rows survive a rolled-back mutation. Use the shared helper inside the transaction. |
 | 55 | **Deliberately kept — see §13.** `checkout.getState` is a 28-line near-copy of `start` (differing only in the `atCheckout` write and find-vs-create), exposed on the router with **no caller** anywhere in `src/` or `e2e/`. | `checkout.service.ts:481` | Delete it, or parameterize `start({ claimCart })`. |
 | 56 | `domainEventTypeSchema` re-lists all 17 event literals the discriminated union already carries; its only referent, `DomainEventType`, has zero consumers. | `domain-events.schemas.ts:294` | A new event must be added in two places, and forgetting the second produces no error. Delete both; `DomainEventInput["type"]` yields the same union. |
-| 57 | A guarded `includedSourceRollOverIds.add` is superseded 30 lines later by an unconditional pass over the same array, making it dead — and misleading about the function's intent. | `operation-execution.service.ts:605` | Delete the three lines; fold the trailing block into the `updateMany`. |
+| 57 | **Closed incidentally 2026-07-22 (§14).** A guarded `includedSourceRollOverIds.add` is superseded 30 lines later by an unconditional pass over the same array, making it dead — and misleading about the function's intent. | `operation-execution.service.ts:605` | Delete the three lines; fold the trailing block into the `updateMany`. **Done:** the Batch 5 #44 rewrite of `materializeRollOvers` computes the rebatched id set once from all inputs; the dead guard is gone. |
 | 58 | **Corrected 2026-07-22 — see §13.** `dayjs` is **live**: `date.helpers.ts` imports it plus the `utc` and `timezone` plugins, and 17 files consume that module. Removing it breaks the build. That is the "better for `dayjs`" option in the original text, already taken by #2's fix. Genuinely dead: `lodash` (0 imports) and **`bluebird`** (`package.json:41`, 0 imports, no `@types`) — the latter surfaced during Batch 6 and is not in the original review. | `package.json:41,45` | Dead weight in the dependency graph and lockfile. Remove `lodash` and `bluebird`; keep `dayjs`. |
 
 ## 6. Themes & Systemic Observations
@@ -1144,8 +1162,8 @@ Finding **#1**. Characterization tests on `commerce.helpers` over the MOQ/step m
 **Batch 4 — tracking and reliability.**
 **#14** first (derive status from evidence), which collapses **#12** and part of **#43**. (**#3** ✅ done — the data-layer writer is already gone, which removes one of the writers #14 has to reconcile.) Then **#11** (outbox backoff + background drain + requeue) and **#15** (unify the payment→submit transition).
 
-**Batch 5 — performance, before data volume makes it urgent.**
-**#18** and **#38** (pagination and typeahead-backed selects) are the ones that will bite first as the tables grow; **#37**, **#44**, **#45**, **#17** follow.
+**Batch 5 — performance, before data volume makes it urgent.** ✅ **done — see §14.**
+**#18** ✅ and **#38** ✅ (pagination and typeahead-backed selects) are the ones that will bite first as the tables grow; **#37** ✅, **#44** ✅, **#45** ✅ (schema declared; migration deferred to the owner), **#17** ✅ follow. **#57** closed incidentally inside the #44 rewrite.
 
 **Batch 6 — consolidation, opportunistic.** ✅ **done — see §13.**
 The duplication cluster is complete: **#5** ✅, **#6** ✅, **#8** ✅, **#20** ✅, **#21** ✅, **#22** ✅, **#39** ✅, **#40** ✅, and naming **#23** ✅, **#24** ✅. **#9** (the CRUD client refactor) landed separately — see §11.
@@ -1418,6 +1436,8 @@ grep -rn "my-operations\|Mis operaciones" src/                  -> empty
 
 **A note on the biome count.** Running `biome check --write` across all of `src/` auto-fixes several of the 19 pre-existing errors in `src/components/ui/*` and `src/lib/utils.ts`. Those fixes were **reverted** — §2.2 of the plan puts them out of scope, and folding unrelated formatting churn into this diff would make it harder to review. The count is unchanged by design, not by accident.
 
+**Re-verified on `main` @ `22365df` (2026-07-23).** The session that executed this batch ended abruptly, so every gate and completeness grep above was re-run independently against the merged tree: `pnpm typecheck` exit 0; `pnpm test` 15 files / 118 tests passing; `pnpm check` 19 errors / 4 warnings (baseline held); `pnpm build` succeeds with `/my-orders` and `/my-orders/[orderId]` in the route tree; all seven greps return their stated output. The batch is complete as logged — the only thing the interruption cost was the §5.2 per-finding notes, added on this pass.
+
 ### Not verified
 
 **None of the plan's five manual checks was run** — each needs a running app and a database, and `vitest.config.ts` is `environment: "node"` with no DOM library, so no test covers a React component or route here. `pnpm build`, `pnpm typecheck` and the greps are the entire automated net for the UI-facing half.
@@ -1442,7 +1462,261 @@ Specifically not executed, most consequential first:
 
 ### Documentation touched
 
-- **This document** — §3 and §4 marks, §9 Batch 6, and in-place corrections to §5.3 rows #39, #40, #55 and #58.
+- **This document** — §3 and §4 marks, §9 Batch 6, in-place corrections to §5.3 rows #39, #40, #55 and #58, and in-place resolution notes on §5.2 findings **#20–#24** (added 2026-07-23; see the verification note under "Gates").
 - `docs/plans/checkout-redesign.md` — the two `/my-operations` references updated.
 - **Open finding #46's location repointed** to `my-orders/[orderId]/page.tsx:126` in §3 and §5.3. The route rename moved the file out from under a finding that is still open; the `catch { notFound(); }` block itself is unchanged. Finding #24's own text still says `/my-operations` throughout — that is the state it describes, and rewriting it would erase what was found.
 - `CONTEXT.md` — untouched. This session brings the code *to* CONTEXT.md, not the reverse.
+
+---
+
+## 14. Remediation Log — 2026-07-23 (performance session)
+
+Executed from `tmp/implementation-plan-performance-batch-5.md` against `main` @ `22365df`. Findings **#17**, **#18**, **#37**, **#38**, **#44**, **#45** closed — the review's **Batch 5** in full — plus **#57** incidentally. Six phases, each an independently-shippable commit; Phase 3 splits into two (#44 code, #45 schema) so the inert schema change is revertable alone.
+
+The through-line: these are the queries whose cost grows with **data volume**, not request count. Every one is cheap today on a near-empty database and gets progressively worse with no code change; fixing them after the tables grow means fixing them under load.
+
+**Held out of scope by decision:** the MercadoPago / money cluster (parked). **#34** (the `rollOvers: { none: {} }` predicate and the `includeRollOver` default) even though Phase 3 edits the same file — it is Batch 3, changes demand semantics, and must land with #32/#33/#16. **#1** (money-path tests). Pagination of `admin.{user,product,productClientTerms}.list` — six other admin pages consume them as bare arrays, so #38 is solved by *adding* endpoints, not changing these. **No Prisma migration was created or applied:** the `RollOver` index is declared in the schema and `pnpm db:generate` was run, but the owner applies the migration manually.
+
+### What changed, per finding
+
+| # | Phase | Change | New/changed artifacts |
+|---|---|---|---|
+| 17 | 1 | `.max(200)` on both unbounded array inputs; `syncLocal` hoists two batched `findMany` reads out of the loop into one `Promise.all` and removes the double `findActiveCartItemByTerms` by passing the resolved item into `upsertCartItem` | `cart.schemas.ts`, `admin/operations-cart.schemas.ts`, `cart/cart.service.ts`, `cart/cart.data.ts` |
+| 37 | 2 | Three `list*ByIds` batched readers + `listShipmentIdsWithTrackingEvents` (one `distinct` query) + a pure `groupTimelineByCartItem`; the three diagnostics builders and the per-item timeline fetch rewritten to consume them | `cart-traceability.service.ts`, `{lot,package,shipment}.data.ts`, `cart-traceability.assembler.ts`, `cart-traceability.service.test.ts` |
+| 44 | 3 | A pure `groupAssignments` pass generates every code, then four bulk `createManyAndReturn` writes (supplier orders → lots → lot items → demand allocations, FK order) join returned ids by `code`/`lotItemId`; roll overs bulk-insert via filter-then-zip + length assertion | `operations/operation-execution.service.ts` |
+| 45 | 3 | `@@index([status, createdAt, id])` on `RollOver`; schema only, `db:generate` run, no migration | `prisma/schema.prisma` |
+| 18a | 4 | Narrow **summary selects** (no Cart/User/Product/Destination join) + `skip`/`take` + `count`; `getStats` becomes exact `count`/`groupBy`/`aggregate`; new `DIAGNOSTIC_SCAN_LIMIT`/`resolveDiagnosticListPage`; `truncated` on six schemas + three clients | `operational-diagnostics.types.ts`, `{lot,package,shipment}.data.ts`, `{lot,package,shipment}-diagnostics.ts`, `{lot,package,shipment}.service.ts`, `{lot,package,shipment}.schemas.ts`, `lots/packages/shipments-client.tsx`, `operational-diagnostics.test.ts` |
+| 18b | 5 | `operationsCart.list` gains `page`/`pageSize` + an `{ items, page, pageSize, total, pageCount }` envelope; data-layer `count` + `skip`/`take`; both consumers read `.items`; user-carts pagination controls | `admin/operations-cart.schemas.ts`, `operations-cart.data.ts`, `operations-cart.service.ts`, `cart-traceability-search-card.tsx`, `user-carts-client.tsx` |
+| 38 | 6 | Three `options` endpoints (`search` + `take: 50` + `selectedValue`); `Combobox` opt-in server-search mode + `useDebouncedValue` (250 ms); the three user-carts filter dropdowns become search-backed comboboxes | `admin/_options.schemas.ts` **[new]**, `{user,product,product-client-terms}.schemas.ts`, `{user,product,product-client-terms}.data.ts`, `{user,product,product-client-terms}.service.ts`, three admin routers, `combobox.tsx`, `_lib/use-debounced-value.ts` **[new]**, `user-carts-client.tsx` |
+
+### Corrections to the review's text, verified against the code
+
+| Review says | Reality |
+|---|---|
+| #17: "three serial queries per item" | **Four.** `findActiveCartItemByTerms` was issued twice — once at `:233` for the merge arithmetic and again inside `upsertCartItem` at `:170`. The redundant read is removed by passing the already-resolved item in. |
+| #38: `ProductCombobox` is "built for exactly this shape" | **No.** It takes the whole `ProductListItem[]` and filters client-side through cmdk — it solves the DOM-node count, not the download. A server-search mode (`onSearchChange` → `shouldFilter={false}`) had to be added to `Combobox`. |
+| #18: four `findMany` locations | **`operationsCart.list` has a second consumer the finding omits** — `cart-traceability-search-card.tsx` reads it as a bare array and does `.slice(0, MAX_RESULTS)`. Changing the output shape breaks it; migrated to `.items` in the same phase (its slice deleted, the server now bounds it). |
+
+### Deliberate behaviour changes
+
+1. **A >200-item local cart now fails the login merge** (#17) with a toast and is **not** retried — `use-cart-sync.ts` sets `bootstrapCompleted.current` to `true` before the mutation fires, so a rejected merge is permanently skipped for that session. Accepted; the `.max(200)` bound is itself the SEC-7 abuse fix.
+2. **The two computed-filter list paths and `getStats.withDiagnostics` are capped at `DIAGNOSTIC_SCAN_LIMIT` = 1000 rows** (#18a). The cap is surfaced, never silent: `truncated` renders a one-line note by the pager and a "(primeros 1000)" note on the "Con diagnosticos" stat card. The common `diagnosticState: "all"` path is exact and page-bounded, not count-capped. Every stat value below the cap is numerically identical to the old JS reduction — each aggregate's row-set was checked against `schema.prisma` (e.g. `packageCount` = `package.count({ shipmentId: { not: null } })` reproduces `records.flatMap(r => r.packages)`).
+3. **Operation execution writes in bulk** (#44): the same lots, lot items, demand allocations and roll overs are produced with the same quantities, `status` values and `rebatched` transitions — ~600 statements → ~12 for a 200-item operation. The **Serializable** isolation level is unchanged; the window is shorter, not weaker. `operation-assignment.helpers.test.ts` passes untouched.
+4. **The three user-carts dimension filters are debounced server-search comboboxes** (#38). Case-sensitive `contains` deliberately matches the existing admin search — no `mode: "insensitive"` was added to only these three.
+
+### Deviations from the plan
+
+- **#38: `admin.productClientTerms.list` is kept, not deleted — so the DoD grep does not come back empty for that one query.** The plan's §3.4 calls all three filter queries "purely to fill option lists"; that holds for `user.list` and `product.list` (both removed) but **not** for `productClientTerms.list`: `OperationsCartDetailForm` consumes the full `ProductClientTermsListItem[]` records (product, moq, pricing) that the lightweight `options` endpoint intentionally omits. Deleting it would break the cart edit form. The list query is retained **solely for the form**; the terms *filter* uses the new `options` combobox. `admin.user.list` and `admin.product.list` are gone from the page as planned.
+- **#44's roll-over join is index-zip, not code-keyed** — the plan's chosen approach. `RollOver` has no unique code, so the positive-filtered inputs are zipped to the returned rows by position, guarded by a `length` assertion that turns any future out-of-order return into a loud failure inside the transaction. `materializeAssignments` keys strictly by generated `code`/`lotItemId`, never by array index.
+- **`groupAssignments` throws on a missing lookup instead of using `!`.** biome's `noNonNullAssertion` is on (recommended set); a `requireValue(map, key, label)` helper gives the same invariant a loud, typed failure — which also serves the plan's "loud failure inside the transaction" intent.
+
+### Gates
+
+| Command | Before (`main` @ `22365df`) | After |
+|---|---|---|
+| `pnpm typecheck` (tsgo) | ✅ exit 0 | ✅ exit 0 — run at every phase boundary |
+| `pnpm test` (vitest) | 15 files, 118 tests | ✅ **15 files, 122 tests** — +1 `groupTimelineByCartItem`, +3 `resolveDiagnosticListPage` |
+| `pnpm check` (biome) | ❌ 19 errors, 4 warnings | ❌ **19 errors, 4 warnings** — unchanged; finding #19 still open |
+| `pnpm build` | ✅ | ✅ — all admin-operations routes compile |
+| `pnpm db:generate` | — | ✅ — schema parses, client regenerates; **no migration folder created, no `db:push`/`db:migrate` run** |
+
+New files are biome-clean; the 19 pre-existing errors were not touched.
+
+### Not verified
+
+**None of the plan's eight manual checks was run** — each needs a seeded database and a running app, and `vitest.config.ts` provisions no DB (`environment: "node"`, no DOM). `pnpm typecheck`, `pnpm test`, `pnpm build` and `pnpm db:generate` are the entire automated net. Specifically not executed, most consequential first:
+
+- **Operation execution end to end** (#44) — the highest-risk check in the batch. A wrong FK order or a mis-keyed join corrupts an operation's lot structure inside a Serializable transaction. `operation-assignment.helpers.test.ts` still passes, but it exercises the pure assignment helpers, **not** the bulk-write path that was rewritten. Confirm the same lots/lot items/demand allocations/roll overs with the same quantities, and that source roll overs flip to `rebatched`.
+- **Admin stat-card values** (#18a) — the aggregate scoping is argued on paper against `schema.prisma`, but not compared against recorded pre-change numbers on live data. A wrong scoping produces plausible-but-wrong numbers no test catches.
+- **Cart merge on login** (#17), **traceability page rendering** (#37), **user-carts pagination + filter-resets-to-page-1** (#18b), **the traceability search card** on `/admin/operations` (#18b), **the three new comboboxes** including a value outside the first 50 (#38), and **the three existing `ProductCombobox` call sites** in the product-terms dialogs (#38) — all unexercised beyond `pnpm build`.
+- **The `RollOver` index is inert until the owner applies it.** `listOpenRollOverDemand` runs identically with or without it; the code change in Phase 3 is independent of the index.
+
+### Open remnants
+
+- **`DomainEventPublisher.publishMany` runs inside the Serializable transaction** but already issues a single `createMany` — not an N+1, so nothing to fix (§15.2's open question, answered here).
+- **`operationsCartListSelect` is still the detail select.** Now that the query is page-bounded its depth costs 25 rows, not 5,000; narrowing it is deferred (§2.3) unless the products preview proves expensive.
+- **The tracking-page user dropdown** (`user.list` with `includeDeleted: true`, `tracking-client.tsx`) is the obvious next consumer of the new `options` endpoint — deferred (§2.3).
+- **The 1000-row diagnostics scan cap** is a stopgap; a computed `diagnosticCount` column or a view would remove it entirely — deferred (§2.3).
+
+### Documentation touched
+
+- **This document** — §1 remediation note + running total (17 → 23), §3 marks on **#17, #18, #37, #38, #44, #45**, §9 Batch 5 marked done, in-place resolution notes on §5.2 **#17, #18, #37, #38** and §5.3 rows **#44, #45, #57**, and this §14.
+- `CONTEXT.md` — untouched. No new domain concept: `options`, `truncated` and `summary select` are technical, not domain, vocabulary.
+- No ADR — none of these changes alters an architectural decision.
+
+## 15. Remediation Log — 2026-07-25 (fulfillment Phase 0 foundations)
+
+Executed from `tmp/implementation-plan-fulfillment-phase-0-foundations.md` against `main` @ `5feee79`, implementing Phase 0 of `docs/architecture/features/fulfillment-lifecycle-actions.md`. Findings **#12**, **#14** and **#34** closed. Six phases: shared transition module → derivation core → projector cutover → diagnostics consumption → re-aggregation → docs.
+
+The through-line: `CartItem.fulfillmentStatus` stops being *carried* by the event that arrived and starts being *recomputed* from the lineage records that back it. That single change subsumes the retry regression (#12), the `exception` dead end (#12), and the row-`count()`-as-quantity rollover branch (#14) — none of them needed a separate fix once the column is derived.
+
+**Held out of scope by decision:** **#33** (cancelling allocated demand creates no roll over) — Phase 1 of the architecture document, where the supplier loop's first real command shapes it. **#32** and **#16** stay with it. The MercadoPago / money cluster stays parked. **#14's third consequence** — the customer timeline's `Math.max` stage walk — is **deliberately not unified** with the derivation: the journey is computed from history and the column from live lineage, they are allowed to diverge, and `docs/tracking-architecture.md` documents why. **No migration file was written and no backfill or recompute script exists:** `prisma/schema.prisma` was edited and `pnpm db:generate` run; migrations are authored manually after all fulfillment phases land. **`prisma/seed.ts` was not touched** — seed realignment is deferred to the same point.
+
+### What changed, per finding
+
+| # | Phase | Change | New/changed artifacts |
+|---|---|---|---|
+| 14 | 1 | The four aggregate↔lines compatibility tables, the active-demand set, the fulfillment stage rank (derived from `adminTrackingStageKeys`, never a second literal list) and the entity-status→stage maps get one home | `shared/common/fulfillment-transitions.ts` **[new]** |
+| 14 | 2 | A lineage snapshot type + single-round-trip loader (`findUnique` with nested selects: roll overs, demand allocations, lot item/lot/supplier order, packaged allocations, package/shipment), and a **pure** `deriveFulfillmentStatus(snapshot)` over it — no I/O, no `server-only`, decimal comparisons throughout | `tracking/fulfillment-lineage.data.ts` **[new]**, `tracking/fulfillment-status.derivation.ts` **[new]**, `tracking/fulfillment-status.derivation.test.ts` **[new]** |
+| 12, 14 | 3 | `TrackingStatusProjector.project(tx, { cartItemId, eventKey?, eventType? })` loads → derives → writes. `fulfillmentStatusByTrackingEvent`, `canProjectStatus`, `targetStatusForCommand`, `countUserOrderItemEvidence`, `hasPackageAllocationEvidence`, `hasShipmentEvidence` and `parsePositiveInt` all deleted — the whole per-event evidence machinery is dead once the column is derived | `tracking/tracking-status-projector.ts` |
+| 12 | 3 | `recordFromCommand` splits into `writeTrackingRow` + project; `recordManyFromCommands` writes every row then projects **once per distinct cart item**, passing the last command seen for that item as log context | `tracking/tracking-event.service.ts` |
+| 14 | 4 | The three diagnostics files delete their local tables and import them; behaviour byte-identical | `admin/{lot,package,shipment}-diagnostics.ts` |
+| — | 4 | `package.shipment.missing` narrowed to `inTransit`; new `operation.rollOver.stale` rule with a per-request threshold reader | `admin/package-diagnostics.ts`, `admin/operation-diagnostics.ts`, `admin/operation.data.ts`, `admin/operation.service.ts`, both diagnostics suites |
+| 34 | 5 | `listOriginalDemand` excludes only **open** roll overs (`rollOvers: { none: { status: "open" } }`); `includeRollOver` defaults to `true` in the Zod input schema and in `prisma/schema.prisma` | `operations/operation-execution.service.ts`, `schemas/admin/operation.schemas.ts`, `prisma/schema.prisma` |
+
+### The derivation, stated once
+
+Precedence over **live** records only (an allocation is live when neither its lot item nor its lot is `cancelled`; a packaged allocation is live when neither its package line nor its package is `cancelled`):
+
+| # | Rule | Result |
+|---|---|---|
+| 0 | cart item deleted or `status === "cancelled"` | `cancelled` |
+| 1 | a live packaged allocation whose package **or** shipment is `delayed`/`failed` | `exception` |
+| 2 | open roll over quantity > 0 **and** live allocated quantity = 0 | `rolledOver` |
+| 3 | open roll over quantity > 0 **and** stage below `packaged` | `partiallyRolledOver` |
+| 4 | otherwise | the furthest stage backed by a record |
+
+Ladder: `delivered` ← outbound received ← in end-user shipment ← at warehouse ← in internal shipment ← `packaged` ← `supplierConfirmed`/`requestedFromSupplier` ← `allocatedToSupplierItem` ← `includedInOperation` ← `awaitingAggregation` (floor).
+
+### Deliberate behaviour changes
+
+1. **No monotonic guard, by decision** — the review's #12 fix suggests one (`fulfillmentStatus: { in: STATUSES_RANKED_BELOW[target] }`). Derivation makes it unnecessary and wrong: a retried event recomputes the same value (idempotent by construction), and a legitimate regression — a roll over cutting allocated demand — must be able to move the status *down*. The `where` clause keeps only `fulfillmentStatus: { not: derived }`, which avoids a pointless write, not a regression. ADR 0002.
+2. **Derivation is total, and that is the #12 dead-end fix** — an item with no backing record floors at `awaitingAggregation` instead of staying stuck. A stale `exception` clears the moment no `delayed`/`failed` record remains; no `exceptionResolved` target status was needed.
+3. **The roll over overlay yields to the ladder from `packaged` onward** — a partially cut order can now reach `delivered` and close its `UserOrder`; the still-open roll over is communicated as a journey notice and the `operation.rollOver.open`/`.stale` diagnostics, not by pinning the customer's status at `partiallyRolledOver` forever.
+4. **`trackingStatusProjectionSkipped` keeps its name and level but changes meaning** — it now fires when the arriving event implies a stage *ahead of* the derived status (the evidence the event claims is missing). Deviations (`cancelled`/`exception`/`rolledOver`/`partiallyRolledOver`) are legitimate and silent. Its payload swaps `targetStatus` for `expectedStage` + `derivedStatus`.
+5. **A `received` package with no shipment no longer warns** — goods handed over without a movement record are legitimate (depot pickup, Phase 4). Only `inTransit` needs a shipment. The message narrows accordingly.
+6. **New diagnostic `operation.rollOver.stale`** (warning) fires when an operation has open roll overs and was created before the 2nd most recent completed operation. The threshold is one query per request in `operation.data.ts` (`findStaleOpenRollOverThreshold`); the rule itself stays pure and its options argument optional, so `createAndExecute`'s three `parseDetail` call sites are unchanged and a just-created operation is never stale.
+7. **Rolled-over demand re-enters aggregation** (#34): an item whose roll over was rebatched, resolved or cancelled returns to the original-demand pool, while one still awaiting rebatch is sourced through `listOpenRollOverDemand` — no double counting, since `cartItemLotItems: { none: {} }` still keeps allocated demand out. And `includeRollOver` now defaults **on**, so leaving paid demand out of a batch requires an explicit opt-out.
+8. **One extra query per projected cart item** inside the listener transaction — a single `findUnique` with nested selects, deduped per batch by the `recordManyFromCommands` rewrite. It replaces the 1–2 `count()` evidence queries the old projector issued per event.
+
+### Deviations from the plan
+
+- **The create dialog needed no change.** T11 lists `operation-create-dialog.tsx` as an edit; `defaultOperationCreateFormValues` (`operation.mappers.ts:160`) already returns `includeRollOver: true`, so the switch already opened on. Only the Zod default and the Prisma column default actually disagreed with the intent, and both were flipped.
+- **`writeTrackingRow` is a module-level function, not a `private static` method.** Every other helper in `tracking-event.service.ts` is module-level; a non-exported function is private to the module and matches the file.
+- **The `trackingEventRecorded` log moved into `writeTrackingRow`**, so it stays one-per-row in both the single and the batch path — previously it ran after projection, which the dedupe would have collapsed.
+
+### Gates
+
+| Command | Before (`main` @ `5feee79`) | After |
+|---|---|---|
+| `pnpm typecheck` (tsgo) | ✅ exit 0 | ✅ exit 0 — run at every phase boundary |
+| `pnpm test` (vitest) | 24 files, 208 tests | ✅ **25 files, 228 tests** — +17 derivation cases, +1 `package.shipment.missing` silence case, +2 `operation.rollOver.stale` cases; the pre-existing diagnostics suites pass otherwise untouched |
+| `pnpm check` (biome) | ❌ 23 errors, 4 warnings | ❌ **23 errors, 4 warnings** — unchanged; all in `tsconfig.json`, `package.json`, `biome.jsonc`, `components.json`, `.vscode/*`, `.agents/skills/*`, `skills-lock.json`, `postcss.config.js`, `src/components/ui/input.tsx`. Every file touched this session is biome-clean (finding #19 still open) |
+| `pnpm db:generate` | — | ✅ — schema parses, client regenerates; **no folder added under `prisma/migrations/`**, no `db:push`/`db:migrate` run |
+
+### Not verified
+
+- **No end-to-end projection run.** The derivation is proven by fixture tests that mirror every seed lineage; nothing exercised the projector against a database. The highest-value manual check is: run an operation, then open a cart item's tracking detail and confirm the chip matches the stepper.
+- **The diagnostic list/detail symmetry** (a row's diagnostic count matching its modal) is unchanged by construction — `operation.rollOver.stale` reads only `createdAt` (already in `operationListSelect`) and roll over `status`, and `operationDiagnosticsRelationSelect` gained no field — but was not clicked through.
+- **The create dialog's roll over switch** was read, not rendered.
+- **The schema default and the database default now disagree** until the manual migration runs. No code path omits `includeRollOver` (`operation.data.ts:392` always passes it), so the column default is never exercised at runtime.
+
+### Known seed divergence
+
+`prisma/seed.ts` stores `partiallyRolledOver` for the arroz fixture (open pre-allocation roll over of 4 against a live allocation of 6, packaged and received on an internal transfer). Derivation returns **`atWarehouse`**: from `packaged` onward the ladder outranks the open roll over. The divergence is enumerated in `fulfillment-status.derivation.test.ts` and resolves when seeds are realigned after all fulfillment phases. Existing rows keep their hand-written `fulfillmentStatus` until their next tracking event arrives — there is no recompute path, by decision.
+
+### Open remnants
+
+- **#33** (cancelling allocated demand creates no roll over) is the demand-conservation half of this subsystem and remains open for Phase 1.
+- **Legal per-entity transition ladders** are not in `fulfillment-transitions.ts` yet — deliberately deferred to Phase 1, where the first guard exercises them. The module is designed to be additive.
+- **`deriveStage` is private.** Exporting it would serve the future `availableActions` computation; kept internal until Phase 1 needs it.
+- **A diagnostic comparing the derived column against the journey's history-derived stage** would turn the redefined `trackingStatusProjectionSkipped` warning into a worklist row (architecture §20.3) — not built.
+
+### Documentation touched
+
+- **This document** — this §15 only. Finding bodies, §1 and §3 marks left alone; the logs are append-only here.
+- `docs/tracking-architecture.md` — the `TrackingStatusProjector` section rewritten around load → derive → write (precedence table, stage ladder, the no-monotonic-guard rationale, the warning's new meaning), the batch dedupe noted under `TrackingEventService`, step 8 of "Adding A New Domain Event" now points at the derivation instead of per-event evidence checks, and the write-path diagram's last line updated.
+- `docs/architecture/features/fulfillment-lifecycle-actions.md` — Phase 0 marked delivered in §21 with what actually landed.
+- `CONTEXT.md` — updated in the planning session: **Aggregate status** now states it is recomputed from the live records that back it, and `_Avoid_` gains "event-carried status".
+- ADRs 0002–0005 were written in the design session; none was created or changed here.
+
+## 16. Remediation Log — 2026-07-26 (fulfillment Phase 1 supplier loop)
+
+Executed from `tmp/implementation-plan-fulfillment-phase-1-supplier-loop.md`; the phase's "as built" record lives in `docs/architecture/features/fulfillment-lifecycle-actions.md` §21.2.
+
+### What changed, per finding
+
+- **#33 — cancelling allocated demand creates no roll over: closed.** Every Phase 1 path that removes quantity from a live allocation now creates `RollOver(stage: postAllocation, status: open)` for exactly that quantity, inside the same transaction:
+  - `supplierOrder.confirm` with a line below its requested quantity — the cut is absorbed across allocations by `planCutAbsorption` (LIFO by payment date, or an operator's per-allocation override), one roll over per reduction.
+  - `supplierOrder.confirm` with a line confirmed at `0` — the line moves to `cancelled` and every allocation rolls over in full.
+  - `supplierOrder.cancel` — the order, its lots and all live lines move to `cancelled`; one roll over per live allocation for its full quantity.
+  - `supplierOrder.cancelLine` — the same, scoped to one line, cascading the lot and then the order when nothing live remains.
+
+  Conservation is enforced in the planner (`Σ removedQuantity === cut`, invalid override sets throw `CONFLICT`) and observable through `recomputeOperationCounters`, which rewrites the six live counters from records in the same transaction so `operation.quantity.balanceMismatch` and `operation.quantity.assignedMismatch` stay silent across every move.
+
+- **#32 and #16** remain open; they were bundled with #33 by the Phase 0 log but are not touched by the supplier loop's commands.
+
+### Deliberate behaviour changes
+
+Three diagnostic rules were corrected because Phase 1 produces the first `cancelled` lots and lot items at runtime, and all three would have reported findings on a correct system:
+
+- `lot.status.aggregateAheadOfLines` and the two per-line lot rules (`lot.item.noDemandAllocations`, `lot.item.quantityMismatch`) now skip cancelled lines.
+- `lot.cancelledWithActiveDemand` reads the new `unresolvedDemandFulfillmentStatuses` instead of `activeDemandFulfillmentStatuses`; the latter counts `rolledOver`, which is exactly what a correct cancellation produces.
+- `operation.quantity.assignedMismatch` sums only live lot items on live lots, sharing the `isLiveLotItem` predicate with `computeOperationCounters` so the rule and the counter can never disagree. `operationDiagnosticsRelationSelect` gained `status` on lots and lot items to support it — added to the thin list select, which is what keeps a row's diagnostic count identical to the modal's.
+
+### Gates
+
+`pnpm test` (312 passing, 30 files), `pnpm typecheck`, `pnpm biome check` on all 48 touched files, and `pnpm build` all clean. Repo-wide `pnpm check` still reports pre-existing findings in files this phase did not touch (`tsconfig.json`, `package.json`, `src/components/ui/*`, `src/lib/utils.ts`, `.vscode/*`).
+
+### Not verified
+
+No end-to-end run against a seeded database was performed — the test suite is `environment: "node"` with no DB fixture harness, so the transactional paths (cascades, roll over creation, counter recompute, projection after `wake()`) are covered by the pure cores and by review, not by execution. The manual flow in the plan's §11 is still owed.
+
+### Open remnants
+
+- No retry-on-serialization-failure wrapper for the three `Serializable` commands; architecture §18's claim that "the pattern exists" is still wrong and should be corrected when one lands.
+- `availableActions` exists on `admin.supplierOrder` only.
+- `admin.rollOver` exposes `resolve` and nothing else — no list, no dedicated page.
+- **No migration file was written.** `CartItemTrackingEventType.rollOverResolved` was added to `prisma/schema.prisma` and applied with `pnpm db:generate` + `pnpm db:push`; migrations are authored manually after all fulfillment phases land.
+- **`prisma/seed.ts` was not touched.** The fixtures Phase 1's logic would no longer produce are enumerated in architecture §21.2 rather than edited.
+
+### Documentation touched
+
+- **This document** — this §16 only; the logs are append-only here.
+- `docs/architecture/features/fulfillment-lifecycle-actions.md` — Phase 1 marked done in §21 with a new §21.2; the two §20.2 questions this phase answered marked resolved in place; §12 records `rollover.resolved` and the `rollOverResolved` tracking type.
+- `docs/tracking-architecture.md` — a "Supplier Loop" subsection under "Current Producers" with the four events and their deterministic keys, and two new rows in the mapping table.
+- `CONTEXT.md` — **Cut absorption** added to the fulfillment glossary.
+
+## 17. Remediation Log — 2026-07-26 (fulfillment Phase 2 operation compensation)
+
+Executed from `tmp/implementation-plan-fulfillment-phase-2-operation-compensation.md`; the phase's "as built" record lives in `docs/architecture/features/fulfillment-lifecycle-actions.md` §21.3.
+
+### What changed, per finding
+
+- **#34 — re-aggregation exclusion: still closed, and its second clause now carries the weight.** Phase 0 fixed the roll over clause of `listOriginalDemand` (`rollOvers: { none: { status: "open" } }`). Phase 2 narrows the *other* clause of the same query, from `cartItemLotItems: { none: {} }` to "no allocation on a live lot item of a live lot", so a compensated cart item becomes aggregable again. The two clauses are now load-bearing together: the allocation clause alone would let a supplier-cancelled item (Phase 1 always mints an open roll over for one) be counted twice, and the roll over clause alone would strand a compensated item forever. Both sites carry a comment saying so; do not weaken either without the other.
+
+- No other listed finding is touched. **#32 and #16** remain open.
+
+### Deliberate behaviour changes
+
+Three corrections were required because Phase 2 produces the first `cancelled` *operations* at runtime, and all three would have misreported on a correct system:
+
+- `deriveStage`'s `includedInOperation` floor counted roll overs of any status, so a compensated item — whose roll overs are all `cancelled` — would have stuck at `includedInOperation` instead of falling back to `awaitingAggregation`. It now counts non-`cancelled` roll overs only.
+- `calculateOperationDiagnostics` returns early for a cancelled operation into a single rule of its own, `operation.cancelled.notCompensated` (critical: a live lot item or an own `open` roll over survived the compensation). The exemption is structural: compensation recomputes the live counters to zero while `eligibleQuantity` stays the frozen execution snapshot, so `operation.quantity.balanceMismatch` would otherwise fire on every cancelled operation by construction.
+- The embedded operation summaries in `src/schemas/admin/lot.schemas.ts` and `src/schemas/admin/supplier-order.schemas.ts` hard-coded `["running","completed","failed"]`; both gained `cancelled`. Without it the lot list and the supplier-order detail would have failed to parse the moment any operation was compensated.
+
+`operationCreateInputSchema`'s object body was extracted as `operationCreateFieldsSchema` so `operationRerunInputSchema` can extend it — a refined schema is a `ZodEffects` and has no `.extend`, which would have left the date-order rule duplicated or dropped.
+
+### Gates
+
+`pnpm test` (332 passing, 31 files), `pnpm typecheck`, `pnpm biome check` on all 59 touched files, and `pnpm build` all clean. Repo-wide `pnpm check` still reports pre-existing findings in files this phase did not touch.
+
+### Not verified
+
+No end-to-end run against a seeded database was performed, for the same reason as Phase 1 — the suite is `environment: "node"` with no DB fixture harness. The compensation writes, the `rebatchedIntoOperationId` revert, `rerun`'s compound transaction and the projection after `wake()` are covered by the pure cores and by review, not by execution. The manual flow in the plan's §11 is still owed.
+
+### Open remnants
+
+- Still no retry-on-serialization-failure wrapper; the phase adds two more `Serializable` commands (six total), and `rerun` holds a compensation *and* a full execution in one transaction.
+- `availableActions` now exists on `admin.supplierOrder` and `admin.operation`; `lot`, `package` and `shipment` still compute nothing.
+- `admin.rollOver` still exposes `resolve` only — a roll over reverted to `open` by a compensation is visible only inside its owning operation's detail dialog.
+- **No migration file was written.** `OperationStatus.cancelled`, `CartItemTrackingEventType.excludedFromOperation` and `RollOver.rebatchedIntoOperationId` were applied with `pnpm db:generate` + `pnpm db:push`.
+- **No backfill.** Roll overs marked `rebatched` before this phase keep a null back-link and would not be reverted by a compensation — confirmed on the development database.
+- **`prisma/seed.ts` was not touched**; the drift is enumerated in architecture §21.3.
+
+### Documentation touched
+
+- **This document** — this §17 only; the logs are append-only here.
+- `docs/architecture/features/fulfillment-lifecycle-actions.md` — Phase 2 marked done in §21 with §21.3 rewritten from "as planned" to "as built"; §3, §11, §12, §14, §15 #11 and §18 carry its shipped markers; the §20.2 `cancelledAt` question resolved in place.
+- `docs/tracking-architecture.md` — an "Operation Compensation" subsection under "Current Producers" with `operation.cartItem.excluded` and its deterministic key, plus a row in the mapping table.
+- `CONTEXT.md` — **Operation compensation** and the refined **Administrative window** were added during the grill; unchanged by the build.
