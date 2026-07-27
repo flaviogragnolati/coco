@@ -14,9 +14,12 @@ export const trackingEventTypes = [
 	"movedInInternalShipment",
 	"receivedAtWarehouse",
 	"movedInEndUserShipment",
+	"arrivedAtPickupPoint",
 	"delivered",
 	"rolledOverPreAllocation",
 	"rolledOverPostAllocation",
+	"rollOverResolved",
+	"excludedFromOperation",
 ] as const;
 
 export const trackingEventSources = [
@@ -43,6 +46,10 @@ export const userTrackingNoticeKinds = [
 	"rollover",
 	"cancelled",
 	"quantity",
+	// Neutral-good progress that is not a stage of its own. The other five all
+	// signal a deviation, so a pickup-point arrival had nowhere to land without it:
+	// `resolved` means "an exception was resolved", and an arrival resolves nothing.
+	"info",
 ] as const;
 
 export type TrackingEventType = (typeof trackingEventTypes)[number];
@@ -66,9 +73,12 @@ export const trackingEventLabelMap: Record<TrackingEventType, string> = {
 	movedInInternalShipment: "En envio interno",
 	receivedAtWarehouse: "Recibido en deposito",
 	movedInEndUserShipment: "En envio al cliente",
+	arrivedAtPickupPoint: "Disponible para retirar",
 	delivered: "Entregado",
 	rolledOverPreAllocation: "Reprogramado antes de asignacion",
 	rolledOverPostAllocation: "Reprogramado despues de asignacion",
+	rollOverResolved: "Rollover resuelto",
+	excludedFromOperation: "Excluido de la operación",
 };
 
 export const trackingSourceLabelMap: Record<TrackingEventSource, string> = {
@@ -139,6 +149,13 @@ export const userTrackingNoticeKindByEventType: Partial<
 	exceptionResolved: "resolved",
 	rolledOverPreAllocation: "rollover",
 	rolledOverPostAllocation: "rollover",
+	rollOverResolved: "rollover",
+	// Compensation returns the item to the queue for the next batch; it is not a
+	// cancellation, so it reads as a rollover notice rather than a `cancelled` one.
+	excludedFromOperation: "rollover",
+	// A notice, never a stage: reaching the pickup point is not the handover, so it
+	// is deliberately absent from both stage maps. The customer still has to collect.
+	arrivedAtPickupPoint: "info",
 	cartItemCancelled: "cancelled",
 	cartItemRemoved: "cancelled",
 	cartItemQuantityChanged: "quantity",

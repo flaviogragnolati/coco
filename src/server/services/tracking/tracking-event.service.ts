@@ -25,6 +25,8 @@ import { buildAdminTrackingJourney } from "~/shared/common/tracking-journey";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import type { TrackingCommand } from "./tracking-event-mapper";
 import { TrackingStatusProjector } from "./tracking-status-projector";
+import { findUserOrderIdsForCartItems } from "./user-order-closure.data";
+import { UserOrderClosureProjector } from "./user-order-closure.projector";
 
 const timelineTrackingEventSelect = {
 	id: true,
@@ -568,65 +570,119 @@ function buildAdminTrackingWhere(
 	return and.length > 0 ? { AND: and } : {};
 }
 
+async function writeTrackingRow(
+	tx: Prisma.TransactionClient,
+	command: TrackingCommand,
+) {
+	const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
+	if (!cartItemId) throw new Error("cartItemId is required");
+
+	const cartItemExists = await tx.cartItem.count({
+		where: { id: cartItemId },
+	});
+
+	if (cartItemExists === 0) {
+		throw new Error(`CartItem ${cartItemId} does not exist`);
+	}
+
+	const trackingEvent = await tx.cartItemTrackingEvent.upsert({
+		where: { eventKey: command.eventKey },
+		update: {},
+		create: {
+			eventKey: command.eventKey,
+			cartItemId,
+			eventType: command.eventType,
+			source: command.source,
+			actorUserId: actorUserIdForCommand(command),
+			actorReference: command.actorReference ?? command.actorId,
+			operationId: parsePositiveInt(command.refs?.operationId, "operationId"),
+			lotId: parsePositiveInt(command.refs?.lotId, "lotId"),
+			lotItemId: parsePositiveInt(command.refs?.lotItemId, "lotItemId"),
+			packageId: parsePositiveInt(command.refs?.packageId, "packageId"),
+			shipmentId: parsePositiveInt(command.refs?.shipmentId, "shipmentId"),
+			rollOverId: parsePositiveInt(command.refs?.rolloverId, "rolloverId"),
+			quantity: command.quantity,
+			metadata: trackingMetadata(command),
+		},
+	});
+
+	appLogger.trackingEventRecorded({
+		eventKey: command.eventKey,
+		eventType: command.eventType,
+		cartItemId,
+		trackingEventId: trackingEvent.id,
+	});
+
+	return { cartItemId, trackingEvent };
+}
+
+function projectionInput(cartItemId: number, command: TrackingCommand) {
+	return {
+		cartItemId,
+		eventKey: command.eventKey,
+		eventType: command.eventType,
+	};
+}
+
+/**
+ * Deduped per **order**, not per cart item: a five-item order would otherwise run
+ * five identical closure queries for one batch. Declining to write is the normal
+ * case — most events leave the order mid-flight.
+ */
+async function projectOrderClosures(
+	tx: Prisma.TransactionClient,
+	cartItemIds: number[],
+) {
+	const userOrderIds = await findUserOrderIdsForCartItems(tx, cartItemIds);
+
+	for (const userOrderId of userOrderIds) {
+		await UserOrderClosureProjector.project(tx, { userOrderId });
+	}
+}
+
 // biome-ignore lint/complexity/noStaticOnlyClass: This class is a logical grouping of related functionality and is not expected to be instantiated or extended.
 export class TrackingEventService {
 	static async recordFromCommand(
 		tx: Prisma.TransactionClient,
 		command: TrackingCommand,
 	) {
-		const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
-		if (!cartItemId) throw new Error("cartItemId is required");
+		const { cartItemId, trackingEvent } = await writeTrackingRow(tx, command);
 
-		const cartItemExists = await tx.cartItem.count({
-			where: { id: cartItemId },
-		});
-
-		if (cartItemExists === 0) {
-			throw new Error(`CartItem ${cartItemId} does not exist`);
-		}
-
-		const trackingEvent = await tx.cartItemTrackingEvent.upsert({
-			where: { eventKey: command.eventKey },
-			update: {},
-			create: {
-				eventKey: command.eventKey,
-				cartItemId,
-				eventType: command.eventType,
-				source: command.source,
-				actorUserId: actorUserIdForCommand(command),
-				actorReference: command.actorReference ?? command.actorId,
-				operationId: parsePositiveInt(command.refs?.operationId, "operationId"),
-				lotId: parsePositiveInt(command.refs?.lotId, "lotId"),
-				lotItemId: parsePositiveInt(command.refs?.lotItemId, "lotItemId"),
-				packageId: parsePositiveInt(command.refs?.packageId, "packageId"),
-				shipmentId: parsePositiveInt(command.refs?.shipmentId, "shipmentId"),
-				rollOverId: parsePositiveInt(command.refs?.rolloverId, "rolloverId"),
-				quantity: command.quantity,
-				metadata: trackingMetadata(command),
-			},
-		});
-
-		await TrackingStatusProjector.project(tx, command);
-
-		appLogger.trackingEventRecorded({
-			eventKey: command.eventKey,
-			eventType: command.eventType,
-			cartItemId,
-			trackingEventId: trackingEvent.id,
-		});
+		await TrackingStatusProjector.project(
+			tx,
+			projectionInput(cartItemId, command),
+		);
+		await projectOrderClosures(tx, [cartItemId]);
 
 		return trackingEvent;
 	}
 
+	/**
+	 * Rows are written in input order and returned in it — the listener maps
+	 * them into the audit log. Projection is deduped: N commands for one cart
+	 * item recompute its status once, from the lineage the batch left behind.
+	 */
 	static async recordManyFromCommands(
 		tx: Prisma.TransactionClient,
 		commands: TrackingCommand[],
 	) {
 		const records = [];
+		const lastCommandByCartItemId = new Map<number, TrackingCommand>();
 
 		for (const command of commands) {
-			records.push(await TrackingEventService.recordFromCommand(tx, command));
+			const { cartItemId, trackingEvent } = await writeTrackingRow(tx, command);
+			records.push(trackingEvent);
+			lastCommandByCartItemId.set(cartItemId, command);
 		}
+
+		for (const [cartItemId, command] of lastCommandByCartItemId) {
+			await TrackingStatusProjector.project(
+				tx,
+				projectionInput(cartItemId, command),
+			);
+		}
+
+		await projectOrderClosures(tx, [...lastCommandByCartItemId.keys()]);
 
 		return records;
 	}

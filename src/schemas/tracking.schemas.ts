@@ -335,6 +335,7 @@ export const adminTrackingJourneyOutcomeSchema = z.object({
 	kind: z.enum([
 		"dropped",
 		"cancelled",
+		"resolved",
 		"rolledOver",
 		"partiallyRolledOver",
 		"exception",

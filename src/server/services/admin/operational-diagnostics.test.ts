@@ -50,6 +50,7 @@ test("package diagnostics classify allocation conservation failures as critical"
 	const pkg = {
 		id: 2,
 		status: "readyForShipment",
+		leg: "inbound",
 		shipment: { id: 1 },
 		packageLotItems: [
 			{
@@ -63,6 +64,15 @@ test("package diagnostics classify allocation conservation failures as critical"
 						cartItemLotItem: {
 							id: 40,
 							quantity: decimal("6"),
+							packageAllocations: [
+								{
+									quantity: decimal("7"),
+									packageLotItem: {
+										status: "packed",
+										package: { status: "readyForShipment", leg: "inbound" },
+									},
+								},
+							],
 						},
 					},
 				],
@@ -85,10 +95,11 @@ test("package diagnostics classify allocation conservation failures as critical"
 	).toBe("critical");
 });
 
-test("package diagnostics warn when advanced package has no shipment", () => {
+test("package diagnostics warn when a package in transit has no shipment", () => {
 	const pkg = {
 		id: 3,
 		status: "inTransit",
+		leg: "outbound",
 		shipment: null,
 		packageLotItems: [],
 	} as unknown as PackageDetailRecord;
@@ -100,6 +111,19 @@ test("package diagnostics warn when advanced package has no shipment", () => {
 			(diagnostic) => diagnostic.code === "package.shipment.missing",
 		)?.severity,
 	).toBe("warning");
+});
+
+test("package diagnostics stay silent for a received package with no shipment", () => {
+	const pkg = {
+		id: 4,
+		status: "received",
+		shipment: null,
+		packageLotItems: [],
+	} as unknown as PackageDetailRecord;
+
+	expect(
+		calculatePackageDiagnostics(pkg).map((diagnostic) => diagnostic.code),
+	).not.toContain("package.shipment.missing");
 });
 
 test("shipment diagnostics classify aggregate status mismatches as critical", () => {

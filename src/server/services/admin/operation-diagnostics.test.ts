@@ -15,6 +15,7 @@ function buildOperation(
 	return {
 		id: 1,
 		status: "completed",
+		createdAt: new Date("2026-01-01T00:00:00.000Z"),
 		eligibleQuantity: decimal("10"),
 		assignedQuantity: decimal("8"),
 		rollOverQuantity: decimal("2"),
@@ -66,6 +67,44 @@ test("assigned mismatch fires when lot lines do not add up to the assigned quant
 	expect(codes(buildOperation())).not.toContain(
 		"operation.quantity.assignedMismatch",
 	);
+});
+
+test("a cancelled lot item's quantity is excluded from the assigned check", () => {
+	const operation = buildOperation({
+		lots: [
+			{
+				id: 100,
+				code: "LOT-100",
+				status: "confirmed",
+				supplierOrder: { id: 500 },
+				lotItems: [
+					{ id: 200, status: "confirmed", quantity: decimal("8") },
+					{ id: 201, status: "cancelled", quantity: decimal("4") },
+				],
+			},
+		],
+	} as unknown as Partial<OperationSummaryRecord>);
+
+	expect(codes(operation)).not.toContain("operation.quantity.assignedMismatch");
+});
+
+test("a cancelled lot drops all of its lines from the assigned check", () => {
+	const operation = buildOperation({
+		assignedQuantity: decimal("0"),
+		rollOverQuantity: decimal("10"),
+		lots: [
+			{
+				id: 100,
+				code: "LOT-100",
+				status: "cancelled",
+				supplierOrder: { id: 500 },
+				lotItems: [{ id: 200, status: "cancelled", quantity: decimal("8") }],
+			},
+		],
+	} as unknown as Partial<OperationSummaryRecord>);
+
+	expect(codes(operation)).not.toContain("operation.quantity.assignedMismatch");
+	expect(codes(operation)).not.toContain("operation.quantity.balanceMismatch");
 });
 
 test("a completed operation without lots is flagged", () => {
@@ -136,6 +175,47 @@ test("open rollovers are counted in a single diagnostic", () => {
 	expect(codes(buildOperation())).not.toContain("operation.rollOver.open");
 });
 
+test("open rollovers older than the threshold are also flagged as stale", () => {
+	const operation = buildOperation({
+		rollOvers: [{ id: 300, status: "open" }],
+	} as unknown as Partial<OperationSummaryRecord>);
+
+	const stale = calculateOperationDiagnostics(operation, {
+		staleOpenRollOverBefore: new Date("2026-02-01T00:00:00.000Z"),
+	}).map((diagnostic) => diagnostic.code);
+
+	expect(stale).toContain("operation.rollOver.stale");
+
+	const fresh = calculateOperationDiagnostics(operation, {
+		staleOpenRollOverBefore: new Date("2025-12-01T00:00:00.000Z"),
+	}).map((diagnostic) => diagnostic.code);
+
+	expect(fresh).toContain("operation.rollOver.open");
+	expect(fresh).not.toContain("operation.rollOver.stale");
+});
+
+test("the stale rule stays silent without open rollovers or without a threshold", () => {
+	const resolvedOnly = buildOperation({
+		rollOvers: [{ id: 300, status: "resolved" }],
+	} as unknown as Partial<OperationSummaryRecord>);
+
+	expect(
+		calculateOperationDiagnostics(resolvedOnly, {
+			staleOpenRollOverBefore: new Date("2026-02-01T00:00:00.000Z"),
+		}).map((diagnostic) => diagnostic.code),
+	).not.toContain("operation.rollOver.stale");
+
+	const openRollOvers = buildOperation({
+		rollOvers: [{ id: 300, status: "open" }],
+	} as unknown as Partial<OperationSummaryRecord>);
+
+	expect(calculateOperationDiagnostics(openRollOvers)).toEqual(
+		calculateOperationDiagnostics(openRollOvers, {
+			staleOpenRollOverBefore: null,
+		}),
+	);
+});
+
 test("highest severity prefers critical over warning findings", () => {
 	const operation = buildOperation({
 		rollOverQuantity: decimal("1"),
@@ -149,4 +229,73 @@ test("highest severity prefers critical over warning findings", () => {
 	expect(highestSeverity(calculateOperationDiagnostics(buildOperation()))).toBe(
 		null,
 	);
+});
+
+/**
+ * A compensated operation: outputs cancelled, own roll overs cancelled, live
+ * counters recomputed to zero while `eligibleQuantity` stays frozen at the
+ * execution snapshot. Every pre-existing rule must stay silent.
+ */
+function buildCompensatedOperation(
+	overrides: Partial<OperationSummaryRecord> = {},
+): OperationSummaryRecord {
+	return buildOperation({
+		status: "cancelled",
+		assignedQuantity: decimal("0"),
+		rollOverQuantity: decimal("0"),
+		lots: [
+			{
+				id: 100,
+				code: "LOT-100",
+				status: "cancelled",
+				supplierOrder: { id: 500, status: "cancelled" },
+				lotItems: [{ id: 200, status: "cancelled", quantity: decimal("8") }],
+			},
+		],
+		rollOvers: [{ id: 300, status: "cancelled" }],
+		...overrides,
+	} as unknown as Partial<OperationSummaryRecord>);
+}
+
+test("a fully compensated operation reports no diagnostics", () => {
+	expect(calculateOperationDiagnostics(buildCompensatedOperation())).toEqual(
+		[],
+	);
+});
+
+test("a cancelled operation is exempt from the quantity rules", () => {
+	// `eligibleQuantity` stays at 10 against zeroed live counters — the balance
+	// rule would fire on every cancelled operation without the exemption.
+	expect(codes(buildCompensatedOperation())).not.toContain(
+		"operation.quantity.balanceMismatch",
+	);
+	expect(codes(buildCompensatedOperation())).not.toContain(
+		"operation.quantity.assignedMismatch",
+	);
+});
+
+test("a half-compensated operation reports exactly the not-compensated rule", () => {
+	// A lot the compensation left untouched: `isLiveLotItem` needs both the lot
+	// and the line to be live, which is the same predicate the counters apply.
+	const withLiveLine = buildCompensatedOperation({
+		lots: [
+			{
+				id: 100,
+				code: "LOT-100",
+				status: "assembling",
+				supplierOrder: { id: 500, status: "pending" },
+				lotItems: [{ id: 200, status: "pending", quantity: decimal("8") }],
+			},
+		],
+	} as unknown as Partial<OperationSummaryRecord>);
+
+	expect(codes(withLiveLine)).toEqual(["operation.cancelled.notCompensated"]);
+
+	const withOpenRollOver = buildCompensatedOperation({
+		rollOvers: [{ id: 300, status: "open" }],
+	} as unknown as Partial<OperationSummaryRecord>);
+
+	expect(codes(withOpenRollOver)).toEqual([
+		"operation.cancelled.notCompensated",
+	]);
 });

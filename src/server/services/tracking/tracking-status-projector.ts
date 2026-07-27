@@ -5,242 +5,75 @@ import type {
 	CartItemTrackingEventType,
 	Prisma,
 } from "~/prisma/client";
+import { fulfillmentStageRank } from "~/shared/common/fulfillment-transitions";
+import {
+	type AdminTrackingStageKey,
+	adminTrackingStageByEventType,
+	adminTrackingStageKeys,
+} from "~/shared/common/tracking-display";
 import { appLogger } from "../logging/app-logger.service";
-import type { TrackingCommand } from "./tracking-event-mapper";
+import { loadFulfillmentLineageSnapshot } from "./fulfillment-lineage.data";
+import { deriveFulfillmentStatus } from "./fulfillment-status.derivation";
 
-const fulfillmentStatusByTrackingEvent: Partial<
-	Record<CartItemTrackingEventType, CartItemFulfillmentStatus>
-> = {
-	submittedToOrder: "awaitingAggregation",
-	includedInOperation: "includedInOperation",
-	allocatedToLotItem: "allocatedToSupplierItem",
-	includedInSupplierOrder: "requestedFromSupplier",
-	supplierConfirmed: "supplierConfirmed",
-	packaged: "packaged",
-	movedInInternalShipment: "inInternalShipment",
-	receivedAtWarehouse: "atWarehouse",
-	movedInEndUserShipment: "inEndUserShipment",
-	delivered: "delivered",
-	cartItemCancelled: "cancelled",
-	fulfillmentException: "exception",
+export type TrackingStatusProjectionInput = {
+	cartItemId: number;
+	eventKey?: string;
+	eventType?: CartItemTrackingEventType;
 };
 
-function parsePositiveInt(value: string | undefined, fieldName: string) {
-	if (value === undefined) return undefined;
-	if (!/^\d+$/.test(value)) {
-		throw new Error(`${fieldName} must be a positive integer string`);
-	}
+const stageKeys: ReadonlySet<string> = new Set(adminTrackingStageKeys);
 
-	const parsed = Number(value);
-	if (!Number.isSafeInteger(parsed) || parsed <= 0) {
-		throw new Error(`${fieldName} must be a safe positive integer`);
-	}
-
-	return parsed;
+function isStageKey(
+	status: CartItemFulfillmentStatus,
+): status is AdminTrackingStageKey {
+	return stageKeys.has(status);
 }
 
-async function countUserOrderItemEvidence(
-	tx: Prisma.TransactionClient,
-	command: TrackingCommand,
+/**
+ * Observability only: the arriving event implies a stage the lineage cannot
+ * back yet, so the evidence it claims is missing. Deviations
+ * (cancelled/exception/rolled over) are legitimate and stay silent.
+ */
+function warnWhenEventOutrunsDerivation(
+	input: TrackingStatusProjectionInput,
+	derived: CartItemFulfillmentStatus,
 ) {
-	const userOrderItemId = parsePositiveInt(
-		command.refs?.userOrderItemId,
-		"userOrderItemId",
-	);
-	const orderId = parsePositiveInt(command.refs?.orderId, "orderId");
-	const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
+	if (!input.eventType || !isStageKey(derived)) return;
 
-	return tx.userOrderItem.count({
-		where: {
-			id: userOrderItemId,
-			userOrderId: orderId,
-			sourceCartItemId: cartItemId,
-		},
+	const expectedStage = adminTrackingStageByEventType[input.eventType];
+	if (!expectedStage) return;
+	if (fulfillmentStageRank(expectedStage) <= fulfillmentStageRank(derived)) {
+		return;
+	}
+
+	appLogger.warn("trackingStatusProjectionSkipped", {
+		eventKey: input.eventKey,
+		eventType: input.eventType,
+		cartItemId: input.cartItemId,
+		expectedStage,
+		derivedStatus: derived,
 	});
-}
-
-async function hasPackageAllocationEvidence(
-	tx: Prisma.TransactionClient,
-	command: TrackingCommand,
-) {
-	const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
-	const packageId = parsePositiveInt(command.refs?.packageId, "packageId");
-	if (!packageId) return false;
-
-	const count = await tx.packageAllocation.count({
-		where: {
-			cartItemLotItem: { cartItemId },
-			packageLotItem: { packageId },
-		},
-	});
-
-	return count > 0;
-}
-
-async function hasShipmentEvidence(
-	tx: Prisma.TransactionClient,
-	command: TrackingCommand,
-) {
-	const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
-	const shipmentId = parsePositiveInt(command.refs?.shipmentId, "shipmentId");
-	if (!shipmentId) return false;
-
-	const count = await tx.packageAllocation.count({
-		where: {
-			cartItemLotItem: { cartItemId },
-			packageLotItem: {
-				package: {
-					shipmentId,
-				},
-			},
-		},
-	});
-
-	return count > 0;
-}
-
-async function canProjectStatus(
-	tx: Prisma.TransactionClient,
-	command: TrackingCommand,
-) {
-	const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
-
-	switch (command.eventType) {
-		case "submittedToOrder":
-			return (await countUserOrderItemEvidence(tx, command)) > 0;
-
-		case "includedInOperation": {
-			const operationId = parsePositiveInt(
-				command.refs?.operationId,
-				"operationId",
-			);
-			if (!operationId) return false;
-			return (await tx.operation.count({ where: { id: operationId } })) > 0;
-		}
-
-		case "allocatedToLotItem": {
-			const lotItemId = parsePositiveInt(command.refs?.lotItemId, "lotItemId");
-			if (!lotItemId) return false;
-			return (
-				(await tx.cartItemLotItem.count({
-					where: { cartItemId, lotItemId },
-				})) > 0
-			);
-		}
-
-		case "includedInSupplierOrder": {
-			const lotId = parsePositiveInt(command.refs?.lotId, "lotId");
-			if (!lotId) return false;
-			return (
-				(await tx.lot.count({
-					where: { id: lotId, supplierOrderId: { not: null } },
-				})) > 0
-			);
-		}
-
-		case "supplierConfirmed": {
-			const lotItemId = parsePositiveInt(command.refs?.lotItemId, "lotItemId");
-			if (!lotItemId) return false;
-			return (
-				(await tx.lotItem.count({
-					where: { id: lotItemId, status: "confirmed" },
-				})) > 0
-			);
-		}
-
-		case "packaged":
-			return hasPackageAllocationEvidence(tx, command);
-
-		case "movedInInternalShipment":
-		case "receivedAtWarehouse":
-		case "movedInEndUserShipment":
-		case "delivered":
-			return hasShipmentEvidence(tx, command);
-
-		case "rolledOverPreAllocation":
-		case "rolledOverPostAllocation": {
-			const rollOverId = parsePositiveInt(
-				command.refs?.rolloverId,
-				"rolloverId",
-			);
-			if (!rollOverId) return false;
-			return (
-				(await tx.rollOver.count({
-					where: { id: rollOverId, cartItemId },
-				})) > 0
-			);
-		}
-
-		case "cartItemCancelled": {
-			const cartItem = await tx.cartItem.findUnique({
-				where: { id: cartItemId },
-				select: { deleted: true, status: true },
-			});
-
-			return cartItem?.deleted === true || cartItem?.status === "cancelled";
-		}
-
-		case "fulfillmentException":
-			return (
-				(await tx.cartItem.count({
-					where: { id: cartItemId },
-				})) > 0
-			);
-
-		default:
-			return false;
-	}
-}
-
-async function targetStatusForCommand(
-	tx: Prisma.TransactionClient,
-	command: TrackingCommand,
-): Promise<CartItemFulfillmentStatus | undefined> {
-	if (
-		command.eventType === "rolledOverPreAllocation" ||
-		command.eventType === "rolledOverPostAllocation"
-	) {
-		const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
-		const allocatedCount = await tx.cartItemLotItem.count({
-			where: { cartItemId },
-		});
-
-		return allocatedCount > 0 ? "partiallyRolledOver" : "rolledOver";
-	}
-
-	return fulfillmentStatusByTrackingEvent[command.eventType];
 }
 
 // biome-ignore lint/complexity/noStaticOnlyClass: This class is a logical grouping of related functionality and is not expected to be instantiated or extended.
 export class TrackingStatusProjector {
 	static async project(
 		tx: Prisma.TransactionClient,
-		command: TrackingCommand,
+		input: TrackingStatusProjectionInput,
 	): Promise<void> {
-		const targetStatus = await targetStatusForCommand(tx, command);
-		if (!targetStatus) return;
+		const snapshot = await loadFulfillmentLineageSnapshot(tx, input.cartItemId);
+		if (!snapshot) return;
 
-		const cartItemId = parsePositiveInt(command.cartItemId, "cartItemId");
-		const canProject = await canProjectStatus(tx, command);
+		const derived = deriveFulfillmentStatus(snapshot);
 
-		if (!canProject) {
-			appLogger.warn("trackingStatusProjectionSkipped", {
-				eventKey: command.eventKey,
-				eventType: command.eventType,
-				cartItemId,
-				targetStatus,
-			});
-			return;
-		}
+		warnWhenEventOutrunsDerivation(input, derived);
 
 		await tx.cartItem.updateMany({
 			where: {
-				id: cartItemId,
-				fulfillmentStatus: { not: targetStatus },
+				id: input.cartItemId,
+				fulfillmentStatus: { not: derived },
 			},
-			data: {
-				fulfillmentStatus: targetStatus,
-			},
+			data: { fulfillmentStatus: derived },
 		});
 	}
 }

@@ -192,10 +192,49 @@ export function mapDomainEventToTrackingCommands(
 				},
 			];
 
+		case "operation.cartItem.excluded":
+			return [
+				{
+					...commandBase(
+						event,
+						"excludedFromOperation",
+						event.payload.cartItemId,
+					),
+					quantity: event.payload.quantity,
+					refs: { operationId: event.payload.operationId },
+					metadata: metadataWithDomainEvent(event, {
+						cartId: event.payload.cartId,
+						reason: event.payload.reason,
+						...(event.payload.metadata ?? {}),
+					}),
+				},
+			];
+
 		case "operation.cartItem.allocatedToLotItem":
 			return [
 				{
 					...commandBase(event, "allocatedToLotItem", event.payload.cartItemId),
+					quantity: event.payload.quantity,
+					refs: {
+						operationId: event.payload.operationId,
+						lotId: event.payload.lotId,
+						lotItemId: event.payload.lotItemId,
+					},
+					metadata: metadataWithDomainEvent(event, {
+						cartId: event.payload.cartId,
+						...(event.payload.metadata ?? {}),
+					}),
+				},
+			];
+
+		case "supplier.cartItem.requested":
+			return [
+				{
+					...commandBase(
+						event,
+						"includedInSupplierOrder",
+						event.payload.cartItemId,
+					),
 					quantity: event.payload.quantity,
 					refs: {
 						operationId: event.payload.operationId,
@@ -299,6 +338,23 @@ export function mapDomainEventToTrackingCommands(
 				},
 			];
 
+		case "shipment.endUser.arrivedAtPickupPoint":
+			return [
+				{
+					...commandBase(
+						event,
+						"arrivedAtPickupPoint",
+						event.payload.cartItemId,
+					),
+					quantity: event.payload.quantity,
+					refs: {
+						shipmentId: event.payload.shipmentId,
+						packageId: event.payload.packageId,
+					},
+					metadata: metadataWithDomainEvent(event, event.payload.metadata),
+				},
+			];
+
 		case "rollover.preAllocation.created":
 			return [
 				{
@@ -330,6 +386,22 @@ export function mapDomainEventToTrackingCommands(
 						rolloverId: event.payload.rolloverId,
 					},
 					metadata: metadataWithDomainEvent(event, event.payload.metadata),
+				},
+			];
+
+		case "rollover.resolved":
+			return [
+				{
+					...commandBase(event, "rollOverResolved", event.payload.cartItemId),
+					quantity: event.payload.quantity,
+					refs: {
+						operationId: event.payload.operationId,
+						rolloverId: event.payload.rolloverId,
+					},
+					metadata: metadataWithDomainEvent(event, {
+						reason: event.payload.reason,
+						...(event.payload.metadata ?? {}),
+					}),
 				},
 			];
 	}

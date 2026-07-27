@@ -1,6 +1,15 @@
+import { isLiveLotItem } from "~/server/services/operations/operation-counters";
 import type { OperationSummaryRecord } from "./operation.data";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
 import { decimal, sumDecimals } from "./operational-diagnostics.types";
+
+export type OperationDiagnosticsOptions = {
+	/**
+	 * Batches created before this instant have had enough later operations run
+	 * that an open roll over is stale. Null or omitted disables the rule.
+	 */
+	staleOpenRollOverBefore?: Date | null;
+};
 
 /**
  * Read-only consistency rules for an aggregation batch. Evaluated identically
@@ -12,9 +21,49 @@ import { decimal, sumDecimals } from "./operational-diagnostics.types";
  * quantities when it completes, so running and failed batches sit at zero and
  * balance trivially.
  */
-export function calculateOperationDiagnostics(
+/**
+ * A compensated operation is exempt from every rule above and answers to this
+ * one instead. The exemption is structural, not cosmetic: compensation
+ * recomputes the live counters to zero while `eligibleQuantity` stays the frozen
+ * execution snapshot (architecture §11), so `operation.quantity.balanceMismatch`
+ * would fire on every cancelled operation by construction. What actually matters
+ * afterwards is that nothing live survived the compensation.
+ */
+function calculateCancelledOperationDiagnostics(
 	operation: OperationSummaryRecord,
 ): OperationalDiagnostic[] {
+	const liveLotItems = operation.lots.flatMap((lot) =>
+		lot.lotItems.filter((item) => isLiveLotItem(lot, item)),
+	);
+	const openRollOvers = operation.rollOvers.filter(
+		(rollOver) => rollOver.status === "open",
+	);
+
+	if (liveLotItems.length === 0 && openRollOvers.length === 0) return [];
+
+	return [
+		{
+			code: "operation.cancelled.notCompensated",
+			severity: "critical",
+			message:
+				"La operación está cancelada pero conserva líneas activas o rollovers abiertos.",
+			refs: {
+				operationId: operation.id,
+				lotItemCount: liveLotItems.length,
+				rollOverCount: openRollOvers.length,
+			},
+		},
+	];
+}
+
+export function calculateOperationDiagnostics(
+	operation: OperationSummaryRecord,
+	options?: OperationDiagnosticsOptions,
+): OperationalDiagnostic[] {
+	if (operation.status === "cancelled") {
+		return calculateCancelledOperationDiagnostics(operation);
+	}
+
 	const diagnostics: OperationalDiagnostic[] = [];
 
 	const eligible = decimal(operation.eligibleQuantity);
@@ -31,8 +80,14 @@ export function calculateOperationDiagnostics(
 		});
 	}
 
+	// Same predicate `computeOperationCounters` applies. If the two ever diverge,
+	// `assignedMismatch` fires on every cancellation.
 	const lotItemQuantity = sumDecimals(
-		operation.lots.flatMap((lot) => lot.lotItems.map((item) => item.quantity)),
+		operation.lots.flatMap((lot) =>
+			lot.lotItems
+				.filter((item) => isLiveLotItem(lot, item))
+				.map((item) => item.quantity),
+		),
 	);
 
 	if (!assigned.equals(lotItemQuantity)) {
@@ -102,6 +157,19 @@ export function calculateOperationDiagnostics(
 				rollOverCount: openRollOvers.length,
 			},
 		});
+
+		const staleBefore = options?.staleOpenRollOverBefore;
+		if (staleBefore && operation.createdAt < staleBefore) {
+			diagnostics.push({
+				code: "operation.rollOver.stale",
+				severity: "warning",
+				message: `La operación arrastra ${openRollOvers.length} rollover(s) abierto(s) desde hace varias operaciones.`,
+				refs: {
+					operationId: operation.id,
+					rollOverCount: openRollOvers.length,
+				},
+			});
+		}
 	}
 
 	return diagnostics;

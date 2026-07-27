@@ -20,15 +20,19 @@ const supportedEventTypes = new Set<DomainEventInput["type"]>([
 	"fulfillment.exception.created",
 	"fulfillment.exception.resolved",
 	"operation.cartItem.included",
+	"operation.cartItem.excluded",
 	"operation.cartItem.allocatedToLotItem",
+	"supplier.cartItem.requested",
 	"supplier.lotItem.confirmed",
 	"package.cartItem.packaged",
 	"shipment.internal.dispatched",
 	"shipment.internal.received",
 	"shipment.endUser.dispatched",
 	"shipment.endUser.delivered",
+	"shipment.endUser.arrivedAtPickupPoint",
 	"rollover.preAllocation.created",
 	"rollover.postAllocation.created",
+	"rollover.resolved",
 ]);
 
 export class TrackingDomainEventListener implements DomainEventListener {

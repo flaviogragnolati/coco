@@ -4,6 +4,7 @@ import {
 	Boxes,
 	ClipboardList,
 	Layers,
+	MapPin,
 	Package,
 	PackageCheck,
 	Pencil,
@@ -12,6 +13,7 @@ import {
 	ShoppingCart,
 	Trash2,
 	Truck,
+	Undo2,
 	Warehouse,
 } from "lucide-react";
 import type { StatusConfig } from "~/shared/common/admin-crud/status-config";
@@ -121,6 +123,11 @@ export const trackingEventTypeConfig: Record<TrackingEventType, StatusConfig> =
 			icon: Truck,
 			label: trackingEventLabelMap.movedInEndUserShipment,
 		},
+		arrivedAtPickupPoint: {
+			...statusPresets.inProgress,
+			icon: MapPin,
+			label: trackingEventLabelMap.arrivedAtPickupPoint,
+		},
 		delivered: {
 			...statusPresets.success,
 			icon: PackageCheck,
@@ -135,6 +142,16 @@ export const trackingEventTypeConfig: Record<TrackingEventType, StatusConfig> =
 			...statusPresets.attention,
 			icon: RotateCcw,
 			label: trackingEventLabelMap.rolledOverPostAllocation,
+		},
+		rollOverResolved: {
+			...statusPresets.success,
+			icon: RotateCcw,
+			label: trackingEventLabelMap.rollOverResolved,
+		},
+		excludedFromOperation: {
+			...statusPresets.attention,
+			icon: Undo2,
+			label: trackingEventLabelMap.excludedFromOperation,
 		},
 	};
 
