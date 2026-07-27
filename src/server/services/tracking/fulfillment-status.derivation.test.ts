@@ -600,3 +600,49 @@ test("a disrupted lineage with a resolved roll over is an exception first", () =
 		),
 	).toBe("exception");
 });
+
+test("a pickup-point arrival keeps its packages in the end-user shipment", () => {
+	// `shipment.deliver` marks only the shipment `received` on the pickup-point
+	// path; each customer's `package.confirmDelivery` is what produces `delivered`
+	// (§8). Reading the shipment as the arrival claimed a handover that has not
+	// happened.
+	const atPickupPoint = snapshot({
+		allocations: [
+			allocation({
+				lotItemStatus: "readyForPackaging",
+				lotStatus: "readyForPackaging",
+				supplierOrderStatus: "completed",
+				packagedAllocations: [
+					packaged({
+						leg: "outbound",
+						packageLineStatus: "shipped",
+						packageStatus: "inTransit",
+						shipmentStatus: "received",
+					}),
+				],
+			}),
+		],
+	});
+
+	expect(deriveFulfillmentStatus(atPickupPoint)).toBe("inEndUserShipment");
+
+	const collected = snapshot({
+		allocations: [
+			allocation({
+				lotItemStatus: "readyForPackaging",
+				lotStatus: "readyForPackaging",
+				supplierOrderStatus: "completed",
+				packagedAllocations: [
+					packaged({
+						leg: "outbound",
+						packageLineStatus: "received",
+						packageStatus: "received",
+						shipmentStatus: "received",
+					}),
+				],
+			}),
+		],
+	});
+
+	expect(deriveFulfillmentStatus(collected)).toBe("delivered");
+});

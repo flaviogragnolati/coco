@@ -42,6 +42,7 @@ function buildLot(overrides: Partial<LotSummaryRecord> = {}): LotSummaryRecord {
 		id: 100,
 		code: "LOT-100",
 		status: "confirmed",
+		operation: { id: 1, code: "OP-1", status: "completed" },
 		supplierOrder: { id: 500, code: "SORD-500" },
 		lotItems: [lotItem()],
 		...overrides,
@@ -153,6 +154,51 @@ test("a cancelled lot still holding unresolved demand is critical", () => {
 	} as unknown as Partial<LotSummaryRecord>);
 
 	expect(codes(lot)).toContain("lot.cancelledWithActiveDemand");
+});
+
+test("a lot cancelled by a compensation is exempt from the unresolved-demand rule", () => {
+	// Compensation is status-only and returns its cart items to
+	// `awaitingAggregation`, which the rule reads as unresolved — the correct
+	// outcome, so the exemption mirrors §14's operation-level one.
+	const compensated = buildLot({
+		status: "cancelled",
+		operation: { id: 1, code: "OP-1", status: "cancelled" },
+		lotItems: [
+			lotItem({
+				status: "cancelled",
+				cartItemLotItems: [
+					{
+						quantity: decimal("8"),
+						packageAllocations: [],
+						cartItem: { fulfillmentStatus: "awaitingAggregation" },
+					},
+				],
+			}),
+		],
+	} as unknown as Partial<LotSummaryRecord>);
+
+	expect(codes(compensated)).not.toContain("lot.cancelledWithActiveDemand");
+
+	// The same lot under a live operation was cancelled through the supplier loop,
+	// which mints roll overs; unresolved demand there is a real contradiction.
+	const supplierCancelled = buildLot({
+		status: "cancelled",
+		operation: { id: 1, code: "OP-1", status: "completed" },
+		lotItems: [
+			lotItem({
+				status: "cancelled",
+				cartItemLotItems: [
+					{
+						quantity: decimal("8"),
+						packageAllocations: [],
+						cartItem: { fulfillmentStatus: "awaitingAggregation" },
+					},
+				],
+			}),
+		],
+	} as unknown as Partial<LotSummaryRecord>);
+
+	expect(codes(supplierCancelled)).toContain("lot.cancelledWithActiveDemand");
 });
 
 test("a lot without a supplier order is flagged", () => {

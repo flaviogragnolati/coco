@@ -23,7 +23,8 @@
 		"test:e2e": "playwright test",
 		"typecheck": "tsgo --noEmit",
 		"madge": "madge ./src",
-		"madge:c": "madge --circular --image circular-dependencies.svg ./src"
+		"madge:c": "madge --circular --image circular-dependencies.svg ./src",
+		"db:seed-verify": "tsx --conditions=react-server --env-file=.env scripts/seed-verify.ts"
 	},
 	"dependencies": {
 		"@auth/prisma-adapter": "^2.11.1",

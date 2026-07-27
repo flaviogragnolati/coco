@@ -47,7 +47,17 @@ export function calculateSupplierOrderDiagnostics(
 		}
 	}
 
-	if (order.status === "cancelled") {
+	// Exempt when the cancellation came from an **operation compensation**, the same
+	// exemption `calculateLotDiagnostics` applies for the same reason: compensation
+	// is status-only and returns its cart items to `awaitingAggregation`, which this
+	// rule reads as unresolved. `every`, not `some` — compensation refuses an order
+	// holding lots of another operation (§8), so a mixed order was cancelled through
+	// the supplier loop and keeps the rule.
+	const compensated =
+		order.lots.length > 0 &&
+		order.lots.every((lot) => lot.operation.status === "cancelled");
+
+	if (order.status === "cancelled" && !compensated) {
 		const hasUnresolvedDemand = lotItems.some((lotItem) =>
 			lotItem.cartItemLotItems.some((allocation) =>
 				unresolvedDemandFulfillmentStatuses.has(

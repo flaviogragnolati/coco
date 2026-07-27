@@ -20,6 +20,7 @@ test("lot diagnostics classify quantity mismatch as critical", () => {
 	const lot = {
 		id: 1,
 		status: "requested",
+		operation: { id: 1, code: "OP-1", status: "completed" },
 		supplierOrder: { id: 1 },
 		lotItems: [
 			{

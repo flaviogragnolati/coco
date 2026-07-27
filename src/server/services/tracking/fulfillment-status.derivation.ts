@@ -96,7 +96,12 @@ function packagedStage(
 	packaged: FulfillmentPackagedAllocationSnapshot,
 ): AdminTrackingStageKey {
 	if (packaged.leg === "outbound") {
-		if (hasArrived(packaged)) return "delivered";
+		// Only the **package's** own arrival is a handover on this leg. A pickup-point
+		// shipment reaches `received` while its packages deliberately stay `inTransit`
+		// (§8), so reading the shipment here claimed deliveries that had not happened.
+		// Home delivery and depot pickup both cascade the package to `received`, so
+		// nothing else changes.
+		if (packaged.packageStatus === "received") return "delivered";
 		return hasDeparted(packaged) ? "inEndUserShipment" : "atWarehouse";
 	}
 

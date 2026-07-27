@@ -205,6 +205,35 @@ test("a cancelled order holding unresolved demand is critical", () => {
 	expect(codes(order)).toContain("supplierOrder.cancelledWithActiveDemand");
 });
 
+test("an order cancelled by a compensation is exempt from the unresolved-demand rule", () => {
+	const compensated = buildOrder({
+		status: "cancelled",
+		lots: [
+			{
+				id: 100,
+				status: "cancelled",
+				operation: { id: 1, code: "OP-1", status: "cancelled" },
+				lotItems: [
+					lotItem({
+						status: "cancelled",
+						cartItemLotItems: [
+							{
+								id: 300,
+								quantity: decimal("8"),
+								cartItem: { id: 10, fulfillmentStatus: "awaitingAggregation" },
+							},
+						],
+					}),
+				],
+			},
+		],
+	} as unknown as Partial<SupplierOrderSummaryRecord>);
+
+	expect(codes(compensated)).not.toContain(
+		"supplierOrder.cancelledWithActiveDemand",
+	);
+});
+
 test("a cancelled order whose demand rolled over is clean", () => {
 	const order = buildOrder({
 		status: "cancelled",

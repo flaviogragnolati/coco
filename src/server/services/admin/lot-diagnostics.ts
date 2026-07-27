@@ -65,7 +65,14 @@ export function calculateLotDiagnostics(
 		}
 	}
 
-	if (lot.status === "cancelled") {
+	// A lot cancelled by an **operation compensation** is exempt, the same way §14
+	// exempts the compensated operation itself: compensation is status-only and
+	// returns its cart items to `awaitingAggregation` — unresolved demand by this
+	// rule's definition, and the correct outcome. A lot cancelled through the
+	// supplier loop keeps the rule, because that path mints roll overs instead.
+	const compensated = lot.operation.status === "cancelled";
+
+	if (lot.status === "cancelled" && !compensated) {
 		// `unresolvedDemand…`, not `activeDemand…`: the latter counts `rolledOver`,
 		// which is exactly what a correct cancellation produces.
 		const hasUnresolvedDemand = lot.lotItems.some((lotItem) =>
