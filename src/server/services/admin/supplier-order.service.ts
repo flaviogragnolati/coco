@@ -63,6 +63,7 @@ import {
 	findSupplierOrderById,
 	findSupplierOrderForCommand,
 	getSupplierOrderStats,
+	isLiveSupplierOrderLine,
 	listSupplierOrderCandidates,
 	packagedQuantity,
 	remainingQuantity,
@@ -105,16 +106,12 @@ const supplierOrderStatuses: SupplierOrderStatus[] = [
 
 const zero = () => new Prisma.Decimal(0);
 
-function isLiveLine(lot: { status: string }, lotItem: { status: string }) {
-	return lot.status !== "cancelled" && lotItem.status !== "cancelled";
-}
-
 function liveLines(
 	record: SupplierOrderCommandRecord | SupplierOrderDetailRecord,
 ) {
 	return record.lots.flatMap((lot) =>
 		lot.lotItems
-			.filter((lotItem) => isLiveLine(lot, lotItem))
+			.filter((lotItem) => isLiveSupplierOrderLine(lot, lotItem))
 			.map((lotItem) => ({ lot, lotItem })),
 	);
 }
@@ -140,7 +137,9 @@ function summarizeSupplierOrder(
 	const lotItems = record.lots.flatMap((lot) =>
 		lot.lotItems.map((lotItem) => ({ lot, lotItem })),
 	);
-	const live = lotItems.filter(({ lot, lotItem }) => isLiveLine(lot, lotItem));
+	const live = lotItems.filter(({ lot, lotItem }) =>
+		isLiveSupplierOrderLine(lot, lotItem),
+	);
 	const operations = Array.from(
 		new Map(
 			record.lots.map((lot) => [lot.operation.id, lot.operation]),

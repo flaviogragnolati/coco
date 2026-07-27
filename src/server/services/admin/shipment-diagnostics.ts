@@ -10,9 +10,18 @@ const disruptedPackageStatuses: ReadonlySet<string> = new Set([
 	"failed",
 ]);
 
+export type ShipmentDiagnosticsOptions = {
+	/**
+	 * Shipments whose `updatedAt` predates this instant have been travelling long
+	 * enough to chase. Null or omitted disables the rule that reads it.
+	 */
+	staleBefore?: Date | null;
+};
+
 export function calculateShipmentDiagnostics(
 	shipment: ShipmentSummaryRecord,
 	hasTrackingEvents: boolean,
+	options?: ShipmentDiagnosticsOptions,
 ): OperationalDiagnostic[] {
 	const diagnostics: OperationalDiagnostic[] = [];
 	const livePackages = shipment.packages.filter(
@@ -111,6 +120,26 @@ export function calculateShipmentDiagnostics(
 			code: "shipment.endUser.noDeliveryMode",
 			severity: "critical",
 			message: "El envio al cliente no tiene modo de entrega.",
+			refs: { shipmentId: shipment.id },
+		});
+	}
+
+	// Anchored on `updatedAt` rather than a departure column, which does not exist
+	// (§15.3). Sound here for a specific reason: once a shipment is `inTransit` the
+	// only writes left are terminal (`receive`, `deliver`, `markDelayed`,
+	// `markFailed`) and `addPackages` is guarded to not-yet-departed shipments — so
+	// nothing moves the timestamp between departure and arrival.
+	if (
+		shipment.type === "internalTransfer" &&
+		shipment.status === "inTransit" &&
+		options?.staleBefore &&
+		shipment.updatedAt < options.staleBefore
+	) {
+		diagnostics.push({
+			code: "shipment.dispatch.notReceived",
+			severity: "warning",
+			message:
+				"El envio interno lleva varios dias en transito y todavia no se recibio.",
 			refs: { shipmentId: shipment.id },
 		});
 	}

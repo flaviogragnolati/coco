@@ -20,8 +20,17 @@ const settledShipmentStatuses: ReadonlySet<ShipmentStatus> = new Set([
 	"received",
 ]);
 
+export type CarrierOrderDiagnosticsOptions = {
+	/**
+	 * Bookings requested before this instant have waited long enough for a
+	 * confirmation. Null or omitted disables the rule.
+	 */
+	staleBefore?: Date | null;
+};
+
 export function calculateCarrierOrderDiagnostics(
 	order: CarrierOrderSummaryRecord,
+	options?: CarrierOrderDiagnosticsOptions,
 ): OperationalDiagnostic[] {
 	const diagnostics: OperationalDiagnostic[] = [];
 	const liveShipments = order.shipments.filter(
@@ -90,6 +99,24 @@ export function calculateCarrierOrderDiagnostics(
 				refs: { carrierOrderId: order.id, shipmentCount: unsettled.length },
 			});
 		}
+	}
+
+	// The only one of the four `after N days` rules that needs no approximation:
+	// `requestedAt` is a real column, written by `carrierOrder.request` and by
+	// nothing else.
+	if (
+		order.status === "requested" &&
+		options?.staleBefore &&
+		order.requestedAt !== null &&
+		order.requestedAt < options.staleBefore
+	) {
+		diagnostics.push({
+			code: "carrierOrder.requestedNotConfirmed",
+			severity: "warning",
+			message:
+				"La orden de transporte fue solicitada hace varios dias y sigue sin confirmar.",
+			refs: { carrierOrderId: order.id },
+		});
 	}
 
 	// Only on a booking that is itself fine: a failed order whose shipments are

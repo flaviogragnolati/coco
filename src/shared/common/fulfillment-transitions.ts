@@ -440,28 +440,46 @@ const supplierOrderCommandKeys: SupplierOrderCommandKey[] = [
 
 /**
  * Lots are never commanded directly — they follow their supplier order (ADR
- * 0003). This exists to *say so* at the surface where an operator would look for
- * a button, not to duplicate the ladder: every key comes back disabled with the
- * order to use instead.
+ * 0003). This says so at the surface where an operator would look for a button:
+ * every entry names the commanding order, and none of them is a lot command.
  *
- * It deliberately does not delegate to `supplierOrderAvailableActions`. Real
- * enablement needs order-wide inputs (live line count and dispatchable quantity
- * across *all* the order's lots) that a lot record does not carry, and faking
- * them would create the second source of truth this module exists to prevent.
+ * When the caller can supply the **order-wide** facts (`order`), it delegates to
+ * `supplierOrderAvailableActions` rather than re-deriving the ladder, so the lot
+ * detail and the supplier-order detail can never disagree about what is
+ * reachable. Those facts span *all* the order's lots — a single lot record does
+ * not carry them, which is why they arrive as a parameter instead of being
+ * guessed. Without them every key comes back disabled, which is what this
+ * returned unconditionally before.
  */
 export function lotAvailableActions(input: {
 	supplierOrderCode: string | null;
+	order?: {
+		status: SupplierOrderStatus;
+		operationCompleted: boolean;
+		liveLineCount: number;
+		dispatchableQuantity: string;
+	};
 }): AvailableAction<SupplierOrderCommandKey>[] {
-	const reason =
+	const managedBy =
 		input.supplierOrderCode === null
 			? "El lote no tiene orden de proveedor"
 			: `Se gestiona desde la orden de proveedor ${input.supplierOrderCode}`;
 
-	return supplierOrderCommandKeys.map((action) => ({
-		action,
-		enabled: false,
-		reason,
-	}));
+	if (!input.order || input.supplierOrderCode === null) {
+		return supplierOrderCommandKeys.map((action) => ({
+			action,
+			enabled: false,
+			reason: managedBy,
+		}));
+	}
+
+	// The ladder's own reason still explains *why* something is unavailable; the
+	// order code is appended so the operator knows where to go either way.
+	return supplierOrderAvailableActions(input.order).map((entry) =>
+		entry.enabled
+			? { ...entry, reason: managedBy }
+			: { ...entry, reason: `${entry.reason}. ${managedBy}` },
+	);
 }
 
 export type ShipmentCommandKey =

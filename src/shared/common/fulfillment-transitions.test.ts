@@ -1353,3 +1353,70 @@ test("a deleted carrier order accepts no command other than the purge", () => {
 		"La orden tiene envíos asociados",
 	);
 });
+
+test("a lot delegates to its order's matrix when the order-wide facts arrive", () => {
+	const pendingOrder = lotAvailableActions({
+		supplierOrderCode: "SO-9",
+		order: {
+			status: "pending",
+			operationCompleted: true,
+			liveLineCount: 2,
+			dispatchableQuantity: "40",
+		},
+	});
+
+	// Every key on every call stays the norm, delegated or not.
+	expect(pendingOrder.map((entry) => entry.action)).toEqual([
+		"request",
+		"confirm",
+		"registerDispatch",
+		"cancel",
+		"cancelLine",
+	]);
+
+	const request = pendingOrder.find((entry) => entry.action === "request");
+	expect(request?.enabled).toBe(true);
+	expect(request?.reason).toContain("SO-9");
+
+	const confirmed = lotAvailableActions({
+		supplierOrderCode: "SO-9",
+		order: {
+			status: "confirmed",
+			operationCompleted: true,
+			liveLineCount: 2,
+			dispatchableQuantity: "40",
+		},
+	});
+
+	const disabledRequest = confirmed.find((entry) => entry.action === "request");
+	expect(disabledRequest?.enabled).toBe(false);
+	// The ladder's own reason survives; the order code is appended, not substituted.
+	expect(disabledRequest?.reason).toContain("solicitar una orden pendiente");
+	expect(disabledRequest?.reason).toContain("SO-9");
+
+	expect(
+		confirmed.find((entry) => entry.action === "registerDispatch")?.enabled,
+	).toBe(true);
+});
+
+test("a lot with no order-wide facts still reports everything disabled", () => {
+	const actions = lotAvailableActions({ supplierOrderCode: "SO-9" });
+
+	expect(actions).toHaveLength(5);
+	for (const entry of actions) expect(entry.enabled).toBe(false);
+
+	// A lot without an order can never delegate, even if facts were supplied.
+	const orphan = lotAvailableActions({
+		supplierOrderCode: null,
+		order: {
+			status: "pending",
+			operationCompleted: true,
+			liveLineCount: 1,
+			dispatchableQuantity: "10",
+		},
+	});
+	for (const entry of orphan) {
+		expect(entry.enabled).toBe(false);
+		expect(entry.reason).toContain("no tiene orden de proveedor");
+	}
+});

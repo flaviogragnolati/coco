@@ -4,6 +4,8 @@ import {
 	packageExceptionInputSchema,
 	packageFractionateInputSchema,
 	packageFractionateOutputSchema,
+	packageFractionationCandidatesInputSchema,
+	packageFractionationCandidatesOutputSchema,
 	packageGetByIdInputSchema,
 	packageListInputSchema,
 	packageListOutputSchema,
@@ -50,6 +52,19 @@ export const packageRouter = createTRPCRouter({
 					toAdminActor(ctx.session.user),
 					ctx.db,
 				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	// A query, so the fractionate dialog can preview a multi-source selection
+	// without the client re-deriving `fractionableQuantity` (§21.6).
+	fractionationCandidates: adminProcedure
+		.input(packageFractionationCandidatesInputSchema)
+		.output(packageFractionationCandidatesOutputSchema)
+		.query(async ({ ctx, input }) => {
+			try {
+				return await packageService.fractionationCandidates(input, ctx.db);
 			} catch (error) {
 				mapServiceError(error);
 			}

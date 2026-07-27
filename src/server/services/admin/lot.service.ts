@@ -33,6 +33,10 @@ import {
 	resolveDiagnosticListPage,
 	sumDecimals,
 } from "./operational-diagnostics.types";
+import {
+	findSupplierOrderActionInputs,
+	type SupplierOrderActionInputs,
+} from "./supplier-order.data";
 
 type AdminDb = typeof db;
 type LotStatus = typeof lotStatusSchema._output;
@@ -60,7 +64,10 @@ function toTrackingEventSummary(event: LotTrackingEventRecord) {
 	};
 }
 
-function summarizeLot(record: LotSummaryRecord): LotListItem & {
+function summarizeLot(
+	record: LotSummaryRecord,
+	orderInputs?: Map<number, SupplierOrderActionInputs>,
+): LotListItem & {
 	diagnostics: ReturnType<typeof calculateLotDiagnostics>;
 } {
 	const diagnostics = calculateLotDiagnostics(record);
@@ -98,6 +105,9 @@ function summarizeLot(record: LotSummaryRecord): LotListItem & {
 		supplierOrder: record.supplierOrder,
 		availableActions: lotAvailableActions({
 			supplierOrderCode: record.supplierOrder?.code ?? null,
+			order: record.supplierOrder
+				? orderInputs?.get(record.supplierOrder.id)
+				: undefined,
 		}),
 		lotItemCount: record.lotItems.length,
 		lotItemQuantity: lotItemQuantity.toString(),
@@ -113,11 +123,27 @@ function summarizeLot(record: LotSummaryRecord): LotListItem & {
 	};
 }
 
+async function orderInputsFor(
+	database: AdminDb,
+	records: Array<{ supplierOrder: { id: number } | null }>,
+) {
+	return findSupplierOrderActionInputs(database, [
+		...new Set(
+			records.flatMap((record) =>
+				record.supplierOrder ? [record.supplierOrder.id] : [],
+			),
+		),
+	]);
+}
+
 async function toDetail(
 	record: LotDetailRecord,
 	database: AdminDb,
 ): Promise<LotDetail> {
-	const summary = summarizeLot(record);
+	const summary = summarizeLot(
+		record,
+		await orderInputsFor(database, [record]),
+	);
 	const trackingEvents = await listLatestLotTrackingEvents(database, {
 		lotId: record.id,
 		lotItemIds: record.lotItems.map((item) => item.id),
@@ -186,8 +212,9 @@ export async function list(input: LotListInput, database: AdminDb) {
 				take: input.pageSize,
 			}),
 		]);
+		const orderInputs = await orderInputsFor(database, records);
 		const items = records
-			.map(summarizeLot)
+			.map((record) => summarizeLot(record, orderInputs))
 			.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 		return lotListOutputSchema.parse({
@@ -203,8 +230,9 @@ export async function list(input: LotListInput, database: AdminDb) {
 	const records = await listLotCandidates(database, input, {
 		take: DIAGNOSTIC_SCAN_LIMIT,
 	});
+	const orderInputs = await orderInputsFor(database, records);
 	const summarized = records
-		.map(summarizeLot)
+		.map((record) => summarizeLot(record, orderInputs))
 		.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 	return lotListOutputSchema.parse(
@@ -242,8 +270,10 @@ export async function getStats(database: AdminDb): Promise<LotStats> {
 	) as Record<LotStatus, number>;
 
 	const demandAllocationQuantity = decimal(stats.demandAllocationQuantity);
+	// Stats count diagnostics only, so the order-wide action inputs are not worth
+	// a query here — `availableActions` is never read off this path.
 	const withDiagnostics = scanRecords
-		.map(summarizeLot)
+		.map((record) => summarizeLot(record))
 		.filter((summary) => summary.diagnosticCount > 0).length;
 
 	return lotStatsSchema.parse({

@@ -8,6 +8,9 @@ import type {
 	packageExceptionInputSchema,
 	packageFractionateInputSchema,
 	packageFractionateOutputSchema,
+	packageFractionationCandidateSchema,
+	packageFractionationCandidatesInputSchema,
+	packageFractionationCandidatesOutputSchema,
 	packageGetByIdInputSchema,
 	packageLegSchema,
 	packageListInputSchema,
@@ -49,6 +52,15 @@ export type PackageFractionateFormInput = z.input<
 >;
 export type PackageFractionateOutput = z.output<
 	typeof packageFractionateOutputSchema
+>;
+export type PackageFractionationCandidatesInput = z.output<
+	typeof packageFractionationCandidatesInputSchema
+>;
+export type PackageFractionationCandidatesOutput = z.output<
+	typeof packageFractionationCandidatesOutputSchema
+>;
+export type PackageFractionationCandidate = z.output<
+	typeof packageFractionationCandidateSchema
 >;
 export type PackagePromoteInput = z.output<typeof packagePromoteInputSchema>;
 export type PackagePromoteFormInput = z.input<typeof packagePromoteInputSchema>;

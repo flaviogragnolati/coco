@@ -272,3 +272,55 @@ test("an advanced shipment without tracking events reports", () => {
 	expect(codes(inTransit, false)).toEqual(["shipment.trackingEvents.missing"]);
 	expect(codes(inTransit, true)).toEqual([]);
 });
+
+const STALE_BEFORE = new Date("2026-07-10T00:00:00.000Z");
+
+function staleCodes(record: ShipmentSummaryRecord, staleBefore: Date | null) {
+	return calculateShipmentDiagnostics(record, true, { staleBefore }).map(
+		(diagnostic) => diagnostic.code,
+	);
+}
+
+/** In transit with everything below it consistent, so only the new rule can fire. */
+function travelling(type: string) {
+	return shipment({
+		type,
+		status: "inTransit",
+		deliveryMode: type === "endUserDelivery" ? "homeDelivery" : null,
+		packages: [
+			pkg({ status: "inTransit", lines: [line({ status: "shipped" })] }),
+		],
+	});
+}
+
+test("an internal transfer stuck in transit is flagged", () => {
+	expect(staleCodes(travelling("internalTransfer"), STALE_BEFORE)).toContain(
+		"shipment.dispatch.notReceived",
+	);
+
+	expect(staleCodes(travelling("internalTransfer"), null)).not.toContain(
+		"shipment.dispatch.notReceived",
+	);
+	expect(codes(travelling("internalTransfer"))).not.toContain(
+		"shipment.dispatch.notReceived",
+	);
+});
+
+test("an end-user delivery in transit is not a stuck dispatch", () => {
+	// The rule is about goods that never reached the warehouse; the customer leg
+	// has `package.outbound.notCollected` for its own version of the question.
+	expect(staleCodes(travelling("endUserDelivery"), STALE_BEFORE)).not.toContain(
+		"shipment.dispatch.notReceived",
+	);
+});
+
+test("a recently dispatched internal transfer is not yet stale", () => {
+	const recent = {
+		...travelling("internalTransfer"),
+		updatedAt: new Date("2026-07-20T00:00:00.000Z"),
+	} as ShipmentSummaryRecord;
+
+	expect(staleCodes(recent, STALE_BEFORE)).not.toContain(
+		"shipment.dispatch.notReceived",
+	);
+});

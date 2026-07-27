@@ -431,3 +431,139 @@ test("an inbound package spanning two customers is left alone", () => {
 		),
 	).toEqual([]);
 });
+
+const STALE_BEFORE = new Date("2026-07-10T00:00:00.000Z");
+
+function staleCodes(record: PackageSummaryRecord, staleBefore: Date | null) {
+	return calculatePackageDiagnostics(record, { staleBefore }).map(
+		(diagnostic) => diagnostic.code,
+	);
+}
+
+test("a received inbound package nobody fractionated is flagged", () => {
+	const arrived = pkg({
+		status: "received",
+		leg: "inbound",
+		lines: [
+			line({
+				id: 20,
+				quantity: "6",
+				status: "received",
+				allocations: [
+					allocation({
+						id: 200,
+						quantity: "6",
+						demandId: 40,
+						demandQuantity: "6",
+						ownLeg: "inbound",
+						ownPackageStatus: "received",
+					}),
+				],
+			}),
+		],
+	});
+
+	expect(staleCodes(arrived, STALE_BEFORE)).toContain(
+		"package.received.notFractionated",
+	);
+	expect(staleCodes(arrived, null)).not.toContain(
+		"package.received.notFractionated",
+	);
+	expect(codes(arrived)).not.toContain("package.received.notFractionated");
+});
+
+test("a fully fractionated inbound package is silent however long it sits", () => {
+	const emptied = pkg({
+		status: "received",
+		leg: "inbound",
+		lines: [
+			line({
+				id: 21,
+				quantity: "6",
+				status: "received",
+				allocations: [
+					allocation({
+						id: 201,
+						quantity: "6",
+						demandId: 41,
+						demandQuantity: "6",
+						ownLeg: "inbound",
+						ownPackageStatus: "received",
+						siblings: [{ quantity: "6", leg: "outbound" }],
+					}),
+				],
+			}),
+		],
+	});
+
+	expect(staleCodes(emptied, STALE_BEFORE)).not.toContain(
+		"package.received.notFractionated",
+	);
+});
+
+test("an outbound package nobody collected is flagged", () => {
+	const waiting = pkg({
+		status: "readyForShipment",
+		leg: "outbound",
+		shipment: null,
+		lines: [
+			line({
+				id: 22,
+				quantity: "6",
+				allocations: [
+					allocation({
+						id: 202,
+						quantity: "6",
+						demandId: 42,
+						demandQuantity: "6",
+						ownLeg: "outbound",
+						// The inbound ancestor, without which per-leg conservation would
+						// (correctly) report a critical and drown the signal under test.
+						siblings: [
+							{ quantity: "6", leg: "inbound", packageStatus: "received" },
+						],
+					}),
+				],
+			}),
+		],
+	});
+
+	expect(staleCodes(waiting, STALE_BEFORE)).toContain(
+		"package.outbound.notCollected",
+	);
+	expect(staleCodes(waiting, null)).not.toContain(
+		"package.outbound.notCollected",
+	);
+});
+
+test("a delivered outbound package is not uncollected", () => {
+	const delivered = pkg({
+		status: "received",
+		leg: "outbound",
+		shipment: null,
+		lines: [
+			line({
+				id: 23,
+				quantity: "6",
+				status: "received",
+				allocations: [
+					allocation({
+						id: 203,
+						quantity: "6",
+						demandId: 43,
+						demandQuantity: "6",
+						ownLeg: "outbound",
+						ownPackageStatus: "received",
+						siblings: [
+							{ quantity: "6", leg: "inbound", packageStatus: "received" },
+						],
+					}),
+				],
+			}),
+		],
+	});
+
+	expect(staleCodes(delivered, STALE_BEFORE)).not.toContain(
+		"package.outbound.notCollected",
+	);
+});

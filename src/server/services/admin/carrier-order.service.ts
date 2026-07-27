@@ -52,10 +52,14 @@ import {
 	hardDeleteCarrierOrder,
 	listCarrierOrderCandidates,
 	setCarrierOrderDeleted,
+	staleCarrierRequestThreshold,
 	updateCarrierOrderFields,
 	updateCarrierOrderState,
 } from "./carrier-order.data";
-import { calculateCarrierOrderDiagnostics } from "./carrier-order-diagnostics";
+import {
+	type CarrierOrderDiagnosticsOptions,
+	calculateCarrierOrderDiagnostics,
+} from "./carrier-order-diagnostics";
 import {
 	DIAGNOSTIC_SCAN_LIMIT,
 	diagnosticMessages,
@@ -97,10 +101,11 @@ function shipmentCounts(record: CarrierOrderSummaryRecord) {
 
 function summarizeCarrierOrder(
 	record: CarrierOrderSummaryRecord,
+	options?: CarrierOrderDiagnosticsOptions,
 ): CarrierOrderListItem & {
 	diagnostics: ReturnType<typeof calculateCarrierOrderDiagnostics>;
 } {
-	const diagnostics = calculateCarrierOrderDiagnostics(record);
+	const diagnostics = calculateCarrierOrderDiagnostics(record, options);
 	const counts = shipmentCounts(record);
 
 	return {
@@ -128,8 +133,11 @@ function summarizeCarrierOrder(
 	};
 }
 
-function toDetail(record: CarrierOrderDetailRecord): CarrierOrderDetail {
-	const summary = summarizeCarrierOrder(record);
+function toDetail(
+	record: CarrierOrderDetailRecord,
+	options?: CarrierOrderDiagnosticsOptions,
+): CarrierOrderDetail {
+	const summary = summarizeCarrierOrder(record, options);
 
 	return carrierOrderDetailSchema.parse({
 		...summary,
@@ -149,6 +157,10 @@ function toDetail(record: CarrierOrderDetailRecord): CarrierOrderDetail {
 }
 
 export async function list(input: CarrierOrderListInput, database: AdminDb) {
+	const diagnosticOptions: CarrierOrderDiagnosticsOptions = {
+		staleBefore: staleCarrierRequestThreshold(),
+	};
+
 	if (input.diagnosticState === "all") {
 		const [total, records] = await Promise.all([
 			countCarrierOrderCandidates(database, input),
@@ -160,7 +172,7 @@ export async function list(input: CarrierOrderListInput, database: AdminDb) {
 		// `availableActions` stays on the list item — the table's row menu renders
 		// from it. Only the diagnostics array is detail-only.
 		const items = records
-			.map(summarizeCarrierOrder)
+			.map((record) => summarizeCarrierOrder(record, diagnosticOptions))
 			.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 		return carrierOrderListOutputSchema.parse({
@@ -177,7 +189,7 @@ export async function list(input: CarrierOrderListInput, database: AdminDb) {
 		take: DIAGNOSTIC_SCAN_LIMIT,
 	});
 	const summarized = records
-		.map(summarizeCarrierOrder)
+		.map((record) => summarizeCarrierOrder(record, diagnosticOptions))
 		.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 	return carrierOrderListOutputSchema.parse(
@@ -188,10 +200,13 @@ export async function list(input: CarrierOrderListInput, database: AdminDb) {
 export async function getById(id: number, database: AdminDb) {
 	const record = await findCarrierOrderById(database, id);
 	if (!record) throwNotFound(CARRIER_ORDER_LABEL);
-	return toDetail(record);
+	return toDetail(record, { staleBefore: staleCarrierRequestThreshold() });
 }
 
 export async function getStats(database: AdminDb): Promise<CarrierOrderStats> {
+	const diagnosticOptions: CarrierOrderDiagnosticsOptions = {
+		staleBefore: staleCarrierRequestThreshold(),
+	};
 	const [stats, scanRecords] = await Promise.all([
 		getCarrierOrderStats(database),
 		listCarrierOrderCandidates(
@@ -219,7 +234,7 @@ export async function getStats(database: AdminDb): Promise<CarrierOrderStats> {
 	) as Record<CarrierOrderStatus, number>;
 
 	const withDiagnostics = scanRecords
-		.map(summarizeCarrierOrder)
+		.map((record) => summarizeCarrierOrder(record, diagnosticOptions))
 		.filter((summary) => summary.diagnosticCount > 0).length;
 
 	return carrierOrderStatsSchema.parse({

@@ -12,42 +12,10 @@ import {
 import type {
 	PackageDetail,
 	PackageFractionateInput,
+	PackageFractionationCandidate,
 } from "~/shared/common/admin-crud/package.types";
-
-type Row = {
-	packagedAllocationId: number;
-	cartCode: string;
-	userName: string;
-	cartItemCode: string;
-	lotItemCode: string;
-	productName: string;
-	unit: string;
-	available: string;
-};
-
-/**
- * One editable row per packaged allocation that still has something to package
- * out, grouped by customer — one outbound package per group is exactly what the
- * command creates.
- */
-function fractionableRows(pkg?: PackageDetail): Row[] {
-	return (pkg?.packageLines ?? [])
-		.filter((line) => line.status !== "cancelled")
-		.flatMap((line) =>
-			line.packageAllocations
-				.filter((allocation) => Number(allocation.fractionableQuantity) > 0)
-				.map((allocation) => ({
-					packagedAllocationId: allocation.id,
-					cartCode: allocation.demandAllocation.cartItem.cart.code,
-					userName: allocation.demandAllocation.cartItem.cart.user.name,
-					cartItemCode: allocation.demandAllocation.cartItem.code,
-					lotItemCode: line.lotItem.code,
-					productName: line.lotItem.product.name,
-					unit: line.lotItem.product.unit,
-					available: allocation.fractionableQuantity,
-				})),
-		);
-}
+import { api } from "~/trpc/react";
+import { InboundPackagePicker } from "./inbound-package-picker";
 
 export function PackageFractionateDialog({
 	open,
@@ -62,22 +30,46 @@ export function PackageFractionateDialog({
 	onOpenChange: (open: boolean) => void;
 	onSubmit: (values: PackageFractionateInput) => void;
 }) {
-	const rows = useMemo(() => fractionableRows(pkg), [pkg]);
+	const [extraSourceIds, setExtraSourceIds] = useState<number[]>([]);
 	const [quantities, setQuantities] = useState<Record<number, string>>({});
 	const [namePrefix, setNamePrefix] = useState("");
 
+	const sourcePackageIds = useMemo(
+		() => (pkg ? [pkg.id, ...extraSourceIds] : []),
+		[pkg, extraSourceIds],
+	);
+
+	// The editable rows come from the server over the **whole** selection: the
+	// fractionation budget is per demand allocation, so two sources covering the
+	// same demand must not each offer the full remainder (§21.6). Recomputing that
+	// client-side is the dual truth this procedure exists to avoid.
+	const candidatesQuery = api.admin.package.fractionationCandidates.useQuery(
+		{ sourcePackageIds },
+		{ enabled: open && sourcePackageIds.length > 0 },
+	);
+
+	const rows: PackageFractionationCandidate[] = useMemo(
+		() => candidatesQuery.data?.candidates ?? [],
+		[candidatesQuery.data],
+	);
+
 	useEffect(() => {
-		if (!open) return;
-		setNamePrefix("");
+		if (!open) {
+			setExtraSourceIds([]);
+			setNamePrefix("");
+		}
+	}, [open]);
+
+	useEffect(() => {
 		setQuantities(
 			Object.fromEntries(
-				rows.map((row) => [row.packagedAllocationId, row.available]),
+				rows.map((row) => [row.packagedAllocationId, row.fractionableQuantity]),
 			),
 		);
-	}, [open, rows]);
+	}, [rows]);
 
 	const byCart = useMemo(() => {
-		const groups = new Map<string, Row[]>();
+		const groups = new Map<string, PackageFractionationCandidate[]>();
 		for (const row of rows) {
 			const key = `${row.cartCode} — ${row.userName}`;
 			groups.set(key, [...(groups.get(key) ?? []), row]);
@@ -87,7 +79,9 @@ export function PackageFractionateDialog({
 
 	const excessive = rows.some((row) => {
 		const declared = toScaled(quantities[row.packagedAllocationId] ?? "");
-		return declared === null || declared > (toScaled(row.available) ?? 0n);
+		return (
+			declared === null || declared > (toScaled(row.fractionableQuantity) ?? 0n)
+		);
 	});
 	const total = sumScaled(
 		rows.map(
@@ -98,7 +92,8 @@ export function PackageFractionateDialog({
 	// server take whatever is still fractionable at commit time, which is the
 	// value the dialog was showing anyway.
 	const untouched = rows.every(
-		(row) => (quantities[row.packagedAllocationId] ?? "") === row.available,
+		(row) =>
+			(quantities[row.packagedAllocationId] ?? "") === row.fractionableQuantity,
 	);
 
 	return (
@@ -118,7 +113,7 @@ export function PackageFractionateDialog({
 						disabled={isSubmitting || excessive || total <= 0n}
 						onClick={() =>
 							onSubmit({
-								sourcePackageIds: [pkg?.id ?? 0],
+								sourcePackageIds,
 								allocations: untouched
 									? undefined
 									: rows.map((row) => ({
@@ -139,6 +134,18 @@ export function PackageFractionateDialog({
 			open={open}
 			title={`Fraccionar ${pkg?.name ?? "paquete"}`}
 		>
+			<InboundPackagePicker
+				excludeId={pkg?.id}
+				onToggle={(packageId) =>
+					setExtraSourceIds((current) =>
+						current.includes(packageId)
+							? current.filter((id) => id !== packageId)
+							: [...current, packageId],
+					)
+				}
+				selectedIds={extraSourceIds}
+			/>
+
 			<Field>
 				<FieldLabel htmlFor="package-fractionate-prefix">
 					Prefijo de nombre
@@ -155,9 +162,17 @@ export function PackageFractionateDialog({
 				</FieldDescription>
 			</Field>
 
+			{candidatesQuery.isError ? (
+				<p className="text-destructive text-xs">
+					{candidatesQuery.error.message}
+				</p>
+			) : null}
+
 			{rows.length === 0 ? (
 				<p className="text-muted-foreground text-xs">
-					No queda cantidad recibida sin fraccionar.
+					{candidatesQuery.isLoading
+						? "Calculando cantidades disponibles…"
+						: "No queda cantidad recibida sin fraccionar."}
 				</p>
 			) : (
 				byCart.map(([customer, customerRows]) => (
@@ -178,7 +193,8 @@ export function PackageFractionateDialog({
 										{row.lotItemCode} · {row.productName}
 									</p>
 									<p className="text-muted-foreground text-xs">
-										{row.cartItemCode} — disponible {row.available} {row.unit}
+										{row.cartItemCode} · {row.sourcePackageName} — disponible{" "}
+										{row.fractionableQuantity} {row.unit}
 									</p>
 								</div>
 								<Field className="w-40">

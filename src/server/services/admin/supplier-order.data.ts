@@ -1,3 +1,8 @@
+import type {
+	LotItemStatus,
+	LotStatus,
+	SupplierOrderStatus,
+} from "~/prisma/client";
 import { Prisma } from "~/prisma/client";
 import type { SupplierOrderListInput } from "~/shared/common/admin-crud/supplier-order.types";
 import { toPrismaInputJson } from "./_base/prisma-json";
@@ -259,6 +264,18 @@ export function packagedQuantity(lotItem: {
 		);
 }
 
+/**
+ * The one definition of a live supplier-order line, shared by the command
+ * service, the diagnostics and the lot surface: a line is live when neither it
+ * nor its lot is cancelled.
+ */
+export function isLiveSupplierOrderLine(
+	lot: { status: LotStatus },
+	lotItem: { status: LotItemStatus },
+) {
+	return lot.status !== "cancelled" && lotItem.status !== "cancelled";
+}
+
 /** What is still outstanding for dispatch, floored at 0. */
 export function remainingQuantity(lotItem: {
 	quantity: Prisma.Decimal;
@@ -439,4 +456,76 @@ export async function updateAllocationQuantity(
 		where: { id: allocationId },
 		data: { quantity: quantity.toString() },
 	});
+}
+
+/**
+ * The four order-wide facts `supplierOrderAvailableActions` needs, keyed by
+ * order id. Read here rather than by widening `lotSummarySelect`, which feeds the
+ * lots list: the inputs span *all* an order's lots, so one query per distinct
+ * order across a page costs a fraction of a nested read per row.
+ */
+export type SupplierOrderActionInputs = {
+	status: SupplierOrderStatus;
+	operationCompleted: boolean;
+	liveLineCount: number;
+	dispatchableQuantity: string;
+};
+
+const supplierOrderActionSelect = {
+	id: true,
+	status: true,
+	lots: {
+		select: {
+			status: true,
+			operation: { select: { status: true } },
+			lotItems: {
+				select: {
+					status: true,
+					quantity: true,
+					packageLotItems: { select: packageLineSelect },
+				},
+			},
+		},
+	},
+} satisfies Prisma.SupplierOrderSelect;
+
+export async function findSupplierOrderActionInputs(
+	db: AdminDbClient,
+	ids: number[],
+): Promise<Map<number, SupplierOrderActionInputs>> {
+	if (ids.length === 0) return new Map();
+
+	const records = await db.supplierOrder.findMany({
+		where: { id: { in: ids } },
+		select: supplierOrderActionSelect,
+	});
+
+	return new Map(
+		records.map((record) => {
+			const liveLines = record.lots.flatMap((lot) =>
+				lot.lotItems
+					.filter((lotItem) => isLiveSupplierOrderLine(lot, lotItem))
+					.map((lotItem) => lotItem),
+			);
+
+			return [
+				record.id,
+				{
+					status: record.status,
+					// Matches `toDetail`: an order with no lots cannot claim a completed
+					// origin, so `request` stays disabled rather than vacuously enabled.
+					operationCompleted:
+						record.lots.length > 0 &&
+						record.lots.every((lot) => lot.operation.status === "completed"),
+					liveLineCount: liveLines.length,
+					dispatchableQuantity: liveLines
+						.reduce(
+							(total, lotItem) => total.plus(remainingQuantity(lotItem)),
+							new Prisma.Decimal(0),
+						)
+						.toString(),
+				},
+			];
+		}),
+	);
 }

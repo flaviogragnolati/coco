@@ -1,10 +1,18 @@
+import type { PackageStatus } from "~/prisma/client";
 import { packageStatusLineCompatibility } from "~/shared/common/fulfillment-transitions";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
 import { decimal, sumDecimals } from "./operational-diagnostics.types";
 import {
 	type PackageSummaryRecord,
+	packageFractionableQuantity,
 	receivedInboundQuantity,
 } from "./package.data";
+
+/** Outbound statuses that mean "nobody has taken this yet". */
+const notCollectedStatuses: ReadonlySet<PackageStatus> = new Set([
+	"readyForShipment",
+	"inTransit",
+]);
 
 type PackageLine = PackageSummaryRecord["packageLotItems"][number];
 
@@ -31,8 +39,34 @@ function packagedOnLeg(
 	);
 }
 
+export type PackageDiagnosticsOptions = {
+	/**
+	 * Packages whose `updatedAt` predates this instant have sat still long enough
+	 * to be worth an operator's attention. Null or omitted disables both rules
+	 * that read it.
+	 */
+	staleBefore?: Date | null;
+};
+
+/**
+ * `updatedAt` is `@updatedAt`, so **any** write moves it. It is a sound
+ * approximation of "entered this status" for the two rules below only because of
+ * what the commands do afterwards: `fractionate` does not touch its sources
+ * (§21.6), so a received inbound package keeps the timestamp of its receipt, and
+ * an outbound package sitting at `readyForShipment`/`inTransit` is written only
+ * by the command that moves it on. The failure mode is a *later* `updatedAt`
+ * delaying the warning — conservative, never a false positive.
+ *
+ * Do not add `receivedAt`/`dispatchedAt` columns to sharpen this: that is a
+ * modelling decision deferred in §15.3, not a fix.
+ */
+function isStale(updatedAt: Date, staleBefore: Date | null | undefined) {
+	return staleBefore != null && updatedAt < staleBefore;
+}
+
 export function calculatePackageDiagnostics(
 	pkg: PackageSummaryRecord,
+	options?: PackageDiagnosticsOptions,
 ): OperationalDiagnostic[] {
 	const diagnostics: OperationalDiagnostic[] = [];
 	// Cancelled lines are written-off or received-at-zero history. The per-line
@@ -159,6 +193,40 @@ export function calculatePackageDiagnostics(
 				});
 			}
 		}
+	}
+
+	// Goods that arrived and were never split out sit invisible at the destination
+	// until somebody looks. `packageFractionableQuantity` is the same figure the
+	// fractionate dialog shows, so the worklist and the command agree.
+	if (
+		pkg.leg === "inbound" &&
+		pkg.status === "received" &&
+		isStale(pkg.updatedAt, options?.staleBefore) &&
+		packageFractionableQuantity(liveLines).greaterThan(0)
+	) {
+		diagnostics.push({
+			code: "package.received.notFractionated",
+			severity: "warning",
+			message:
+				"El paquete de entrada llego hace varios dias y conserva cantidad sin fraccionar.",
+			refs: { packageId: pkg.id },
+		});
+	}
+
+	// An outbound package is somebody's order. One that has not moved is either an
+	// uncollected depot pickup or a delivery nobody closed.
+	if (
+		pkg.leg === "outbound" &&
+		notCollectedStatuses.has(pkg.status) &&
+		isStale(pkg.updatedAt, options?.staleBefore)
+	) {
+		diagnostics.push({
+			code: "package.outbound.notCollected",
+			severity: "warning",
+			message:
+				"El paquete de salida lleva varios dias sin entregarse ni retirarse.",
+			refs: { packageId: pkg.id },
+		});
 	}
 
 	// Fractionation produces one package per customer, so a multi-customer outbound

@@ -247,6 +247,37 @@ export const packageFractionateInputSchema = z.object({
 	namePrefix: optionalTrimmedText,
 });
 
+/**
+ * Reading what a selection of received inbound packages can still be
+ * fractionated into. A query — the mirror of `packageFractionateInputSchema`'s
+ * `sourcePackageIds`, so the dialog previews exactly what it will submit.
+ */
+export const packageFractionationCandidatesInputSchema = z.object({
+	sourcePackageIds: z
+		.array(packageIdSchema)
+		.min(1, "Se debe seleccionar al menos un paquete"),
+});
+
+export const packageFractionationCandidateSchema = z.object({
+	packagedAllocationId: positiveIdSchema,
+	sourcePackageId: packageIdSchema,
+	sourcePackageName: z.string(),
+	cartId: positiveIdSchema,
+	cartCode: z.string(),
+	userName: z.string(),
+	cartItemCode: z.string(),
+	lotItemId: positiveIdSchema,
+	lotItemCode: z.string(),
+	productName: z.string(),
+	unit: z.string(),
+	/** Already bounded per demand allocation across the whole selection. */
+	fractionableQuantity: decimalOutputSchema,
+});
+
+export const packageFractionationCandidatesOutputSchema = z.object({
+	candidates: z.array(packageFractionationCandidateSchema),
+});
+
 /** Flipping a mono-customer inbound package onto the outbound leg. */
 export const packagePromoteInputSchema = z.object({
 	id: packageIdSchema,

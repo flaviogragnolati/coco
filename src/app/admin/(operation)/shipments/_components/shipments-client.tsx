@@ -66,6 +66,10 @@ export function ShipmentsClient({
 	const [searchTerm, setSearchTerm] = useState("");
 	const [status, setStatus] = useState<ShipmentStatus | "all">("all");
 	const [type, setType] = useState<ShipmentType | "all">("all");
+	// A boolean, not a third "all" select: the `where` builder only adds a clause
+	// when `unassigned === true`, so sending `false` would mean "only assigned",
+	// which is not a filter anybody asked for.
+	const [unassigned, setUnassigned] = useState(false);
 	const [diagnosticState, setDiagnosticState] =
 		useState<DiagnosticState>("all");
 	const [shipmentId, setShipmentId] = useState("");
@@ -99,6 +103,7 @@ export function ShipmentsClient({
 			search: searchTerm.trim().length > 0 ? searchTerm : undefined,
 			status: status === allValue ? undefined : status,
 			type: type === allValue ? undefined : type,
+			unassigned: unassigned ? true : undefined,
 			diagnosticState,
 			shipmentId: positiveIntOrUndefined(shipmentId),
 			carrierOrderId: positiveIntOrUndefined(carrierOrderId),
@@ -121,17 +126,19 @@ export function ShipmentsClient({
 			status,
 			trackingCode,
 			type,
+			unassigned,
 		],
 	);
 
-	const activeAdvancedCount = [
-		shipmentId,
-		carrierOrderId,
-		carrierId,
-		trackingCode,
-		createdFrom,
-		createdTo,
-	].filter((value) => value.length > 0).length;
+	const activeAdvancedCount =
+		[
+			shipmentId,
+			carrierOrderId,
+			carrierId,
+			trackingCode,
+			createdFrom,
+			createdTo,
+		].filter((value) => value.length > 0).length + (unassigned ? 1 : 0);
 
 	const listQuery = api.admin.shipment.list.useQuery(listInput);
 	const statsQuery = api.admin.shipment.getStats.useQuery();
@@ -441,6 +448,21 @@ export function ShipmentsClient({
 											{option.label}
 										</option>
 									))}
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor="shipment-unassigned">
+									Orden de transporte
+								</FieldLabel>
+								<Select
+									id="shipment-unassigned"
+									onChange={(event) =>
+										updateFilter(setUnassigned, event.target.value === "true")
+									}
+									value={unassigned ? "true" : "false"}
+								>
+									<option value="false">Todas</option>
+									<option value="true">Sin orden de transporte</option>
 								</Select>
 							</Field>
 						</>

@@ -79,9 +79,13 @@ import {
 	type ShipmentReceiveRecord,
 	type ShipmentSummaryRecord,
 	type ShipmentTrackingEventRecord,
+	staleDispatchThreshold,
 	updateShipmentState,
 } from "./shipment.data";
-import { calculateShipmentDiagnostics } from "./shipment-diagnostics";
+import {
+	calculateShipmentDiagnostics,
+	type ShipmentDiagnosticsOptions,
+} from "./shipment-diagnostics";
 import {
 	findSupplierOrderForCommand,
 	remainingQuantity,
@@ -150,10 +154,15 @@ function packageAllocationQuantity(record: ShipmentSummaryRecord) {
 function summarizeShipment(
 	record: ShipmentSummaryRecord,
 	hasTrackingEvents: boolean,
+	options?: ShipmentDiagnosticsOptions,
 ): ShipmentListItem & {
 	diagnostics: ReturnType<typeof calculateShipmentDiagnostics>;
 } {
-	const diagnostics = calculateShipmentDiagnostics(record, hasTrackingEvents);
+	const diagnostics = calculateShipmentDiagnostics(
+		record,
+		hasTrackingEvents,
+		options,
+	);
 
 	return {
 		id: record.id,
@@ -238,6 +247,10 @@ async function toDetail(
 }
 
 export async function list(input: ShipmentListInput, database: AdminDb) {
+	const diagnosticOptions: ShipmentDiagnosticsOptions = {
+		staleBefore: staleDispatchThreshold(),
+	};
+
 	if (input.diagnosticState === "all") {
 		const [total, records] = await Promise.all([
 			countShipmentCandidates(database, input),
@@ -247,7 +260,7 @@ export async function list(input: ShipmentListInput, database: AdminDb) {
 			}),
 		]);
 		const items = records
-			.map((record) => summarizeShipment(record, false))
+			.map((record) => summarizeShipment(record, false, diagnosticOptions))
 			.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 		return shipmentListOutputSchema.parse({
@@ -264,7 +277,7 @@ export async function list(input: ShipmentListInput, database: AdminDb) {
 		take: DIAGNOSTIC_SCAN_LIMIT,
 	});
 	const summarized = records
-		.map((record) => summarizeShipment(record, false))
+		.map((record) => summarizeShipment(record, false, diagnosticOptions))
 		.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 	return shipmentListOutputSchema.parse(
@@ -279,6 +292,9 @@ export async function getById(id: number, database: AdminDb) {
 }
 
 export async function getStats(database: AdminDb): Promise<ShipmentStats> {
+	const diagnosticOptions: ShipmentDiagnosticsOptions = {
+		staleBefore: staleDispatchThreshold(),
+	};
 	const [stats, scanRecords] = await Promise.all([
 		getShipmentStats(database),
 		listShipmentCandidates(
@@ -310,7 +326,7 @@ export async function getStats(database: AdminDb): Promise<ShipmentStats> {
 	) as Record<ShipmentType, number>;
 
 	const withDiagnostics = scanRecords
-		.map((record) => summarizeShipment(record, false))
+		.map((record) => summarizeShipment(record, false, diagnosticOptions))
 		.filter((summary) => summary.diagnosticCount > 0).length;
 
 	return shipmentStatsSchema.parse({

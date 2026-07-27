@@ -227,3 +227,13 @@ export async function setCarrierOrderDeleted(
 export async function hardDeleteCarrierOrder(db: AdminDbClient, id: number) {
 	return db.carrierOrder.delete({ where: { id }, select: { id: true } });
 }
+
+/**
+ * How long a requested booking may go unconfirmed. Shorter than the logistics
+ * thresholds on purpose: a carrier should answer faster than goods move.
+ */
+const STALE_CARRIER_REQUEST_DAYS = 3;
+
+export function staleCarrierRequestThreshold(now = new Date()): Date {
+	return new Date(now.getTime() - STALE_CARRIER_REQUEST_DAYS * 86_400_000);
+}

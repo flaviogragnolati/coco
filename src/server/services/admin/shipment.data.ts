@@ -553,3 +553,14 @@ export async function listLatestShipmentTrackingEvents(
 
 	return records as ShipmentTrackingEventRecord[];
 }
+
+/**
+ * How long an internal transfer may stay in transit before it needs chasing.
+ * Mirrors `stalePackageThreshold`: the threshold is computed once per request in
+ * this layer, and the rule that reads it stays pure.
+ */
+const STALE_DISPATCH_DAYS = 7;
+
+export function staleDispatchThreshold(now = new Date()): Date {
+	return new Date(now.getTime() - STALE_DISPATCH_DAYS * 86_400_000);
+}

@@ -566,6 +566,11 @@ const fractionationSourceSelect = {
 					code: true,
 					status: true,
 					quantity: true,
+					productSupplierTerms: {
+						select: {
+							product: { select: { id: true, name: true, unit: true } },
+						},
+					},
 					lot: {
 						select: {
 							id: true,
@@ -590,7 +595,12 @@ const fractionationSourceSelect = {
 									id: true,
 									code: true,
 									cartId: true,
-									cart: { select: { user: { select: { name: true } } } },
+									cart: {
+										select: {
+											code: true,
+											user: { select: { name: true } },
+										},
+									},
 								},
 							},
 							packageAllocations: { select: packagedAllocationSelect },
@@ -864,4 +874,15 @@ export async function listLatestPackageTrackingEvents(
 	});
 
 	return records as PackageTrackingEventRecord[];
+}
+
+/**
+ * How long a received inbound package may sit unfractionated, or an outbound one
+ * uncollected, before it belongs on an operator's worklist. One threshold per
+ * request, computed here so `calculatePackageDiagnostics` stays pure.
+ */
+const STALE_PACKAGE_DAYS = 7;
+
+export function stalePackageThreshold(now = new Date()): Date {
+	return new Date(now.getTime() - STALE_PACKAGE_DAYS * 86_400_000);
 }

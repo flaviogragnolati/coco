@@ -137,3 +137,55 @@ test("a live order with a failed shipment reports the disruption rule", () => {
 		),
 	).toEqual(["carrierOrder.shipment.disrupted"]);
 });
+
+const STALE_BEFORE = new Date("2026-07-10T00:00:00.000Z");
+
+function staleCodes(
+	record: CarrierOrderSummaryRecord,
+	staleBefore: Date | null,
+) {
+	return calculateCarrierOrderDiagnostics(record, { staleBefore }).map(
+		(diagnostic) => diagnostic.code,
+	);
+}
+
+test("a booking requested days ago and still unconfirmed is flagged", () => {
+	const order = {
+		...buildOrder({ status: "requested" }),
+		requestedAt: new Date("2026-07-01T00:00:00.000Z"),
+	} as CarrierOrderSummaryRecord;
+
+	expect(staleCodes(order, STALE_BEFORE)).toContain(
+		"carrierOrder.requestedNotConfirmed",
+	);
+
+	// The threshold is what turns the rule on; without it the calculator behaves
+	// exactly as it did before the option existed.
+	expect(staleCodes(order, null)).not.toContain(
+		"carrierOrder.requestedNotConfirmed",
+	);
+	expect(codes(order)).not.toContain("carrierOrder.requestedNotConfirmed");
+});
+
+test("a confirmed booking never reports an unconfirmed request", () => {
+	const order = {
+		...buildOrder({ status: "confirmed" }),
+		requestedAt: new Date("2026-06-01T00:00:00.000Z"),
+		confirmedAt: new Date("2026-06-02T00:00:00.000Z"),
+	} as CarrierOrderSummaryRecord;
+
+	expect(staleCodes(order, STALE_BEFORE)).not.toContain(
+		"carrierOrder.requestedNotConfirmed",
+	);
+});
+
+test("a recently requested booking is not yet stale", () => {
+	const order = {
+		...buildOrder({ status: "requested" }),
+		requestedAt: new Date("2026-07-20T00:00:00.000Z"),
+	} as CarrierOrderSummaryRecord;
+
+	expect(staleCodes(order, STALE_BEFORE)).not.toContain(
+		"carrierOrder.requestedNotConfirmed",
+	);
+});

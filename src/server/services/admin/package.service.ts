@@ -1,6 +1,7 @@
 import { Prisma } from "~/prisma/client";
 import {
 	packageDetailSchema,
+	packageFractionationCandidatesOutputSchema,
 	type packageLegSchema,
 	packageListOutputSchema,
 	packageStatsSchema,
@@ -17,6 +18,8 @@ import type {
 	PackageExceptionInput,
 	PackageFractionateInput,
 	PackageFractionateOutput,
+	PackageFractionationCandidatesInput,
+	PackageFractionationCandidatesOutput,
 	PackageListInput,
 	PackageListItem,
 	PackagePromoteInput,
@@ -57,6 +60,7 @@ import {
 	createPackageAllocations,
 	createPackageLines,
 	createSiblingPackage,
+	type FractionationSourceRecord,
 	findLotItemsForPackagingRollUp,
 	findLotsForPackagingRollUp,
 	findPackageById,
@@ -72,6 +76,7 @@ import {
 	type PackageTrackingEventRecord,
 	packagedAllocationFractionableQuantity,
 	packageFractionableQuantity,
+	stalePackageThreshold,
 	updatePackagedAllocationQuantity,
 	updatePackageLeg,
 	updatePackageLineState,
@@ -83,7 +88,10 @@ import {
 	planPackagedSplit,
 	type ShortfallCandidate,
 } from "./package-allocation-planner";
-import { calculatePackageDiagnostics } from "./package-diagnostics";
+import {
+	calculatePackageDiagnostics,
+	type PackageDiagnosticsOptions,
+} from "./package-diagnostics";
 import {
 	type FractionationCandidate,
 	planFractionation,
@@ -129,10 +137,13 @@ function toTrackingEventSummary(event: PackageTrackingEventRecord) {
 	};
 }
 
-function summarizePackage(record: PackageSummaryRecord): PackageListItem & {
+function summarizePackage(
+	record: PackageSummaryRecord,
+	options?: PackageDiagnosticsOptions,
+): PackageListItem & {
 	diagnostics: ReturnType<typeof calculatePackageDiagnostics>;
 } {
-	const diagnostics = calculatePackageDiagnostics(record);
+	const diagnostics = calculatePackageDiagnostics(record, options);
 	const packageLineQuantity = sumDecimals(
 		record.packageLotItems.map((line) => line.quantity),
 	);
@@ -256,6 +267,10 @@ async function toDetail(
 }
 
 export async function list(input: PackageListInput, database: AdminDb) {
+	const diagnosticOptions: PackageDiagnosticsOptions = {
+		staleBefore: stalePackageThreshold(),
+	};
+
 	if (input.diagnosticState === "all") {
 		const [total, records] = await Promise.all([
 			countPackageCandidates(database, input),
@@ -265,7 +280,7 @@ export async function list(input: PackageListInput, database: AdminDb) {
 			}),
 		]);
 		const items = records
-			.map(summarizePackage)
+			.map((record) => summarizePackage(record, diagnosticOptions))
 			.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 		return packageListOutputSchema.parse({
@@ -282,7 +297,7 @@ export async function list(input: PackageListInput, database: AdminDb) {
 		take: DIAGNOSTIC_SCAN_LIMIT,
 	});
 	const summarized = records
-		.map(summarizePackage)
+		.map((record) => summarizePackage(record, diagnosticOptions))
 		.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 	return packageListOutputSchema.parse(
@@ -297,6 +312,9 @@ export async function getById(id: number, database: AdminDb) {
 }
 
 export async function getStats(database: AdminDb): Promise<PackageStats> {
+	const diagnosticOptions: PackageDiagnosticsOptions = {
+		staleBefore: stalePackageThreshold(),
+	};
 	const [stats, scanRecords] = await Promise.all([
 		getPackageStats(database),
 		listPackageCandidates(
@@ -328,7 +346,7 @@ export async function getStats(database: AdminDb): Promise<PackageStats> {
 
 	const packageLineQuantity = decimal(stats.packageLineQuantity);
 	const withDiagnostics = scanRecords
-		.map(summarizePackage)
+		.map((record) => summarizePackage(record, diagnosticOptions))
 		.filter((summary) => summary.diagnosticCount > 0).length;
 
 	return packageStatsSchema.parse({
@@ -616,6 +634,125 @@ async function closePackagedLotItems(
  * Partial and repeatable: what is taken is bounded by each demand allocation's
  * `fractionableQuantity`, so a second pass picks up exactly what the first left.
  */
+/**
+ * What each packaged allocation of the selection can still contribute, and the
+ * customer behind it. Shared by `fractionate` and `fractionationCandidates` so
+ * the dialog can never offer a total the command would refuse.
+ *
+ * The budget is per **demand allocation**, not per packaged allocation: two
+ * selected sources can cover the same demand, and charging each of them the full
+ * `fractionableQuantity` would package it twice (§21.6).
+ */
+function collectFractionationCandidates(sources: FractionationSourceRecord[]) {
+	const budgetByAllocationId = new Map<number, Prisma.Decimal>();
+	const userNameByCartId = new Map<number, string>();
+	const candidates: Array<
+		FractionationCandidate & {
+			sourcePackageName: string;
+			cartCode: string;
+			userName: string;
+			cartItemCode: string;
+			lotItemCode: string;
+			productName: string;
+			unit: string;
+		}
+	> = [];
+
+	for (const source of sources) {
+		for (const line of source.packageLotItems) {
+			if (line.status === "cancelled") continue;
+
+			for (const packaged of line.packageAllocations) {
+				const demand = packaged.cartItemLotItem;
+				const budget =
+					budgetByAllocationId.get(demand.id) ?? fractionableQuantity(demand);
+				const available = budget.lessThan(packaged.quantity)
+					? budget
+					: packaged.quantity;
+				budgetByAllocationId.set(demand.id, budget.minus(available));
+
+				if (available.lte(zero())) continue;
+
+				userNameByCartId.set(
+					demand.cartItem.cartId,
+					demand.cartItem.cart.user.name,
+				);
+				candidates.push({
+					sourcePackageId: source.id,
+					sourcePackageName: source.name,
+					sourcePackageLotItemId: line.id,
+					packagedAllocationId: packaged.id,
+					allocationId: demand.id,
+					cartItemId: demand.cartItem.id,
+					cartItemCode: demand.cartItem.code,
+					cartId: demand.cartItem.cartId,
+					cartCode: demand.cartItem.cart.code,
+					userName: demand.cartItem.cart.user.name,
+					lotItemId: line.lotItemId,
+					lotItemCode: line.lotItem.code,
+					productName: line.lotItem.productSupplierTerms.product.name,
+					unit: line.lotItem.productSupplierTerms.product.unit,
+					availableQuantity: available,
+				});
+			}
+		}
+	}
+
+	return { candidates, userNameByCartId };
+}
+
+/** Every id must resolve to a received inbound package, or the whole call fails. */
+function assertFractionationSources(
+	sourceIds: number[],
+	sources: FractionationSourceRecord[],
+) {
+	const sourceById = new Map(sources.map((source) => [source.id, source]));
+
+	for (const id of sourceIds) {
+		const source = sourceById.get(id);
+		if (!source) throwNotFound("Paquete");
+		if (source.leg !== "inbound" || source.status !== "received") {
+			throwConflict(
+				`El paquete ${source.name} no es un paquete de entrada recibido`,
+			);
+		}
+	}
+}
+
+/**
+ * The rows the fractionate dialog edits, across a whole selection of sources.
+ * A query: no actor, no transaction, no writes. It exists so the dialog reads
+ * `fractionableQuantity` from the same arithmetic the command applies instead of
+ * recomputing it client-side (§21.6, the dual-truth this avoids).
+ */
+export async function fractionationCandidates(
+	input: PackageFractionationCandidatesInput,
+	database: AdminDb,
+): Promise<PackageFractionationCandidatesOutput> {
+	const sourceIds = Array.from(new Set(input.sourcePackageIds));
+	const sources = await findPackagesForFractionation(database, sourceIds);
+	assertFractionationSources(sourceIds, sources);
+
+	const { candidates } = collectFractionationCandidates(sources);
+
+	return packageFractionationCandidatesOutputSchema.parse({
+		candidates: candidates.map((candidate) => ({
+			packagedAllocationId: candidate.packagedAllocationId,
+			sourcePackageId: candidate.sourcePackageId,
+			sourcePackageName: candidate.sourcePackageName,
+			cartId: candidate.cartId,
+			cartCode: candidate.cartCode,
+			userName: candidate.userName,
+			cartItemCode: candidate.cartItemCode,
+			lotItemId: candidate.lotItemId,
+			lotItemCode: candidate.lotItemCode,
+			productName: candidate.productName,
+			unit: candidate.unit,
+			fractionableQuantity: candidate.availableQuantity.toString(),
+		})),
+	});
+}
+
 export async function fractionate(
 	input: PackageFractionateInput,
 	actor: AdminMutationActor,
@@ -624,57 +761,10 @@ export async function fractionate(
 	const result = await runSerializable(database, async (tx) => {
 		const sourceIds = Array.from(new Set(input.sourcePackageIds));
 		const sources = await findPackagesForFractionation(tx, sourceIds);
-		const sourceById = new Map(sources.map((source) => [source.id, source]));
+		assertFractionationSources(sourceIds, sources);
 
-		for (const id of sourceIds) {
-			const source = sourceById.get(id);
-			if (!source) throwNotFound("Paquete");
-			if (source.leg !== "inbound" || source.status !== "received") {
-				throwConflict(
-					`El paquete ${source.name} no es un paquete de entrada recibido`,
-				);
-			}
-		}
-
-		// The budget is per demand allocation, not per packaged allocation: two
-		// selected sources can cover the same demand, and charging each of them
-		// the full `fractionableQuantity` would package it twice.
-		const budgetByAllocationId = new Map<number, Prisma.Decimal>();
-		const userNameByCartId = new Map<number, string>();
-		const candidates: FractionationCandidate[] = [];
-
-		for (const source of sources) {
-			for (const line of source.packageLotItems) {
-				if (line.status === "cancelled") continue;
-
-				for (const packaged of line.packageAllocations) {
-					const demand = packaged.cartItemLotItem;
-					const budget =
-						budgetByAllocationId.get(demand.id) ?? fractionableQuantity(demand);
-					const available = budget.lessThan(packaged.quantity)
-						? budget
-						: packaged.quantity;
-					budgetByAllocationId.set(demand.id, budget.minus(available));
-
-					if (available.lte(zero())) continue;
-
-					userNameByCartId.set(
-						demand.cartItem.cartId,
-						demand.cartItem.cart.user.name,
-					);
-					candidates.push({
-						sourcePackageId: source.id,
-						sourcePackageLotItemId: line.id,
-						packagedAllocationId: packaged.id,
-						allocationId: demand.id,
-						cartItemId: demand.cartItem.id,
-						cartId: demand.cartItem.cartId,
-						lotItemId: line.lotItemId,
-						availableQuantity: available,
-					});
-				}
-			}
-		}
+		const { candidates, userNameByCartId } =
+			collectFractionationCandidates(sources);
 
 		const groups = planFractionation({
 			candidates,
