@@ -1049,12 +1049,32 @@ Without the flag `carrier-order.service.ts` is the one importable command servic
 — which is why Phase 5's script worked and nothing else would have. Both new
 scripts carry the flag and the reason in their header.
 
+**The run, 2026-07-27.** `pnpm fulfillment:e2e` exits 0 with all twelve steps
+passing against a freshly seeded database — aggregation, a partial confirmation
+whose LIFO cut lands on the latest-paid allocation, dispatch and receipt with a
+shortfall, fractionation into one outbound package per customer, the depot
+delivery event carrying `packageId` and omitting `shipmentId`, home delivery,
+the pickup-point asymmetry asserted **positively** (shipment `received`,
+packages still `inTransit`, `shipment.pickupPoint.pendingCollection` firing,
+items still `inEndUserShipment` until each customer collects), disruption and
+recovery, order closure including the **negative** case, roll-over resolution,
+and a final sweep reporting **no critical anywhere** across 10 operations, 14
+lots, 14 supplier orders, 22 packages, 19 shipments and 10 carrier orders. The
+teardown removes everything it created; `pnpm db:seed-verify` passes unchanged
+afterwards, which is what makes the harness repeatable rather than a one-shot.
+
+Four warnings survive the sweep and are **expected**, listed so they stay
+visible: `operation.rollOver.open` ×4 and `operation.rollOver.stale` ×2 (seeded
+open roll overs on older operations), `shipment.pickupPoint.pendingCollection`
+(the seeded uncollected arrival) and `carrierOrder.shipment.disrupted` (the
+seeded delayed booking).
+
 **Gates:** `pnpm test` (592 passing across 40 files — the 577 pre-existing
 unmodified, plus 15 new cases), `pnpm typecheck`, `pnpm build` and `pnpm biome
 check` over every touched file, all clean. `grep -rn
 "TransactionIsolationLevel.Serializable" src/` returns **exactly one hit**, and
-`git diff prisma/schema.prisma` is **empty** — the closure introduced no schema
-change, as designed.
+`git diff` of `prisma/schema.prisma` across the six closure commits is **empty**
+— the closure introduced no schema change, as designed.
 
 **Residual, and deliberately so:** the admin UI itself is unverified by
 automation — the shipments filter, the multi-source fractionate dialog, the
