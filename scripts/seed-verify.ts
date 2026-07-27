@@ -20,34 +20,14 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "~/prisma/client";
-import { carrierOrderListInputSchema } from "~/schemas/admin/carrier-order.schemas";
-import { lotListInputSchema } from "~/schemas/admin/lot.schemas";
-import { operationListInputSchema } from "~/schemas/admin/operation.schemas";
-import { packageListInputSchema } from "~/schemas/admin/package.schemas";
-import { shipmentListInputSchema } from "~/schemas/admin/shipment.schemas";
-import { supplierOrderListInputSchema } from "~/schemas/admin/supplier-order.schemas";
-import { listCarrierOrderCandidates } from "~/server/services/admin/carrier-order.data";
-import { calculateCarrierOrderDiagnostics } from "~/server/services/admin/carrier-order-diagnostics";
-import { listLotCandidates } from "~/server/services/admin/lot.data";
-import { calculateLotDiagnostics } from "~/server/services/admin/lot-diagnostics";
-import {
-	findStaleOpenRollOverThreshold,
-	listOperationCandidates,
-} from "~/server/services/admin/operation.data";
-import { calculateOperationDiagnostics } from "~/server/services/admin/operation-diagnostics";
-import type { OperationalDiagnostic } from "~/server/services/admin/operational-diagnostics.types";
-import { listPackageCandidates } from "~/server/services/admin/package.data";
-import { calculatePackageDiagnostics } from "~/server/services/admin/package-diagnostics";
-import {
-	listShipmentCandidates,
-	listShipmentIdsWithTrackingEvents,
-} from "~/server/services/admin/shipment.data";
-import { calculateShipmentDiagnostics } from "~/server/services/admin/shipment-diagnostics";
-import { listSupplierOrderCandidates } from "~/server/services/admin/supplier-order.data";
-import { calculateSupplierOrderDiagnostics } from "~/server/services/admin/supplier-order-diagnostics";
 import { computeOperationCounters } from "~/server/services/operations/operation-counters";
 import { loadFulfillmentLineageSnapshot } from "~/server/services/tracking/fulfillment-lineage.data";
 import { deriveFulfillmentStatus } from "~/server/services/tracking/fulfillment-status.derivation";
+import {
+	type SweptDiagnostic,
+	summarizeWarnings,
+	sweepDiagnostics,
+} from "./lib/diagnostics-sweep";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -58,9 +38,6 @@ const db = new PrismaClient({
 	adapter: new PrismaPg({ connectionString: DATABASE_URL }),
 	log: ["error"],
 });
-
-/** Big enough to cover the whole seed in one page. */
-const SCAN = 500;
 
 /**
  * Statuses declared in the ladders that **no command writes**, so a fixture for
@@ -83,20 +60,10 @@ const UNPRODUCED_VALUES = new Set([
 ]);
 
 const failures: string[] = [];
-const warnings: OperationalDiagnostic[] = [];
+let warnings: SweptDiagnostic[] = [];
 
 function fail(message: string) {
 	failures.push(message);
-}
-
-function collect(scope: string, diagnostics: OperationalDiagnostic[]) {
-	for (const diagnostic of diagnostics) {
-		if (diagnostic.severity === "critical") {
-			fail(`critical ${diagnostic.code} on ${scope}: ${diagnostic.message}`);
-			continue;
-		}
-		warnings.push(diagnostic);
-	}
 }
 
 async function verifyDerivation() {
@@ -136,88 +103,14 @@ async function verifyDerivation() {
 }
 
 async function verifyDiagnostics() {
-	const operations = await listOperationCandidates(
-		db,
-		operationListInputSchema.parse({}),
-		{ take: SCAN },
-	);
-	const staleOpenRollOverBefore = await findStaleOpenRollOverThreshold(db);
-	for (const operation of operations) {
-		collect(
-			`operation ${operation.code}`,
-			calculateOperationDiagnostics(operation, { staleOpenRollOverBefore }),
-		);
-	}
+	const sweep = await sweepDiagnostics(db);
 
-	const lots = await listLotCandidates(db, lotListInputSchema.parse({}), {
-		take: SCAN,
-	});
-	for (const lot of lots) {
-		collect(`lot ${lot.code}`, calculateLotDiagnostics(lot));
+	for (const critical of sweep.criticals) {
+		fail(`critical ${critical.code} on ${critical.scope}: ${critical.message}`);
 	}
+	warnings = sweep.warnings;
 
-	const supplierOrders = await listSupplierOrderCandidates(
-		db,
-		supplierOrderListInputSchema.parse({}),
-		{ take: SCAN },
-	);
-	for (const order of supplierOrders) {
-		collect(
-			`supplier order ${order.code}`,
-			calculateSupplierOrderDiagnostics(order),
-		);
-	}
-
-	const packages = await listPackageCandidates(
-		db,
-		packageListInputSchema.parse({}),
-		{ take: SCAN },
-	);
-	for (const pkg of packages) {
-		collect(`package ${pkg.name}`, calculatePackageDiagnostics(pkg));
-	}
-
-	const shipments = await listShipmentCandidates(
-		db,
-		shipmentListInputSchema.parse({}),
-		{ take: SCAN },
-	);
-	// Same derivation the service uses (`shipment.service.ts`): passing `false`
-	// would make `shipment.trackingEvents.missing` fire on every advanced shipment.
-	const withTrackingEvents = await listShipmentIdsWithTrackingEvents(
-		db,
-		shipments.map((shipment) => shipment.id),
-	);
-	for (const shipment of shipments) {
-		collect(
-			`shipment ${shipment.internalCode}`,
-			calculateShipmentDiagnostics(
-				shipment,
-				withTrackingEvents.has(shipment.id),
-			),
-		);
-	}
-
-	const carrierOrders = await listCarrierOrderCandidates(
-		db,
-		carrierOrderListInputSchema.parse({ includeDeleted: true }),
-		{ take: SCAN },
-	);
-	for (const order of carrierOrders) {
-		collect(
-			`carrier order ${order.code}`,
-			calculateCarrierOrderDiagnostics(order),
-		);
-	}
-
-	return {
-		operations: operations.length,
-		lots: lots.length,
-		supplierOrders: supplierOrders.length,
-		packages: packages.length,
-		shipments: shipments.length,
-		carrierOrders: carrierOrders.length,
-	};
+	return sweep.counts;
 }
 
 async function verifyCounters() {
@@ -655,11 +548,7 @@ async function main() {
 		console.log(
 			`\nWarnings (${warnings.length}) — expected, listed so they stay visible:`,
 		);
-		const byCode = new Map<string, number>();
-		for (const warning of warnings) {
-			byCode.set(warning.code, (byCode.get(warning.code) ?? 0) + 1);
-		}
-		for (const [code, count] of [...byCode].sort()) {
+		for (const [code, count] of summarizeWarnings(warnings)) {
 			console.log(`  ${code} ×${count}`);
 		}
 	}
