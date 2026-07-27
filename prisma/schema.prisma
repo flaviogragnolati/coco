@@ -22,15 +22,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
 
-  sessions       Session[]
-  accounts       Account[]
-  carts          Cart[]
-  userOrders     UserOrder[]
-  paymentMethods PaymentMethod[]
-  addresses      Address[]
-  auditLogs      AuditLog[]
-  trackingEvents CartItemTrackingEvent[]
-  operations     Operation[]
+  sessions              Session[]
+  accounts              Account[]
+  carts                 Cart[]
+  userOrders            UserOrder[]
+  paymentMethods        PaymentMethod[]
+  addresses             Address[]
+  auditLogs             AuditLog[]
+  trackingEvents        CartItemTrackingEvent[]
+  operations            Operation[]
   paymentProviderEvents PaymentProviderEvent[]
 
   @@unique([email])
@@ -510,8 +510,11 @@ enum CartItemTrackingEventType {
   movedInInternalShipment
   receivedAtWarehouse
   movedInEndUserShipment
+  arrivedAtPickupPoint
   delivered
   rolledOverPostAllocation
+  rollOverResolved
+  excludedFromOperation
   exceptionResolved
 }
 
@@ -580,33 +583,33 @@ model UserOrderItem {
 }
 
 model UserTransaction {
-  id                        Int                   @id @default(autoincrement())
-  amount                    Decimal               @db.Decimal(18, 2)
-  currency                  Currency              @default(ARS)
-  status                    UserTransactionStatus @default(pending)
-  provider                  String                @default("mock") @db.Text
-  providerMode              PaymentProviderMode?
-  externalTransactionId     String?               @db.Text
-  providerPreferenceId      String?               @db.Text
-  providerPaymentId         String?               @db.Text
-  providerMerchantOrderId   String?               @db.Text
-  providerOrderId           String?               @db.Text
-  idempotencyKey            String                @unique @db.Text
-  providerStatus            String?               @db.Text
-  providerStatusDetail      String?               @db.Text
-  failureCode               String?               @db.Text
-  failureMessage            String?               @db.Text
-  checkoutUrl               String?               @db.Text
-  sandboxCheckoutUrl        String?               @db.Text
-  requestSnapshot           Json?                 @db.JsonB
-  responseSnapshot          Json?                 @db.JsonB
-  paymentMethodId           Int
-  userOrderId               Int
-  completedAt               DateTime?
-  cancelledAt               DateTime?
-  expiresAt                 DateTime?
-  createdAt                 DateTime              @default(now())
-  updatedAt                 DateTime              @default(now()) @updatedAt
+  id                      Int                   @id @default(autoincrement())
+  amount                  Decimal               @db.Decimal(18, 2)
+  currency                Currency              @default(ARS)
+  status                  UserTransactionStatus @default(pending)
+  provider                String                @default("mock") @db.Text
+  providerMode            PaymentProviderMode?
+  externalTransactionId   String?               @db.Text
+  providerPreferenceId    String?               @db.Text
+  providerPaymentId       String?               @db.Text
+  providerMerchantOrderId String?               @db.Text
+  providerOrderId         String?               @db.Text
+  idempotencyKey          String                @unique @db.Text
+  providerStatus          String?               @db.Text
+  providerStatusDetail    String?               @db.Text
+  failureCode             String?               @db.Text
+  failureMessage          String?               @db.Text
+  checkoutUrl             String?               @db.Text
+  sandboxCheckoutUrl      String?               @db.Text
+  requestSnapshot         Json?                 @db.JsonB
+  responseSnapshot        Json?                 @db.JsonB
+  paymentMethodId         Int
+  userOrderId             Int
+  completedAt             DateTime?
+  cancelledAt             DateTime?
+  expiresAt               DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @default(now()) @updatedAt
 
   userOrder             UserOrder              @relation(fields: [userOrderId], references: [id])
   paymentMethod         PaymentMethod          @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
@@ -692,7 +695,7 @@ model Operation {
   finishedAt         DateTime?
   from               DateTime          @default(now())
   to                 DateTime          @default(now())
-  includeRollOver    Boolean           @default(false) // indicates whether this operation should include items that were rolled over from a previous operation
+  includeRollOver    Boolean           @default(true) // indicates whether this operation should include items that were rolled over from a previous operation
   strategy           OperationStrategy @default(fifo)
   notes              String?           @db.Text
   failureReason      String?           @db.Text
@@ -708,11 +711,12 @@ model Operation {
   triggeredByUserId  String? // if null the operation was triggered by the system, otherwise it references the user that triggered the operation
   destinationId      Int?
 
-  triggeredByUser User?                   @relation(fields: [triggeredByUserId], references: [id], onDelete: SetNull)
-  destination     Destination?            @relation(fields: [destinationId], references: [id], onDelete: Restrict)
-  lots            Lot[]
-  rollOvers       RollOver[]
-  trackingEvents  CartItemTrackingEvent[]
+  triggeredByUser    User?                   @relation(fields: [triggeredByUserId], references: [id], onDelete: SetNull)
+  destination        Destination?            @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+  lots               Lot[]
+  rollOvers          RollOver[]
+  rebatchedRollOvers RollOver[]              @relation("RollOverRebatchedInto")
+  trackingEvents     CartItemTrackingEvent[]
 
   @@index([status, createdAt])
   @@index([destinationId])
@@ -728,6 +732,7 @@ enum OperationStatus {
   running
   completed
   failed
+  cancelled // compensated inside the administrative window; its outputs are cancelled and its demand returned to the pool
 }
 
 model Lot {
@@ -838,23 +843,29 @@ model PackageAllocation {
 }
 
 model RollOver {
-  id          Int            @id @default(autoincrement())
-  cartItemId  Int
-  operationId Int
-  stage       RollOverStage
-  status      RollOverStatus @default(open)
-  quantity    Decimal        @db.Decimal(18, 4)
-  reason      String         @db.Text
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @default(now()) @updatedAt
+  id                       Int            @id @default(autoincrement())
+  cartItemId               Int
+  operationId              Int
+  stage                    RollOverStage
+  status                   RollOverStatus @default(open)
+  quantity                 Decimal        @db.Decimal(18, 4)
+  reason                   String         @db.Text
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @default(now()) @updatedAt
+  // The operation that *consumed* this rollover as demand, written when execution marks it `rebatched`.
+  // `operationId` records only the operation that created it, so without this back-link a compensation
+  // could not find which rollovers to return to `open` (ADR 0005).
+  rebatchedIntoOperationId Int?
 
-  cartItem       CartItem                @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
-  operation      Operation               @relation(fields: [operationId], references: [id], onDelete: Restrict)
-  trackingEvents CartItemTrackingEvent[]
+  cartItem               CartItem                @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  operation              Operation               @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  rebatchedIntoOperation Operation?              @relation("RollOverRebatchedInto", fields: [rebatchedIntoOperationId], references: [id], onDelete: SetNull)
+  trackingEvents         CartItemTrackingEvent[]
 
   @@index([cartItemId])
   @@index([operationId])
   @@index([status, createdAt, id])
+  @@index([rebatchedIntoOperationId])
   @@map("roll_over")
 }
 
@@ -932,6 +943,7 @@ model Package {
   name            String                  @db.Text
   trackingCode    String?                 @db.Text
   status          PackageStatus           @default(pending)
+  leg             PackageLeg              @default(inbound)
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @default(now()) @updatedAt
   packageLotItems PackageLotItem[]
@@ -940,6 +952,7 @@ model Package {
   trackingEvents  CartItemTrackingEvent[]
 
   @@index([shipmentId])
+  @@index([leg])
   @@map("package")
 }
 
@@ -960,6 +973,14 @@ model PackageLotItem {
   @@index([packageId])
   @@index([lotItemId])
   @@map("package_lot_item")
+}
+
+// Which half of the fulfillment chain a package physically travels (ADR 0004).
+// Conservation against demand allocations is checked per leg, so destination
+// fractionation never double-counts the same demand.
+enum PackageLeg {
+  inbound // supplier -> destination, created when a supplier dispatch is registered
+  outbound // destination -> end user, created by fractionation or by promoting a mono-customer inbound package
 }
 
 // Aggregate operational state for one package, regardless of whether it moves internally or to an end user.
@@ -990,6 +1011,7 @@ model Shipment {
   internalCode               String         @unique @db.Text
   trackingCode               String?        @db.Text
   type                       ShipmentType   @default(internalTransfer)
+  deliveryMode               DeliveryMode? // Only meaningful on endUserDelivery; null on internalTransfer.
   status                     ShipmentStatus @default(pending)
   destinationAddressSnapshot Json?          @db.JsonB
   destinationContactSnapshot Json?          @db.JsonB
@@ -1010,6 +1032,14 @@ enum ShipmentType {
   endUserDelivery
 }
 
+// How an end-user delivery reaches its customer. Depot pickup is deliberately
+// NOT a value here: it is the absence of a shipment — an outbound package that
+// never leaves, handed over with `package.confirmDelivery`.
+enum DeliveryMode {
+  homeDelivery // The shipment travels to the customer's address.
+  pickupPoint // The shipment travels to a collection point; each customer collects separately.
+}
+
 // Shipment state shared by both internal transfers and end-user deliveries.
 enum ShipmentStatus {
   pending // The shipment record exists but preparation has not started.
@@ -1028,6 +1058,7 @@ model CarrierOrder {
   code              String             @unique @db.Text
   externalReference String?            @db.Text
   status            CarrierOrderStatus @default(pending)
+  deleted           Boolean            @default(false)
   requestedAt       DateTime?
   confirmedAt       DateTime?
   cancelledAt       DateTime?
