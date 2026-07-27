@@ -1720,3 +1720,208 @@ No end-to-end run against a seeded database was performed, for the same reason a
 - `docs/architecture/features/fulfillment-lifecycle-actions.md` — Phase 2 marked done in §21 with §21.3 rewritten from "as planned" to "as built"; §3, §11, §12, §14, §15 #11 and §18 carry its shipped markers; the §20.2 `cancelledAt` question resolved in place.
 - `docs/tracking-architecture.md` — an "Operation Compensation" subsection under "Current Producers" with `operation.cartItem.excluded` and its deterministic key, plus a row in the mapping table.
 - `CONTEXT.md` — **Operation compensation** and the refined **Administrative window** were added during the grill; unchanged by the build.
+
+## 18. Remediation Log — 2026-07-26 (fulfillment Phase 3 goods inbound)
+
+**Written after the fact, 2026-07-27**, during the series closure. Phases 3–5 shipped without a log entry each; these four sections restore the append-only record from the as-built documents rather than re-deriving it. The architecture document's §21.4 is the primary source for this section.
+
+### What changed, per finding
+
+- No listed review finding is touched. **#32 and #16** remain open.
+
+Structurally, the phase makes the supplier order the command aggregate for the dispatch (`admin.supplierOrder.registerDispatch`) — the shipment and the inbound package are its *outputs*, which **corrects §12** of the architecture document, where the dispatch had been placed on `admin.lot`/`admin.package`/`admin.shipment`.
+
+### Deliberate behaviour changes
+
+- **`Package.leg` replaces shipment-type leg inference** in `FulfillmentPackagedAllocationSnapshot` (ADR 0004). The switch broke the build on purpose until `deriveStage` was rewritten, and the rewrite replaced the old outbound/inbound partition with a max-rank walk over `packagedStage` — a half-received lineage now reads as the furthest stage it actually reached rather than the first branch that matched.
+- **Dispatched quantity is derived, never stored**: Σ of a line's live *inbound* package lines. Only the inbound leg counts, or fractionation would double-charge the same quantity.
+- **Coverage is FIFO by payment date**, the mirror of LIFO cut absorption, so the two policies never punish the same customer twice.
+- **`supplierOrder.cancel`/`cancelLine` now refuse a line holding live inbound packaged quantity.** Without the guard the phase would have shipped a silent conservation break that *no diagnostic catches* — `assigned + rollOver` still sums correctly because packaged quantity is not a separate counter.
+
+### Latent defects fixed on the way through
+
+| Where | Defect |
+| --- | --- |
+| `fulfillment-transitions.ts` | `supplierOrderStatusLineCompatibility.readyForReceipt` omitted `confirmed`, so **every dispatched order** would have reported its aggregate as ahead of its lines |
+| `package-diagnostics.ts` | the two per-line rules iterated every line, so every written-off or zero-received line fired by construction; both now read a `liveLines` filter |
+| `shipment-diagnostics.ts` | `shipment.package.missing` fired on every correct `retry` (which empties the source); the two compatibility rules fired on cancelled records |
+
+### Gates
+
+`pnpm test` (451 passing, 35 files), `pnpm typecheck`, `pnpm build` and `pnpm biome check` over every touched file, all clean. Repo-wide `pnpm check` still reports pre-existing findings in files the phase did not touch.
+
+### Not verified
+
+No end-to-end run against a seeded database. The transactional paths — dispatch creation and coverage, the four shortfall reductions, order closing, the retry reassignment, projection after `wake()` — were covered by the pure cores and by review, **not by execution**. Discharged in §22.
+
+### Open remnants
+
+- No retry-on-serialization-failure wrapper; the `Serializable` command count reached **nine**. *(Shipped in Phase 4b.)*
+- `availableActions` on `supplierOrder`, `operation`, `shipment` and `package`; **`lot` still computed nothing**. *(Shipped in Phase 4b as a disabled matrix, made real in §22.)*
+- `admin.rollOver` still exposed only `resolve`. *(Shipped in Phase 4b.)*
+- A `dispatch.notReceived after N days` diagnostic was raised and not built. *(Shipped in §22.)*
+- **No migration file**; `PackageLeg` and `Package.leg` were applied with `pnpm db:generate` + `pnpm db:push`. **No backfill** — pre-existing packages silently took `leg: inbound` from the column default, which is the root of the seed drift §22 fixes.
+- **`prisma/seed.ts` untouched**; the drift is enumerated in architecture §21.4.
+
+### Documentation touched
+
+`docs/architecture/features/fulfillment-lifecycle-actions.md` §21.4 (as-built), `docs/tracking-architecture.md`, `CONTEXT.md`, ADR 0004.
+
+## 19. Remediation Log — 2026-07-26 (fulfillment Phase 4a outbound packaging)
+
+**Written after the fact, 2026-07-27.** Source: architecture §21.5 (the 4a/4b split) and §21.6 (as built).
+
+### What changed, per finding
+
+No listed review finding is touched.
+
+### Deliberate behaviour changes
+
+- **Fractionation creates new outbound rows and never mutates its sources.** The inbound package stays `received` as the only remaining evidence the goods arrived — `closeReachableSupplierOrders`, `packagedQuantity` and `deriveStage`'s `atWarehouse` branch all read it. Safe because ADR 0004 checks conservation **per leg**.
+- **A new invariant, sharper than ADR 0004's:** Σ live outbound allocations of a demand allocation ≤ Σ live inbound allocations of that demand on a **`received`** package. Monitored by `package.outbound.exceedsReceived` (critical).
+- **The fractionation budget is per demand allocation, not per packaged allocation.** Two selected sources covering the same `CartItemLotItem` after a partial first pass would otherwise each claim the whole remainder.
+- **`packagedStage`'s outbound branch moved outbound-not-departed from rank 5 to rank 7**, across the threshold `deriveFulfillmentStatus` compares against for the roll over overlay. A partially rolled-over item with an outbound package now reads `atWarehouse` rather than `partiallyRolledOver` — intended, and pinned by its own test.
+- **`package.promote` publishes no domain event.** The deterministic `packagedKey` for that row was already consumed by `registerDispatch`, so a re-emit would be deduped into silence. The audit log is the record; it is a decision, not an omission.
+
+### Gates
+
+`pnpm test` (503 passing, 37 files), `pnpm typecheck`, `pnpm build` and `pnpm biome check` over every touched file, all clean.
+
+### Not verified
+
+As in Phases 1–3, no end-to-end run. Candidate building, group creation, the split's read-modify-write over allocations and the lot roll-up were covered by the pure cores and by review. Discharged in §22.
+
+### Open remnants
+
+- Batch fractionation across several source packages was implemented in the **command** (`sourcePackageIds` is a list) but the **UI** only ever sent the package whose detail was open. *(Shipped in §22.)*
+- `dispatch.notReceived` and `package.received.notFractionated`, both `after N days`, raised and not built. *(Shipped in §22.)*
+- **No schema change and no seed change**; every drift enumerated in §21.4 carried over.
+
+### Documentation touched
+
+`docs/architecture/features/fulfillment-lifecycle-actions.md` §21.5 and §21.6, `CONTEXT.md`.
+
+## 20. Remediation Log — 2026-07-26 (fulfillment Phase 4b delivery and order closure)
+
+**Written after the fact, 2026-07-27.** Source: architecture §21.7.
+
+### What changed, per finding
+
+No listed review finding is touched. Two long-standing series debts are discharged here rather than in a later phase:
+
+- **The `Serializable` retry wrapper**, owed since Phase 1. `runSerializable` in `_base/serializable-transaction.ts` is now the only place `Serializable` is requested, with a bounded P2034 retry; the call-site count stayed at twelve. §18's risk row — which had claimed "pattern exists" and was verified false in Phase 1 — is finally true.
+- **`admin.rollOver.list` and `/admin/roll-overs`**, owed since Phase 2. The page deliberately does **not** hide `resolved` by default: finding them is the point.
+
+### Deliberate behaviour changes
+
+- **The chain terminates.** `inEndUserShipment` and `delivered` became reachable, taking `CartItemFulfillmentStatus` to 14 of 14, and every declared domain event type gained a producer — the unpublished count reached zero, closing the gap tracked since Phase 0.
+- **`Shipment.deliveryMode` stores two modes and derives a third.** Depot pickup is deliberately not an enum value: it is the *absence* of a shipment, the shape `createOutboundPackage` already produces. The delivery event for that path therefore carries `packageId` and **omits `shipmentId`** — the case §12's contract adjustment exists for, and it applies to **both** end-user event schemas, not only the one §12 named.
+- **The pickup-point asymmetry is the reason the column exists.** `shipment.deliver` marks only the shipment `received` and publishes an arrival notice; the packages and their lines stay `inTransit` until each customer's own `package.confirmDelivery`. The branch is written so the pickup path cannot reach the package cascade.
+- **`shipment.receive` now refuses `endUserDelivery`.** Not in the plan, but end-user shipments became creatable in this phase and `receive` runs the inbound absorption path. The end-user leg closes with `deliver`, which moves no quantity.
+- **The end-user movement key carries a leg segment.** The internal shape is untouched — those keys are already in the outbox — and the end-user leg inserts `endUser:` before the movement word, so the two can never collide.
+- **`UserOrder` closure is gated to `processing` only.** An allow-list of one, deliberately: `UserOrder.status` is owned by the payment domain, and a deny-list would stop being correct the moment `UserOrderStatus` grows.
+- **A delivery discrepancy has no dedicated command.** It is composed from `package.split` + `markFailed` + `writeOff`, all of which already run the four reductions. The consequence is that 4b added zero `Serializable` commands and zero counter recomputes.
+
+### Gates
+
+`pnpm test`, `pnpm typecheck`, `pnpm build` and `pnpm biome check` over every touched file, all clean.
+
+### Not verified
+
+No end-to-end run; the three delivery modes, the closure roll-up and the recovery paths were covered by the pure cores and by review. Discharged in §22.
+
+### Open remnants
+
+- `lotAvailableActions` shipped as every supplier-order key **disabled**, naming the commanding order — ADR 0003 stated at the surface, not real enablement. *(Made real in §22.)*
+- No status-transition timestamps on `Shipment`/`Package`; deferred as a modelling decision (architecture §15.3).
+- **No migration file**; `DeliveryMode` and `Shipment.deliveryMode` were applied with `db:push`.
+- **`prisma/seed.ts` untouched**: both seeded end-user shipments carried a null `deliveryMode`, which `shipment.endUser.noDeliveryMode` correctly reported as critical. *(Fixed in §22.)*
+
+### Documentation touched
+
+`docs/architecture/features/fulfillment-lifecycle-actions.md` §21.7 and §8's delivery scenarios, `docs/tracking-architecture.md`, `CONTEXT.md`, ADR 0005.
+
+## 21. Remediation Log — 2026-07-26 (fulfillment Phase 5 carrier orders)
+
+**Written after the fact, 2026-07-27.** Source: architecture §21.8.
+
+### What changed, per finding
+
+No listed review finding is touched.
+
+### Deliberate behaviour changes
+
+- **`carrier-order.service.ts` publishes nothing** (§15 #10). A booking is a manual transcription of a real-world arrangement: it carries no quantity, and nothing downstream derives from its status. It has no effects handler, no `AdminOperationsMutationSource` entry and no dispatcher wake-up — and that is a decision, not an unfinished wiring.
+- **`carrierOrder.status.aggregateAheadOfShipments` is a `warning`, not a `critical`.** Every critical rule in the repository guards demand conservation or a broken command precondition; an inconsistent booking misleads an operator without endangering data.
+- **`failed` is terminal on the carrier-order ladder**, unlike `shipmentTransitions` where `failed → cancelled` exists because `retry` empties the source. A carrier order has no retry command; a failed booking is re-transcribed as a new one.
+- **Editing stays open on a terminal status.** `externalReference` often arrives after the fact; the audit log is the trail.
+
+### Gates
+
+`pnpm test` (577 passing, 40 files), `pnpm typecheck`, `pnpm build` and `pnpm biome check` over every touched file, all clean.
+
+### Not verified
+
+The live run reached the refusal paths only: no seeded shipment was unassigned, so `carrierOrder.addShipments` could not be exercised against a real candidate, and no seeded booking sat at `pending`, so `request` and `confirm` had no fixture. *(Both fixtures added in §22; the attach/detach pass remains a manual UI check.)*
+
+### Open remnants
+
+- `carrierOrder.restore` (un-soft-delete) and `carrierOrder.deletedWithLiveShipments` deferred behind stated gates (architecture §21.9 Group D).
+- A structured `CarrierOrder.metadata` schema deferred; it stays free-form JSON.
+- **No migration file**; the `CarrierOrder` model and `CarrierOrderStatus` were applied with `db:push`.
+
+### Documentation touched
+
+`docs/architecture/features/fulfillment-lifecycle-actions.md` §21.8, `CONTEXT.md`, `admin-nav.ts`.
+
+## 22. Remediation Log — 2026-07-27 (fulfillment series closure)
+
+Executed from the closure plan — five phases: commit the series → realign and expand the seed → end-to-end harness → Group C refinements → re-verify and close. **Not a phase**: every architectural decision behind it was already taken. The as-built record is architecture §21.10; the audited inventory it discharges is §21.9.
+
+### What changed, per finding
+
+No listed review finding is touched. **#32 and #16** remain open.
+
+The two entries §21.9 raised against *this document* are discharged: **B2** (the log stopped at Phase 2) by §18–§21 above, and **B1** (the whole series uncommitted) by ten reviewable commits.
+
+### Deliberate behaviour changes
+
+Three defects in shipped code, each found by building a fixture or running the harness, each fixed with a test rather than worked around:
+
+- **`packagedStage`'s outbound arrival.** The branch read a `received` *shipment* as an arrival, so a pickup-point shipment derived `delivered` while its packages were still `inTransit` — the exact opposite of the asymmetry Phase 4b exists for. Only the package's own `received` is a handover now. Home delivery and depot pickup both cascade the package, so no other path changes. Review missed it because every outbound derivation test set package and shipment to `received` together.
+- **`lot.cancelledWithActiveDemand` and `supplierOrder.cancelledWithActiveDemand` fired `critical` on every correct compensation.** Compensation is status-only and returns its cart items to `awaitingAggregation`, which both rules read as unresolved demand. Both now exempt a cancelled operation, mirroring the operation-level exemption §14 of the architecture document already establishes. The rules were written for the supplier loop, which mints roll overs instead — and no fixture had ever carried a cancelled operation.
+- **Prisma's default 5s interactive-transaction timeout.** The fulfillment commands issue dozens of sequential round trips inside one transaction, so against a managed Postgres a few hundred kilometres away `supplierOrder.request` and then `shipment.receive` aborted with P2028. `src/server/db.ts` now sets a client-level ceiling; co-located with its database the longest of these commands still finishes in well under a second. Unreachable without executing the service layer against a remote database, which is exactly what the owed end-to-end run was for.
+
+Beyond those, the Group C refinements are new behaviour by design: four `after N days` diagnostics (all `warning`), the "sin orden de transporte" shipments filter, multi-source fractionation, and real `lotAvailableActions` delegation. Architecture §21.10 records each.
+
+### Two more, recorded and not fixed
+
+Both are **pre-execution** behaviour, outside the post-execution lifecycle this series owns, and both surfaced by running the chain rather than reading it:
+
+- `listOriginalDemand` excludes only `open` roll overs, so a cart item whose roll over was **resolved** — terminal by ADR 0005 — becomes aggregable again while its derived status reads `cancelled`. Not touched: the closure plan's §2.4 makes those two exclusion clauses a guardrail, and the fix is a third clause needing its own conservation argument.
+- **Aggregation applies the supplier MOQ per cart item rather than to pooled demand.** `calculateAssignableQuantity` runs once per `DemandItem`, so a customer ordering below the supplier's minimum rolls over pre-allocation however many other customers ordered the same product in the same operation. Four seeded carts ordering the same two products produced allocations for only two of them. Whether that is intended is a real domain question — pooling demand to reach a supplier minimum is arguably what an operation is *for* — and it is not this series' to answer.
+
+Each belongs to a `simple-grill` of its own.
+
+### Gates
+
+`pnpm test` (592 passing across 40 files — the 577 pre-existing **unmodified**, plus 15 new cases), `pnpm typecheck`, `pnpm build` and `pnpm biome check` over every touched file, all clean. `grep -rn "TransactionIsolationLevel.Serializable" src/` returns **exactly one hit**, and `git diff prisma/schema.prisma` is **empty** — the closure introduced no schema change, as designed. `pnpm db:seed && pnpm db:seed-verify && pnpm fulfillment:e2e` all exit 0.
+
+Three test fixtures gained a field they had always been missing (`lot.operation` in `lot-diagnostics.test.ts` and `operational-diagnostics.test.ts`); no existing assertion changed.
+
+### Not verified
+
+The admin UI itself. The shipments filter, the multi-source fractionate dialog, the lot detail's newly-enabled buttons and Phase 5's attach-then-detach against the now-existing unassigned shipment are a manual pass — the repository has no component-test harness, and the harness drives the service layer by design. The expanded seed makes that pass materially more valuable: every screen now has real rows in every state.
+
+### Open remnants
+
+- **Group D of architecture §21.9 stays listed with its gates** — closed *as deferred*, not forgotten.
+- **Group E stays open with a sharper resolver.** The twelve steps contain no compensation, so the run never reverted a roll over to `open`; §20.2 now names the exact reproduction rather than declaring victory.
+- **A3 (migration baselining) is owner-managed out of band** and was excluded from the closure by decision.
+- The harness is a *script*, not a `vitest` integration suite. Converting it needs a per-test transactional database fixture — a larger, separate piece of work.
+- `resetDemoTransactionalData` still only removes `*-SEED-*` rows. The two known strays were deleted explicitly; a general policy is not decided.
+
+### Documentation touched
+
+- **This document** — §18–§21 (historical entries for Phases 3, 4a, 4b, 5) and this §22.
+- `docs/architecture/features/fulfillment-lifecycle-actions.md` — the new **§21.10** (closure as built), §21.9's Groups A/B/C struck through with what discharged each, §20.2's Group E question re-armed, the status header and §24 rewritten for the closed state, and §22's pointer changed to describe the plan rather than link into the gitignored `tmp/`.
