@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
 	type AdminSearchParams,
 	detailIdParam,
+	reviewIdParam,
 } from "~/shared/common/admin-crud/search-params";
 import { OperationsClient } from "./_components/operations-client";
 
@@ -16,5 +17,10 @@ export default async function AdminOperationsOperationsPage({
 }) {
 	const params = await searchParams;
 
-	return <OperationsClient initialDetailId={detailIdParam(params)} />;
+	return (
+		<OperationsClient
+			initialDetailId={detailIdParam(params)}
+			initialReviewId={reviewIdParam(params)}
+		/>
+	);
 }

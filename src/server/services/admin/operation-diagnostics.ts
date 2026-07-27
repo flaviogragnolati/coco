@@ -9,6 +9,11 @@ export type OperationDiagnosticsOptions = {
 	 * that an open roll over is stale. Null or omitted disables the rule.
 	 */
 	staleOpenRollOverBefore?: Date | null;
+	/**
+	 * Drafts created before this instant have gone unexecuted long enough to read
+	 * as forgotten. Null or omitted disables the rule.
+	 */
+	staleDraftBefore?: Date | null;
 };
 
 /**
@@ -18,8 +23,10 @@ export type OperationDiagnosticsOptions = {
  * what the modal shows.
  *
  * The quantity rules need no status guard: an operation only receives its
- * quantities when it completes, so running and failed batches sit at zero and
- * balance trivially.
+ * quantities when it completes, so running, failed and draft batches sit at zero
+ * and balance trivially. A draft additionally owns no lots and no roll overs, so
+ * every output rule below is unreachable for it — which is why `draft` earns a
+ * rule of its own but no exemption (ADR 0006).
  */
 /**
  * A compensated operation is exempt from every rule above and answers to this
@@ -97,6 +104,24 @@ export function calculateOperationDiagnostics(
 			message:
 				"La cantidad asignada no coincide con las líneas de lote generadas.",
 			refs: { operationId: operation.id, lotCount: operation.lots.length },
+		});
+	}
+
+	const staleDraftBefore = options?.staleDraftBefore;
+	if (
+		operation.status === "draft" &&
+		staleDraftBefore &&
+		operation.createdAt < staleDraftBefore
+	) {
+		diagnostics.push({
+			code: "operation.draft.stale",
+			severity: "warning",
+			message:
+				"El borrador lleva varios días sin ejecutarse; su demanda sigue sin agrupar.",
+			refs: {
+				operationId: operation.id,
+				createdAt: operation.createdAt.toISOString(),
+			},
 		});
 	}
 

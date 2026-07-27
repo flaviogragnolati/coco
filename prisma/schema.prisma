@@ -708,6 +708,7 @@ model Operation {
   lotCount           Int               @default(0)
   supplierOrderCount Int               @default(0)
   summary            Json?             @db.JsonB
+  reviewState        Json?             @db.JsonB // draft-only: the admin's omissions and, once executed, the fingerprint they approved (ADR 0006)
   triggeredByUserId  String? // if null the operation was triggered by the system, otherwise it references the user that triggered the operation
   destinationId      Int?
 
@@ -729,6 +730,7 @@ enum OperationStrategy {
 }
 
 enum OperationStatus {
+  draft // parameters and omissions fixed, awaiting an admin's review; materializes nothing and therefore reserves no demand (ADR 0006)
   running
   completed
   failed

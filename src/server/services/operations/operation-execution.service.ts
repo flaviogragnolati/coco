@@ -8,20 +8,64 @@ import {
 	type OperationSupplierTermCandidate,
 	resolveSupplierTermForProduct,
 } from "./operation-assignment.helpers";
+import {
+	applyOmissions,
+	buildDemandFingerprint,
+	type DemandOmissions,
+	emptyOmissions,
+} from "./operation-review";
 
 type OperationDb = Prisma.TransactionClient;
 
 export type OperationExecutionInput = {
 	operationId: number;
 	actor: AdminMutationActor;
+	omissions?: DemandOmissions;
+	/**
+	 * The fingerprint the admin approved during review. When present, execution is
+	 * refused unless the recomputed effective demand still hashes to it (ADR 0006).
+	 */
+	expectedFingerprint?: string;
 };
 
-type DemandItem = {
+/**
+ * The demand moved between review and execution. A retryable review conflict, not
+ * an execution failure: it is thrown before anything is written, so the caller
+ * must surface it as `CONFLICT` and leave the operation in `draft`.
+ */
+export class DemandChangedError extends Error {
+	readonly expected: string;
+	readonly actual: string;
+	readonly itemCount: number;
+	readonly quantity: string;
+
+	constructor(input: {
+		expected: string;
+		actual: string;
+		itemCount: number;
+		quantity: string;
+	}) {
+		super(
+			`La demanda cambió desde la revisión: ahora hay ${input.itemCount} ítem(s) por ${input.quantity}`,
+		);
+		this.name = "DemandChangedError";
+		this.expected = input.expected;
+		this.actual = input.actual;
+		this.itemCount = input.itemCount;
+		this.quantity = input.quantity;
+	}
+}
+
+export type DemandItem = {
 	sourceKey: string;
 	sourceRollOverId?: number;
 	cartItemId: number;
+	cartItemCode: string;
 	cartId: number;
 	cartCode: string;
+	userId: string;
+	userName: string;
+	userEmail: string;
 	quantity: Prisma.Decimal;
 	paidAt: Date;
 	orderItemCreatedAt: Date;
@@ -36,7 +80,7 @@ type DemandItem = {
 	};
 };
 
-type ResolvedAssignment = {
+export type ResolvedAssignment = {
 	demand: DemandItem;
 	supplierTerm: OperationSupplierTermCandidate;
 	assignedQuantity: Prisma.Decimal;
@@ -44,7 +88,7 @@ type ResolvedAssignment = {
 	rollOverReason?: string;
 };
 
-type RollOverInput = {
+export type RollOverInput = {
 	demand: DemandItem;
 	quantity: Prisma.Decimal;
 	reason: string;
@@ -95,7 +139,7 @@ function requireValue<K, V>(map: Map<K, V>, key: K, label: string): V {
 	return value;
 }
 
-function resolveAssignments(demandItems: DemandItem[], now: Date) {
+export function resolveAssignments(demandItems: DemandItem[], now: Date) {
 	const assignments: ResolvedAssignment[] = [];
 	const rollOvers: RollOverInput[] = [];
 
@@ -167,6 +211,14 @@ const demandCartItemSelect = {
 		select: {
 			id: true,
 			code: true,
+			userId: true,
+			user: {
+				select: {
+					id: true,
+					name: true,
+					email: true,
+				},
+			},
 		},
 	},
 	productClientTerms: {
@@ -224,8 +276,12 @@ function toDemandItem(input: {
 		sourceKey: input.sourceKey,
 		sourceRollOverId: input.sourceRollOverId,
 		cartItemId: input.cartItem.id,
+		cartItemCode: input.cartItem.code,
 		cartId: input.cartItem.cartId,
 		cartCode: input.cartItem.cart.code,
+		userId: input.cartItem.cart.userId,
+		userName: input.cartItem.cart.user.name,
+		userEmail: input.cartItem.cart.user.email,
 		quantity: input.quantity,
 		paidAt: input.paidAt,
 		orderItemCreatedAt: input.orderItemCreatedAt,
@@ -405,7 +461,7 @@ function sortDemandItems(items: DemandItem[]) {
 	});
 }
 
-async function validateOperation(db: OperationDb, operationId: number) {
+export async function validateOperation(db: OperationDb, operationId: number) {
 	const operation = await db.operation.findUnique({
 		where: { id: operationId },
 		select: {
@@ -441,7 +497,7 @@ async function validateOperation(db: OperationDb, operationId: number) {
 	return operation;
 }
 
-async function buildDemand(
+export async function buildDemand(
 	db: OperationDb,
 	operation: {
 		id: number;
@@ -550,6 +606,38 @@ function groupAssignments(input: {
 	}
 
 	return { suppliers, lotItems, allocations };
+}
+
+/**
+ * The lots and supplier orders an execution *would* create, folded by the very
+ * function that creates them. The review renders this rather than counting
+ * suppliers itself, so it cannot offer a plan materialization would refuse —
+ * the same principle `fractionationCandidates` follows.
+ */
+export function summarizeSupplierGroups(input: {
+	operationId: number;
+	destinationId: number;
+	assignments: ResolvedAssignment[];
+}) {
+	const { suppliers, lotItems } = groupAssignments(input);
+	const supplierById = new Map(
+		input.assignments.map((assignment) => [
+			assignment.supplierTerm.supplierId,
+			assignment.supplierTerm.supplier,
+		]),
+	);
+
+	return Array.from(suppliers.values()).map((supplier) => {
+		const own = Array.from(lotItems.values()).filter(
+			(lotItem) => lotItem.supplierId === supplier.supplierId,
+		);
+
+		return {
+			supplier: requireValue(supplierById, supplier.supplierId, "supplier"),
+			lotItemCount: own.length,
+			quantity: sumDecimals(own.map((lotItem) => lotItem.quantity)),
+		};
+	});
 }
 
 async function materializeAssignments(
@@ -848,6 +936,8 @@ async function publishEvents(
 
 function buildSummary(input: {
 	demandItems: DemandItem[];
+	omittedItems: DemandItem[];
+	omissions: DemandOmissions;
 	assignments: ResolvedAssignment[];
 	rollOvers: RollOverInput[];
 	lotCount: number;
@@ -862,6 +952,17 @@ function buildSummary(input: {
 			quantity: sumDecimals(
 				input.demandItems.map((item) => item.quantity),
 			).toString(),
+		},
+		// Demand the admin kept out. It is reported here and nowhere else: an
+		// omission writes nothing onto the cart item, which is what leaves it
+		// aggregable by the next operation (ADR 0005, ADR 0006).
+		omitted: {
+			itemCount: input.omittedItems.length,
+			quantity: sumDecimals(
+				input.omittedItems.map((item) => item.quantity),
+			).toString(),
+			sourceKeys: input.omissions.sourceKeys,
+			userIds: input.omissions.userIds,
 		},
 		assigned: {
 			itemCount: new Set(
@@ -905,7 +1006,28 @@ export async function runOperationExecution(
 	const destinationId = operation.destinationId;
 	if (destinationId === null)
 		throw new Error("Operation destination is required");
-	const demandItems = await buildDemand(tx, operation);
+	const omissions = input.omissions ?? emptyOmissions;
+	const { effective: demandItems, omitted: omittedItems } = applyOmissions(
+		await buildDemand(tx, operation),
+		omissions,
+	);
+
+	// Before every write, so a refusal rolls back nothing it should not have
+	// started (ADR 0006).
+	if (input.expectedFingerprint !== undefined) {
+		const actual = buildDemandFingerprint(demandItems);
+		if (actual !== input.expectedFingerprint) {
+			throw new DemandChangedError({
+				expected: input.expectedFingerprint,
+				actual,
+				itemCount: demandItems.length,
+				quantity: sumDecimals(
+					demandItems.map((item) => item.quantity),
+				).toString(),
+			});
+		}
+	}
+
 	const resolved = resolveAssignments(demandItems, new Date());
 	const materializedAssignments = await materializeAssignments(tx, {
 		operationId: operation.id,
@@ -924,6 +1046,8 @@ export async function runOperationExecution(
 
 	const summary = buildSummary({
 		demandItems,
+		omittedItems,
+		omissions,
 		assignments: resolved.assignments,
 		rollOvers: resolved.rollOvers,
 		lotCount: materializedAssignments.lotCount,

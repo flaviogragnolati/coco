@@ -22,6 +22,18 @@ _Avoid_: Refund, payment failure
 An aggregation batch for submitted customer demand.
 _Avoid_: Job, run
 
+**Operation draft**:
+An operation created but not executed, holding its parameters, the admin's omissions, and a fingerprint of the demand set last reviewed. It materializes nothing and therefore reserves no demand. Spanish-facing UI labels it "Borrador".
+_Avoid_: Preview, simulation, pending operation
+
+**Operation review**:
+The step between choosing an operation's parameters and executing it, where an admin sees the demand that would be batched and the lots it would produce. Execution is refused if the demand changed since the review. Spanish-facing UI labels it "Revisión".
+_Avoid_: Confirmation, preview screen
+
+**Omission**:
+An admin's decision to keep a demand item or a whole user out of an operation before it executes. It writes nothing onto the demand — the omitted quantity stays exactly where it was and re-enters aggregation in the next operation — so it is not a roll over and not the exclusion an operation compensation performs, which acts on demand already batched.
+_Avoid_: Exclusion, skip, cancellation
+
 **Administrative window**:
 The period while every live supplier order of an operation is still pending, during which the operation can be compensated. A supplier order already cancelled through the supplier loop does not close the window.
 _Avoid_: Grace period

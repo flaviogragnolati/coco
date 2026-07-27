@@ -4,6 +4,7 @@ import {
 	dateInputSchema,
 	sortDirectionSchema,
 } from "~/schemas/admin/_crud-schema-helpers";
+import { operationStatusSchema } from "~/schemas/admin/operation.schemas";
 import {
 	diagnosticStateSchema,
 	highestDiagnosticSeveritySchema,
@@ -79,7 +80,7 @@ const destinationSummarySchema = z.object({
 const operationSummarySchema = z.object({
 	id: positiveIdSchema,
 	code: z.string(),
-	status: z.enum(["running", "completed", "failed", "cancelled"]),
+	status: operationStatusSchema,
 });
 
 const supplierOrderSummarySchema = z.object({

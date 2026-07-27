@@ -1132,7 +1132,7 @@ export function carrierOrderAvailableActions(input: {
 	];
 }
 
-export type OperationCommandKey = "cancel" | "rerun" | "delete";
+export type OperationCommandKey = "execute" | "cancel" | "rerun" | "delete";
 
 /**
  * The administrative window: an operation can still be compensated while every
@@ -1160,6 +1160,20 @@ export function operationAvailableActions(input: {
 	);
 	const childless = input.lotCount === 0 && input.rollOverCount === 0;
 
+	// A draft owns no lots and no supplier orders, so `windowOpen` and `childless`
+	// are vacuously true for it and say nothing. Every draft branch below decides
+	// on `status` alone (ADR 0006).
+	function executeState(): AvailableAction<OperationCommandKey> {
+		if (input.status !== "draft") {
+			return {
+				action: "execute",
+				enabled: false,
+				reason: "Solo se puede ejecutar un borrador",
+			};
+		}
+		return { action: "execute", enabled: true };
+	}
+
 	function cancelState(): AvailableAction<OperationCommandKey> {
 		if (input.status !== "completed") {
 			return {
@@ -1181,6 +1195,14 @@ export function operationAvailableActions(input: {
 
 	function rerunState(): AvailableAction<OperationCommandKey> {
 		if (input.status === "cancelled") return { action: "rerun", enabled: true };
+
+		if (input.status === "draft") {
+			return {
+				action: "rerun",
+				enabled: false,
+				reason: "Un borrador todavía no se ejecutó; no se puede reejecutar",
+			};
+		}
 
 		if (input.status === "failed") {
 			if (!childless) {
@@ -1215,12 +1237,15 @@ export function operationAvailableActions(input: {
 		};
 	}
 
+	// Discarding a draft is the same act as deleting a failed run: the row goes
+	// away and it owns nothing that would survive it.
 	function deleteState(): AvailableAction<OperationCommandKey> {
-		if (input.status !== "failed") {
+		if (input.status !== "failed" && input.status !== "draft") {
 			return {
 				action: "delete",
 				enabled: false,
-				reason: "Solo se puede eliminar una operación fallida",
+				reason:
+					"Solo se puede eliminar una operación fallida o descartar un borrador",
 			};
 		}
 		if (!childless) {
@@ -1233,7 +1258,7 @@ export function operationAvailableActions(input: {
 		return { action: "delete", enabled: true };
 	}
 
-	return [cancelState(), rerunState(), deleteState()];
+	return [executeState(), cancelState(), rerunState(), deleteState()];
 }
 
 const stageRankByKey = new Map<AdminTrackingStageKey, number>(

@@ -1,14 +1,17 @@
 import { z } from "zod";
 import {
 	operationCancelInputSchema,
-	operationCreateInputSchema,
 	operationDeleteInputSchema,
 	operationDetailSchema,
+	operationDraftCreateInputSchema,
+	operationDraftUpdateInputSchema,
+	operationExecuteInputSchema,
 	operationGetByIdInputSchema,
 	operationIdSchema,
 	operationListInputSchema,
 	operationListOutputSchema,
 	operationRerunInputSchema,
+	operationReviewOutputSchema,
 	operationStatsSchema,
 } from "~/schemas/admin/operation.schemas";
 import { mapServiceError } from "~/server/api/_shared/map-service-error";
@@ -37,12 +40,60 @@ export const operationRouter = createTRPCRouter({
 		.output(operationStatsSchema)
 		.query(async ({ ctx }) => operationService.getStats(ctx.db)),
 
-	createAndExecute: adminProcedure
-		.input(operationCreateInputSchema)
+	/**
+	 * Creating an operation no longer executes it: it produces a `draft` the admin
+	 * reviews and then executes as a separate command. There is deliberately no
+	 * one-step procedure — the review is mandatory (ADR 0006).
+	 */
+	createDraft: adminProcedure
+		.input(operationDraftCreateInputSchema)
 		.output(operationDetailSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				return await operationService.createAndExecute(
+				return await operationService.createDraft(
+					input,
+					toAdminActor(ctx.session.user),
+					ctx.db,
+				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	/** Read-only: recomputes the demand from live data and writes nothing. */
+	review: adminProcedure
+		.input(operationGetByIdInputSchema)
+		.output(operationReviewOutputSchema)
+		.query(async ({ ctx, input }) => {
+			try {
+				return await operationService.review(input.id, ctx.db);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	updateDraft: adminProcedure
+		.input(operationDraftUpdateInputSchema)
+		.output(operationReviewOutputSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await operationService.updateDraft(
+					input,
+					toAdminActor(ctx.session.user),
+					ctx.db,
+				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	/** Refuses with CONFLICT if the demand moved since the reviewed fingerprint. */
+	execute: adminProcedure
+		.input(operationExecuteInputSchema)
+		.output(operationDetailSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await operationService.execute(
 					input,
 					toAdminActor(ctx.session.user),
 					ctx.db,

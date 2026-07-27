@@ -2,6 +2,8 @@ import type { Prisma } from "~/prisma/client";
 import {
 	operationDetailSchema,
 	operationListOutputSchema,
+	operationReviewOutputSchema,
+	operationReviewStateSchema,
 	operationStatsSchema,
 } from "~/schemas/admin/operation.schemas";
 import type { db } from "~/server/db";
@@ -10,18 +12,35 @@ import type { AdminMutationActor } from "~/server/services/admin/_base/admin-aud
 import { writeAdminAuditLog } from "~/server/services/admin/_base/admin-audit";
 import { recomputeOperationCounters } from "~/server/services/operations/operation-counters";
 import {
-	executeOperation,
+	buildDemand,
+	DemandChangedError,
+	resolveAssignments,
 	runOperationExecution,
+	summarizeSupplierGroups,
+	validateOperation,
 } from "~/server/services/operations/operation-execution.service";
+import {
+	applyOmissions,
+	buildReviewProjection,
+	emptyOmissions,
+	pruneOmissions,
+} from "~/server/services/operations/operation-review";
 import type {
 	OperationCancelInput,
 	OperationCreateInput,
 	OperationDeleteInput,
 	OperationDetail,
+	OperationDraftCreateInput,
+	OperationDraftUpdateInput,
+	OperationExecuteInput,
 	OperationListInput,
+	OperationOmissions,
 	OperationRerunInput,
+	OperationReviewOutput,
+	OperationReviewState,
 	OperationStats,
 } from "~/shared/common/admin-crud/operation.types";
+import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 import {
 	AdminCrudError,
 	throwConflict,
@@ -31,9 +50,11 @@ import { runSerializable } from "./_base/serializable-transaction";
 import {
 	applyOperationCompensation,
 	countOperationCandidates,
+	createDraftOperation,
 	createRunningOperation,
 	deleteOperation,
 	findActiveDestination,
+	findDraftForExecution,
 	findOperationById,
 	findOperationForCommand,
 	findStaleOpenRollOverThreshold,
@@ -44,8 +65,10 @@ import {
 	type OperationCommandRecord,
 	type OperationDetailRecord,
 	type OperationSummaryRecord,
+	staleDraftThreshold,
 	toOperationDetail,
 	toOperationListItem,
+	updateDraftOperation,
 	updateOperationForRerun,
 } from "./operation.data";
 import { planOperationCompensation } from "./operation-compensation";
@@ -97,6 +120,8 @@ function summarize(
 export async function list(input: OperationListInput, database: AdminDb) {
 	const diagnosticOptions: OperationDiagnosticsOptions = {
 		staleOpenRollOverBefore: await findStaleOpenRollOverThreshold(database),
+		// Pure and per-request, never per row.
+		staleDraftBefore: staleDraftThreshold(),
 	};
 
 	if (input.diagnosticState === "all") {
@@ -137,6 +162,7 @@ export async function getById(id: number, database: AdminDb) {
 
 	return parseDetail(record, {
 		staleOpenRollOverBefore: await findStaleOpenRollOverThreshold(database),
+		staleDraftBefore: staleDraftThreshold(),
 	});
 }
 
@@ -144,61 +170,117 @@ export async function getStats(database: AdminDb): Promise<OperationStats> {
 	return operationStatsSchema.parse(await getOperationStats(database));
 }
 
-export async function createAndExecute(
-	input: OperationCreateInput,
-	actor: AdminMutationActor,
-	database: AdminDb,
+async function requireActiveDestination(
+	db: OperationTx,
+	destinationId: number,
 ) {
-	const destination = await findActiveDestination(
-		database,
-		input.destinationId,
-	);
+	const destination = await findActiveDestination(db, destinationId);
 	if (!destination) {
 		throw new AdminCrudError(
 			"CONFLICT",
 			"El destino seleccionado no existe, esta inactivo o fue eliminado",
 		);
 	}
+	return destination;
+}
 
-	const operation = await createRunningOperation(database, {
+type DraftRecord = NonNullable<
+	Awaited<ReturnType<typeof findDraftForExecution>>
+>;
+
+async function loadDraft(db: OperationTx, id: number): Promise<DraftRecord> {
+	const record = await findDraftForExecution(db, id);
+	if (!record) throwNotFound("Operacion");
+	if (record.status !== "draft") {
+		throwConflict("Solo se puede revisar o ejecutar un borrador");
+	}
+	return record;
+}
+
+/**
+ * A draft written before a `reviewState` shape change, or one whose column is
+ * null, degrades to "nothing omitted" rather than failing the review. Losing an
+ * omission is visible in the dialog; refusing to open it is not recoverable.
+ */
+function readReviewState(value: unknown): OperationReviewState {
+	const parsed = operationReviewStateSchema.safeParse(value);
+	return parsed.success ? parsed.data : { omissions: { ...emptyOmissions } };
+}
+
+/**
+ * The read-only prefix of the execution pipeline, run through the very functions
+ * the command runs. Writes nothing — pruning orphaned omissions is `updateDraft`'s
+ * job, not the query's.
+ */
+async function computeReview(
+	db: OperationTx,
+	draft: DraftRecord,
+	omissions: OperationOmissions,
+) {
+	const operation = await validateOperation(db, draft.id);
+	if (operation.destinationId === null) {
+		throwConflict("La operacion no tiene destino asignado");
+	}
+
+	const items = await buildDemand(db, operation);
+	const resolved = resolveAssignments(items, new Date());
+	const { effective } = applyOmissions(items, omissions);
+
+	return buildReviewProjection({
+		items,
+		omissions,
+		resolved,
+		supplierGroups: summarizeSupplierGroups({
+			operationId: operation.id,
+			destinationId: operation.destinationId,
+			// Only the effective set produces lots; omitted demand materializes
+			// nothing at all (ADR 0006).
+			assignments: resolved.assignments.filter((assignment) =>
+				effective.some(
+					(item) => item.sourceKey === assignment.demand.sourceKey,
+				),
+			),
+		}),
+	});
+}
+
+async function buildReviewOutput(
+	db: OperationTx,
+	draft: DraftRecord,
+	input: { omissions: OperationOmissions; prunedOmissions: OperationOmissions },
+): Promise<OperationReviewOutput> {
+	const projection = await computeReview(db, draft, input.omissions);
+	const detail = await findOperationById(db, draft.id);
+	if (!detail) throwNotFound("Operacion");
+
+	return operationReviewOutputSchema.parse({
+		operation: parseDetail(detail),
+		fingerprint: projection.fingerprint,
+		rows: projection.rows,
+		groups: projection.groups,
+		totals: projection.totals,
+		omissions: input.omissions,
+		prunedOmissions: input.prunedOmissions,
+	});
+}
+
+export async function createDraft(
+	input: OperationDraftCreateInput,
+	actor: AdminMutationActor,
+	database: AdminDb,
+): Promise<OperationDetail> {
+	const destination = await requireActiveDestination(
+		database,
+		input.destinationId,
+	);
+
+	// No `runSerializable` and no dispatcher wake: a draft moves no quantity and
+	// publishes nothing.
+	const operation = await createDraftOperation(database, {
 		...input,
 		code: buildOperationCode(),
 		triggeredByUserId: actor.id,
 	});
-
-	try {
-		await executeOperation(database, {
-			operationId: operation.id,
-			actor,
-		});
-	} catch (error) {
-		const failed = parseDetail(
-			await markOperationFailed(database, {
-				id: operation.id,
-				failureReason: errorMessage(error),
-			}),
-		);
-
-		await database.$transaction(async (tx) => {
-			await writeAdminAuditLog(tx, {
-				action: "operation.createAndExecute.failed",
-				actor,
-				entityType: OPERATION_ENTITY,
-				entityId: String(operation.id),
-				after: failed,
-				metadata: {
-					failureReason: failed.failureReason,
-				},
-			});
-		});
-
-		throw new AdminCrudError(
-			"CONFLICT",
-			`No se pudo ejecutar la operacion ${operation.code}: ${failed.failureReason}`,
-		);
-	}
-
-	await DomainEventDispatcher.wake();
 
 	const detail = await findOperationById(database, operation.id);
 	if (!detail) throwNotFound("Operacion");
@@ -206,7 +288,7 @@ export async function createAndExecute(
 
 	await database.$transaction(async (tx) => {
 		await writeAdminAuditLog(tx, {
-			action: "operation.createAndExecute",
+			action: "operation.createDraft",
 			actor,
 			entityType: OPERATION_ENTITY,
 			entityId: String(parsed.id),
@@ -214,14 +296,280 @@ export async function createAndExecute(
 			metadata: {
 				destinationId: destination.id,
 				destinationName: destination.name,
-				eligibleQuantity: parsed.eligibleQuantity,
-				assignedQuantity: parsed.assignedQuantity,
-				rollOverQuantity: parsed.rollOverQuantity,
 			},
 		});
 	});
 
 	return parsed;
+}
+
+export async function review(
+	id: number,
+	database: AdminDb,
+): Promise<OperationReviewOutput> {
+	const draft = await loadDraft(database, id);
+	const { omissions } = readReviewState(draft.reviewState);
+
+	return buildReviewOutput(database, draft, {
+		omissions,
+		prunedOmissions: { ...emptyOmissions },
+	});
+}
+
+export async function updateDraft(
+	input: OperationDraftUpdateInput,
+	actor: AdminMutationActor,
+	database: AdminDb,
+): Promise<OperationReviewOutput> {
+	const { id, omissions: incomingOmissions, ...parameters } = input;
+
+	return database.$transaction(async (tx) => {
+		const draft = await loadDraft(tx, id);
+		const before = await loadDetail(tx, draft.id);
+
+		if (parameters.destinationId !== undefined) {
+			await requireActiveDestination(tx, parameters.destinationId);
+		}
+
+		// The schema can only check a window sent whole; a half-sent one is only
+		// meaningful against the parameters already on the draft.
+		const from = parameters.from
+			? fromDateTimeLocalValue(parameters.from)
+			: draft.from;
+		const to = parameters.to ? fromDateTimeLocalValue(parameters.to) : draft.to;
+		if (to < from) {
+			throwConflict("La fecha hasta no puede ser anterior a la fecha desde");
+		}
+
+		const requested =
+			incomingOmissions ?? readReviewState(draft.reviewState).omissions;
+
+		// Parameters first: pruning against the pre-edit demand set would drop
+		// omissions the new window still covers, and keep ones it no longer does.
+		await updateDraftOperation(tx, {
+			id: draft.id,
+			parameters,
+			reviewState: { omissions: requested },
+		});
+
+		const updated = await loadDraft(tx, draft.id);
+		const operation = await validateOperation(tx, updated.id);
+		const pruned = pruneOmissions(await buildDemand(tx, operation), requested);
+
+		await updateDraftOperation(tx, {
+			id: draft.id,
+			reviewState: { omissions: pruned.omissions },
+		});
+
+		const output = await buildReviewOutput(tx, await loadDraft(tx, draft.id), {
+			omissions: pruned.omissions,
+			prunedOmissions: {
+				sourceKeys: pruned.droppedSourceKeys,
+				userIds: pruned.droppedUserIds,
+			},
+		});
+
+		await writeAdminAuditLog(tx, {
+			action: "operation.updateDraft",
+			actor,
+			entityType: OPERATION_ENTITY,
+			entityId: String(draft.id),
+			before,
+			after: output.operation,
+			metadata: {
+				omittedSourceKeyCount: pruned.omissions.sourceKeys.length,
+				omittedUserCount: pruned.omissions.userIds.length,
+				droppedSourceKeys: pruned.droppedSourceKeys,
+				droppedUserIds: pruned.droppedUserIds,
+			},
+		});
+
+		return output;
+	});
+}
+
+/**
+ * Which audit actions an execution writes. The two entry points differ only in
+ * this: `createAndExecute` keeps the action names its history is already recorded
+ * under, so the scripted path stays greppable across the change.
+ */
+type ExecutionAudit = { action: string; failedAction: string };
+
+const executeAudit: ExecutionAudit = {
+	action: "operation.execute",
+	failedAction: "operation.execute.failed",
+};
+
+const createAndExecuteAudit: ExecutionAudit = {
+	action: "operation.createAndExecute",
+	failedAction: "operation.createAndExecute.failed",
+};
+
+export async function execute(
+	input: OperationExecuteInput,
+	actor: AdminMutationActor,
+	database: AdminDb,
+): Promise<OperationDetail> {
+	return runDraftExecution(input, actor, database, executeAudit);
+}
+
+async function runDraftExecution(
+	input: OperationExecuteInput,
+	actor: AdminMutationActor,
+	database: AdminDb,
+	audit: ExecutionAudit,
+): Promise<OperationDetail> {
+	let code = "";
+
+	try {
+		const result = await runSerializable(database, async (tx) => {
+			const draft = await loadDraft(tx, input.id);
+			code = draft.code;
+			const state = readReviewState(draft.reviewState);
+
+			await runOperationExecution(tx, {
+				operationId: draft.id,
+				actor,
+				omissions: state.omissions,
+				expectedFingerprint: input.fingerprint,
+			});
+
+			const after = await loadDetail(tx, draft.id);
+
+			await updateDraftOperation(tx, {
+				id: draft.id,
+				reviewState: {
+					omissions: state.omissions,
+					// The durable record of the demand set a human approved (ADR 0006).
+					approved: {
+						fingerprint: input.fingerprint,
+						itemCount: after.eligibleItemCount,
+						quantity: after.eligibleQuantity,
+						at: new Date().toISOString(),
+						byUserId: actor.id,
+					},
+				},
+			});
+
+			await writeAdminAuditLog(tx, {
+				action: audit.action,
+				actor,
+				entityType: OPERATION_ENTITY,
+				entityId: String(draft.id),
+				after,
+				metadata: {
+					fingerprint: input.fingerprint,
+					omittedSourceKeyCount: state.omissions.sourceKeys.length,
+					omittedUserCount: state.omissions.userIds.length,
+					eligibleQuantity: after.eligibleQuantity,
+					assignedQuantity: after.assignedQuantity,
+					rollOverQuantity: after.rollOverQuantity,
+				},
+			});
+
+			return after;
+		});
+
+		await DomainEventDispatcher.wake();
+		return result;
+	} catch (error) {
+		// A moved demand set is a retryable review conflict, not an execution
+		// failure: the transaction rolled back, so the row is still a `draft` and
+		// must not be marked `failed` (ADR 0006).
+		if (error instanceof DemandChangedError) {
+			throw new AdminCrudError(
+				"CONFLICT",
+				`La demanda cambió desde la revisión: ahora hay ${error.itemCount} ítem(s) por ${error.quantity}. Revisá de nuevo antes de ejecutar.`,
+			);
+		}
+		if (error instanceof AdminCrudError) throw error;
+
+		return failExecution(database, {
+			id: input.id,
+			code,
+			actor,
+			error,
+			action: audit.failedAction,
+		});
+	}
+}
+
+/**
+ * Mirrors `createAndExecute`'s technical-failure path: the transaction already
+ * rolled back, so the `failed` mark is written outside it and the caller sees a
+ * CONFLICT carrying the reason.
+ */
+async function failExecution(
+	database: AdminDb,
+	input: {
+		id: number;
+		code: string;
+		actor: AdminMutationActor;
+		error: unknown;
+		action: string;
+	},
+): Promise<never> {
+	const failed = parseDetail(
+		await markOperationFailed(database, {
+			id: input.id,
+			failureReason: errorMessage(input.error),
+		}),
+	);
+
+	await database.$transaction(async (tx) => {
+		await writeAdminAuditLog(tx, {
+			action: input.action,
+			actor: input.actor,
+			entityType: OPERATION_ENTITY,
+			entityId: String(input.id),
+			after: failed,
+			metadata: { failureReason: failed.failureReason },
+		});
+	});
+
+	throw new AdminCrudError(
+		"CONFLICT",
+		`No se pudo ejecutar la operacion ${input.code}: ${failed.failureReason}`,
+	);
+}
+
+/**
+ * The no-review path, kept for scripted use — `scripts/fulfillment-e2e.ts` is its
+ * only caller. A wrapper rather than a second implementation, so there stays
+ * exactly one code path that materializes lots, lot items and allocations: it
+ * creates the draft, takes the fingerprint of the demand it just computed, and
+ * executes against it.
+ */
+export async function createAndExecute(
+	input: OperationCreateInput,
+	actor: AdminMutationActor,
+	database: AdminDb,
+): Promise<OperationDetail> {
+	const draft = await createDraft(input, actor, database);
+
+	let fingerprint: string;
+	try {
+		fingerprint = (await review(draft.id, database)).fingerprint;
+	} catch (error) {
+		// `validateOperation` throws plain Errors. Without this the wrapper would
+		// leak one raw and leave a `draft` row behind, where the one-step path has
+		// always produced a CONFLICT over a `failed` one.
+		if (error instanceof AdminCrudError) throw error;
+		return failExecution(database, {
+			id: draft.id,
+			code: draft.code,
+			actor,
+			error,
+			action: createAndExecuteAudit.failedAction,
+		});
+	}
+
+	return runDraftExecution(
+		{ id: draft.id, fingerprint },
+		actor,
+		database,
+		createAndExecuteAudit,
+	);
 }
 
 async function loadForCommand(
@@ -446,8 +794,12 @@ export async function remove(
 	return database.$transaction(async (tx) => {
 		const record = await loadForCommand(tx, input.id);
 
-		if (record.status !== "failed") {
-			throwConflict("Solo se puede eliminar una operacion fallida");
+		// Discarding a draft is the same act: the row goes away and, having
+		// materialized nothing, it leaves nothing behind (ADR 0006).
+		if (record.status !== "failed" && record.status !== "draft") {
+			throwConflict(
+				"Solo se puede eliminar una operacion fallida o descartar un borrador",
+			);
 		}
 		// `Lot.operationId` is `onDelete: Restrict`, so the database would refuse
 		// anyway; the guard exists to produce a readable message instead of a raw

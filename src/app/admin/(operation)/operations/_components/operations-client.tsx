@@ -2,6 +2,7 @@
 
 import {
 	CheckCircle2,
+	ClipboardCheckIcon,
 	Layers,
 	PackageCheck,
 	PlusIcon,
@@ -36,6 +37,7 @@ import { OperationCreateDialog } from "~/features/admin/crud/operation/operation
 import { OperationDeleteDialog } from "~/features/admin/crud/operation/operation-delete-dialog";
 import { OperationDetailDialog } from "~/features/admin/crud/operation/operation-detail-dialog";
 import { OperationRerunDialog } from "~/features/admin/crud/operation/operation-rerun-dialog";
+import { OperationReviewDialog } from "~/features/admin/crud/operation/operation-review-dialog";
 import { OperationTable } from "~/features/admin/crud/operation/operation-table";
 import type { CrudSortDirection } from "~/shared/common/admin-crud/crud.types";
 import type {
@@ -52,8 +54,10 @@ const allValue = "all";
 
 export function OperationsClient({
 	initialDetailId,
+	initialReviewId,
 }: {
 	initialDetailId?: number;
+	initialReviewId?: number;
 }) {
 	const utils = api.useUtils();
 	const [page, setPage] = useState(1);
@@ -67,6 +71,9 @@ export function OperationsClient({
 	const [createOpen, setCreateOpen] = useState(false);
 	const [selectedOperationId, setSelectedOperationId] = useState<number | null>(
 		initialDetailId ?? null,
+	);
+	const [reviewOperationId, setReviewOperationId] = useState<number | null>(
+		initialReviewId ?? null,
 	);
 	const [command, setCommand] = useState<{
 		id: number;
@@ -138,15 +145,17 @@ export function OperationsClient({
 		]);
 	};
 
-	const createMutation = api.admin.operation.createAndExecute.useMutation({
+	// Creating no longer executes: it produces a draft and hands it straight to the
+	// review, which is the only path to execution (ADR 0006).
+	const createMutation = api.admin.operation.createDraft.useMutation({
 		onSuccess: async (operation) => {
-			toast.success("Operación ejecutada");
+			toast.success("Borrador creado");
 			setCreateOpen(false);
-			setSelectedOperationId(operation.id);
+			setReviewOperationId(operation.id);
 			await invalidateOperationQueries();
 		},
 		onError: (error) => {
-			toast.error(error.message || "No se pudo ejecutar la operación");
+			toast.error(error.message || "No se pudo crear el borrador");
 		},
 	});
 
@@ -204,6 +213,11 @@ export function OperationsClient({
 		operation: { id: number },
 		key: OperationCommandKey,
 	) => {
+		// `execute` has no dialog of its own — it *is* the review.
+		if (key === "execute") {
+			setReviewOperationId(operation.id);
+			return;
+		}
 		setCommand({ id: operation.id, key });
 	};
 
@@ -268,6 +282,12 @@ export function OperationsClient({
 							value: statsQuery.data.total,
 							description: "Operaciones registradas",
 							icon: Layers,
+						},
+						{
+							label: "Borradores",
+							value: statsQuery.data.draft,
+							description: "Pendientes de revisión",
+							icon: ClipboardCheckIcon,
 						},
 						{
 							label: "Completadas",
@@ -414,6 +434,23 @@ export function OperationsClient({
 				onOpenChange={setCreateOpen}
 				onSubmit={handleCreate}
 				open={createOpen}
+			/>
+
+			<OperationReviewDialog
+				destinations={destinationsQuery.data ?? []}
+				onDiscard={(id) => {
+					setReviewOperationId(null);
+					setCommand({ id, key: "delete" });
+				}}
+				onExecuted={async (id) => {
+					setSelectedOperationId(id);
+					await invalidateOperationQueries();
+				}}
+				onOpenChange={(open) => {
+					if (!open) setReviewOperationId(null);
+				}}
+				open={reviewOperationId !== null}
+				operationId={reviewOperationId}
 			/>
 
 			<OperationDetailDialog

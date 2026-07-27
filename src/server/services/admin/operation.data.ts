@@ -2,6 +2,7 @@ import { Prisma } from "~/prisma/client";
 import type {
 	OperationCreateInput,
 	OperationListInput,
+	OperationReviewState,
 } from "~/shared/common/admin-crud/operation.types";
 import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 import { operationAvailableActions } from "~/shared/common/fulfillment-transitions";
@@ -51,6 +52,7 @@ const operationListSelect = {
 	strategy: true,
 	notes: true,
 	failureReason: true,
+	reviewState: true,
 	eligibleQuantity: true,
 	assignedQuantity: true,
 	rollOverQuantity: true,
@@ -444,9 +446,10 @@ export async function findStaleOpenRollOverThreshold(db: AdminDbClient) {
 }
 
 export async function getOperationStats(db: AdminDbClient) {
-	const [total, running, completed, failed, cancelled, aggregate] =
+	const [total, draft, running, completed, failed, cancelled, aggregate] =
 		await Promise.all([
 			db.operation.count(),
+			db.operation.count({ where: { status: "draft" } }),
 			db.operation.count({ where: { status: "running" } }),
 			db.operation.count({ where: { status: "completed" } }),
 			db.operation.count({ where: { status: "failed" } }),
@@ -462,6 +465,7 @@ export async function getOperationStats(db: AdminDbClient) {
 
 	return {
 		total,
+		draft,
 		running,
 		completed,
 		failed,
@@ -508,6 +512,107 @@ export async function createRunningOperation(
 		},
 		select: operationListSelect,
 	});
+}
+
+/**
+ * A draft carries none of the running row's optimistic summary: it has executed
+ * nothing, so every counter stays at its zero default and `summary` stays null
+ * until `execute` writes the real one. What it does carry is an empty omission
+ * set, so `reviewState` has the shape every later read expects (ADR 0006).
+ */
+export async function createDraftOperation(
+	db: AdminDbClient,
+	input: OperationCreateInput & {
+		code: string;
+		triggeredByUserId: string;
+	},
+) {
+	return db.operation.create({
+		data: {
+			code: input.code,
+			status: "draft",
+			from: fromDateTimeLocalValue(input.from),
+			to: fromDateTimeLocalValue(input.to),
+			includeRollOver: input.includeRollOver,
+			strategy: input.strategy,
+			notes: input.notes,
+			triggeredByUserId: input.triggeredByUserId,
+			destinationId: input.destinationId,
+			summary: Prisma.DbNull,
+			reviewState: toPrismaInputJson({
+				omissions: { sourceKeys: [], userIds: [] },
+			} satisfies OperationReviewState),
+		},
+		select: operationListSelect,
+	});
+}
+
+export async function updateDraftOperation(
+	db: AdminDbClient,
+	input: {
+		id: number;
+		parameters?: Partial<OperationCreateInput>;
+		reviewState: OperationReviewState;
+	},
+) {
+	const { parameters } = input;
+
+	await db.operation.update({
+		where: { id: input.id },
+		data: {
+			...(parameters?.from === undefined
+				? {}
+				: { from: fromDateTimeLocalValue(parameters.from) }),
+			...(parameters?.to === undefined
+				? {}
+				: { to: fromDateTimeLocalValue(parameters.to) }),
+			...(parameters?.includeRollOver === undefined
+				? {}
+				: { includeRollOver: parameters.includeRollOver }),
+			...(parameters?.strategy === undefined
+				? {}
+				: { strategy: parameters.strategy }),
+			...(parameters?.notes === undefined ? {} : { notes: parameters.notes }),
+			...(parameters?.destinationId === undefined
+				? {}
+				: { destinationId: parameters.destinationId }),
+			reviewState: toPrismaInputJson(input.reviewState),
+		},
+	});
+}
+
+/**
+ * The parameters `review` and `execute` need, plus the persisted omissions. Read
+ * separately from `operationCommandSelect` because a draft owns no relations
+ * worth joining.
+ */
+export async function findDraftForExecution(db: AdminDbClient, id: number) {
+	return db.operation.findUnique({
+		where: { id },
+		select: {
+			id: true,
+			code: true,
+			status: true,
+			from: true,
+			to: true,
+			includeRollOver: true,
+			strategy: true,
+			notes: true,
+			destinationId: true,
+			reviewState: true,
+		},
+	});
+}
+
+/**
+ * How long a draft may sit unexecuted before it reads as forgotten rather than
+ * pending. Matches `staleCarrierRequestThreshold`: both measure a human who owes
+ * an answer, not goods in motion.
+ */
+const STALE_DRAFT_DAYS = 3;
+
+export function staleDraftThreshold(now = new Date()): Date {
+	return new Date(now.getTime() - STALE_DRAFT_DAYS * 86_400_000);
 }
 
 export async function findOperationForCommand(db: AdminDbClient, id: number) {

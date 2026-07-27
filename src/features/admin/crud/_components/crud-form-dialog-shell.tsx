@@ -10,6 +10,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
+import { cn } from "~/lib/utils";
 
 export function CrudFormDialogShell({
 	open,
@@ -18,6 +19,7 @@ export function CrudFormDialogShell({
 	description,
 	children,
 	footer,
+	contentClassName,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -25,10 +27,18 @@ export function CrudFormDialogShell({
 	description?: string;
 	children: ReactNode;
 	footer: ReactNode;
+	/** Merged onto the default width; the height and scroll classes always win. */
+	contentClassName?: string;
 }) {
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl">
+			<DialogContent
+				className={cn(
+					"sm:max-w-3xl",
+					contentClassName,
+					"max-h-[calc(100vh-2rem)] overflow-y-auto",
+				)}
+			>
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 					{description ? (

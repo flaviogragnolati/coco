@@ -43,6 +43,15 @@ const SUPPLY_REQUESTED_AT = new Date("2026-07-02T09:00:00.000Z");
 const SUPPLY_CONFIRMED_AT = new Date("2026-07-04T09:00:00.000Z");
 const SUPPLY_TO_DATE = new Date("2026-07-01T12:00:00.000Z");
 const RUNNING_TO_DATE = new Date("2026-07-20T12:00:00.000Z");
+/**
+ * The draft's own window and the payment date of the pool inside it. Deliberately
+ * later than every other operation's window: a draft reserves nothing, so demand
+ * it shares with another fixture would be aggregated out from under it the first
+ * time anyone executes that one, and the review would go empty (ADR 0006).
+ */
+const DRAFT_PAID_AT = new Date("2026-07-25T10:00:00.000Z");
+const DRAFT_FROM_DATE = new Date("2026-07-22T00:00:00.000Z");
+const DRAFT_TO_DATE = new Date("2026-07-28T12:00:00.000Z");
 const CURRENT_FROM_DATE = new Date("2026-01-01T00:00:00.000Z");
 const EXPIRED_FROM_DATE = new Date("2025-10-01T00:00:00.000Z");
 const EXPIRED_TO_DATE = new Date("2026-01-31T23:59:59.000Z");
@@ -1690,7 +1699,7 @@ async function createPaidScenarioCart(
 
 	const total = orderTotal(input.items);
 
-	await createOrder(tx, {
+	const order = await createOrder(tx, {
 		code: input.orderCode,
 		status: "processing",
 		userId: input.userId,
@@ -1720,7 +1729,24 @@ async function createPaidScenarioCart(
 
 	return {
 		cart,
+		order,
 		item: (code: string) => itemByCode(cart.cartItems, code),
+		/**
+		 * The demand key an operation would see this line under. `sourceKey` is
+		 * `orderItem:{UserOrderItem.id}` — the same string `listOriginalDemand`
+		 * builds — so a seeded omission can name a row that genuinely exists rather
+		 * than a placeholder the first review would prune away (ADR 0006).
+		 */
+		sourceKey: (code: string) => {
+			const cartItemId = itemByCode(cart.cartItems, code).id;
+			const orderItem = order.items.find(
+				(entry) => entry.sourceCartItemId === cartItemId,
+			);
+			if (!orderItem) {
+				throw new Error(`No order item for cart item ${code}`);
+			}
+			return `orderItem:${orderItem.id}`;
+		},
 	};
 }
 
@@ -2397,6 +2423,90 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		],
 	});
 
+	// ── The draft's review pool (OP-SEED-2026-07-DRAFT) ──────────────────────────
+	// Demand that exists only to be *reviewed*: paid, submitted, unallocated, and
+	// sitting in a window no other operation covers. It is shaped so opening the
+	// review shows every outcome `resolveAssignments` can produce rather than a
+	// uniform list — two suppliers (so the plan is two lots, not one), one line
+	// that clears its supplier MOQ exactly, one that overshoots the step, and one
+	// that falls below MOQ and can only roll over.
+	await createPaidScenarioCart(tx, {
+		cartCode: "CART-SEED-REVIEW-A",
+		orderCode: "ORD-SEED-REVIEW-A",
+		userId: data.users.buyer.id,
+		shippingAddress: data.addresses.buyerShipping,
+		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paidAt: DRAFT_PAID_AT,
+		items: [
+			{
+				// Valle Verde moq 50 step 10 → assigned whole.
+				code: "CITEM-SEED-REVIEW-A-TOMATE",
+				quantity: "60.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.tomate,
+				terms: data.clientTerms.tomate,
+			},
+			{
+				// Pack Norte moq 10 step 5 → 10 assigned, 2 rolled over off-step.
+				code: "CITEM-SEED-REVIEW-A-YERBA",
+				quantity: "12.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.yerba,
+				terms: data.clientTerms.yerba,
+			},
+		],
+	});
+
+	const reviewPoolAdmin = await createPaidScenarioCart(tx, {
+		cartCode: "CART-SEED-REVIEW-B",
+		orderCode: "ORD-SEED-REVIEW-B",
+		userId: data.users.admin.id,
+		shippingAddress: data.addresses.adminShipping,
+		paymentMethodId: data.paymentMethods.adminTransfer.id,
+		paidAt: DRAFT_PAID_AT,
+		items: [
+			{
+				// Valle Verde moq 50 step 25 → assigned whole.
+				code: "CITEM-SEED-REVIEW-B-MANZANA",
+				quantity: "75.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.manzana,
+				terms: data.clientTerms.manzana,
+			},
+			{
+				// Below Valle Verde's 50 MOQ: nothing assignable, rolls over whole.
+				// This is the row the seeded omission names — omitting demand that
+				// could only roll over is the cheapest realistic reason to omit.
+				code: "CITEM-SEED-REVIEW-B-TOMATE",
+				quantity: "30.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.tomate,
+				terms: data.clientTerms.tomate,
+			},
+		],
+	});
+
+	// The customer the draft omits wholesale. Their demand is perfectly assignable,
+	// which is the point: a user omission is a standing decision about the customer,
+	// not a consequence of what their lines resolve to.
+	await createPaidScenarioCart(tx, {
+		cartCode: "CART-SEED-REVIEW-C",
+		orderCode: "ORD-SEED-REVIEW-C",
+		userId: data.users.superadmin.id,
+		shippingAddress: data.addresses.adminShipping,
+		paymentMethodId: data.paymentMethods.adminTransfer.id,
+		paidAt: DRAFT_PAID_AT,
+		items: [
+			{
+				code: "CITEM-SEED-REVIEW-C-MANZANA",
+				quantity: "50.0000",
+				fulfillmentStatus: "awaitingAggregation",
+				product: data.products.manzana,
+				terms: data.clientTerms.manzana,
+			},
+		],
+	});
+
 	const cartSupply = await createPaidScenarioCart(tx, {
 		cartCode: "CART-SEED-SUPPLY",
 		orderCode: "ORD-SEED-SUPPLY",
@@ -2680,6 +2790,31 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 			from: SUPPLY_TO_DATE,
 			to: RUNNING_TO_DATE,
 			strategy: "fifo",
+		},
+	});
+	// A draft awaiting review, over the pool created above. It owns no lots and no
+	// roll overs — no command can produce a draft that does — and carries both
+	// halves of the omission model pointed at rows that genuinely exist, so opening
+	// the review renders the real thing instead of pruning the fixture away on
+	// first sight. `createdAt` is left at `now()` so it stays inside
+	// `operation.draft.stale`'s threshold (ADR 0006).
+	await tx.operation.create({
+		data: {
+			code: "OP-SEED-2026-07-DRAFT",
+			status: "draft",
+			from: DRAFT_FROM_DATE,
+			to: DRAFT_TO_DATE,
+			// A draft needs a live destination: `review` runs the same
+			// `validateOperation` the execution does, and it refuses without one.
+			destinationId: data.destinations.caba.id,
+			strategy: "fifo",
+			notes: "Borrador pendiente de revisión",
+			reviewState: json({
+				omissions: {
+					sourceKeys: [reviewPoolAdmin.sourceKey("CITEM-SEED-REVIEW-B-TOMATE")],
+					userIds: [data.users.superadmin.id],
+				},
+			}),
 		},
 	});
 

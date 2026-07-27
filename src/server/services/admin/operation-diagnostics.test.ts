@@ -299,3 +299,58 @@ test("a half-compensated operation reports exactly the not-compensated rule", ()
 		"operation.cancelled.notCompensated",
 	]);
 });
+
+/**
+ * A draft as `createDraft` writes it: zeroed counters, no lots, no roll overs.
+ * This is the case that pins the reasoning behind giving `draft` no exemption —
+ * the quantity rules balance trivially and every output rule is unreachable, so
+ * a guard on them would be dead code (ADR 0006).
+ */
+function buildDraft(
+	overrides: Partial<OperationSummaryRecord> = {},
+): OperationSummaryRecord {
+	return buildOperation({
+		status: "draft",
+		eligibleQuantity: decimal("0"),
+		assignedQuantity: decimal("0"),
+		rollOverQuantity: decimal("0"),
+		lots: [],
+		rollOvers: [],
+		...overrides,
+	} as unknown as Partial<OperationSummaryRecord>);
+}
+
+test("a fresh draft reports no diagnostics at all", () => {
+	expect(calculateOperationDiagnostics(buildDraft())).toEqual([]);
+
+	// Still silent when the stale rule is armed but the draft is younger than it.
+	expect(
+		calculateOperationDiagnostics(buildDraft(), {
+			staleDraftBefore: new Date("2025-12-01T00:00:00.000Z"),
+		}),
+	).toEqual([]);
+});
+
+test("a draft older than the threshold reports exactly one warning", () => {
+	const diagnostics = calculateOperationDiagnostics(buildDraft(), {
+		staleDraftBefore: new Date("2026-02-01T00:00:00.000Z"),
+	});
+
+	expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+		"operation.draft.stale",
+	]);
+	expect(diagnostics[0]?.severity).toBe("warning");
+});
+
+test("the stale-draft rule ignores every status but draft", () => {
+	const armed = { staleDraftBefore: new Date("2026-02-01T00:00:00.000Z") };
+
+	for (const status of ["running", "completed", "failed"] as const) {
+		const codes = calculateOperationDiagnostics(
+			buildDraft({ status } as unknown as Partial<OperationSummaryRecord>),
+			armed,
+		).map((diagnostic) => diagnostic.code);
+
+		expect(codes).not.toContain("operation.draft.stale");
+	}
+});

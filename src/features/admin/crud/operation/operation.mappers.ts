@@ -12,6 +12,7 @@ import { statusPresets } from "~/shared/common/admin-crud/status-presets";
 import { toDateTimeLocalValue } from "~/shared/common/date.helpers";
 
 export const operationStatusLabelMap: Record<OperationStatus, string> = {
+	draft: "Borrador",
 	running: "En ejecución",
 	completed: "Completada",
 	failed: "Fallida",
@@ -19,6 +20,7 @@ export const operationStatusLabelMap: Record<OperationStatus, string> = {
 };
 
 export const operationActionLabelMap: Record<OperationCommandKey, string> = {
+	execute: "Ejecutar",
 	cancel: "Cancelar",
 	rerun: "Reejecutar",
 	delete: "Eliminar",
@@ -30,6 +32,11 @@ export const operationStrategyLabelMap: Record<OperationStrategy, string> = {
 };
 
 export const operationStatusConfig: Record<OperationStatus, StatusConfig> = {
+	draft: {
+		...statusPresets.inert,
+		label: operationStatusLabelMap.draft,
+		hint: "Pendiente de revisión; no reserva ni asigna demanda",
+	},
 	running: {
 		label: operationStatusLabelMap.running,
 		variant: "warning",

@@ -8,7 +8,9 @@
  * 4. every value of every fulfillment enum appears at least once, except the
  *    statuses no shipped command can produce, which are named explicitly;
  * 5. a pool of aggregable demand survives, so `scripts/fulfillment-e2e.ts` has
- *    something to execute.
+ *    something to execute;
+ * 6. the seeded draft still has demand inside its own window, so opening its
+ *    review shows the fixture rather than an empty table.
  *
  * Run with `pnpm db:seed-verify`. The `--conditions=react-server` flag in that
  * script is mandatory: `fulfillment-lineage.data.ts` imports `server-only`, which
@@ -268,7 +270,7 @@ async function verifyCoverage() {
 		},
 		{
 			enumName: "OperationStatus",
-			values: ["running", "completed", "failed", "cancelled"],
+			values: ["draft", "running", "completed", "failed", "cancelled"],
 			seen: async () =>
 				distinct(
 					await db.operation.groupBy({
@@ -519,6 +521,65 @@ async function verifyAggregablePool() {
 	return count;
 }
 
+/**
+ * The draft fixture is only worth having if its review renders something. A draft
+ * reserves nothing, so nothing stops a later seed edit from moving that demand
+ * under another operation — which would leave the review silently empty. Checked
+ * against the draft's own stored window rather than a repeated constant.
+ */
+async function verifyDraftReviewPool() {
+	const draft = await db.operation.findFirst({
+		where: { status: "draft", code: { startsWith: "OP-SEED-" } },
+		select: { id: true, code: true, from: true, to: true, destinationId: true },
+	});
+
+	if (!draft) {
+		fail("no seeded draft operation — the review surface has no fixture");
+		return 0;
+	}
+
+	if (draft.destinationId === null) {
+		fail(
+			`${draft.code} has no destination; its review would be refused by validateOperation`,
+		);
+	}
+
+	const count = await db.userOrderItem.count({
+		where: {
+			userOrder: {
+				transactions: {
+					some: {
+						status: "completed",
+						completedAt: { gte: draft.from, lte: draft.to },
+					},
+				},
+			},
+			sourceCartItem: {
+				deleted: false,
+				status: "submitted",
+				cart: { deleted: false, status: "submitted" },
+				cartItemLotItems: {
+					none: {
+						lotItem: {
+							status: { not: "cancelled" },
+							lot: { status: { not: "cancelled" } },
+						},
+					},
+				},
+				rollOvers: { none: { status: "open" } },
+			},
+		},
+	});
+
+	if (count === 0) {
+		fail(
+			`${draft.code} has no demand in its window — its review would open empty`,
+		);
+	}
+
+	return count;
+}
+
 async function step<T>(label: string, run: () => Promise<T>): Promise<T> {
 	const startedAt = Date.now();
 	const result = await run();
@@ -532,6 +593,7 @@ async function main() {
 	const operationCount = await step("counters", verifyCounters);
 	const coverage = await step("coverage", verifyCoverage);
 	const aggregable = await step("aggregable pool", verifyAggregablePool);
+	const draftPool = await step("draft review pool", verifyDraftReviewPool);
 
 	console.log("\nState coverage");
 	console.table(coverage);
@@ -543,6 +605,7 @@ async function main() {
 			`${scanned.carrierOrders} carrier orders.`,
 	);
 	console.log(`Aggregable demand rows: ${aggregable}`);
+	console.log(`Draft review rows: ${draftPool}`);
 
 	if (warnings.length > 0) {
 		console.log(

@@ -7,12 +7,18 @@ import type {
 	operationCreateInputSchema,
 	operationDeleteInputSchema,
 	operationDetailSchema,
+	operationDraftCreateInputSchema,
+	operationDraftUpdateInputSchema,
+	operationExecuteInputSchema,
 	operationGetByIdInputSchema,
 	operationIdSchema,
 	operationListInputSchema,
 	operationListItemSchema,
 	operationListOutputSchema,
+	operationOmissionsSchema,
 	operationRerunInputSchema,
+	operationReviewOutputSchema,
+	operationReviewStateSchema,
 	operationRollOverStageSchema,
 	operationRollOverStatusSchema,
 	operationStatsSchema,
@@ -55,3 +61,20 @@ export type OperationRerunFormValues = z.output<
 	typeof operationCreateFieldsSchema
 >;
 export type OperationDeleteInput = z.output<typeof operationDeleteInputSchema>;
+export type OperationDraftCreateInput = z.output<
+	typeof operationDraftCreateInputSchema
+>;
+export type OperationDraftUpdateInput = z.output<
+	typeof operationDraftUpdateInputSchema
+>;
+export type OperationExecuteInput = z.output<
+	typeof operationExecuteInputSchema
+>;
+export type OperationOmissions = z.output<typeof operationOmissionsSchema>;
+export type OperationReviewState = z.output<typeof operationReviewStateSchema>;
+export type OperationReviewOutput = z.output<
+	typeof operationReviewOutputSchema
+>;
+export type OperationReviewRow = OperationReviewOutput["rows"][number];
+export type OperationReviewGroup = OperationReviewOutput["groups"][number];
+export type OperationReviewTotals = OperationReviewOutput["totals"];

@@ -20,13 +20,19 @@ export const operationIdSchema = z
 	.positive("El id debe ser positivo");
 
 export const operationStatusSchema = z.enum([
+	"draft",
 	"running",
 	"completed",
 	"failed",
 	"cancelled",
 ]);
 
-export const operationCommandKeySchema = z.enum(["cancel", "rerun", "delete"]);
+export const operationCommandKeySchema = z.enum([
+	"execute",
+	"cancel",
+	"rerun",
+	"delete",
+]);
 
 export const operationAvailableActionSchema = z.object({
 	action: operationCommandKeySchema,
@@ -128,6 +134,54 @@ const refineDateOrder = (
 export const operationCreateInputSchema =
 	operationCreateFieldsSchema.superRefine(refineDateOrder);
 
+/**
+ * The demand an admin decided to keep out of the operation. `userIds` is a
+ * standing decision that survives every recomputation, not a bulk toggle over the
+ * rows visible at click time (ADR 0006).
+ */
+export const operationOmissionsSchema = z.object({
+	sourceKeys: z.array(z.string().min(1)),
+	userIds: z.array(userIdSchema),
+});
+
+const operationApprovedSchema = z.object({
+	fingerprint: z.string().min(1),
+	itemCount: z.number().int().nonnegative(),
+	quantity: decimalOutputSchema,
+	at: z.string(),
+	byUserId: userIdSchema,
+});
+
+/**
+ * `Operation.reviewState`. Written on every draft and stamped with `approved` at
+ * execution, which is the durable record of the demand set a human signed off on.
+ */
+export const operationReviewStateSchema = z.object({
+	omissions: operationOmissionsSchema,
+	approved: operationApprovedSchema.nullish(),
+});
+
+/** Creating an operation creates a draft; the parameters are unchanged. */
+export const operationDraftCreateInputSchema = operationCreateInputSchema;
+
+export const operationDraftUpdateInputSchema = operationCreateFieldsSchema
+	.partial()
+	.extend({
+		id: operationIdSchema,
+		omissions: operationOmissionsSchema.optional(),
+	})
+	// Only catches a window sent whole. A half-sent window is checked against the
+	// stored parameters in `updateDraft`, which is the only place that knows them.
+	.superRefine((value, ctx) => {
+		if (value.from === undefined || value.to === undefined) return;
+		refineDateOrder({ from: value.from, to: value.to }, ctx);
+	});
+
+export const operationExecuteInputSchema = z.object({
+	id: operationIdSchema,
+	fingerprint: z.string().min(1),
+});
+
 export const operationCancelInputSchema = z.object({
 	id: operationIdSchema,
 	reason: requiredText("El motivo es obligatorio"),
@@ -175,6 +229,7 @@ export const operationListItemSchema = z.object({
 	strategy: operationStrategySchema,
 	notes: z.string().nullable(),
 	failureReason: z.string().nullable(),
+	reviewState: z.unknown().nullable(),
 	eligibleQuantity: decimalOutputSchema,
 	assignedQuantity: decimalOutputSchema,
 	rollOverQuantity: decimalOutputSchema,
@@ -302,6 +357,7 @@ export const operationDetailSchema = operationListItemSchema.extend({
 
 export const operationStatsSchema = z.object({
 	total: z.number().int().nonnegative(),
+	draft: z.number().int().nonnegative(),
 	running: z.number().int().nonnegative(),
 	completed: z.number().int().nonnegative(),
 	failed: z.number().int().nonnegative(),
@@ -309,6 +365,69 @@ export const operationStatsSchema = z.object({
 	eligibleQuantity: decimalOutputSchema,
 	assignedQuantity: decimalOutputSchema,
 	rollOverQuantity: decimalOutputSchema,
+});
+
+/**
+ * One demand item as the review renders it. `assignedQuantity` and
+ * `rollOverQuantity` come from the same `resolveAssignments` the command runs, so
+ * the dialog cannot show a plan execution would refuse.
+ */
+const operationReviewRowSchema = z.object({
+	sourceKey: z.string(),
+	source: z.enum(["orderItem", "rollOver"]),
+	cartItemId: z.number().int().positive(),
+	cartItemCode: z.string(),
+	cartId: z.number().int().positive(),
+	cartCode: z.string(),
+	user: z.object({
+		id: userIdSchema,
+		name: z.string(),
+		email: z.string(),
+	}),
+	product: productSummarySchema,
+	quantity: decimalOutputSchema,
+	supplier: supplierSummarySchema.nullable(),
+	/**
+	 * The lot item this row would land in, together with the supplier. Carried so
+	 * the dialog can re-fold the lot summary client-side as omissions toggle and
+	 * still count lot items the way `groupAssignments` does.
+	 */
+	productSupplierTermsId: z.number().int().positive().nullable(),
+	assignedQuantity: decimalOutputSchema,
+	rollOverQuantity: decimalOutputSchema,
+	rollOverReason: z.string().nullable(),
+	omitted: z.boolean(),
+});
+
+/** One supplier — that is, one lot and one supplier order the execution would create. */
+const operationReviewGroupSchema = z.object({
+	supplier: supplierSummarySchema,
+	lotItemCount: z.number().int().nonnegative(),
+	quantity: decimalOutputSchema,
+});
+
+const operationReviewTotalsSchema = z.object({
+	eligibleItemCount: z.number().int().nonnegative(),
+	eligibleQuantity: decimalOutputSchema,
+	omittedItemCount: z.number().int().nonnegative(),
+	omittedQuantity: decimalOutputSchema,
+	assignedItemCount: z.number().int().nonnegative(),
+	assignedQuantity: decimalOutputSchema,
+	rollOverItemCount: z.number().int().nonnegative(),
+	rollOverQuantity: decimalOutputSchema,
+	lotCount: z.number().int().nonnegative(),
+	supplierOrderCount: z.number().int().nonnegative(),
+});
+
+export const operationReviewOutputSchema = z.object({
+	operation: operationDetailSchema,
+	fingerprint: z.string(),
+	rows: z.array(operationReviewRowSchema),
+	groups: z.array(operationReviewGroupSchema),
+	totals: operationReviewTotalsSchema,
+	omissions: operationOmissionsSchema,
+	/** Omissions dropped because the demand they named is no longer in the window. */
+	prunedOmissions: operationOmissionsSchema,
 });
 
 export const operationListOutputSchema = z.object({

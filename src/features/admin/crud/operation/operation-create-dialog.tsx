@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PlayIcon } from "lucide-react";
+import { ClipboardCheckIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
@@ -64,7 +64,7 @@ export function OperationCreateDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="La operación se crea y ejecuta al confirmar."
+			description="La operación se crea como borrador. Vas a poder revisar la demanda que agruparía antes de ejecutarla."
 			footer={
 				<>
 					<Button
@@ -85,8 +85,8 @@ export function OperationCreateDialog({
 						type="submit"
 						variant="highlight"
 					>
-						<PlayIcon data-icon="inline-start" />
-						Ejecutar
+						<ClipboardCheckIcon data-icon="inline-start" />
+						Revisar
 					</Button>
 				</>
 			}

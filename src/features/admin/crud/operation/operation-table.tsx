@@ -1,6 +1,12 @@
 "use client";
 
-import { BanIcon, EyeIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import {
+	BanIcon,
+	ClipboardCheckIcon,
+	EyeIcon,
+	RefreshCwIcon,
+	Trash2Icon,
+} from "lucide-react";
 
 import {
 	DateTooltip,
@@ -133,9 +139,10 @@ const operationColumns: CrudColumn<OperationListItem>[] = [
 	},
 ];
 
-const commandKeys = ["cancel", "rerun", "delete"] as const;
+const commandKeys = ["execute", "cancel", "rerun", "delete"] as const;
 
 const commandIcons: Record<OperationCommandKey, typeof BanIcon> = {
+	execute: ClipboardCheckIcon,
 	cancel: BanIcon,
 	rerun: RefreshCwIcon,
 	delete: Trash2Icon,

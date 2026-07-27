@@ -24,3 +24,12 @@ export function positiveIntParam(value: string | string[] | undefined) {
 export function detailIdParam(params: AdminSearchParams) {
 	return positiveIntParam(params.detailId);
 }
+
+/**
+ * The draft whose review should be open when the page mounts. Read on mount only,
+ * like `detailIdParam` — this is what a full-screen dialog gives up versus a
+ * route, and what recovers it for a refresh or a shared link.
+ */
+export function reviewIdParam(params: AdminSearchParams) {
+	return positiveIntParam(params.reviewId);
+}

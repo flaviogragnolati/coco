@@ -9,6 +9,7 @@ import {
 	lotItemStatusSchema,
 	lotStatusSchema,
 } from "~/schemas/admin/lot.schemas";
+import { operationStatusSchema } from "~/schemas/admin/operation.schemas";
 import {
 	diagnosticStateSchema,
 	highestDiagnosticSeveritySchema,
@@ -80,7 +81,7 @@ const productSummarySchema = z.object({
 const operationSummarySchema = z.object({
 	id: positiveIdSchema,
 	code: z.string(),
-	status: z.enum(["running", "completed", "failed", "cancelled"]),
+	status: operationStatusSchema,
 });
 
 const cartSummarySchema = z.object({

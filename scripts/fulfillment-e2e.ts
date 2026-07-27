@@ -1,6 +1,7 @@
 /**
  * The end-to-end run owed since Phase 1: §21.7's twelve steps driven through the
- * real service layer against the real database, repeatably.
+ * real service layer against the real database, repeatably, plus a thirteenth
+ * covering the draft → review → execute path (ADR 0006).
  *
  * Run with `pnpm fulfillment:e2e`. Two things about that script line are
  * load-bearing:
@@ -27,6 +28,7 @@ import { Prisma } from "~/prisma/client";
 import { db } from "~/server/db";
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
+import { AdminCrudError } from "~/server/services/admin/_base/admin-crud.errors";
 import * as operationService from "~/server/services/admin/operation.service";
 import * as packageService from "~/server/services/admin/package.service";
 import * as rollOverService from "~/server/services/admin/roll-over.service";
@@ -60,6 +62,17 @@ let actor: AdminMutationActor;
  */
 const AGGREGATION_FROM = new Date("2026-05-15T00:00:00.000Z");
 const AGGREGATION_TO = new Date("2026-05-25T00:00:00.000Z");
+
+/**
+ * A second aggregable pool, deliberately disjoint from the one above: step 13
+ * runs the draft → review → execute path for real, and an overlapping window
+ * would have the two operations competing for the same demand.
+ */
+const DRAFT_FROM = new Date("2026-06-10T00:00:00.000Z");
+const DRAFT_TO = new Date("2026-06-15T00:00:00.000Z");
+
+const HARNESS_NOTE = `${PREFIX} harness run`;
+const DRAFT_NOTE = `${PREFIX} draft review run`;
 
 type Step = { name: string; run: () => Promise<void> };
 
@@ -154,7 +167,7 @@ stepFn("1. aggregate real cart demand into a new operation", async () => {
 			destinationId: destination.id,
 			includeRollOver: false,
 			strategy: "fifo",
-			notes: `${PREFIX} harness run`,
+			notes: HARNESS_NOTE,
 		},
 		actor,
 		db,
@@ -885,6 +898,168 @@ stepFn("12. final sweep — no critical anywhere", async () => {
 	}
 });
 
+/**
+ * The production path end to end, over its own window: create a draft, review it,
+ * omit one demand item, refuse a stale execution, then execute. Step 1 keeps
+ * using `createAndExecute` — which is now a wrapper over these same commands, so
+ * the two together pin that there is exactly one materialization path.
+ */
+stepFn("13. draft → review → omit → execute", async () => {
+	const destination = await db.destination.findFirstOrThrow({
+		where: { active: true, deleted: false },
+		select: { id: true },
+	});
+
+	const draft = await operationService.createDraft(
+		{
+			from: DRAFT_FROM.toISOString(),
+			to: DRAFT_TO.toISOString(),
+			destinationId: destination.id,
+			includeRollOver: false,
+			strategy: "fifo",
+			notes: DRAFT_NOTE,
+		},
+		actor,
+		db,
+	);
+
+	checkEqual(draft.status, "draft", "draft status");
+	checkEqual(draft.lotCount, 0, "a draft must materialize nothing");
+	checkEqual(draft.eligibleItemCount, 0, "a draft carries no counters");
+
+	const review = await operationService.review(draft.id, db);
+	check(review.rows.length > 0, "the draft window carries no demand to review");
+	if (review.rows.length === 0) return;
+
+	// A cart item that appears exactly once, so "no allocation afterwards" is an
+	// unambiguous statement about the omission rather than about a sibling row.
+	const rowsByCartItem = new Map<number, number>();
+	for (const row of review.rows) {
+		rowsByCartItem.set(
+			row.cartItemId,
+			(rowsByCartItem.get(row.cartItemId) ?? 0) + 1,
+		);
+	}
+	const omitted =
+		review.rows.find(
+			(row) =>
+				rowsByCartItem.get(row.cartItemId) === 1 &&
+				Number(row.assignedQuantity) > 0,
+		) ?? review.rows.find((row) => rowsByCartItem.get(row.cartItemId) === 1);
+
+	check(omitted !== undefined, "no single-row cart item to omit");
+	if (!omitted) return;
+
+	const afterOmission = await operationService.updateDraft(
+		{
+			id: draft.id,
+			omissions: { sourceKeys: [omitted.sourceKey], userIds: [] },
+		},
+		actor,
+		db,
+	);
+
+	checkEqual(
+		afterOmission.rows.find((row) => row.sourceKey === omitted.sourceKey)
+			?.omitted,
+		true,
+		"the omitted row is not flagged",
+	);
+	checkEqual(
+		afterOmission.totals.eligibleItemCount,
+		review.totals.eligibleItemCount - 1,
+		"eligible count after omitting one item",
+	);
+	check(
+		afterOmission.fingerprint !== review.fingerprint,
+		"omitting an item left the fingerprint unchanged",
+	);
+
+	// The stale-review refusal: the pre-omission fingerprint no longer describes
+	// what would run, so execution must be refused with nothing written (ADR 0006).
+	let refusal: unknown;
+	try {
+		await operationService.execute(
+			{ id: draft.id, fingerprint: review.fingerprint },
+			actor,
+			db,
+		);
+	} catch (error) {
+		refusal = error;
+	}
+	check(
+		refusal instanceof AdminCrudError && refusal.code === "CONFLICT",
+		"a stale fingerprint did not produce a CONFLICT",
+	);
+	checkEqual(
+		(
+			await db.operation.findUniqueOrThrow({
+				where: { id: draft.id },
+				select: { status: true },
+			})
+		).status,
+		"draft",
+		"a refused execution must leave the operation a draft",
+	);
+
+	const executed = await operationService.execute(
+		{ id: draft.id, fingerprint: afterOmission.fingerprint },
+		actor,
+		db,
+	);
+	await drainOutbox();
+
+	checkEqual(executed.status, "completed", "executed draft status");
+	checkEqual(
+		executed.lotCount,
+		afterOmission.totals.lotCount,
+		"the review's lot count did not match what execution produced",
+	);
+
+	// An omission writes nothing: no allocation, no roll over, and the demand stays
+	// exactly where it was so the next operation picks it up (ADR 0005).
+	checkEqual(
+		await db.cartItemLotItem.count({
+			where: {
+				cartItemId: omitted.cartItemId,
+				lotItem: { lot: { operationId: draft.id } },
+			},
+		}),
+		0,
+		"the omitted item was allocated",
+	);
+	checkEqual(
+		await db.rollOver.count({
+			where: { cartItemId: omitted.cartItemId, operationId: draft.id },
+		}),
+		0,
+		"the omitted item produced a roll over",
+	);
+
+	const stillAggregable = await db.userOrderItem.count({
+		where: {
+			id: Number(omitted.sourceKey.split(":")[1]),
+			sourceCartItem: {
+				deleted: false,
+				status: "submitted",
+				cart: { deleted: false, status: "submitted" },
+				cartItemLotItems: {
+					none: {
+						lotItem: {
+							status: { not: "cancelled" },
+							lot: { status: { not: "cancelled" } },
+						},
+					},
+				},
+				rollOvers: { none: { status: "open" } },
+			},
+		},
+	});
+	checkEqual(stillAggregable, 1, "the omitted demand is no longer aggregable");
+
+	await assertNoCriticals("draft review run");
+});
+
 // ── Teardown ─────────────────────────────────────────────────────────────────
 
 /**
@@ -893,13 +1068,17 @@ stepFn("12. final sweep — no critical anywhere", async () => {
  * allocations) that carry no code of their own.
  */
 async function teardown() {
-	const operation = await db.operation.findFirst({
-		where: { notes: `${PREFIX} harness run` },
+	const operations = await db.operation.findMany({
+		where: { notes: { in: [HARNESS_NOTE, DRAFT_NOTE] } },
 		select: { id: true },
 	});
+	const operationIds = operations.map((operation) => operation.id);
+	// `in: []` matches nothing, so an aborted run with no operation still deletes
+	// cleanly instead of needing a sentinel id.
+	const ownedByRun = { in: operationIds };
 
 	const lots = await db.lot.findMany({
-		where: operation ? { operationId: operation.id } : { id: -1 },
+		where: { operationId: ownedByRun },
 		select: { id: true, supplierOrderId: true },
 	});
 	const lotIds = lots.map((lot) => lot.id);
@@ -941,12 +1120,12 @@ async function teardown() {
 	await db.cartItemTrackingEvent.deleteMany({
 		where: {
 			OR: [
-				{ operationId: operation?.id ?? -1 },
+				{ operationId: ownedByRun },
 				{ lotId: { in: lotIds } },
 				{ lotItemId: { in: lotItemIds } },
 				{ packageId: { in: packageIds } },
 				{ shipmentId: { in: shipmentIds } },
-				{ rollOver: { operationId: operation?.id ?? -1 } },
+				{ rollOver: { operationId: ownedByRun } },
 			],
 		},
 	});
@@ -961,14 +1140,10 @@ async function teardown() {
 	await db.cartItemLotItem.deleteMany({
 		where: { lotItemId: { in: lotItemIds } },
 	});
-	await db.rollOver.deleteMany({
-		where: { operationId: operation?.id ?? -1 },
-	});
+	await db.rollOver.deleteMany({ where: { operationId: ownedByRun } });
 	await db.lotItem.deleteMany({ where: { id: { in: lotItemIds } } });
 	await db.lot.deleteMany({ where: { id: { in: lotIds } } });
-	if (operation) {
-		await db.operation.deleteMany({ where: { id: operation.id } });
-	}
+	await db.operation.deleteMany({ where: { id: ownedByRun } });
 	await db.supplierTransaction.deleteMany({
 		where: { supplierOrderId: { in: supplierOrderIds } },
 	});
@@ -996,7 +1171,7 @@ async function teardown() {
 	});
 
 	return {
-		operations: operation ? 1 : 0,
+		operations: operationIds.length,
 		lots: lotIds.length,
 		packages: packageIds.length,
 		shipments: shipmentIds.length,
@@ -1026,7 +1201,7 @@ async function main() {
 		currentStep = "teardown";
 		const removed = await teardown();
 		console.log(
-			`\n  teardown removed ${removed.operations} operation, ${removed.lots} lot(s), ` +
+			`\n  teardown removed ${removed.operations} operation(s), ${removed.lots} lot(s), ` +
 				`${removed.packages} package(s), ${removed.shipments} shipment(s)`,
 		);
 	}
@@ -1038,7 +1213,7 @@ async function main() {
 		return;
 	}
 
-	console.log("\nAll twelve steps passed.");
+	console.log("\nAll thirteen steps passed.");
 }
 
 main()

@@ -979,6 +979,7 @@ test("every operation command key is always reported, disabled ones with a reaso
 	});
 
 	expect(actions.map((entry) => entry.action)).toEqual([
+		"execute",
 		"cancel",
 		"rerun",
 		"delete",
@@ -1037,6 +1038,40 @@ test("a requested supplier order closes the window for both cancel and rerun", (
 	expect(operationActionState(outside, "cancel").enabled).toBe(false);
 	expect(operationActionState(outside, "cancel").reason).toBeTruthy();
 	expect(operationActionState(outside, "rerun").enabled).toBe(false);
+});
+
+const draft: Parameters<typeof operationAvailableActions>[0] = {
+	status: "draft",
+	liveSupplierOrderStatuses: [],
+	lotCount: 0,
+	rollOverCount: 0,
+};
+
+test("a draft can be executed and discarded, but not cancelled or re-run", () => {
+	expect(operationActionState(draft, "execute").enabled).toBe(true);
+	// A discard is a delete: the row owns nothing that would survive it.
+	expect(operationActionState(draft, "delete").enabled).toBe(true);
+
+	expect(operationActionState(draft, "cancel").enabled).toBe(false);
+	expect(operationActionState(draft, "cancel").reason).toBeTruthy();
+	expect(operationActionState(draft, "rerun").enabled).toBe(false);
+	expect(operationActionState(draft, "rerun").reason).toBeTruthy();
+});
+
+test("execute is offered on a draft and nowhere else", () => {
+	for (const status of [
+		"running",
+		"completed",
+		"failed",
+		"cancelled",
+	] as const) {
+		const state = operationActionState(
+			{ ...completedInsideWindow, status },
+			"execute",
+		);
+		expect(state.enabled).toBe(false);
+		expect(state.reason).toBe("Solo se puede ejecutar un borrador");
+	}
 });
 
 test("a failed operation can be re-run in place and deleted only while childless", () => {
