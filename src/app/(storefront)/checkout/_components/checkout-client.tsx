@@ -7,6 +7,7 @@ import {
 	PackageSearchIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -38,7 +39,6 @@ import type {
 	CheckoutState,
 } from "~/shared/common/checkout.types";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
-import { useCartUiStore } from "~/store/cart-ui-store";
 import { api } from "~/trpc/react";
 import { CheckoutAddressStep } from "./checkout-address-step";
 import { CheckoutOrderStep } from "./checkout-order-step";
@@ -76,7 +76,9 @@ export function CheckoutClient() {
 	const serverCartId = useCartStore((state) => state.serverCartId);
 	const serverCartStatus = useCartStore((state) => state.serverCartStatus);
 	const clearCart = useCartStore((state) => state.clear);
-	const openMiniCart = useCartUiStore((state) => state.openMiniCart);
+	const replaceCart = useCartStore((state) => state.replaceCart);
+	const syncedUserId = useCartStore((state) => state.syncedUserId);
+	const router = useRouter();
 
 	// Drive items/summary off the LIVE cart store (single bootstrap lives in the
 	// navbar's CartNavButton). This stays consistent with what confirmAndPay
@@ -229,6 +231,16 @@ export function CheckoutClient() {
 		},
 	});
 
+	const leaveCheckout = api.checkout.leave.useMutation({
+		onError(error) {
+			toast.error(error.message || "No se pudo volver al carrito");
+		},
+		onSuccess(snapshot) {
+			replaceCart(snapshot, syncedUserId);
+			router.push("/cart");
+		},
+	});
+
 	const confirmAndPay = api.checkout.confirmAndPay.useMutation({
 		onError(error) {
 			toast.error(error.message || "No se pudo confirmar el pago");
@@ -353,9 +365,11 @@ export function CheckoutClient() {
 		setCurrentStep(step);
 	};
 
+	// Editing the cart means leaving checkout: the cart is frozen while the order
+	// snapshot it backs is live.
 	const handleEditCart = () => {
 		setSummarySheetOpen(false);
-		openMiniCart();
+		leaveCheckout.mutate();
 	};
 
 	const handleContinue = () => {
@@ -382,11 +396,14 @@ export function CheckoutClient() {
 		<main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 pb-28 md:px-6 lg:pb-8">
 			<PageHeader
 				actions={
-					<Button asChild variant="outline">
-						<Link href="/cart">
-							<ChevronLeftIcon data-icon="inline-start" />
-							Volver al carrito
-						</Link>
+					<Button
+						disabled={leaveCheckout.isPending}
+						onClick={handleEditCart}
+						type="button"
+						variant="outline"
+					>
+						<ChevronLeftIcon data-icon="inline-start" />
+						Volver al carrito
 					</Button>
 				}
 				description="Cuatro pasos para dejar tu pedido listo para la agregación mayorista."

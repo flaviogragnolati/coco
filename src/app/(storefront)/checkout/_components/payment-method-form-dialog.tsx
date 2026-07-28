@@ -26,6 +26,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
 import {
+	checkoutPaymentMethodCreatableTypeSchema,
 	checkoutPaymentMethodCreateInputSchema,
 	type checkoutPaymentMethodUpdateInputSchema,
 } from "~/schemas/checkout.schemas";
@@ -52,8 +53,14 @@ function paymentMethodToFormValues(
 ): PaymentMethodFormValues {
 	if (!paymentMethod) return defaultValues;
 
+	const parsedType = checkoutPaymentMethodCreatableTypeSchema.safeParse(
+		paymentMethod.type,
+	);
+
 	return {
-		type: paymentMethod.type,
+		// Provider-managed methods (Mercado Pago) are not editable here — the step
+		// hides their edit action — so the fallback is unreachable in practice.
+		type: parsedType.success ? parsedType.data : defaultValues.type,
 		label: paymentMethod.label,
 		details: paymentMethod.details,
 	};
@@ -123,7 +130,6 @@ export function PaymentMethodFormDialog({
 							<FieldLabel htmlFor="checkout-payment-type">Tipo</FieldLabel>
 							<Select id="checkout-payment-type" {...form.register("type")}>
 								<option value="credit_card">Tarjeta tokenizada</option>
-								<option value="mercadopago">Mercado Pago</option>
 								<option value="bank_transfer">Transferencia</option>
 								<option value="google_pay">Google Pay</option>
 								<option value="cash">Efectivo</option>

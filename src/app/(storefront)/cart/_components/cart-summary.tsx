@@ -1,6 +1,6 @@
 "use client";
 
-import { LogInIcon, ShoppingBagIcon } from "lucide-react";
+import { LogInIcon, PencilIcon, ShoppingBagIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
@@ -43,13 +43,16 @@ export function CartSummary({
 	cart,
 	isAuthenticated,
 	onClear,
+	onLeaveCheckout,
 	isPending,
 }: {
 	cart: CartSnapshot;
 	isAuthenticated: boolean;
 	isPending?: boolean;
 	onClear: () => void;
+	onLeaveCheckout: () => void;
 }) {
+	const atCheckout = cart.status === "atCheckout";
 	return (
 		<Card className="lg:sticky lg:top-20">
 			<CardHeader>
@@ -96,7 +99,16 @@ export function CartSummary({
 					)}
 				</div>
 
-				{isAuthenticated ? (
+				{atCheckout ? (
+					<Alert>
+						<ShoppingBagIcon />
+						<AlertTitle>Checkout en curso</AlertTitle>
+						<AlertDescription>
+							El carrito está congelado mientras se procesa el pago. Volvé a
+							editarlo para cambiar cantidades o productos.
+						</AlertDescription>
+					</Alert>
+				) : isAuthenticated ? (
 					<Alert>
 						<ShoppingBagIcon />
 						<AlertTitle>Listo para checkout</AlertTitle>
@@ -132,9 +144,21 @@ export function CartSummary({
 						</Link>
 					</Button>
 				)}
+				{atCheckout ? (
+					<Button
+						className="w-full"
+						disabled={isPending}
+						onClick={onLeaveCheckout}
+						type="button"
+						variant="outline"
+					>
+						<PencilIcon data-icon="inline-start" />
+						Volver a editar el carrito
+					</Button>
+				) : null}
 				<Button
 					className="w-full"
-					disabled={isPending || cart.itemCount === 0}
+					disabled={isPending || atCheckout || cart.itemCount === 0}
 					onClick={onClear}
 					type="button"
 					variant="outline"

@@ -119,6 +119,17 @@ function AttemptDetail({
 						</p>
 					</div>
 				</div>
+				{attempt.failureCode ? (
+					<div className="border border-destructive/40 p-3 text-xs">
+						<span className="text-muted-foreground">Falla / discrepancia</span>
+						<p className="font-medium text-destructive">
+							{attempt.failureCode}
+						</p>
+						{attempt.failureMessage ? (
+							<p className="text-destructive">{attempt.failureMessage}</p>
+						) : null}
+					</div>
+				) : null}
 				<div className="flex flex-wrap gap-2">
 					<Button
 						disabled={isReconciling || !attempt.providerPaymentId}

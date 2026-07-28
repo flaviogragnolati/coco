@@ -117,15 +117,17 @@ export function CheckoutPaymentStep({
 													Seleccionado
 												</Badge>
 											) : null}
-											<Button
-												onClick={() => onEdit(paymentMethod)}
-												size="sm"
-												type="button"
-												variant="outline"
-											>
-												<PencilIcon data-icon="inline-start" />
-												Editar
-											</Button>
+											{paymentMethod.provider === "mercadopago" ? null : (
+												<Button
+													onClick={() => onEdit(paymentMethod)}
+													size="sm"
+													type="button"
+													variant="outline"
+												>
+													<PencilIcon data-icon="inline-start" />
+													Editar
+												</Button>
+											)}
 										</>
 									}
 									key={paymentMethod.id}

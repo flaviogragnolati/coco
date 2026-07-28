@@ -82,7 +82,7 @@ export function CartClient({
 					<section className="flex flex-col gap-3">
 						{cart.items.map((item) => (
 							<CartLineRow
-								disabled={cartActions.isPending}
+								disabled={cartActions.isPending || cart.status === "atCheckout"}
 								item={item}
 								key={item.productClientTermsId}
 								onDecrement={cartActions.decrement}
@@ -98,6 +98,7 @@ export function CartClient({
 						isAuthenticated={isAuthenticated}
 						isPending={cartActions.isPending}
 						onClear={cartActions.clear}
+						onLeaveCheckout={cartActions.leaveCheckout}
 					/>
 				</div>
 			)}

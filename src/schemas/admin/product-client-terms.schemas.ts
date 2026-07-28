@@ -13,6 +13,7 @@ import {
 	optionalDecimalString,
 	requiredDecimalString,
 	validateDateRange,
+	validateStepCoherence,
 } from "./_crud-schema-helpers";
 
 const productReferenceSchema = z.object({
@@ -44,14 +45,17 @@ const productClientTermsInputFieldsSchema = z.object({
 });
 
 export const productClientTermsCreateInputSchema =
-	productClientTermsInputFieldsSchema.superRefine(validateDateRange);
+	productClientTermsInputFieldsSchema
+		.superRefine(validateDateRange)
+		.superRefine(validateStepCoherence);
 
 export const productClientTermsUpdateInputSchema =
 	productClientTermsInputFieldsSchema
 		.extend({
 			id: productClientTermsIdSchema,
 		})
-		.superRefine(validateDateRange);
+		.superRefine(validateDateRange)
+		.superRefine(validateStepCoherence);
 
 export const productClientTermsDeleteInputSchema = z.object({
 	id: productClientTermsIdSchema,

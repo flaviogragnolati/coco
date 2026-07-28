@@ -70,8 +70,22 @@ export const checkoutPaymentMethodIdSchema = z
 	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
+/**
+ * Users may only mint the manual (mock-backed) method types. `mercadopago`
+ * methods are created server-side by `findOrCreateMercadoPagoPaymentMethod`;
+ * accepting it as user input would route a self-made method into the Mercado
+ * Pago branch of `confirmAndPay`.
+ */
+export const checkoutPaymentMethodCreatableTypeSchema = z.enum([
+	"credit_card",
+	"bank_transfer",
+	"google_pay",
+	"cash",
+	"other",
+]);
+
 export const checkoutPaymentMethodFieldsSchema = z.object({
-	type: checkoutPaymentMethodTypeSchema.default("credit_card"),
+	type: checkoutPaymentMethodCreatableTypeSchema.default("credit_card"),
 	label: safePaymentTextSchema("El nombre del método es obligatorio"),
 	details: safePaymentTextSchema(
 		"La descripción segura del método es obligatoria",

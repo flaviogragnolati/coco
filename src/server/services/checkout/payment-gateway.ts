@@ -1,5 +1,6 @@
 import "server-only";
 
+import { env } from "~/env";
 import type { CatalogCurrency } from "~/shared/common/catalog.types";
 import type { CheckoutPaymentStatus } from "~/shared/common/checkout.types";
 
@@ -90,4 +91,28 @@ export class MockPaymentGateway implements PaymentGatewayPort {
 	}
 }
 
-export const paymentGateway = new MockPaymentGateway();
+/**
+ * Stands in for the mock gateway in production, where approving a payment
+ * without a real provider would hand out free goods (finding #26). It fails the
+ * capture instead of throwing, so the order lands in the existing `failed`
+ * branch and the user sees a payment failure rather than a crash.
+ */
+export class UnavailableGateway implements PaymentGatewayPort {
+	async capturePayment(): Promise<PaymentGatewayResponse> {
+		return {
+			status: "failed",
+			provider: "unavailable",
+			providerStatus: "unavailable",
+			externalTransactionId: null,
+			failureCode: "gateway_unavailable",
+			failureMessage:
+				"No hay un proveedor de pagos configurado para este método.",
+			raw: { reason: "no_production_gateway" },
+		};
+	}
+}
+
+export const paymentGateway: PaymentGatewayPort =
+	env.APP_ENV === "production"
+		? new UnavailableGateway()
+		: new MockPaymentGateway();

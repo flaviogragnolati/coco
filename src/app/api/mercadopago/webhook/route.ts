@@ -7,6 +7,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { env } from "~/env";
 import { db } from "~/server/db";
+import { appLogger } from "~/server/services/logging/app-logger.service";
 import {
 	canProcessUnsignedMercadoPagoWebhook,
 	getMercadoPagoConfig,
@@ -141,8 +142,18 @@ export async function POST(request: NextRequest) {
 			paymentId: dataId,
 			eventId: event.id,
 		});
-	} catch (_error) {
-		return NextResponse.json({ received: true }, { status: 202 });
+	} catch (error) {
+		appLogger.error("mercadopagoWebhookReconciliationFailed", {
+			paymentId: dataId,
+			eventId: event.id,
+			requestId: xRequestId,
+			error:
+				error instanceof Error
+					? { message: error.message, name: error.name }
+					: { message: String(error) },
+		});
+
+		return NextResponse.json({ received: false }, { status: 500 });
 	}
 
 	return NextResponse.json({ received: true });

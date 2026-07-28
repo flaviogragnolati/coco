@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
 import {
+	assessMercadoPagoPaymentAmounts,
 	mapMercadoPagoPaymentStatus,
 	shouldApplyMercadoPagoPaymentStatus,
 	shouldSubmitOrderAfterMercadoPagoReconciliation,
@@ -49,6 +50,80 @@ test("refunded and charged-back attempts reject weaker later evidence", () => {
 	);
 	expect(shouldApplyMercadoPagoPaymentStatus("chargedBack", "pending")).toBe(
 		false,
+	);
+});
+
+const baseAssessmentInput = {
+	expectedAmount: "100.00",
+	expectedCurrency: "ARS",
+	transactionAmount: 100,
+	transactionAmountRefunded: 0,
+	currencyId: "ARS",
+};
+
+test.each([
+	["match", {}],
+	["missingAmount", { transactionAmount: null }],
+	["missingAmount", { transactionAmount: Number.NaN }],
+	["missingAmount", { currencyId: null }],
+	["currencyMismatch", { currencyId: "USD" }],
+	["amountMismatch", { transactionAmount: 100.01 }],
+	["amountMismatch", { transactionAmount: 10 }],
+	["partiallyRefunded", { transactionAmountRefunded: 40 }],
+] as const)("assesses %s", (kind, overrides) => {
+	expect(
+		assessMercadoPagoPaymentAmounts({ ...baseAssessmentInput, ...overrides })
+			.kind,
+	).toBe(kind);
+});
+
+test("compares money in integer cents", () => {
+	expect(
+		assessMercadoPagoPaymentAmounts({
+			...baseAssessmentInput,
+			transactionAmount: 100.004,
+		}).kind,
+	).toBe("match");
+	expect(
+		assessMercadoPagoPaymentAmounts({
+			...baseAssessmentInput,
+			expectedAmount: "1000.50",
+			transactionAmount: 1000.5,
+		}).kind,
+	).toBe("match");
+});
+
+test("a zero or absent refunded amount is not a partial refund", () => {
+	for (const transactionAmountRefunded of [0, null, undefined]) {
+		expect(
+			assessMercadoPagoPaymentAmounts({
+				...baseAssessmentInput,
+				transactionAmountRefunded,
+			}).kind,
+		).toBe("match");
+	}
+});
+
+test("currency is checked before the amount", () => {
+	expect(
+		assessMercadoPagoPaymentAmounts({
+			...baseAssessmentInput,
+			currencyId: "USD",
+			transactionAmount: 3,
+		}).kind,
+	).toBe("currencyMismatch");
+});
+
+test("discrepancy details name both compared values", () => {
+	const assessment = assessMercadoPagoPaymentAmounts({
+		...baseAssessmentInput,
+		transactionAmount: 10,
+	});
+
+	expect(assessment.kind).toBe("amountMismatch");
+	expect(assessment.kind === "match" ? "" : assessment.detail).toContain("10");
+	expect(assessment.kind === "match" ? "" : assessment.detail).toContain(
+		"100.00",
 	);
 });
 

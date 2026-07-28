@@ -2,6 +2,9 @@ import "server-only";
 
 import { TRPCError } from "@trpc/server";
 
+import { env } from "~/env";
+import { Prisma } from "~/prisma/client";
+import { cartSnapshotSchema } from "~/schemas/cart.schemas";
 import {
 	checkoutAddressSchema,
 	checkoutPaymentMethodSchema,
@@ -12,7 +15,7 @@ import {
 } from "~/schemas/checkout.schemas";
 import { db } from "~/server/db";
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
-import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
+import { submitOrderForCompletedPayment } from "~/server/services/payments/order-submission.service";
 import type { CartItem, CartSnapshot } from "~/shared/common/cart.types";
 import type {
 	CheckoutAddress,
@@ -41,6 +44,7 @@ import {
 	type CheckoutCartRecord,
 	type CheckoutDbClient,
 	type CheckoutPaymentMethodRecord,
+	cancelTransaction,
 	createCheckoutAddress,
 	createCheckoutPaymentMethod,
 	createPendingTransaction,
@@ -48,6 +52,7 @@ import {
 	findCheckoutAddressById,
 	findCheckoutCartByUserId,
 	findCheckoutPaymentMethodById,
+	findLiveOrderByCartId,
 	findMercadoPagoPaymentMethod,
 	findOrCreateMercadoPagoPaymentMethod,
 	findOrderByUserId,
@@ -57,7 +62,6 @@ import {
 	listOrdersByUserId,
 	type OrderDetailRecord,
 	type OrderListRecord,
-	submitCartItems,
 	updateCartStatus,
 	updateCheckoutAddress,
 	updateCheckoutPaymentMethod,
@@ -377,14 +381,6 @@ function buildPaymentRequest(input: {
 	};
 }
 
-function buildSubmittedToOrderEventKey(input: {
-	orderId: number;
-	transactionId: number;
-	cartItemId: number;
-}) {
-	return `checkout:order:${input.orderId}:transaction:${input.transactionId}:cartItem:${input.cartItemId}:submittedToOrder`;
-}
-
 export async function start(userId: string): Promise<CheckoutState> {
 	return db.$transaction(async (tx) => {
 		const cart = await getRequiredCheckoutCart(tx, userId);
@@ -400,14 +396,16 @@ export async function start(userId: string): Promise<CheckoutState> {
 		const mercadoPagoMethod = mercadoPagoConfig.enabled
 			? await findOrCreateMercadoPagoPaymentMethod(tx, userId)
 			: null;
-		const checkoutPaymentMethods = mercadoPagoConfig.enabled
-			? [
-					...(mercadoPagoMethod ? [mercadoPagoMethod] : []),
-					...paymentMethods.filter(
-						(method) => method.provider !== "mercadopago",
-					),
-				]
-			: paymentMethods;
+		const checkoutPaymentMethods = filterProductionPaymentMethods(
+			mercadoPagoConfig.enabled
+				? [
+						...(mercadoPagoMethod ? [mercadoPagoMethod] : []),
+						...paymentMethods.filter(
+							(method) => method.provider !== "mercadopago",
+						),
+					]
+				: paymentMethods,
+		);
 
 		return checkoutStateSchema.parse({
 			cart: mapCart(checkoutCart),
@@ -429,14 +427,16 @@ export async function getState(userId: string): Promise<CheckoutState> {
 		const mercadoPagoMethod = mercadoPagoConfig.enabled
 			? await findMercadoPagoPaymentMethod(tx, userId)
 			: null;
-		const checkoutPaymentMethods = mercadoPagoConfig.enabled
-			? [
-					...(mercadoPagoMethod ? [mercadoPagoMethod] : []),
-					...paymentMethods.filter(
-						(method) => method.provider !== "mercadopago",
-					),
-				]
-			: paymentMethods;
+		const checkoutPaymentMethods = filterProductionPaymentMethods(
+			mercadoPagoConfig.enabled
+				? [
+						...(mercadoPagoMethod ? [mercadoPagoMethod] : []),
+						...paymentMethods.filter(
+							(method) => method.provider !== "mercadopago",
+						),
+					]
+				: paymentMethods,
+		);
 
 		return checkoutStateSchema.parse({
 			cart: mapCart(cart),
@@ -445,6 +445,61 @@ export async function getState(userId: string): Promise<CheckoutState> {
 			termsText: TERMS_TEXT,
 		});
 	});
+}
+
+/**
+ * Releases a cart from checkout so it becomes editable again, cancelling the
+ * live order and its pending attempt.
+ *
+ * The attempt is cancelled, not erased, because the provider window may still
+ * be open: if the user pays the old Mercado Pago preference afterwards,
+ * reconciliation recovers it — `shouldApplyMercadoPagoPaymentStatus` lets
+ * `cancelled` advance to `completed`, and submission is driven by the order
+ * snapshot, so the payment settles against the order it was created for
+ * (ADR-0001).
+ */
+export async function leave(userId: string): Promise<CartSnapshot> {
+	const cart = await db.$transaction(async (tx) => {
+		const checkoutCart = await findCheckoutCartByUserId(tx, userId);
+		if (!checkoutCart) return null;
+		if (checkoutCart.status !== "atCheckout") return checkoutCart;
+
+		const liveOrder = await findLiveOrderByCartId(tx, checkoutCart.id);
+		const latestAttempt = liveOrder?.transactions[0] ?? null;
+
+		// A settled payment should already have moved the cart out of `atCheckout`;
+		// refusing here keeps `leave` from ever cancelling an order that was paid.
+		if (latestAttempt && !isCancellablePaymentAttempt(latestAttempt)) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message:
+					"Hay un pago en curso para este carrito. Esperá a que el proveedor lo resuelva.",
+			});
+		}
+
+		if (liveOrder) {
+			if (latestAttempt?.status === "pending") {
+				await cancelTransaction(tx, latestAttempt.id);
+			}
+			await updateOrderStatus(tx, liveOrder.id, "cancelled");
+		}
+
+		return updateCartStatus(tx, checkoutCart.id, "pending");
+	});
+
+	return cartSnapshotSchema.parse(
+		cart
+			? mapCart(cart)
+			: {
+					id: null,
+					code: null,
+					status: null,
+					items: [],
+					itemCount: 0,
+					totalQuantity: "0",
+					totals: [],
+				},
+	);
 }
 
 export async function createAddress(
@@ -471,10 +526,35 @@ export async function updateAddress(
 	return checkoutAddressSchema.parse(await updateCheckoutAddress(db, input));
 }
 
+/**
+ * User-managed payment methods are all mock-backed
+ * (`createCheckoutPaymentMethod` hardcodes `provider: "mock"`), so production
+ * must neither mint nor offer them — the mock gateway would approve them for
+ * free (finding #26).
+ */
+function assertPaymentMethodManagementAvailable() {
+	if (env.APP_ENV === "production") {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message: "Los métodos de pago manuales no están disponibles.",
+		});
+	}
+}
+
+function filterProductionPaymentMethods(
+	methods: CheckoutPaymentMethodRecord[],
+) {
+	if (env.APP_ENV !== "production") return methods;
+
+	return methods.filter((method) => method.provider === "mercadopago");
+}
+
 export async function createPaymentMethod(
 	userId: string,
 	input: CheckoutPaymentMethodCreateInput,
 ) {
+	assertPaymentMethodManagementAvailable();
+
 	return checkoutPaymentMethodSchema.parse(
 		await createCheckoutPaymentMethod(db, userId, input),
 	);
@@ -484,6 +564,8 @@ export async function updatePaymentMethod(
 	userId: string,
 	input: CheckoutPaymentMethodUpdateInput,
 ) {
+	assertPaymentMethodManagementAvailable();
+
 	const existing = await findCheckoutPaymentMethodById(db, userId, input.id);
 	if (!existing) {
 		throw new TRPCError({
@@ -495,6 +577,67 @@ export async function updatePaymentMethod(
 	return checkoutPaymentMethodSchema.parse(
 		await updateCheckoutPaymentMethod(db, input),
 	);
+}
+
+/**
+ * Whether confirming again should mint a new attempt on the live order. Only a
+ * dead attempt qualifies — failed, cancelled, or a pending one whose provider
+ * window has closed. Every other state (completed, in process, still-payable
+ * pending, refunded, charged back) is answered with the attempt that exists,
+ * which is what makes a browser-back re-confirm idempotent.
+ */
+function isSpentPaymentAttempt(
+	transaction: OrderDetailRecord["transactions"][number],
+	now: Date,
+) {
+	if (transaction.status === "failed" || transaction.status === "cancelled") {
+		return true;
+	}
+	if (transaction.status !== "pending") return false;
+	return transaction.expiresAt !== null && transaction.expiresAt <= now;
+}
+
+/**
+ * Whether abandoning the attempt is still the user's call. A payment the
+ * provider is holding, or one that already took money, is not.
+ */
+function isCancellablePaymentAttempt(
+	transaction: OrderDetailRecord["transactions"][number],
+) {
+	return (
+		transaction.status === "pending" ||
+		transaction.status === "failed" ||
+		transaction.status === "cancelled"
+	);
+}
+
+function buildReusedAttemptMessage(
+	transaction: OrderDetailRecord["transactions"][number],
+) {
+	if (transaction.status !== "pending") return undefined;
+
+	return transaction.provider === "mercadopago"
+		? "Ya tenés un pago iniciado para este carrito. Te redirigimos a Mercado Pago para completarlo."
+		: undefined;
+}
+
+async function createLiveUserOrder(
+	tx: CheckoutDbClient,
+	input: Parameters<typeof createUserOrder>[1],
+) {
+	return createUserOrder(tx, input).catch((error: unknown) => {
+		if (
+			error instanceof Prisma.PrismaClientKnownRequestError &&
+			error.code === "P2002"
+		) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message:
+					"Ya existe un pedido activo para este carrito. Actualizá la página.",
+			});
+		}
+		throw error;
+	});
 }
 
 async function getExistingPaymentResult(
@@ -527,6 +670,7 @@ export async function confirmAndPay(
 	if (existingResult) return existingResult;
 
 	const prepared = await db.$transaction(async (tx) => {
+		const now = new Date();
 		const cart = await getRequiredCheckoutCart(tx, userId);
 		const cartSnapshot = mapCart(cart);
 		const total = assertSingleCurrency(cartSnapshot);
@@ -564,21 +708,52 @@ export async function confirmAndPay(
 			});
 		}
 
+		const liveOrder = await findLiveOrderByCartId(tx, cart.id);
+		const latestAttempt = liveOrder?.transactions[0] ?? null;
+
+		if (
+			liveOrder &&
+			latestAttempt &&
+			!isSpentPaymentAttempt(latestAttempt, now)
+		) {
+			return {
+				kind: "existing" as const,
+				result: buildPaymentResult({
+					order: liveOrder,
+					transaction: latestAttempt,
+					shippingAddress: getAddressFromSnapshot(liveOrder),
+					paymentMethod: toCheckoutPaymentMethod(latestAttempt.paymentMethod),
+					message: buildReusedAttemptMessage(latestAttempt),
+				}),
+			};
+		}
+
+		if (!liveOrder && cart.status !== "atCheckout") {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message:
+					"El checkout no está iniciado. Volvé a la pantalla de checkout.",
+			});
+		}
+
 		const acceptedAt = new Date();
-		const order = await createUserOrder(tx, {
-			code: buildOrderCode(),
-			userId,
-			cartId: cart.id,
-			shippingAddressSnapshot: buildAddressSnapshot(address),
-			termsSnapshot: buildTermsSnapshot(acceptedAt),
-			acceptedTermsAt: acceptedAt,
-			items: cart.cartItems.map((item) => ({
-				sourceCartItemId: item.id,
-				quantity: item.quantity.toString(),
-				productSnapshot: item.productSnapshot,
-				priceSnapshot: buildPriceSnapshot(item),
-			})),
-		});
+		const order =
+			liveOrder ??
+			(await createLiveUserOrder(tx, {
+				code: buildOrderCode(),
+				userId,
+				cartId: cart.id,
+				shippingAddressSnapshot: buildAddressSnapshot(address),
+				termsSnapshot: buildTermsSnapshot(acceptedAt),
+				acceptedTermsAt: acceptedAt,
+				items: cart.cartItems.map((item) => ({
+					sourceCartItemId: item.id,
+					quantity: item.quantity.toString(),
+					productSnapshot: item.productSnapshot,
+					priceSnapshot: buildPriceSnapshot(item),
+				})),
+			}));
+
 		const transaction = await createPendingTransaction(tx, {
 			amount: total.amount,
 			currency: total.currency,
@@ -599,6 +774,7 @@ export async function confirmAndPay(
 		});
 
 		return {
+			kind: "created" as const,
 			address,
 			cart,
 			mercadoPagoConfig,
@@ -608,6 +784,8 @@ export async function confirmAndPay(
 			transaction,
 		};
 	});
+
+	if (prepared.kind === "existing") return prepared.result;
 
 	if (prepared.mercadoPagoConfig) {
 		const preference = await createMercadoPagoPreference({
@@ -663,53 +841,12 @@ export async function confirmAndPay(
 		});
 
 		if (gatewayResponse.status === "succeeded") {
-			await submitCartItems(tx, prepared.cart.id);
-			await updateCartStatus(tx, prepared.cart.id, "submitted");
-			const order = await updateOrderStatus(
-				tx,
-				prepared.order.id,
-				"processing",
-			);
-			const orderItemsByCartItemId = new Map(
-				order.items.map((item) => [item.sourceCartItemId, item]),
-			);
-
-			await DomainEventPublisher.publishMany(
-				tx,
-				prepared.cart.cartItems.map((item) => {
-					const orderItem = orderItemsByCartItemId.get(item.id);
-					if (!orderItem) {
-						throw new TRPCError({
-							code: "INTERNAL_SERVER_ERROR",
-							message:
-								"No se pudo vincular un item del carrito con el pedido creado.",
-						});
-					}
-
-					return {
-						type: "cart.item.submittedToOrder",
-						eventKey: buildSubmittedToOrderEventKey({
-							orderId: order.id,
-							transactionId: transaction.id,
-							cartItemId: item.id,
-						}),
-						aggregateType: "CartItem",
-						aggregateId: String(item.id),
-						actor: {
-							source: "user",
-							actorId: userId,
-						},
-						payload: {
-							cartItemId: String(item.id),
-							cartId: String(prepared.cart.id),
-							orderId: String(order.id),
-							userOrderItemId: String(orderItem.id),
-							transactionId: String(transaction.id),
-							quantity: item.quantity.toString(),
-						},
-					};
-				}),
-			);
+			const order = await submitOrderForCompletedPayment(tx, {
+				orderId: prepared.order.id,
+				cartId: prepared.cart.id,
+				transactionId: transaction.id,
+				actor: { source: "user", actorId: userId },
+			});
 
 			return { order, transaction, shouldDispatchDomainEvents: true };
 		}

@@ -190,20 +190,6 @@ export async function updateCartStatus(
 	});
 }
 
-export async function submitCartItems(db: CheckoutDbClient, cartId: number) {
-	return db.cartItem.updateMany({
-		where: {
-			cartId,
-			deleted: false,
-			status: "inCart",
-		},
-		data: {
-			status: "submitted",
-			fulfillmentStatus: "awaitingAggregation",
-		},
-	});
-}
-
 export async function listCheckoutAddresses(
 	db: CheckoutDbClient,
 	userId: string,
@@ -362,6 +348,25 @@ export async function findTransactionByIdempotencyKey(
 				select: orderDetailSelect,
 			},
 		},
+	});
+}
+
+/**
+ * The single live order a cart may have. `cancelled` and `failed` orders are
+ * dead ends, so a cart carrying only those is free to produce a new one — the
+ * same predicate the `user_order_cart_live_unique` partial index enforces.
+ */
+export async function findLiveOrderByCartId(
+	db: CheckoutDbClient,
+	cartId: number,
+) {
+	return db.userOrder.findFirst({
+		where: {
+			cartId,
+			status: { notIn: ["cancelled", "failed"] },
+		},
+		select: orderDetailSelect,
+		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 	});
 }
 
@@ -551,10 +556,18 @@ export async function findMercadoPagoPaymentMethod(
 	});
 }
 
+export async function cancelTransaction(db: CheckoutDbClient, id: number) {
+	return db.userTransaction.update({
+		where: { id },
+		data: { status: "cancelled", cancelledAt: new Date() },
+		select: orderTransactionSelect,
+	});
+}
+
 export async function updateOrderStatus(
 	db: CheckoutDbClient,
 	id: number,
-	status: "pending" | "processing" | "failed",
+	status: "pending" | "processing" | "failed" | "cancelled",
 ) {
 	return db.userOrder.update({
 		where: { id },

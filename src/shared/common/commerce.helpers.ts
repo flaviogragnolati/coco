@@ -193,6 +193,17 @@ export function canDecrementQuantity(
 	return current !== null && previous !== null && previous < current - epsilon;
 }
 
+/**
+ * Raised when the terms cannot price the quantity they themselves allow.
+ * Callers must not fall back to a partial price: guessing here undercharges.
+ */
+export class PricingConfigurationError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "PricingConfigurationError";
+	}
+}
+
 export function calculateLineTotal(
 	terms: CatalogClientTerms,
 	quantity: string,
@@ -203,6 +214,17 @@ export function calculateLineTotal(
 	const stepPrice = toNumber(terms.stepPrice);
 	const quantityNumber =
 		toNumber(normalizeCartQuantity(quantity, terms)) ?? moq;
+
+	if (
+		step &&
+		step > 0 &&
+		stepPrice === null &&
+		quantityNumber > moq + epsilon
+	) {
+		throw new PricingConfigurationError(
+			`Los términos definen un step (${step}) sin precio de step, por lo que no se puede calcular el total para la cantidad ${quantityNumber} (MOQ ${moq}).`,
+		);
+	}
 
 	if (!step || step <= 0 || stepPrice === null || quantityNumber <= moq) {
 		return toMoneyString(moqPrice);

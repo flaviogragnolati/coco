@@ -1,3 +1,4 @@
+import { cartSnapshotSchema } from "~/schemas/cart.schemas";
 import {
 	checkoutAddressCreateInputSchema,
 	checkoutAddressSchema,
@@ -19,6 +20,10 @@ export const checkoutRouter = createTRPCRouter({
 
 	getState: protectedProcedure.output(checkoutStateSchema).query(({ ctx }) => {
 		return checkoutService.getState(ctx.session.user.id);
+	}),
+
+	leave: protectedProcedure.output(cartSnapshotSchema).mutation(({ ctx }) => {
+		return checkoutService.leave(ctx.session.user.id);
 	}),
 
 	createAddress: protectedProcedure

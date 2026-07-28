@@ -7,15 +7,18 @@ import { createMercadoPagoClient } from "~/lib/mercadopago/client";
 import type { Prisma } from "~/prisma/client";
 import { db } from "~/server/db";
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
-import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
 import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
 import {
 	findPaymentAttemptById,
 	findPaymentEventById,
 	updatePaymentProviderEventStatus,
 } from "~/server/services/payments/payment.data";
+import { submitOrderForCompletedPayment } from "../order-submission.service";
 import { MERCADOPAGO_PROVIDER } from "./mercadopago-config.service";
 import {
+	assessMercadoPagoPaymentAmounts,
+	isMercadoPagoAmountFailureCode,
+	MERCADOPAGO_AMOUNT_FAILURE_CODES,
 	mapMercadoPagoPaymentStatus,
 	type PaymentStatus,
 	shouldApplyMercadoPagoPaymentStatus,
@@ -23,29 +26,20 @@ import {
 } from "./mercadopago-reconciliation.decision";
 
 type AttemptWithOrder = Prisma.UserTransactionGetPayload<{
-	include: {
-		userOrder: {
-			include: {
-				cart: { include: { cartItems: true } };
-				items: true;
-			};
-		};
-	};
+	include: { userOrder: true };
 }>;
+
+function formatReconciliationError(error: unknown) {
+	if (error instanceof Error) return error.message;
+	if (typeof error === "string") return error;
+	return "Error desconocido al reconciliar el pago de Mercado Pago.";
+}
 
 function extractTransactionIdFromReference(reference: unknown) {
 	if (typeof reference !== "string") return null;
 	const match = /^user_transaction:(\d+)$/.exec(reference);
 	if (!match?.[1]) return null;
 	return Number(match[1]);
-}
-
-function buildSubmittedToOrderEventKey(input: {
-	orderId: number;
-	transactionId: number;
-	cartItemId: number;
-}) {
-	return `checkout:order:${input.orderId}:transaction:${input.transactionId}:cartItem:${input.cartItemId}:submittedToOrder`;
 }
 
 async function findAttemptForPayment(
@@ -64,83 +58,8 @@ async function findAttemptForPayment(
 			].filter(Boolean) as Prisma.UserTransactionWhereInput[],
 			provider: MERCADOPAGO_PROVIDER,
 		},
-		include: {
-			userOrder: {
-				include: {
-					cart: { include: { cartItems: true } },
-					items: true,
-				},
-			},
-		},
+		include: { userOrder: true },
 	});
-}
-
-async function submitOrderAfterCompletedPayment(
-	tx: Prisma.TransactionClient,
-	attempt: AttemptWithOrder,
-) {
-	if (attempt.completedAt) return;
-
-	await tx.cartItem.updateMany({
-		where: {
-			cartId: attempt.userOrder.cartId,
-			deleted: false,
-			status: "inCart",
-		},
-		data: {
-			status: "submitted",
-			fulfillmentStatus: "awaitingAggregation",
-		},
-	});
-	await tx.cart.update({
-		where: { id: attempt.userOrder.cartId },
-		data: { status: "submitted" },
-	});
-	await tx.userOrder.update({
-		where: { id: attempt.userOrderId },
-		data: { status: "processing" },
-	});
-
-	const orderItemsByCartItemId = new Map(
-		attempt.userOrder.items.map((item) => [item.sourceCartItemId, item]),
-	);
-
-	await DomainEventPublisher.publishMany(
-		tx,
-		attempt.userOrder.cart.cartItems.map((cartItem) => {
-			const orderItem = orderItemsByCartItemId.get(cartItem.id);
-
-			if (!orderItem) {
-				throw new TRPCError({
-					code: "INTERNAL_SERVER_ERROR",
-					message: "No se pudo vincular el item del carrito con el pedido.",
-				});
-			}
-
-			return {
-				type: "cart.item.submittedToOrder",
-				eventKey: buildSubmittedToOrderEventKey({
-					orderId: attempt.userOrderId,
-					transactionId: attempt.id,
-					cartItemId: cartItem.id,
-				}),
-				aggregateType: "CartItem",
-				aggregateId: String(cartItem.id),
-				actor: {
-					source: "system" as const,
-					actorReference: MERCADOPAGO_PROVIDER,
-				},
-				payload: {
-					cartItemId: String(cartItem.id),
-					cartId: String(attempt.userOrder.cartId),
-					orderId: String(attempt.userOrderId),
-					userOrderItemId: String(orderItem.id),
-					transactionId: String(attempt.id),
-					quantity: cartItem.quantity.toString(),
-				},
-			};
-		}),
-	);
 }
 
 async function updateAttemptFromPayment(
@@ -150,11 +69,29 @@ async function updateAttemptFromPayment(
 ) {
 	const nextStatus = mapMercadoPagoPaymentStatus(payment.status);
 	const currentStatus = attempt.status as PaymentStatus;
-	const status = shouldApplyMercadoPagoPaymentStatus(currentStatus, nextStatus)
+	const appliedStatus = shouldApplyMercadoPagoPaymentStatus(
+		currentStatus,
+		nextStatus,
+	)
 		? nextStatus
 		: currentStatus;
-	const completedAt =
-		status === "completed" && !attempt.completedAt
+
+	const assessment =
+		appliedStatus === "completed"
+			? assessMercadoPagoPaymentAmounts({
+					expectedAmount: attempt.amount.toString(),
+					expectedCurrency: attempt.currency,
+					transactionAmount: payment.transaction_amount,
+					transactionAmountRefunded: payment.transaction_amount_refunded,
+					currencyId: payment.currency_id,
+				})
+			: null;
+	const discrepancy = assessment?.kind === "match" ? null : assessment;
+
+	const status = discrepancy ? currentStatus : appliedStatus;
+	const completedAt = discrepancy
+		? attempt.completedAt
+		: status === "completed" && !attempt.completedAt
 			? payment.date_approved
 				? new Date(payment.date_approved)
 				: new Date()
@@ -163,6 +100,8 @@ async function updateAttemptFromPayment(
 		status === "cancelled" && !attempt.cancelledAt
 			? new Date()
 			: attempt.cancelledAt;
+	const healsPreviousDiscrepancy =
+		!discrepancy && isMercadoPagoAmountFailureCode(attempt.failureCode);
 
 	const updated = await tx.userTransaction.update({
 		where: { id: attempt.id },
@@ -178,6 +117,14 @@ async function updateAttemptFromPayment(
 				: attempt.externalTransactionId,
 			providerStatus: payment.status ?? null,
 			providerStatusDetail: payment.status_detail ?? null,
+			...(discrepancy
+				? {
+						failureCode: MERCADOPAGO_AMOUNT_FAILURE_CODES[discrepancy.kind],
+						failureMessage: discrepancy.detail,
+					}
+				: healsPreviousDiscrepancy
+					? { failureCode: null, failureMessage: null }
+					: {}),
 			responseSnapshot: toPrismaInputJson({
 				source: "mercadopago.payment.get",
 				payment,
@@ -191,7 +138,12 @@ async function updateAttemptFromPayment(
 			status,
 		})
 	) {
-		await submitOrderAfterCompletedPayment(tx, attempt);
+		await submitOrderForCompletedPayment(tx, {
+			orderId: attempt.userOrderId,
+			cartId: attempt.userOrder.cartId,
+			transactionId: attempt.id,
+			actor: { source: "system", actorReference: MERCADOPAGO_PROVIDER },
+		});
 	}
 
 	if (status === "refunded") {
@@ -208,54 +160,64 @@ async function updateAttemptFromPayment(
 		});
 	}
 
-	return updated;
+	return { updated, discrepancy };
 }
 
 export async function reconcileMercadoPagoPayment(input: {
 	paymentId: string;
 	eventId?: number;
 }) {
-	const paymentClient = new Payment(createMercadoPagoClient());
-	const payment = await paymentClient.get({ id: input.paymentId });
 	let shouldDispatchDomainEvents = false;
 
-	const result = await db.$transaction(async (tx) => {
-		const attempt = await findAttemptForPayment(tx, payment);
+	let result: Awaited<ReturnType<typeof findPaymentAttemptById>>;
 
-		if (!attempt) {
-			if (input.eventId) {
-				await updatePaymentProviderEventStatus(tx, {
-					id: input.eventId,
-					status: "failed",
-					lastError:
+	try {
+		const paymentClient = new Payment(createMercadoPagoClient());
+		const payment = await paymentClient.get({ id: input.paymentId });
+
+		result = await db.$transaction(async (tx) => {
+			const attempt = await findAttemptForPayment(tx, payment);
+
+			if (!attempt) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message:
 						"No se encontró el intento de pago asociado al recurso de Mercado Pago.",
 				});
 			}
 
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message:
-					"No se encontró el intento de pago asociado al recurso de Mercado Pago.",
-			});
-		}
+			const wasCompleted = attempt.status === "completed";
+			const { updated, discrepancy } = await updateAttemptFromPayment(
+				tx,
+				attempt,
+				payment,
+			);
+			shouldDispatchDomainEvents =
+				!wasCompleted && updated.status === "completed";
 
-		const wasCompleted = attempt.status === "completed";
-		const updated = await updateAttemptFromPayment(tx, attempt, payment);
-		shouldDispatchDomainEvents =
-			!wasCompleted && updated.status === "completed";
+			if (input.eventId) {
+				await updatePaymentProviderEventStatus(tx, {
+					id: input.eventId,
+					status: discrepancy ? "failed" : "processed",
+					userTransactionId: attempt.id,
+					lastError: discrepancy ? discrepancy.detail : null,
+					processedAt: discrepancy ? undefined : new Date(),
+				});
+			}
 
+			return findPaymentAttemptById(tx, attempt.id);
+		});
+	} catch (error) {
 		if (input.eventId) {
-			await updatePaymentProviderEventStatus(tx, {
+			await updatePaymentProviderEventStatus(db, {
 				id: input.eventId,
-				status: "processed",
-				userTransactionId: attempt.id,
-				lastError: null,
-				processedAt: new Date(),
+				status: "failed",
+				lastError: formatReconciliationError(error),
 			});
 		}
 
-		return findPaymentAttemptById(tx, attempt.id);
-	});
+		throw error;
+	}
 
 	if (shouldDispatchDomainEvents) {
 		await DomainEventDispatcher.wake();

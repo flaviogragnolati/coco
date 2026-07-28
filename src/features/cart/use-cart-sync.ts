@@ -183,10 +183,21 @@ export function useCartActions({
 		},
 	});
 
+	const leaveCheckoutMutation = api.checkout.leave.useMutation({
+		onError(error) {
+			toast.error(error.message || "No se pudo volver a editar el carrito");
+		},
+		onSuccess(snapshot) {
+			replaceCart(snapshot, userId ?? null);
+			toast.success("Cerramos el checkout. Ya podés editar el carrito.");
+		},
+	});
+
 	const isPending =
 		setItemMutation.isPending ||
 		removeMutation.isPending ||
-		clearMutation.isPending;
+		clearMutation.isPending ||
+		leaveCheckoutMutation.isPending;
 
 	const setItem = useCallback(
 		(item: CartItem) => {
@@ -257,6 +268,12 @@ export function useCartActions({
 		clearMutation.mutate();
 	}, [clearLocalCart, clearMutation, isAuthenticated, userId]);
 
+	const leaveCheckout = useCallback(() => {
+		if (!isAuthenticated || !userId) return;
+
+		leaveCheckoutMutation.mutate();
+	}, [isAuthenticated, leaveCheckoutMutation, userId]);
+
 	return useMemo(
 		() => ({
 			cart,
@@ -264,6 +281,7 @@ export function useCartActions({
 			decrement,
 			increment,
 			isPending,
+			leaveCheckout,
 			removeItem,
 			setItem,
 			updateQuantity,
@@ -274,6 +292,7 @@ export function useCartActions({
 			decrement,
 			increment,
 			isPending,
+			leaveCheckout,
 			removeItem,
 			setItem,
 			updateQuantity,

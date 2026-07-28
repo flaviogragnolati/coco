@@ -1,14 +1,36 @@
 import { expect, test } from "vitest";
 import type { CartSnapshot } from "./cart.types";
+import type { CatalogClientTerms } from "./catalog.types";
 import {
 	buildCartSnapshot,
+	calculateLineTotal,
 	formatCurrency,
 	formatQuantity,
 	getPerUnitPrice,
+	normalizeCartQuantity,
+	PricingConfigurationError,
 	selectProductImage,
 } from "./commerce.helpers";
 
 const meta = { id: 7, code: "CART-7", status: "pending" } as const;
+
+function terms(
+	overrides: Partial<CatalogClientTerms> = {},
+): CatalogClientTerms {
+	return {
+		id: 1,
+		moq: "1",
+		moqPrice: "100.00",
+		step: null,
+		stepPrice: null,
+		max: null,
+		refPrice: null,
+		currency: "ARS",
+		fromDate: new Date("2026-01-01T00:00:00.000Z"),
+		toDate: null,
+		...overrides,
+	};
+}
 
 function item(
 	name: string,
@@ -28,18 +50,7 @@ function item(
 			brandName: null,
 			imageUrl: null,
 		},
-		terms: {
-			id: 1,
-			moq: "1",
-			moqPrice: lineTotal,
-			step: null,
-			stepPrice: null,
-			max: null,
-			refPrice: null,
-			currency,
-			fromDate: new Date("2026-01-01T00:00:00.000Z"),
-			toDate: null,
-		},
+		terms: terms({ moqPrice: lineTotal, currency }),
 	};
 }
 
@@ -144,4 +155,88 @@ test("getPerUnitPrice rejects zero and invalid minimum quantities", () => {
 	expect(
 		getPerUnitPrice({ refPrice: null, moqPrice: "invalid", moq: "8" }),
 	).toBeNull();
+});
+
+test.each([
+	["below the minimum clamps up", "5", { moq: "100" }, "100"],
+	[
+		"without a step every quantity collapses to the minimum",
+		"450",
+		{ moq: "100" },
+		"100",
+	],
+	[
+		"a step rounds up to the next multiple",
+		"115",
+		{ moq: "100", step: "10" },
+		"120",
+	],
+	["an exact multiple is left alone", "120", { moq: "100", step: "10" }, "120"],
+	[
+		"the maximum clamps down",
+		"500",
+		{ moq: "100", step: "10", max: "200" },
+		"200",
+	],
+	[
+		"a maximum that is not a step multiple clamps to the last reachable step",
+		"500",
+		{ moq: "100", step: "10", max: "205" },
+		"200",
+	],
+	[
+		"a maximum below the minimum still wins",
+		"500",
+		{ moq: "100", step: "10", max: "50" },
+		"50",
+	],
+] as const)("normalizeCartQuantity: %s", (_name, quantity, overrides, expected) => {
+	expect(normalizeCartQuantity(quantity, terms(overrides))).toBe(expected);
+});
+
+test.each([
+	[
+		"at the minimum it is the minimum price",
+		"100",
+		{ moq: "100", moqPrice: "500" },
+		"500.00",
+	],
+	[
+		"below the minimum it is still the minimum price",
+		"40",
+		{ moq: "100", moqPrice: "500" },
+		"500.00",
+	],
+	[
+		"above the minimum each step adds its price",
+		"1000",
+		{ moq: "100", moqPrice: "500", step: "10", stepPrice: "50" },
+		"5000.00",
+	],
+	[
+		"a step price without a step is never applied",
+		"1000",
+		{ moq: "100", moqPrice: "500", stepPrice: "50" },
+		"500.00",
+	],
+	[
+		"a step without a step price still prices the minimum block",
+		"100",
+		{ moq: "100", moqPrice: "500", step: "10" },
+		"500.00",
+	],
+] as const)("calculateLineTotal: %s", (_name, quantity, overrides, expected) => {
+	expect(calculateLineTotal(terms(overrides), quantity)).toBe(expected);
+});
+
+// The review's 10x-undercharge scenario: the terms let the quantity grow in
+// steps but price no step, so the flat minimum price used to be returned for
+// ten times the goods.
+test("calculateLineTotal refuses to price a step it has no price for", () => {
+	expect(() =>
+		calculateLineTotal(
+			terms({ moq: "100", moqPrice: "500", step: "10", stepPrice: null }),
+			"1000",
+		),
+	).toThrow(PricingConfigurationError);
 });

@@ -201,8 +201,12 @@ The slide-over cart preview opened from the navbar and when adding a product. A 
 _Avoid_: Cart drawer, cart popover
 
 **Checkout**:
-The customer-facing flow that turns an at-checkout cart into a submitted order plus a payment attempt: review the order, choose shipping address and payment method, accept terms, and pay. Single-currency, with prices and quantities snapshotted at confirmation while the cart stays the live source of truth until then.
+The customer-facing flow that turns an at-checkout cart into a submitted order plus a payment attempt: review the order, choose shipping address and payment method, accept terms, and pay. Single-currency, with prices and quantities snapshotted at confirmation. The cart is the live source of truth up to the moment checkout starts; from then on it is frozen against edits, because the order snapshot references it.
 _Avoid_: Order placement, purchase flow
+
+**Leave checkout**:
+The explicit way back from a frozen at-checkout cart to an editable one: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why editing the cart mid-checkout is offered as leaving rather than as a direct edit. Blocked while a payment is in process. Spanish-facing UI labels it "Volver a editar el carrito".
+_Avoid_: Cancel checkout, abort checkout, unfreeze
 
 ### Internal QA tracking
 

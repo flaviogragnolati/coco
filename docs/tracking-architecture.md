@@ -533,13 +533,14 @@ File: `src/server/services/checkout/checkout.service.ts`
 On successful payment capture, checkout:
 
 1. Updates the transaction from the payment gateway response.
-2. Marks cart items `submitted`.
-3. Marks the cart `submitted`.
-4. Marks the order `processing`.
-5. Publishes one `cart.item.submittedToOrder` event per cart item in the same
-   transaction.
-6. Commits the transaction.
-7. Calls `DomainEventDispatcher.wake()`.
+2. Delegates the submission transition to
+   `submitOrderForCompletedPayment(tx, …)` in
+   `src/server/services/payments/order-submission.service.ts`, which marks the
+   ordered cart items `submitted`, marks the cart `submitted`, marks the order
+   `processing`, and publishes one `cart.item.submittedToOrder` event per
+   ordered item in the same transaction.
+3. Commits the transaction.
+4. Calls `DomainEventDispatcher.wake()`.
 
 Checkout no longer imports the tracking service and no longer writes
 `CartItemTrackingEvent` directly.
@@ -556,6 +557,24 @@ ADR 0001) publishes the **same** `cart.item.submittedToOrder` facts with the
 **same key shape** when the payment confirmation arrives asynchronously, so a
 payment confirmed on redirect and one confirmed by webhook produce one
 submission event either way — the shared deterministic key is the dedupe.
+
+Since the remediation of review finding #15, both producers are literally the
+same code: each calls `submitOrderForCompletedPayment`, which builds its events
+through the pure `order-submission.decision.ts`
+(`buildSubmittedToOrderEventKey`, `buildSubmittedToOrderEvents`). The key format
+is locked by a literal assertion in `order-submission.decision.test.ts` — it is
+an idempotency contract, not an implementation detail.
+
+The set of items submitted is the **order snapshot intersected with the cart
+items still live** (`UserOrderItem.sourceCartItemId` ∩ `deleted: false, status:
+"inCart"`), never a cart-wide sweep. An item added after the order was
+snapshotted has no `UserOrderItem` to reference, and one removed mid-payment
+must not be resurrected as submitted. `quantity` in the payload comes from the
+cart-item row, which is what both producers have always published.
+
+The two producers differ only in actor: checkout publishes as
+`{ source: "user", actorId }`, reconciliation as
+`{ source: "system", actorReference: "mercadopago" }`.
 
 ### Operation Aggregation
 

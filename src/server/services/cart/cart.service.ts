@@ -28,6 +28,7 @@ import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
 import {
 	type CartItemMutationRecord,
+	type CartMutationRecord,
 	type CartProductClientTermsRecord,
 	type CartRecord,
 	createCartItem,
@@ -103,6 +104,23 @@ function mapCart(record: CartRecord | null): CartSnapshot {
 	});
 }
 
+/**
+ * A cart being paid for is a snapshot the order already references, so it must
+ * not move under the payment. `checkout.leave` is the only way back to an
+ * editable cart.
+ */
+function assertCartMutable(cart: CartMutationRecord) {
+	if (cart.status === "atCheckout") {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message:
+				"Hay un checkout en curso para este carrito. Volvé al carrito desde el checkout para editarlo.",
+		});
+	}
+
+	return cart;
+}
+
 async function getOrCreateCurrentCart(
 	database: Parameters<CartDb["$transaction"]>[0] extends (
 		tx: infer T,
@@ -112,7 +130,9 @@ async function getOrCreateCurrentCart(
 	userId: string,
 ) {
 	const existing = await findCurrentCartForMutationByUserId(database, userId);
-	return existing ?? createCurrentCart(database, userId);
+	if (existing) return assertCartMutable(existing);
+
+	return createCurrentCart(database, userId);
 }
 
 async function assertUsableTerms(
@@ -206,7 +226,9 @@ export async function syncLocal(
 			return { cartId: null, warnings: [] };
 		}
 
-		const cart = existingCart ?? (await createCurrentCart(tx, userId));
+		const cart = existingCart
+			? assertCartMutable(existingCart)
+			: await createCurrentCart(tx, userId);
 		const warnings: CartWarning[] = [];
 		const localQuantityByTerms = new Map<number, number>();
 
@@ -316,6 +338,7 @@ export async function removeItem(
 	const mutation = await db.$transaction(async (tx) => {
 		const cart = await findCurrentCartForMutationByUserId(tx, userId);
 		if (!cart) return { cartId: null };
+		assertCartMutable(cart);
 
 		const item = await findActiveCartItemByTerms(
 			tx,
@@ -341,6 +364,7 @@ export async function clear(userId: string): Promise<CartMutationOutput> {
 	const mutation = await db.$transaction(async (tx) => {
 		const cart = await findCurrentCartForMutationByUserId(tx, userId);
 		if (!cart) return { cartId: null };
+		assertCartMutable(cart);
 
 		await softDeleteCartItemsByCartId(tx, cart.id);
 
