@@ -17,6 +17,7 @@
 		"dev": "next dev",
 		"postinstall": "prisma generate",
 		"preview": "next build && next start",
+		"qa:seed": "tsx scripts/qa-seed.ts",
 		"start": "next start",
 		"test": "vitest run",
 		"test:watch": "vitest",

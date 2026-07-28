@@ -20,12 +20,13 @@ describe("adminNavGroups", () => {
 		}
 	});
 
-	it("labels the four expected groups", () => {
+	it("labels the five expected groups", () => {
 		expect(adminNavGroups.map((group) => group.label)).toEqual([
 			"Operación",
 			"Pagos",
 			"Catálogo",
 			"Usuarios",
+			"QA",
 		]);
 	});
 });

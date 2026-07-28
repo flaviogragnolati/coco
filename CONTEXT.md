@@ -203,3 +203,17 @@ _Avoid_: Cart drawer, cart popover
 **Checkout**:
 The customer-facing flow that turns an at-checkout cart into a submitted order plus a payment attempt: review the order, choose shipping address and payment method, accept terms, and pay. Single-currency, with prices and quantities snapshotted at confirmation while the cart stays the live source of truth until then.
 _Avoid_: Order placement, purchase flow
+
+### Internal QA tracking
+
+**QA ticket**:
+The tracked record of one manual QA test case: its steps, its expected result, the state it reached, who took it, and the finding. It merges the specification and the work item into one record — there is no separate test-case entity. Spanish-facing UI labels it "Ticket de QA".
+_Avoid_: Caso de prueba, test, bug, issue
+
+**QA pass**:
+One sweep of the QA tickets by a tester. It is deliberately not a record: a ticket carries a single live state that the next pass overwrites, and the history of who changed what lives in the audit log. Spanish-facing UI labels it "Pasada de QA".
+_Avoid_: Run, execution, ciclo
+
+**Regression path**:
+The subset of QA tickets that form the end-to-end happy path, marked on the ticket so a tester can run the short sweep instead of all of them. It is a property of the ticket, not a separate suite.
+_Avoid_: Smoke suite, happy path suite

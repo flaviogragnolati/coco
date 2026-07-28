@@ -1,5 +1,6 @@
 import {
 	BoxesIcon,
+	ClipboardCheckIcon,
 	ClipboardListIcon,
 	CreditCardIcon,
 	FactoryIcon,
@@ -93,6 +94,16 @@ export const adminNavGroups: AdminNavGroup[] = [
 		items: [
 			{ title: "Usuarios", href: "/admin/users", icon: UsersIcon },
 			{ title: "Direcciones", href: "/admin/addresses", icon: MapPinnedIcon },
+		],
+	},
+	{
+		label: "QA",
+		items: [
+			{
+				title: "Tickets de QA",
+				href: "/admin/qa-tickets",
+				icon: ClipboardCheckIcon,
+			},
 		],
 	},
 ];

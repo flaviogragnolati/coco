@@ -32,6 +32,7 @@ model User {
   trackingEvents        CartItemTrackingEvent[]
   operations            Operation[]
   paymentProviderEvents PaymentProviderEvent[]
+  qaTickets             QaTicket[]
 
   @@unique([email])
   @@map("user")
@@ -1155,4 +1156,37 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([entityType, entityId])
   @@map("audit_log")
+}
+
+model QaTicket {
+  id               Int            @id @default(autoincrement())
+  code             Int            @unique
+  section          String         @db.Text
+  title            String         @db.Text
+  actor            String         @db.Text
+  feature          String         @db.Text
+  steps            String         @db.Text
+  expectedResult   String         @db.Text
+  status           QaTicketStatus @default(pending)
+  isRegressionPath Boolean        @default(false)
+  notes            String?        @db.Text
+  assigneeId       String?
+  deleted          Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now()) @updatedAt
+
+  assignee User? @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([assigneeId])
+  @@map("qa_ticket")
+}
+
+enum QaTicketStatus {
+  pending
+  inProgress
+  passed
+  failed
+  blocked
+  skipped
 }

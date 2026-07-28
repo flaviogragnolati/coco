@@ -14,6 +14,7 @@ import { productRouter } from "./admin/product.router";
 import { productClientTermsRouter } from "./admin/product-client-terms.router";
 import { productLocalConstraintsRouter } from "./admin/product-local-constraints.router";
 import { productSupplierTermsRouter } from "./admin/product-supplier-terms.router";
+import { qaTicketRouter } from "./admin/qa-ticket.router";
 import { rollOverRouter } from "./admin/roll-over.router";
 import { shipmentRouter } from "./admin/shipment.router";
 import { supplierRouter } from "./admin/supplier.router";
@@ -37,6 +38,7 @@ export const adminRouter = createTRPCRouter({
 	productClientTerms: productClientTermsRouter,
 	productLocalConstraints: productLocalConstraintsRouter,
 	productSupplierTerms: productSupplierTermsRouter,
+	qaTicket: qaTicketRouter,
 	rollOver: rollOverRouter,
 	shipment: shipmentRouter,
 	supplier: supplierRouter,
