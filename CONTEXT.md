@@ -221,3 +221,21 @@ _Avoid_: Run, execution, ciclo
 **Regression path**:
 The subset of QA tickets that form the end-to-end happy path, marked on the ticket so a tester can run the short sweep instead of all of them. It is a property of the ticket, not a separate suite.
 _Avoid_: Smoke suite, happy path suite
+
+### Admin reference and shell
+
+**Glossary**:
+The in-app reference that answers, for one domain word, what the UI calls it, what the code calls it, and what the database calls it. It is a read-only view over hand-curated data, not the canonical source of the language — this file is. Spanish-facing UI labels it "Glosario".
+_Avoid_: Diccionario, ayuda, documentación
+
+**Glossary entry**:
+One consultable unit of the glossary: a domain concept, an entity, or a status value, carrying its Spanish label, its definition, its occurrences in code and database, and the synonyms this project avoids. A single entry may cover several occurrences when the same label and meaning repeat across entities.
+_Avoid_: Término, definición, fila
+
+**Occurrence**:
+One concrete place where a glossary entry materializes — a Prisma model and its table, or an enum value and the column that stores it. It is what makes an entry actionable in a SQL console; the entry itself is the meaning.
+_Avoid_: Referencia, ubicación, mapeo
+
+**Quick action**:
+An admin shortcut reachable from the floating button regardless of the page in view. Today the only one opens the glossary. Spanish-facing UI labels it "Acción rápida".
+_Avoid_: Atajo, herramienta, shortcut

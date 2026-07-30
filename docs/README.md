@@ -12,6 +12,7 @@
 | [`fulfillment-reference.md`](./fulfillment-reference.md) | The fulfillment lifecycle as implemented: command surfaces, guards, quantity semantics, delivery modes, compensation, diagnostics philosophy | a fulfillment command, guard, or ladder changes |
 | [`tracking-architecture.md`](./tracking-architecture.md) | The outbox → listener → tracking → derivation pipeline; event contracts, producers, keys, timeline APIs, projection rules | an event type, producer, mapping, or derivation rule changes |
 | [`../CONTEXT.md`](../CONTEXT.md) | The domain language (with Spanish UI labels) | a new term enters the domain or an existing one sharpens |
+| [`../src/features/admin/glossary/`](../src/features/admin/glossary/) | The admin glossary: `CONTEXT.md`'s vocabulary as a screen, mapping each Spanish label to its Prisma model or enum value and its table and column. `CONTEXT.md` stays canonical; the glossary is its consultable view inside the app, held to the schema by `glossary.data.test.ts` | a model, an enum value, or a term is added — the drift test names what is missing |
 
 ## Architecture decision records (`adr/`)
 

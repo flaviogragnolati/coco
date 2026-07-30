@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
+import { AdminFab } from "~/features/admin/shell/admin-fab";
 import { AdminHeader } from "~/features/admin/shell/admin-header";
 import { AdminSidebar } from "~/features/admin/shell/admin-sidebar";
 import { requireAdmin } from "~/server/auth/route-guards";
@@ -27,6 +28,7 @@ export default async function AdminLayout({
 				<div className="flex min-w-0 flex-1 flex-col p-4 md:p-6">
 					{children}
 				</div>
+				<AdminFab />
 			</SidebarInset>
 		</SidebarProvider>
 	);
