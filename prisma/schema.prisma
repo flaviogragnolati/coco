@@ -34,6 +34,9 @@ model User {
   paymentProviderEvents PaymentProviderEvent[]
   qaTickets             QaTicket[]
 
+  glossaryProposals         GlossaryProposal[] @relation("GlossaryProposalProposer")
+  resolvedGlossaryProposals GlossaryProposal[] @relation("GlossaryProposalResolver")
+
   @@unique([email])
   @@map("user")
 }
@@ -1189,4 +1192,45 @@ enum QaTicketStatus {
   failed
   blocked
   skipped
+}
+
+/// A change request against one glossary entry. The entries themselves stay hand-authored in
+/// `src/features/admin/glossary/data/*.ts` (ADR 0007), so this row stores a snapshot of what
+/// was on screen: the server never imports the dataset and cannot resolve a slug.
+model GlossaryProposal {
+  id             Int                    @id @default(autoincrement())
+  entrySlug      String                 @db.Text
+  entryLabel     String                 @db.Text
+  field          GlossaryProposalField
+  currentValue   String?                @db.Text
+  proposed       String                 @db.Text
+  reason         String?                @db.Text
+  status         GlossaryProposalStatus @default(open)
+  proposerId     String?
+  resolverId     String?
+  resolutionNote String?                @db.Text
+  resolvedAt     DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @default(now()) @updatedAt
+
+  proposer User? @relation("GlossaryProposalProposer", fields: [proposerId], references: [id], onDelete: SetNull)
+  resolver User? @relation("GlossaryProposalResolver", fields: [resolverId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([entrySlug])
+  @@map("glossary_proposal")
+}
+
+enum GlossaryProposalField {
+  label // the Spanish name the term is read by
+  definition // the sentence that explains what the term means
+  identifier // the code symbol or database column the term maps to
+}
+
+/// Declaration order is the list order: `list` sorts by status, so open work surfaces first.
+enum GlossaryProposalStatus {
+  open // waiting for a superadmin to decide
+  accepted // agreed, but the code still says the old thing
+  applied // the dataset, the label map and CONTEXT.md were edited
+  rejected // decided against; the entry stays as it is
 }

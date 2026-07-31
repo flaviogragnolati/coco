@@ -12,7 +12,7 @@
 | [`fulfillment-reference.md`](./fulfillment-reference.md) | The fulfillment lifecycle as implemented: command surfaces, guards, quantity semantics, delivery modes, compensation, diagnostics philosophy | a fulfillment command, guard, or ladder changes |
 | [`tracking-architecture.md`](./tracking-architecture.md) | The outbox → listener → tracking → derivation pipeline; event contracts, producers, keys, timeline APIs, projection rules | an event type, producer, mapping, or derivation rule changes |
 | [`../CONTEXT.md`](../CONTEXT.md) | The domain language (with Spanish UI labels) | a new term enters the domain or an existing one sharpens |
-| [`../src/features/admin/glossary/`](../src/features/admin/glossary/) | The admin glossary: `CONTEXT.md`'s vocabulary as a screen, mapping each Spanish label to its Prisma model or enum value and its table and column. `CONTEXT.md` stays canonical; the glossary is its consultable view inside the app, held to the schema by `glossary.data.test.ts` | a model, an enum value, or a term is added — the drift test names what is missing |
+| [`../src/features/admin/glossary/`](../src/features/admin/glossary/) | The admin glossary: `CONTEXT.md`'s vocabulary as a screen, mapping each Spanish label to its Prisma model or enum value and its table and column. `CONTEXT.md` stays canonical; the glossary is its consultable view inside the app, held to the schema by `glossary.data.test.ts`. Change requests against an entry are recorded in `glossary_proposal`; applying one is a code edit, never an app write ([ADR 0007](./adr/0007-glossary-stays-code-owned.md)) | a model, an enum value, or a term is added — the drift test names what is missing |
 
 ## Architecture decision records (`adr/`)
 
@@ -24,6 +24,7 @@
 | [0004](./adr/0004-physical-packages-with-legs.md) | Packages are physical, carry an inbound/outbound leg; conservation checked per leg | fulfillment-reference §4–§5 |
 | [0005](./adr/0005-demand-conservation-and-rollover-reaggregation.md) | Demand conservation invariant; roll over ladder; re-aggregation by default | fulfillment-reference §2, §8–§9 |
 | [0006](./adr/0006-operation-draft-and-reviewed-fingerprint.md) | Operations are reviewed as drafts; execute refuses if the demand moved (fingerprint) | fulfillment-reference §2 |
+| [0007](./adr/0007-glossary-stays-code-owned.md) | Glossary entries stay in code; a proposal is a change request, applied by editing `glossary.data.ts` and `CONTEXT.md` | the admin glossary (`src/features/admin/glossary/`) |
 
 ## Design history (living documents — record decisions, not current state)
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
 	type AdminSearchParams,
 	detailIdParam,
+	idFilterParam,
 } from "~/shared/common/admin-crud/search-params";
 import { SupplierOrdersClient } from "./_components/supplier-orders-client";
 
@@ -16,5 +17,10 @@ export default async function AdminSupplierOrdersPage({
 }) {
 	const params = await searchParams;
 
-	return <SupplierOrdersClient initialDetailId={detailIdParam(params)} />;
+	return (
+		<SupplierOrdersClient
+			initialDetailId={detailIdParam(params)}
+			initialFilters={{ operationId: idFilterParam(params.operationId) }}
+		/>
+	);
 }

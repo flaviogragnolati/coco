@@ -225,7 +225,7 @@ _Avoid_: Smoke suite, happy path suite
 ### Admin reference and shell
 
 **Glossary**:
-The in-app reference that answers, for one domain word, what the UI calls it, what the code calls it, and what the database calls it. It is a read-only view over hand-curated data, not the canonical source of the language — this file is. Spanish-facing UI labels it "Glosario".
+The in-app reference that answers, for one domain word, what the UI calls it, what the code calls it, and what the database calls it. It is a read-only view over hand-curated data, not the canonical source of the language — this file is. Its entries stay code-owned: the only thing the app writes beside them is a glossary proposal. Spanish-facing UI labels it "Glosario".
 _Avoid_: Diccionario, ayuda, documentación
 
 **Glossary entry**:
@@ -235,6 +235,10 @@ _Avoid_: Término, definición, fila
 **Occurrence**:
 One concrete place where a glossary entry materializes — a Prisma model and its table, or an enum value and the column that stores it. It is what makes an entry actionable in a SQL console; the entry itself is the meaning.
 _Avoid_: Referencia, ubicación, mapeo
+
+**Glossary proposal**:
+A recorded request to rename or redefine one glossary entry: who asked, which part of the entry is questioned, the text proposed, and an optional reason. It never edits the entry — accepting one commits to a code change in the glossary dataset and in this file, which is why it carries an "applied" state of its own (ADR 0007). Spanish-facing UI labels it "Propuesta de cambio".
+_Avoid_: Sugerencia, pedido, ticket de glosario
 
 **Quick action**:
 An admin shortcut reachable from the floating button regardless of the page in view. Today the only one opens the glossary. Spanish-facing UI labels it "Acción rápida".

@@ -66,7 +66,8 @@ export const qaGlossaryEntries: GlossaryEntry[] = [
 		kind: "status",
 		section: "qa",
 		label: qaTicketStatusLabelMap.passed,
-		definition: "El caso dio el resultado esperado.",
+		definition:
+			"El caso dio el resultado esperado. El slug conserva «pasado» porque en base el valor sigue siendo `QaTicketStatus.passed`: sólo cambió el nombre que se lee en pantalla.",
 		occurrences: [{ code: "QaTicketStatus.passed", db: "qa_ticket.status" }],
 		href: "/admin/qa-tickets",
 	},

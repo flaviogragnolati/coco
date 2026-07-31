@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
 	type AdminSearchParams,
 	detailIdParam,
+	idFilterParam,
 } from "~/shared/common/admin-crud/search-params";
 import { LotsClient } from "./_components/lots-client";
 
@@ -16,5 +17,10 @@ export default async function AdminLotsPage({
 }) {
 	const params = await searchParams;
 
-	return <LotsClient initialDetailId={detailIdParam(params)} />;
+	return (
+		<LotsClient
+			initialDetailId={detailIdParam(params)}
+			initialFilters={{ operationId: idFilterParam(params.operationId) }}
+		/>
+	);
 }

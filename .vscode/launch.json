@@ -1,6 +1,6 @@
 {
-  "version": "0.2.0",
-  "configurations": [
+	"version": "0.2.0",
+	"configurations": [
     {
       "name": "Next.js: Attach debug server-side",
       "address": "localhost",
@@ -35,4 +35,4 @@
         "action": "debugWithChrome"
       }
     }
-  }
+}

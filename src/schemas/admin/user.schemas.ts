@@ -15,6 +15,13 @@ const requiredEmail = z
 
 export const userRoleSchema = z.enum(["user", "admin", "superadmin"]);
 
+/** The signed-in admin, as the client needs them to *present* permissions. */
+export const adminViewerSchema = z.object({
+	id: z.string(),
+	name: z.string().optional(),
+	role: userRoleSchema,
+});
+
 export const userCreateInputSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
 	email: requiredEmail,

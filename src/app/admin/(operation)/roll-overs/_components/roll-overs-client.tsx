@@ -44,7 +44,11 @@ function positiveIntOrUndefined(value: string) {
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-export function RollOversClient() {
+export function RollOversClient({
+	initialFilters = {},
+}: {
+	initialFilters?: { operationId?: string };
+}) {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState<number>(25);
 	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
@@ -53,7 +57,9 @@ export function RollOversClient() {
 	// those is the reason this page exists.
 	const [status, setStatus] = useState<RollOverStatus | "all">("all");
 	const [stage, setStage] = useState<RollOverStage | "all">("all");
-	const [operationId, setOperationId] = useState("");
+	const [operationId, setOperationId] = useState(
+		() => initialFilters.operationId ?? "",
+	);
 	const [cartItemId, setCartItemId] = useState("");
 	const [createdFrom, setCreatedFrom] = useState("");
 	const [createdTo, setCreatedTo] = useState("");

@@ -18,7 +18,7 @@ import { statusPresets } from "~/shared/common/admin-crud/status-presets";
 export const qaTicketStatusLabelMap: Record<QaTicketStatus, string> = {
 	pending: "Pendiente",
 	inProgress: "En curso",
-	passed: "Pasado",
+	passed: "Completo OK",
 	failed: "Fallido",
 	blocked: "Bloqueado",
 	skipped: "Omitido",

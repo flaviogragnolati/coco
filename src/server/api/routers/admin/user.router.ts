@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { adminOptionsOutputSchema } from "~/schemas/admin/_options.schemas";
 import {
+	adminViewerSchema,
 	userCreateInputSchema,
 	userDeleteInputSchema,
 	userDetailSchema,
@@ -21,6 +22,15 @@ const deleteResultSchema = z.object({
 });
 
 export const userRouter = createTRPCRouter({
+	/**
+	 * The session already carries the role, so this hits no database. It exists so
+	 * the client can *show* what it may do; every authorization decision stays in
+	 * the procedure that performs the action.
+	 */
+	me: adminProcedure
+		.output(adminViewerSchema)
+		.query(({ ctx }) => toAdminActor(ctx.session.user)),
+
 	list: adminProcedure
 		.input(userListInputSchema)
 		.output(userListOutputSchema)

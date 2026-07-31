@@ -41,7 +41,13 @@ function positiveIntOrUndefined(value: string) {
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
+export function LotsClient({
+	initialDetailId,
+	initialFilters = {},
+}: {
+	initialDetailId?: number;
+	initialFilters?: { operationId?: string };
+}) {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState<number>(25);
 	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
@@ -49,7 +55,9 @@ export function LotsClient({ initialDetailId }: { initialDetailId?: number }) {
 	const [status, setStatus] = useState<LotStatus | "all">("all");
 	const [diagnosticState, setDiagnosticState] =
 		useState<DiagnosticState>("all");
-	const [operationId, setOperationId] = useState("");
+	const [operationId, setOperationId] = useState(
+		() => initialFilters.operationId ?? "",
+	);
 	const [lotId, setLotId] = useState("");
 	const [lotItemId, setLotItemId] = useState("");
 	const [supplierId, setSupplierId] = useState("");

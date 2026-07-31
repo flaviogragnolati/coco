@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowUpRightIcon } from "lucide-react";
+import { ArrowUpRightIcon, MessageSquarePlusIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import { CopyIdentifierButton } from "./copy-identifier-button";
 import { type GlossaryEntry, glossaryKindLabels } from "./glossary.types";
 
@@ -25,9 +26,14 @@ function IdentifierChip({ value }: { value: string }) {
 export function GlossaryEntryCard({
 	entry,
 	onNavigate,
+	onPropose,
+	openProposalCount = 0,
 }: {
 	entry: GlossaryEntry;
 	onNavigate: () => void;
+	onPropose: (entry: GlossaryEntry) => void;
+	/** Counted once for the whole dataset by the dialog: never query per card. */
+	openProposalCount?: number;
 }) {
 	return (
 		<article className="flex flex-col gap-2 rounded-2xl border p-3">
@@ -49,6 +55,28 @@ export function GlossaryEntryCard({
 						<ArrowUpRightIcon className="size-3" />
 					</Link>
 				) : null}
+				<div
+					className={
+						entry.href
+							? "flex items-center gap-1"
+							: "ml-auto flex items-center gap-1"
+					}
+				>
+					{openProposalCount > 0 ? (
+						<Badge title="propuestas sin resolver" variant="highlight">
+							{openProposalCount}
+						</Badge>
+					) : null}
+					<Button
+						aria-label={`Proponer cambio para ${entry.label}`}
+						onClick={() => onPropose(entry)}
+						size="sm"
+						type="button"
+						variant="ghost"
+					>
+						<MessageSquarePlusIcon />
+					</Button>
+				</div>
 			</div>
 
 			{entry.definition ? (

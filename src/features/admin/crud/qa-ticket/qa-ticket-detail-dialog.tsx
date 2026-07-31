@@ -1,6 +1,6 @@
 "use client";
 
-import { SaveIcon } from "lucide-react";
+import { HandIcon, SaveIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
 import { Badge } from "~/components/ui/badge";
@@ -56,6 +56,8 @@ export function QaTicketDetailDialog({
 	onOpenChange,
 	onSetStatus,
 	isSettingStatus,
+	onClaim,
+	isClaiming,
 }: {
 	open: boolean;
 	ticket?: QaTicketDetail;
@@ -65,6 +67,8 @@ export function QaTicketDetailDialog({
 	onOpenChange: (open: boolean) => void;
 	onSetStatus: (input: { status: QaTicketStatus; notes?: string }) => void;
 	isSettingStatus?: boolean;
+	onClaim: () => void;
+	isClaiming?: boolean;
 }) {
 	const [status, setStatus] = useState<QaTicketStatus>("pending");
 	const [notes, setNotes] = useState("");
@@ -114,6 +118,19 @@ export function QaTicketDetailDialog({
 									? `Tomado por ${ticket.assignee.name}`
 									: "Sin asignar"}
 							</span>
+							{/* Up here, away from the result section: claiming refetches the
+							    ticket, and the resync that follows overwrites whatever is
+							    half-typed in Notas. */}
+							<Button
+								disabled={ticket.deleted || isClaiming}
+								onClick={onClaim}
+								size="sm"
+								type="button"
+								variant="outline"
+							>
+								<HandIcon data-icon="inline-start" />
+								{ticket.assignee ? "Tomar el caso" : "Tomar caso"}
+							</Button>
 						</div>
 
 						<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-3">

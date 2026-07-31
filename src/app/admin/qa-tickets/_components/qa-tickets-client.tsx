@@ -327,7 +327,7 @@ export function QaTicketsClient() {
 							description: "Todavía sin correr",
 						},
 						{
-							label: "Pasados",
+							label: "Completos OK",
 							value: statsQuery.data.passed,
 							icon: CheckCircle2Icon,
 							accent: "success",
@@ -474,9 +474,14 @@ export function QaTicketsClient() {
 
 			<QaTicketDetailDialog
 				errorMessage={detailQuery.error?.message}
+				isClaiming={claimMutation.isPending}
 				isError={detailQuery.isError}
 				isLoading={detailQuery.isLoading && openTicketId !== null}
 				isSettingStatus={setStatusMutation.isPending}
+				onClaim={() => {
+					if (openTicketId === null) return;
+					claimMutation.mutate({ id: openTicketId });
+				}}
 				onOpenChange={(open) => {
 					if (!open) setOpenTicketId(null);
 				}}

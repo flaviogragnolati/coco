@@ -1,7 +1,10 @@
 /**
- * Search-param helpers for admin pages. Entity list pages read `?detailId=` to
- * open their detail dialog on arrival (deep link from the tracking modal); on
- * `/admin/tracking` the id params are *filters* instead.
+ * Search-param helpers for admin pages. Three categories of parameter, and
+ * mixing their vocabularies is the bug this docblock exists to prevent:
+ * `?detailId=` opens a detail dialog on arrival, `?reviewId=` opens a review,
+ * and every other `?<entity>Id=` is a *filter* the list starts narrowed by.
+ * A deep link may carry one of each — `?detailId=7&operationId=3` opens lot 7
+ * over the list of operation 3's lots.
  *
  * Reading is initial-only: closing a dialog does not rewrite the URL.
  */
@@ -32,4 +35,13 @@ export function detailIdParam(params: AdminSearchParams) {
  */
 export function reviewIdParam(params: AdminSearchParams) {
 	return positiveIntParam(params.reviewId);
+}
+
+/**
+ * The id a list arrives filtered by. String rather than `number | undefined`
+ * because list filter state is text: the clients feed this straight into their
+ * `useState`, and `""` is their "no filter" value.
+ */
+export function idFilterParam(value: string | string[] | undefined) {
+	return positiveIntParam(value)?.toString() ?? "";
 }

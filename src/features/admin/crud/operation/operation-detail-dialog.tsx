@@ -1,6 +1,11 @@
 "use client";
 
-import { BoxesIcon, HistoryIcon } from "lucide-react";
+import {
+	BoxesIcon,
+	ClipboardListIcon,
+	HistoryIcon,
+	RotateCcwIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -170,10 +175,15 @@ function Diagnostics({ operation }: { operation: OperationDetail }) {
 }
 
 /**
- * Exits toward the lists that can show the rest of the story. Both routes read
- * `operationId` as a *filter*, unlike the `?detailId=` params the entity list
- * pages use to reopen a modal.
+ * Deep link into a list: `operationId` narrows it, `detailId` opens one row's
+ * modal on top. The two are independent, so a row link carries both — closing
+ * the modal leaves the reader on the operation's rows rather than on everything.
  */
+function operationEntityHref(path: string, id: number, operationId: number) {
+	return `${path}?detailId=${id}&operationId=${operationId}`;
+}
+
+/** Exits toward the lists that can show the rest of the story. */
 function RelatedLinks({ operation }: { operation: OperationDetail }) {
 	const links = [
 		{
@@ -181,6 +191,18 @@ function RelatedLinks({ operation }: { operation: OperationDetail }) {
 			label: "Lotes de la operación",
 			href: `/admin/lots?operationId=${operation.id}`,
 			icon: BoxesIcon,
+		},
+		{
+			key: "supplier-orders",
+			label: "Órdenes de proveedor de la operación",
+			href: `/admin/supplier-orders?operationId=${operation.id}`,
+			icon: ClipboardListIcon,
+		},
+		{
+			key: "roll-overs",
+			label: "Rollovers de la operación",
+			href: `/admin/roll-overs?operationId=${operation.id}`,
+			icon: RotateCcwIcon,
 		},
 		{
 			key: "tracking",
@@ -209,12 +231,23 @@ function RelatedLinks({ operation }: { operation: OperationDetail }) {
 	);
 }
 
-function LotSection({ lot }: { lot: OperationLot }) {
+function LotSection({
+	lot,
+	operationId,
+}: {
+	lot: OperationLot;
+	operationId: number;
+}) {
 	return (
 		<div className="flex flex-col gap-3 rounded-lg border p-3">
 			<div className="flex flex-wrap items-start justify-between gap-2">
 				<div className="flex flex-col gap-1">
-					<span className="font-medium">{lot.code}</span>
+					<Link
+						className="font-medium underline-offset-4 hover:underline"
+						href={operationEntityHref("/admin/lots", lot.id, operationId)}
+					>
+						{lot.code}
+					</Link>
 					<span className="text-muted-foreground text-xs">
 						{lot.supplier.name}
 					</span>
@@ -369,7 +402,9 @@ function DetailBody({
 								La operación no generó lotes.
 							</p>
 						) : (
-							operation.lots.map((lot) => <LotSection key={lot.id} lot={lot} />)
+							operation.lots.map((lot) => (
+								<LotSection key={lot.id} lot={lot} operationId={operation.id} />
+							))
 						)}
 					</AccordionContent>
 				</AccordionItem>
@@ -387,7 +422,16 @@ function DetailBody({
 							operation.supplierOrders.map((order) => (
 								<div className="rounded-lg border p-2" key={order.id}>
 									<div className="flex flex-wrap items-center justify-between gap-2">
-										<span className="font-medium">{order.code}</span>
+										<Link
+											className="font-medium underline-offset-4 hover:underline"
+											href={operationEntityHref(
+												"/admin/supplier-orders",
+												order.id,
+												operation.id,
+											)}
+										>
+											{order.code}
+										</Link>
 										<StatusChip
 											config={supplierOrderStatusConfig[order.status]}
 										/>

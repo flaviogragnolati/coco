@@ -1,4 +1,8 @@
 import type { GlossaryEntry } from "../glossary.types";
+import {
+	glossaryProposalFieldLabelMap,
+	glossaryProposalStatusLabelMap,
+} from "../glossary-proposal.mappers";
 
 export const crosscuttingGlossaryEntries: GlossaryEntry[] = [
 	// --- Conceptos -----------------------------------------------------------
@@ -76,7 +80,7 @@ export const crosscuttingGlossaryEntries: GlossaryEntry[] = [
 		label: "Glosario",
 		term: "Glossary",
 		definition:
-			"Esta referencia dentro de la app: para una palabra del dominio, cómo la llama la UI, cómo la llama el código y cómo la llama la base. Es una vista sobre datos curados a mano; la fuente canónica del lenguaje es CONTEXT.md.",
+			"Esta referencia dentro de la app: para una palabra del dominio, cómo la llama la UI, cómo la llama el código y cómo la llama la base. Es una vista sobre datos curados a mano; la fuente canónica del lenguaje es CONTEXT.md. Sus entradas siguen siendo del código: lo único que la app escribe al lado es una propuesta de cambio (ADR 0007).",
 		aliases: ["Diccionario", "Ayuda", "Documentación"],
 	},
 	{
@@ -109,6 +113,16 @@ export const crosscuttingGlossaryEntries: GlossaryEntry[] = [
 			"Un atajo del admin alcanzable desde el botón flotante en cualquier pantalla. Hoy la única abre el glosario.",
 		aliases: ["Atajo", "Herramienta", "Shortcut"],
 	},
+	{
+		slug: "concepto-propuesta-de-cambio",
+		kind: "concept",
+		section: "crosscutting",
+		label: "Propuesta de cambio",
+		term: "Glossary proposal",
+		definition:
+			"Un pedido registrado para renombrar o redefinir una entrada del glosario: quién lo pidió, qué parte de la entrada cuestiona, el texto propuesto y un motivo opcional. Nunca edita la entrada — aceptarlo compromete a un cambio de código en el dataset del glosario y en CONTEXT.md, y por eso tiene un estado «aplicada» propio (ADR 0007).",
+		aliases: ["Sugerencia", "Pedido", "Ticket de glosario"],
+	},
 
 	// --- Entidades -----------------------------------------------------------
 	{
@@ -137,6 +151,105 @@ export const crosscuttingGlossaryEntries: GlossaryEntry[] = [
 		definition:
 			"Un canal de notificación declarado con su tipo y su credencial. Está modelado pero todavía sin uso en la aplicación.",
 		occurrences: [{ code: "Channel", db: "channel" }],
+	},
+	{
+		slug: "entidad-propuesta-de-glosario",
+		kind: "entity",
+		section: "crosscutting",
+		label: "Propuesta de glosario",
+		definition:
+			"La fila que guarda una propuesta de cambio, con un snapshot de la entrada que cuestiona (slug, nombre y valor actual). El snapshot existe porque las entradas viven en el código y el servidor no puede resolverlas.",
+		occurrences: [{ code: "GlossaryProposal", db: "glossary_proposal" }],
+	},
+
+	// --- Estados: propuesta de glosario --------------------------------------
+	{
+		slug: "estado-propuesta-campo-nombre",
+		kind: "status",
+		section: "crosscutting",
+		label: glossaryProposalFieldLabelMap.label,
+		definition: "La propuesta cuestiona cómo se llama el término en la UI.",
+		occurrences: [
+			{ code: "GlossaryProposalField.label", db: "glossary_proposal.field" },
+		],
+	},
+	{
+		slug: "estado-propuesta-campo-definicion",
+		kind: "status",
+		section: "crosscutting",
+		label: glossaryProposalFieldLabelMap.definition,
+		definition: "La propuesta cuestiona qué dice la definición del término.",
+		occurrences: [
+			{
+				code: "GlossaryProposalField.definition",
+				db: "glossary_proposal.field",
+			},
+		],
+	},
+	{
+		slug: "estado-propuesta-campo-identificador",
+		kind: "status",
+		section: "crosscutting",
+		label: glossaryProposalFieldLabelMap.identifier,
+		definition:
+			"La propuesta cuestiona el símbolo de código o la columna con la que el término se materializa.",
+		occurrences: [
+			{
+				code: "GlossaryProposalField.identifier",
+				db: "glossary_proposal.field",
+			},
+		],
+	},
+	{
+		slug: "estado-propuesta-abierta",
+		kind: "status",
+		section: "crosscutting",
+		label: glossaryProposalStatusLabelMap.open,
+		definition: "La propuesta espera que un superadmin la decida.",
+		occurrences: [
+			{ code: "GlossaryProposalStatus.open", db: "glossary_proposal.status" },
+		],
+	},
+	{
+		slug: "estado-propuesta-aceptada",
+		kind: "status",
+		section: "crosscutting",
+		label: glossaryProposalStatusLabelMap.accepted,
+		definition:
+			"Hubo acuerdo, pero el código todavía dice lo anterior: falta la edición del dataset, del label map y de CONTEXT.md.",
+		occurrences: [
+			{
+				code: "GlossaryProposalStatus.accepted",
+				db: "glossary_proposal.status",
+			},
+		],
+	},
+	{
+		slug: "estado-propuesta-aplicada",
+		kind: "status",
+		section: "crosscutting",
+		label: glossaryProposalStatusLabelMap.applied,
+		definition:
+			"El cambio ya está en el código. Lo marca un superadmin a mano: nada lo detecta solo.",
+		occurrences: [
+			{
+				code: "GlossaryProposalStatus.applied",
+				db: "glossary_proposal.status",
+			},
+		],
+	},
+	{
+		slug: "estado-propuesta-rechazada",
+		kind: "status",
+		section: "crosscutting",
+		label: glossaryProposalStatusLabelMap.rejected,
+		definition: "Se decidió no cambiar nada; la entrada queda como está.",
+		occurrences: [
+			{
+				code: "GlossaryProposalStatus.rejected",
+				db: "glossary_proposal.status",
+			},
+		],
 	},
 
 	// --- Estados: outbox -----------------------------------------------------

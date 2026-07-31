@@ -52,8 +52,10 @@ function positiveIntOrUndefined(value: string) {
 
 export function SupplierOrdersClient({
 	initialDetailId,
+	initialFilters = {},
 }: {
 	initialDetailId?: number;
+	initialFilters?: { operationId?: string };
 }) {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState<number>(25);
@@ -63,7 +65,9 @@ export function SupplierOrdersClient({
 	const [diagnosticState, setDiagnosticState] =
 		useState<DiagnosticState>("all");
 	const [supplierId, setSupplierId] = useState("");
-	const [operationId, setOperationId] = useState("");
+	const [operationId, setOperationId] = useState(
+		() => initialFilters.operationId ?? "",
+	);
 	const [selectedOrderId, setSelectedOrderId] = useState<number | null>(
 		initialDetailId ?? null,
 	);
