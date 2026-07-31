@@ -6,6 +6,7 @@ import {
 	calculateLineTotal,
 	formatCurrency,
 	formatQuantity,
+	getMarketSaving,
 	getPerUnitPrice,
 	normalizeCartQuantity,
 	PricingConfigurationError,
@@ -24,7 +25,9 @@ function terms(
 		step: null,
 		stepPrice: null,
 		max: null,
-		refPrice: null,
+		unitPrice: null,
+		marketPrice: null,
+		discountPercent: null,
 		currency: "ARS",
 		fromDate: new Date("2026-01-01T00:00:00.000Z"),
 		toDate: null,
@@ -136,25 +139,77 @@ test("empty values fall through to the raw branch instead of coercing to zero", 
 	expect(formatQuantity("", "kg")).toBe(" kg");
 });
 
-test("getPerUnitPrice prefers an explicit reference price", () => {
+test("getPerUnitPrice prefers an explicit unit price", () => {
 	expect(
-		getPerUnitPrice({ refPrice: "12.5", moqPrice: "100", moq: "10" }),
+		getPerUnitPrice(terms({ unitPrice: "12.5", moqPrice: "100", moq: "10" })),
 	).toBe(12.5);
 });
 
-test("getPerUnitPrice derives the reference from the minimum block", () => {
-	expect(getPerUnitPrice({ refPrice: null, moqPrice: "100", moq: "8" })).toBe(
-		12.5,
-	);
+test("getPerUnitPrice derives the unit price from the minimum block", () => {
+	expect(
+		getPerUnitPrice(terms({ unitPrice: null, moqPrice: "100", moq: "8" })),
+	).toBe(12.5);
 });
 
 test("getPerUnitPrice rejects zero and invalid minimum quantities", () => {
 	expect(
-		getPerUnitPrice({ refPrice: null, moqPrice: "100", moq: "0" }),
+		getPerUnitPrice(terms({ unitPrice: null, moqPrice: "100", moq: "0" })),
 	).toBeNull();
 	expect(
-		getPerUnitPrice({ refPrice: null, moqPrice: "invalid", moq: "8" }),
+		getPerUnitPrice(terms({ unitPrice: null, moqPrice: "invalid", moq: "8" })),
 	).toBeNull();
+});
+
+// Both branches must discount, or the catalog advertises one number and the
+// cart charges another.
+test("getPerUnitPrice discounts the explicit unit price", () => {
+	expect(
+		getPerUnitPrice(
+			terms({
+				unitPrice: "100",
+				moqPrice: "1000",
+				moq: "10",
+				discountPercent: "25",
+			}),
+		),
+	).toBe(75);
+});
+
+test("getPerUnitPrice discounts the derived unit price too", () => {
+	expect(
+		getPerUnitPrice(
+			terms({
+				unitPrice: null,
+				moqPrice: "1000",
+				moq: "10",
+				discountPercent: "25",
+			}),
+		),
+	).toBe(75);
+});
+
+test("getMarketSaving measures the market price against the offer price", () => {
+	expect(
+		getMarketSaving(
+			terms({
+				unitPrice: "100",
+				moqPrice: "1000",
+				moq: "10",
+				discountPercent: "25",
+				marketPrice: "150",
+			}),
+		),
+	).toEqual({ perUnit: 75, perBlock: 750, percent: 50 });
+});
+
+test("getMarketSaving never reports a negative saving", () => {
+	const notAbove = { unitPrice: "100", moqPrice: "1000", moq: "10" } as const;
+
+	expect(getMarketSaving(terms({ ...notAbove, marketPrice: null }))).toBeNull();
+	expect(
+		getMarketSaving(terms({ ...notAbove, marketPrice: "100" })),
+	).toBeNull();
+	expect(getMarketSaving(terms({ ...notAbove, marketPrice: "80" }))).toBeNull();
 });
 
 test.each([
@@ -225,6 +280,48 @@ test.each([
 		{ moq: "100", moqPrice: "500", step: "10" },
 		"500.00",
 	],
+	[
+		"a discount comes off the minimum block",
+		"100",
+		{ moq: "100", moqPrice: "500", discountPercent: "25" },
+		"375.00",
+	],
+	[
+		"a discount comes off every step as well as the minimum",
+		"1000",
+		{
+			moq: "100",
+			moqPrice: "500",
+			step: "10",
+			stepPrice: "50",
+			discountPercent: "25",
+		},
+		"3750.00",
+	],
+	[
+		"a zero discount prices exactly like no discount",
+		"1000",
+		{
+			moq: "100",
+			moqPrice: "500",
+			step: "10",
+			stepPrice: "50",
+			discountPercent: "0",
+		},
+		"5000.00",
+	],
+	[
+		"a null discount prices exactly like no discount",
+		"1000",
+		{
+			moq: "100",
+			moqPrice: "500",
+			step: "10",
+			stepPrice: "50",
+			discountPercent: null,
+		},
+		"5000.00",
+	],
 ] as const)("calculateLineTotal: %s", (_name, quantity, overrides, expected) => {
 	expect(calculateLineTotal(terms(overrides), quantity)).toBe(expected);
 });
@@ -236,6 +333,21 @@ test("calculateLineTotal refuses to price a step it has no price for", () => {
 	expect(() =>
 		calculateLineTotal(
 			terms({ moq: "100", moqPrice: "500", step: "10", stepPrice: null }),
+			"1000",
+		),
+	).toThrow(PricingConfigurationError);
+});
+
+test("a discount does not turn the missing-step-price error into a price", () => {
+	expect(() =>
+		calculateLineTotal(
+			terms({
+				moq: "100",
+				moqPrice: "500",
+				step: "10",
+				stepPrice: null,
+				discountPercent: "25",
+			}),
 			"1000",
 		),
 	).toThrow(PricingConfigurationError);

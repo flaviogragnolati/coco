@@ -14,13 +14,19 @@ import {
 import { ProductImage } from "~/features/catalog/_components/product-image";
 import type { HomeOffer } from "~/shared/common/home.types";
 import {
+	getMarketComparison,
 	getOfferBlockPrice,
+	getOfferDiscountLabel,
 	getOfferMinimumLabel,
+	getOfferStrikethroughPrice,
 	getOfferUnitReference,
 } from "../home-formatters";
 
 export function HomeOfferCard({ offer }: { offer: HomeOffer }) {
 	const unitReference = getOfferUnitReference(offer);
+	const strikethroughPrice = getOfferStrikethroughPrice(offer);
+	const discountLabel = getOfferDiscountLabel(offer);
+	const marketComparison = getMarketComparison(offer);
 
 	return (
 		<Card className="h-full gap-0 py-0">
@@ -42,14 +48,27 @@ export function HomeOfferCard({ offer }: { offer: HomeOffer }) {
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-1 flex-col gap-1 py-5">
-				<p className="font-heading font-semibold text-2xl">
-					{getOfferBlockPrice(offer)}
-				</p>
+				<div className="flex flex-wrap items-baseline gap-2">
+					<p className="font-heading font-semibold text-2xl">
+						{getOfferBlockPrice(offer)}
+					</p>
+					{strikethroughPrice ? (
+						<p className="text-muted-foreground text-sm line-through">
+							{strikethroughPrice}
+						</p>
+					) : null}
+					{discountLabel ? (
+						<Badge variant="highlight">{discountLabel}</Badge>
+					) : null}
+				</div>
 				<p className="text-muted-foreground text-xs">
 					{getOfferMinimumLabel(offer)}
 				</p>
 				{unitReference ? (
 					<p className="text-muted-foreground text-xs">{unitReference}</p>
+				) : null}
+				{marketComparison ? (
+					<p className="text-success text-xs">{marketComparison}</p>
 				) : null}
 			</CardContent>
 			<CardFooter className="pb-5">

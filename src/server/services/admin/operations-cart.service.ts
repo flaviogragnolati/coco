@@ -74,7 +74,9 @@ function buildProductSnapshot(terms: OperationsProductClientTermsRecord) {
 			step: terms.step?.toString() ?? null,
 			stepPrice: terms.stepPrice?.toString() ?? null,
 			max: terms.max?.toString() ?? null,
-			refPrice: terms.refPrice?.toString() ?? null,
+			unitPrice: terms.unitPrice?.toString() ?? null,
+			marketPrice: terms.marketPrice?.toString() ?? null,
+			discountPercent: terms.discountPercent?.toString() ?? null,
 		},
 		product: {
 			id: terms.product.id,

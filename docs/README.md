@@ -25,6 +25,8 @@
 | [0005](./adr/0005-demand-conservation-and-rollover-reaggregation.md) | Demand conservation invariant; roll over ladder; re-aggregation by default | fulfillment-reference §2, §8–§9 |
 | [0006](./adr/0006-operation-draft-and-reviewed-fingerprint.md) | Operations are reviewed as drafts; execute refuses if the demand moved (fingerprint) | fulfillment-reference §2 |
 | [0007](./adr/0007-glossary-stays-code-owned.md) | Glossary entries stay in code; a proposal is a change request, applied by editing `glossary.data.ts` and `CONTEXT.md` | the admin glossary (`src/features/admin/glossary/`) |
+| [0008](./adr/0008-offer-discount-is-an-attribute-of-client-terms.md) | The offer discount is two columns on `ProductClientTerms` applied in `calculateLineTotal`; no promotion entity | catalog/cart/checkout pricing (`commerce.helpers.ts`) |
+| [0009](./adr/0009-legal-documents-are-database-owned.md) | Legal texts are versioned rows in `legal_document`, published from the admin and revalidated on demand — the opposite of ADR 0007 | terms and conditions (`/terminos`, checkout acceptance) |
 
 ## Design history (living documents — record decisions, not current state)
 

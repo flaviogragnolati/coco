@@ -17,6 +17,7 @@ import {
 	ScrollTextIcon,
 	ShoppingBagIcon,
 	ShoppingCartIcon,
+	SparklesIcon,
 	TagsIcon,
 	TruckIcon,
 	UsersIcon,
@@ -80,6 +81,11 @@ export const adminNavGroups: AdminNavGroup[] = [
 				title: "Términos de producto",
 				href: "/admin/product-terms",
 				icon: ScrollTextIcon,
+			},
+			{
+				title: "Ofertas del home",
+				href: "/admin/home-offers",
+				icon: SparklesIcon,
 			},
 			{
 				title: "Transportistas",

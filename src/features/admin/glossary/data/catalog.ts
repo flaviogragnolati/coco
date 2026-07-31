@@ -21,9 +21,31 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Oferta destacada",
 		term: "Featured offer",
 		definition:
-			"Un producto del catálogo que aparece automáticamente en la home a partir de sus términos de cliente activos. No implica promoción, descuento ni operación abierta.",
-		aliases: ["Promoción", "Descuento", "Operación"],
-		href: "/admin/products",
+			"Un producto vigente del catálogo que aparece en la grilla de ofertas de la home, fijado por un administrador o elegido por el ranking de ofertas. Los fijados van primero y el ranking completa el resto, así la grilla nunca queda vacía ni desactualizada.",
+		aliases: ["Promoción", "Operación", "Oferta protagonista"],
+		href: "/admin/home-offers",
+	},
+	{
+		slug: "concepto-producto-destacado",
+		kind: "concept",
+		section: "catalog",
+		label: "Producto destacado",
+		term: "Home spotlight",
+		definition:
+			"El único producto con el que abre el hero de la home: la elección explícita de un administrador o, cuando nadie eligió, el primero del ranking de ofertas. Queda excluido de la grilla de ofertas, así ningún producto aparece dos veces en la página.",
+		aliases: ["Oferta protagonista", "Oferta del hero", "Oferta destacada"],
+		href: "/admin/home-offers",
+	},
+	{
+		slug: "concepto-ranking-de-ofertas",
+		kind: "concept",
+		section: "catalog",
+		label: "Ranking de ofertas",
+		term: "Offers ranking",
+		definition:
+			"El orden en que los productos vigentes no fijados compiten por la grilla de la home: por ahorro contra el precio de góndola o por descuento de oferta, según el criterio que eligió el administrador. Los términos sin el dato del criterio quedan últimos.",
+		aliases: ["Orden", "Top de ofertas", "Consulta"],
+		href: "/admin/home-offers",
 	},
 	{
 		slug: "concepto-moq",
@@ -34,6 +56,50 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		definition:
 			"La cantidad más chica que se puede comprar de un producto y la unidad en la que se suma demanda. Se cobra como bloque según los términos de cliente, con incrementos opcionales por paso.",
 		aliases: ["Mínimo", "Tamaño de lote"],
+		href: "/admin/product-terms",
+	},
+	{
+		slug: "concepto-precio-unitario",
+		kind: "concept",
+		section: "catalog",
+		label: "Precio unitario",
+		term: "Unit price",
+		definition:
+			"El precio por unidad de un producto según sus términos de cliente, usado para mostrar y comparar. Es opcional: cuando falta se deriva del precio del MOQ y el MOQ.",
+		aliases: ["Precio de referencia", "refPrice"],
+		href: "/admin/product-terms",
+	},
+	{
+		slug: "concepto-precio-de-gondola",
+		kind: "concept",
+		section: "catalog",
+		label: "Precio de góndola",
+		term: "Market price",
+		definition:
+			"El precio por unidad al que se vende el mismo producto fuera de Coco, cargado por un administrador para poder decir cuánto ahorra el cliente. Es un dato declarado y sin verificar: nunca se cobra ni entra en el precio de un carrito.",
+		aliases: ["Precio de referencia", "Precio de lista"],
+		href: "/admin/product-terms",
+	},
+	{
+		slug: "concepto-descuento-de-oferta",
+		kind: "concept",
+		section: "catalog",
+		label: "Descuento de oferta",
+		term: "Offer discount",
+		definition:
+			"Un porcentaje sobre los términos de cliente que baja lo que el cliente realmente paga, aplicado por igual al precio del MOQ y al precio de paso. No tiene vigencia propia: vive y muere con los términos que lo llevan (ADR 0008).",
+		aliases: ["Promoción", "Cupón", "Campaña"],
+		href: "/admin/product-terms",
+	},
+	{
+		slug: "concepto-precio-oferta",
+		kind: "concept",
+		section: "catalog",
+		label: "Precio oferta",
+		term: "Offer price",
+		definition:
+			"Lo que paga el cliente una vez aplicado el descuento de oferta a los términos de cliente. Se calcula en un solo lugar, así es idéntico en el catálogo, el carrito, el snapshot del checkout y el pago.",
+		aliases: ["Precio final", "Precio con descuento"],
 		href: "/admin/product-terms",
 	},
 
@@ -96,7 +162,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Términos de cliente",
 		term: "Client terms",
 		definition:
-			"Los términos comerciales vigentes de cara al cliente para un producto: MOQ y su precio, paso y precio de paso opcionales, precio de referencia, moneda y ventana de validez. Única fuente de precio para catálogo y carrito.",
+			"Los términos comerciales vigentes de cara al cliente para un producto: MOQ y su precio, paso y precio de paso opcionales, precio unitario, precio de góndola y descuento de oferta opcionales, moneda y ventana de validez. Única fuente de precio para catálogo y carrito.",
 		aliases: ["Precios", "Términos de precio"],
 		occurrences: [{ code: "ProductClientTerms", db: "product_client_terms" }],
 		href: "/admin/product-terms",
@@ -124,6 +190,16 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 			{ code: "ProductLocalConstraints", db: "product_local_constraints" },
 		],
 		href: "/admin/products",
+	},
+	{
+		slug: "entidad-configuracion-de-ofertas-del-home",
+		kind: "entity",
+		section: "catalog",
+		label: "Configuración de ofertas del home",
+		definition:
+			"La única fila que guarda cómo se arma la home: el producto destacado elegido, el criterio del ranking de ofertas y cuántas ofertas entran en la grilla. Las posiciones fijadas viven en cada producto, no acá.",
+		occurrences: [{ code: "HomeOfferSettings", db: "home_offer_settings" }],
+		href: "/admin/home-offers",
 	},
 
 	// --- Estados: unidad de producto -----------------------------------------
@@ -272,5 +348,37 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 			},
 		],
 		href: "/admin/products",
+	},
+
+	// --- Estados: criterio del ranking de ofertas ----------------------------
+	{
+		slug: "estado-criterio-ahorro-contra-gondola",
+		kind: "status",
+		section: "catalog",
+		label: "Ahorro contra góndola",
+		definition:
+			"El ranking ordena por la plata que el cliente ahorra frente al precio de góndola sobre el bloque del MOQ. Los términos sin precio de góndola quedan últimos.",
+		occurrences: [
+			{
+				code: "HomeOffersCriterion.marketSaving",
+				db: "home_offer_settings.criterion",
+			},
+		],
+		href: "/admin/home-offers",
+	},
+	{
+		slug: "estado-criterio-descuento-de-oferta",
+		kind: "status",
+		section: "catalog",
+		label: "Descuento de oferta",
+		definition:
+			"El ranking ordena por el porcentaje de descuento cargado en los términos de cliente. Los términos sin descuento quedan últimos.",
+		occurrences: [
+			{
+				code: "HomeOffersCriterion.discountPercent",
+				db: "home_offer_settings.criterion",
+			},
+		],
+		href: "/admin/home-offers",
 	},
 ];

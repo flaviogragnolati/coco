@@ -36,7 +36,9 @@ function makeProduct(overrides: ProductOverrides = {}): CatalogProductListItem {
 		step: overrides.terms?.step ?? null,
 		stepPrice: overrides.terms?.stepPrice ?? null,
 		max: overrides.terms?.max ?? null,
-		refPrice: overrides.terms?.refPrice ?? null,
+		unitPrice: overrides.terms?.unitPrice ?? null,
+		marketPrice: overrides.terms?.marketPrice ?? null,
+		discountPercent: overrides.terms?.discountPercent ?? null,
 		currency: overrides.terms?.currency ?? "ARS",
 		fromDate: overrides.terms?.fromDate ?? new Date("2024-01-01"),
 		toDate: overrides.terms?.toDate ?? null,
@@ -60,11 +62,24 @@ test("normalizeSearch strips accents, case and whitespace", () => {
 	expect(normalizeSearch("AZÚCAR")).toBe("azucar");
 });
 
-test("productPrice prefers refPrice over moqPrice", () => {
-	const withRef = makeProduct({ terms: { moqPrice: "100", refPrice: "12" } });
-	const withoutRef = makeProduct({ terms: { moqPrice: "100" } });
-	expect(productPrice(withRef)).toBe(12);
-	expect(productPrice(withoutRef)).toBe(100);
+test("productPrice prefers unitPrice over moqPrice", () => {
+	const withUnitPrice = makeProduct({
+		terms: { moqPrice: "100", unitPrice: "12" },
+	});
+	const withoutUnitPrice = makeProduct({ terms: { moqPrice: "100" } });
+	expect(productPrice(withUnitPrice)).toBe(12);
+	expect(productPrice(withoutUnitPrice)).toBe(100);
+});
+
+test("productPrice ranks products by their discounted offer price", () => {
+	const discountedUnitPrice = makeProduct({
+		terms: { moqPrice: "100", unitPrice: "12", discountPercent: "25" },
+	});
+	const discountedBlockPrice = makeProduct({
+		terms: { moqPrice: "100", discountPercent: "25" },
+	});
+	expect(productPrice(discountedUnitPrice)).toBe(9);
+	expect(productPrice(discountedBlockPrice)).toBe(75);
 });
 
 test("matchScore ranks name prefix over brand and description", () => {
@@ -190,6 +205,20 @@ test("sortCatalog price-asc and price-desc", () => {
 	expect(
 		sortCatalog(products, "price-desc").map((product) => product.name),
 	).toStrictEqual(["Pricey", "Mid", "Cheap"]);
+});
+
+test("sortCatalog price-asc places a discounted product at its offer price", () => {
+	const products = [
+		makeProduct({ name: "Mid", terms: { moqPrice: "150" } }),
+		makeProduct({ name: "Cheap", terms: { moqPrice: "50" } }),
+		makeProduct({
+			name: "Discounted",
+			terms: { moqPrice: "300", discountPercent: "70" },
+		}),
+	];
+	expect(
+		sortCatalog(products, "price-asc").map((product) => product.name),
+	).toStrictEqual(["Cheap", "Discounted", "Mid"]);
 });
 
 test("sortCatalog newest orders by createdAt desc, id desc on ties", () => {

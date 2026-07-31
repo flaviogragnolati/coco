@@ -33,7 +33,9 @@ const operationsProductClientTermsSelect = {
 	step: true,
 	stepPrice: true,
 	max: true,
-	refPrice: true,
+	unitPrice: true,
+	marketPrice: true,
+	discountPercent: true,
 	active: true,
 	deleted: true,
 	product: {

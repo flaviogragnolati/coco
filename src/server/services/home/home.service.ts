@@ -1,15 +1,17 @@
 import "server-only";
 
-import { homeOffersOutputSchema } from "~/schemas/home.schemas";
+import { homeContentOutputSchema } from "~/schemas/home.schemas";
 import { db } from "~/server/db";
 import { selectProductImage } from "~/shared/common/commerce.helpers";
-import type { HomeOffer } from "~/shared/common/home.types";
+import type { HomeContent } from "~/shared/common/home.types";
 import {
 	type CurrentHomeOfferRecord,
+	getHomeOfferCuration,
 	listCurrentHomeOffers,
 } from "./home.data";
+import { composeHomeContent, type RankableHomeOffer } from "./home-ranking";
 
-function mapHomeOffer(record: CurrentHomeOfferRecord): HomeOffer {
+function mapHomeOffer(record: CurrentHomeOfferRecord): RankableHomeOffer {
 	return {
 		productId: record.product.id,
 		productClientTermsId: record.id,
@@ -19,19 +21,25 @@ function mapHomeOffer(record: CurrentHomeOfferRecord): HomeOffer {
 		imageUrl: selectProductImage(record.product, "catalog"),
 		moq: record.moq.toString(),
 		moqPrice: record.moqPrice.toString(),
-		refPrice: record.refPrice?.toString() ?? null,
+		unitPrice: record.unitPrice?.toString() ?? null,
+		marketPrice: record.marketPrice?.toString() ?? null,
+		discountPercent: record.discountPercent?.toString() ?? null,
 		currency: record.currency,
+		homeOfferRank: record.product.homeOfferRank,
+		fromDate: record.fromDate,
 	};
 }
 
-export async function getHomeOffers(limit = 4) {
-	const records = await listCurrentHomeOffers(db, new Date(), limit);
-	const uniqueRecords = records.filter(
-		(record, index, allRecords) =>
-			allRecords.findIndex(
-				(candidate) => candidate.product.id === record.product.id,
-			) === index,
-	);
+export async function getHomeContent(): Promise<HomeContent> {
+	const now = new Date();
+	const [records, curation] = await Promise.all([
+		listCurrentHomeOffers(db, now),
+		getHomeOfferCuration(db),
+	]);
 
-	return homeOffersOutputSchema.parse(uniqueRecords.map(mapHomeOffer));
+	// `homeOfferSchema` strips the ranking-only fields, so what reaches the
+	// components stays the plain offer contract.
+	return homeContentOutputSchema.parse(
+		composeHomeContent(records.map(mapHomeOffer), curation),
+	);
 }

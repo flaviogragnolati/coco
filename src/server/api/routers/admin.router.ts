@@ -6,6 +6,7 @@ import { carrierOrderRouter } from "./admin/carrier-order.router";
 import { cartTraceabilityRouter } from "./admin/cart-traceability.router";
 import { destinationRouter } from "./admin/destination.router";
 import { glossaryProposalRouter } from "./admin/glossary-proposal.router";
+import { homeOffersRouter } from "./admin/home-offers.router";
 import { lotRouter } from "./admin/lot.router";
 import { operationRouter } from "./admin/operation.router";
 import { operationsCartRouter } from "./admin/operations-cart.router";
@@ -31,6 +32,7 @@ export const adminRouter = createTRPCRouter({
 	cartTraceability: cartTraceabilityRouter,
 	destination: destinationRouter,
 	glossaryProposal: glossaryProposalRouter,
+	homeOffers: homeOffersRouter,
 	lot: lotRouter,
 	operation: operationRouter,
 	operationsCart: operationsCartRouter,

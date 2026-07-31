@@ -37,7 +37,7 @@ export function ContactSection({ isActiveUser }: { isActiveUser: boolean }) {
 								<ArrowRightIcon data-icon="inline-end" />
 							</Link>
 						</Button>
-						<Button asChild size="lg" variant="outline">
+						<Button asChild size="lg" variant="inverse">
 							<Link href={secondaryHref}>
 								<SecondaryIcon data-icon="inline-start" />
 								{secondaryLabel}
@@ -51,7 +51,7 @@ export function ContactSection({ isActiveUser }: { isActiveUser: boolean }) {
 							asChild
 							className="h-auto justify-start py-4"
 							key={label}
-							variant="outline"
+							variant="inverse"
 						>
 							<Link
 								href={href ?? "#contacto"}

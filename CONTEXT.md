@@ -185,12 +185,36 @@ The customer-facing set of purchasable products, each surfaced with its current 
 _Avoid_: Store, product list
 
 **Featured offer**:
-A current catalog product surfaced automatically on the home page from its active client terms. It does not imply a promotion, discount, or open aggregation operation.
-_Avoid_: Promotion, discount, operation
+A current catalog product shown in the home offers grid, either pinned by an admin or chosen by the offers ranking. Pinned ones come first and the ranking fills the rest, so the grid is never empty and never stale. Spanish-facing UI labels it "Oferta destacada".
+_Avoid_: Promotion, operation, oferta protagonista
+
+**Home spotlight**:
+The single product the home hero leads with: an admin's pick, or the top of the offers ranking when nobody picked one. It is excluded from the offers grid, so no product appears twice on the page. Spanish-facing UI labels it "Producto destacado".
+_Avoid_: Oferta protagonista, hero offer, featured offer
+
+**Offers ranking**:
+The order in which non-pinned current products compete for the home grid: by money saved against the market price, or by offer discount, whichever criterion the admin selected. Terms missing the criterion's input rank last.
+_Avoid_: Sort, top offers, query
 
 **Client terms**:
-The active customer-facing commercial terms for a product: minimum order quantity and its price, optional step and step price, optional reference price, currency, and validity window. The single price source for catalog and cart.
+The active customer-facing commercial terms for a product: minimum order quantity and its price, optional step and step price, optional unit price, optional market price, optional offer discount, currency, and validity window. The single price source for catalog and cart.
 _Avoid_: Pricing, price terms
+
+**Unit price**:
+The per-unit price of a product under its client terms, used for display and comparison. Optional: when it is absent it is derived from the MOQ price and the MOQ. Spanish-facing UI labels it "Precio unitario".
+_Avoid_: Reference price, refPrice, precio de referencia
+
+**Market price**:
+The per-unit price the same product sells for outside Coco, loaded by an admin so the catalog can state what a customer saves. It is never charged and never prices a cart. Spanish-facing UI labels it "Precio de góndola".
+_Avoid_: Reference price, list price, precio de referencia
+
+**Offer discount**:
+A percentage on client terms that lowers what the customer actually pays, applied to the MOQ price and the step price alike. It has no validity of its own — it lives and dies with the terms that carry it (ADR 0008). Spanish-facing UI labels it "Descuento".
+_Avoid_: Promotion, coupon, campaign
+
+**Offer price**:
+The amount a customer pays once the offer discount is applied to the client terms. Computed in one place, so it is identical in the catalog, the cart, the checkout snapshot and the payment. Spanish-facing UI labels it "Precio oferta".
+_Avoid_: Final price, sale price, discounted price
 
 **MOQ (minimum order quantity)**:
 The smallest purchasable quantity of a product and the unit in which demand is added; priced as a block by the client terms, with optional step increments above it.
@@ -207,6 +231,16 @@ _Avoid_: Order placement, purchase flow
 **Leave checkout**:
 The explicit way back from a frozen at-checkout cart to an editable one: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why editing the cart mid-checkout is offered as leaving rather than as a direct edit. Blocked while a payment is in process. Spanish-facing UI labels it "Volver a editar el carrito".
 _Avoid_: Cancel checkout, abort checkout, unfreeze
+
+### Legal and site content
+
+**Legal document**:
+A published version of a customer-facing legal text — terms and conditions, privacy, returns — held in the database with its version number, its body in Markdown, and its active flag. At most one version of each kind is active, and only the active one is ever rendered (ADR 0009). Spanish-facing UI labels it "Documento legal".
+_Avoid_: Página legal, contenido, TyC
+
+**Terms acceptance**:
+The record that a customer agreed to one specific version of the terms at checkout: the order keeps that version's id alongside its text, so publishing a new version never rewrites what was already agreed.
+_Avoid_: Terms snapshot, consent, aceptación
 
 ### Internal QA tracking
 

@@ -12,7 +12,9 @@ export type ClientTermsSource = {
 	step: Decimalish | null;
 	stepPrice: Decimalish | null;
 	max: Decimalish | null;
-	refPrice: Decimalish | null;
+	unitPrice: Decimalish | null;
+	marketPrice: Decimalish | null;
+	discountPercent: Decimalish | null;
 	currency: CatalogClientTerms["currency"];
 	fromDate: Date;
 	toDate: Date | null;
@@ -28,7 +30,9 @@ export function termsToClientTerms(
 		step: terms.step?.toString() ?? null,
 		stepPrice: terms.stepPrice?.toString() ?? null,
 		max: terms.max?.toString() ?? null,
-		refPrice: terms.refPrice?.toString() ?? null,
+		unitPrice: terms.unitPrice?.toString() ?? null,
+		marketPrice: terms.marketPrice?.toString() ?? null,
+		discountPercent: terms.discountPercent?.toString() ?? null,
 		currency: terms.currency,
 		fromDate: terms.fromDate,
 		toDate: terms.toDate,

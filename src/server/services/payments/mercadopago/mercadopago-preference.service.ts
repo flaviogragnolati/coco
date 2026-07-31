@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { Preference } from "mercadopago";
 
 import { createMercadoPagoClient } from "~/lib/mercadopago/client";
+import { termsToClientTerms } from "~/server/services/_base/client-terms.mapper";
 import type { CheckoutCartRecord } from "~/server/services/checkout/checkout.data";
 import type { PaymentProviderConfig } from "~/shared/common/admin-crud/payment.types";
 import { calculateLineTotal } from "~/shared/common/commerce.helpers";
@@ -30,23 +31,16 @@ type CreateMercadoPagoPreferenceInput = {
 	config: PaymentProviderConfig;
 };
 
-function buildPreferenceLines(cart: CheckoutCartRecord) {
+export function buildPreferenceLines(cart: CheckoutCartRecord) {
 	return cart.cartItems.map<MercadoPagoPreferenceLine>((item) => {
 		const name = item.productClientTerms.product.name;
 		const requestedQuantity = item.quantity.toString();
+		// Must go through `termsToClientTerms`: a hand-built literal satisfies the
+		// type by construction, so a field the discount needs would be silently
+		// omitted here and the customer charged the undiscounted amount with no
+		// compile error. Same reason `buildPriceSnapshot` uses the mapper.
 		const lineTotal = calculateLineTotal(
-			{
-				id: item.productClientTerms.id,
-				moq: item.productClientTerms.moq.toString(),
-				moqPrice: item.productClientTerms.moqPrice.toString(),
-				step: item.productClientTerms.step?.toString() ?? null,
-				stepPrice: item.productClientTerms.stepPrice?.toString() ?? null,
-				max: item.productClientTerms.max?.toString() ?? null,
-				refPrice: item.productClientTerms.refPrice?.toString() ?? null,
-				currency: item.productClientTerms.currency,
-				fromDate: item.productClientTerms.fromDate,
-				toDate: item.productClientTerms.toDate,
-			},
+			termsToClientTerms(item.productClientTerms),
 			requestedQuantity,
 		);
 

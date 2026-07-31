@@ -8,7 +8,7 @@
 > - `docs/fulfillment-reference.md` — the as-built fulfillment lifecycle: command surfaces, guards, and business rules per entity
 > - `docs/tracking-architecture.md` — the event-driven tracking pipeline and status derivation
 > - `CONTEXT.md` — the canonical domain language (Spanish UI labels included)
-> - `docs/adr/` — the six accepted architecture decision records (mapped in the final section)
+> - `docs/adr/` — the accepted architecture decision records (mapped in the final section)
 
 This document is the implementation reference for the application domain defined in `prisma/schema.prisma`.
 
@@ -52,6 +52,9 @@ The authoritative glossary lives in `CONTEXT.md`. The terms used most in this do
 - Packaged allocation: the `PackageAllocation` quantity bridge from a demand allocation to a package line
 - Package leg: the direction a package travels — `inbound` (supplier → destination) or `outbound` (destination → end user) (ADR 0004)
 - Delivery mode: how an outbound package reaches its customer — home delivery, pickup point (both on an end-user shipment), or depot pickup (the absence of a shipment)
+- Offer discount: the percentage on a client terms row that lowers what the customer actually pays; applied inside `calculateLineTotal` and nowhere else (ADR 0008)
+- Offer price: the amount charged once the offer discount is applied — the same number in the catalog, the cart, the checkout snapshot and the payment, by construction
+- Market price: the per-unit price other shops charge, loaded by an admin for comparison only; never billed
 - Roll over: quantity that dropped out of the current fulfillment path and must be rebatched or otherwise resolved (ADR 0005)
 - Demand conservation: the invariant that every unit of paid demand is always in exactly one active place or in an audited terminal resolution (ADR 0005)
 
@@ -111,9 +114,12 @@ The schema standardizes:
 
 - quantities on `Decimal(18,4)`
 - money on `Decimal(18,2)`
+- percentages on `Decimal(5,2)` (`ProductClientTerms.discountPercent`, constrained to `[0, 100)` by the app)
 - explicit `Currency` (`ARS | USD | EUR | BRL`)
 
 All quantity and pricing logic uses decimal-safe arithmetic (`Prisma.Decimal`). Floating-point math is not acceptable; fingerprints and event payloads serialize decimals as strings.
+
+Sell-side money has exactly one producer: `calculateLineTotal` in `src/shared/common/commerce.helpers.ts`. The offer discount is applied there, so every consumer — catalog, client cart store, cart and checkout services, the Mercado Pago preference, the admin operations cart — agrees on the charged amount without coordinating (ADR 0008).
 
 ### 8. Tracking and auditing are separated by intent
 
@@ -151,12 +157,29 @@ Operations no longer execute on creation. A draft is created with its parameters
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
 | `Brand` | Product brand metadata | Has many `Product` | Optional brand association |
-| `Product` | Catalog item | Optional `Brand`; optional `defaultSupplier`; has many client terms, supplier terms, and local constraints | `defaultSupplier` is a hint, not the only sourcing path |
+| `Product` | Catalog item | Optional `Brand`; optional `defaultSupplier`; has many client terms, supplier terms, and local constraints; back-relation `homeOfferSpotlightOf` | `defaultSupplier` is a hint, not the only sourcing path. `homeOfferRank` (nullable, indexed) pins the product's position in the home offers grid; null means the automatic ranking decides |
 | `Supplier` | Supplier master data | Has many `ProductSupplierTerms`, `Lot`, `SupplierOrder`; optional default relation from `Product` | Address/contact structures remain JSON for now |
-| `ProductClientTerms` | Customer-facing sell terms | Belongs to `Product`; referenced by `CartItem` | Source of MOQ, step, max, price, and currency used at request time |
-| `ProductSupplierTerms` | Supplier-facing buy terms | Belongs to `Product` and `Supplier`; referenced by `LotItem` | Source of sourcing MOQ and buy-side price logic |
+| `ProductClientTerms` | Customer-facing sell terms | Belongs to `Product`; referenced by `CartItem` | Source of MOQ, step, max, price, currency, and the offer discount used at request time — see the pricing columns below |
+| `ProductSupplierTerms` | Supplier-facing buy terms | Belongs to `Product` and `Supplier`; referenced by `LotItem` | Source of sourcing MOQ and buy-side price logic; still carries `refPrice` (see modeling limit 11) |
 | `ProductLocalConstraints` | Context-sensitive restrictions | Belongs to `Product` | Flexible JSON-based rule container, interpreted in app code |
 | `Destination` | Internal warehouse or operational destination | Referenced by `LotItem` and optionally by `Operation` | Not the same as the end-user address |
+| `HomeOfferSettings` | Home offers curation singleton | Optional `spotlightProduct` relation to `Product` (`onDelete: SetNull`) | One row, `id = 1`, always read and written through an upsert; holds the spotlight pick, the ranking `criterion`, and `offersLimit` (default `4`) |
+
+#### `ProductClientTerms` pricing columns
+
+The row carries four money columns and one percentage, and only two of them ever reach a charge:
+
+| Column | Type | Meaning | Enters `calculateLineTotal`? |
+| --- | --- | --- | --- |
+| `moqPrice` | `Decimal(18,2)`, required | Price of the whole MOQ block | Yes |
+| `stepPrice` | `Decimal(18,2)`, nullable | Price of one step above the MOQ; required whenever `step` is set | Yes |
+| `unitPrice` | `Decimal(18,2)`, nullable | **Coco's own** per-unit price, for display and comparison. Falls back to `moqPrice / moq` when absent | No — display only |
+| `marketPrice` | `Decimal(18,2)`, nullable | The per-unit price other shops charge. An unverified admin claim, used to state what a customer saves | **No, ever** (ADR 0008) |
+| `discountPercent` | `Decimal(5,2)`, nullable, `[0, 100)` | Discount off Coco's own price | Yes — applied to `moqPrice` **and** `stepPrice` alike |
+
+`unitPrice` was named `refPrice` until 2026-07-31. It always meant Coco's per-unit price; the admin label "Precio de referencia" was the lie the rename fixes, and `marketPrice` now carries the reference-price meaning. Existing values carried over unchanged.
+
+The discount is an attribute of the terms row, not a promotion entity (ADR 0008): it has no validity window of its own, does not stack, and needs no precedence rule — it is vigente exactly while its terms row is, and ending an offer is closing those terms. Discounting `stepPrice` too is deliberate: discounting only the MOQ block would make the marginal step cost more than the minimum.
 
 ### Customer request and commercial records
 
@@ -241,6 +264,7 @@ Supporting relationships that shape behavior around that chain are:
 | `RollOverStatus` | Roll over | Lifecycle of the roll over record: `open \| rebatched \| resolved \| cancelled` | Detailed remediation state | Execution (`rebatched`), admin resolve, cascade cancellation (ADR 0005) |
 | `PackageLeg` | Package | Direction of physical travel: `inbound \| outbound` | Classification value | Set at creation; flipped only by promotion (ADR 0004) |
 | `DeliveryMode` | Shipment | `homeDelivery \| pickupPoint`; null on internal transfers | Classification value | Set at end-user shipment creation; depot pickup is deliberately not a value |
+| `HomeOffersCriterion` | Home offer settings | How the automatic offers ranking sorts: `marketSaving \| discountPercent` | Configuration value, not a lifecycle | Admin, through the home offers section |
 | `DomainEventOutboxStatus` | Outbox row | Dispatch lifecycle of a durable domain event | Infrastructure state | `DomainEventDispatcher` |
 
 ### Legal transitions live in one shared module
@@ -326,18 +350,21 @@ The primary path below is the common successful case, as implemented. Every step
 
 ### 1. Catalog selection and request eligibility
 
-Records in play: `Product`, `ProductClientTerms`, `ProductSupplierTerms`, `ProductLocalConstraints`, `Supplier`.
+Records in play: `Product`, `ProductClientTerms`, `ProductSupplierTerms`, `ProductLocalConstraints`, `Supplier`, `HomeOfferSettings`.
 
-App behavior (`src/server/services/catalog/`):
+App behavior (`src/server/services/catalog/`, `src/server/services/home/`):
 
 - resolve the active `ProductClientTerms` for the customer context (active, non-deleted, time-valid)
 - evaluate `ProductLocalConstraints` against destination, timing, quantity, and legal context
-- calculate display price and allowed quantity increments from MOQ, step, max, and currency
+- calculate display price and allowed quantity increments from MOQ, step, max, and currency, with `discountPercent` already applied
+- compose the home: products pinned by `Product.homeOfferRank` first, the rest ordered by the `HomeOfferSettings.criterion` ranking, the spotlight lifted out of the grid, truncated to `offersLimit`
 
 Clarifications:
 
 - `defaultSupplierId` on `Product` is only a hint; sourcing chooses through `ProductSupplierTerms`
 - overlapping active terms are structurally possible and treated as an application error
+- a pinned product whose terms are no longer current renders nothing; composition skips it silently and the ranking fills the slot
+- the market comparison is presented separately from the struck-through pre-discount price — `marketPrice` is a claim about another shop, never a price Coco charged
 
 ### 2. Cart creation and cart-item mutation
 
@@ -500,6 +527,8 @@ This section is normative, and each rule now names its implementation. The datab
 
 - sell-side MOQ/step/max from `ProductClientTerms` at cart time; buy-side rules from `ProductSupplierTerms` at aggregation time
 - decimal-safe helpers everywhere (`Prisma.Decimal`); zero or negative effective quantity is never persisted as live state (quantity-0 allocations survive only as absorbed history)
+- sell-side line money — offer discount included — is produced only by `calculateLineTotal`; no caller re-applies the discount and no caller builds its own terms literal (ADR 0008)
+- `discountPercent` is validated into `[0, 100)` by the admin Zod schema; the database only constrains its precision
 
 ### 3. Quantity conservation holds across the whole lineage (ADR 0005)
 
@@ -587,12 +616,22 @@ Availability is inferred from sourcing/packaging state. Operation drafts deliber
 
 `prisma/migrations/` holds a single unapplied baseline artifact; the schema has been applied with `db:push` during development and migration baselining is owner-managed out of band. Read `prisma/schema.prisma`, never the migrations directory, for structure.
 
+Statements `db push` cannot express safely are hand-applied and recorded under `prisma/sql/` — `2026-07-product-client-terms-rename-ref-price.sql` (the `refPrice → unitPrice` rename, which push would otherwise implement as drop-and-create) and `2026-07-user-order-live-cart-unique.sql`. They are a record of what was run, not a replayable migration chain.
+
 ### 10. Two recorded pre-execution findings
 
 Documented in the architecture doc's closure (§21.10), owned by future work, not by this reference:
 
 - `listOriginalDemand` excludes only `open` roll overs, so demand whose roll over was **resolved** (terminal) is aggregable again while its derived status is `cancelled`
 - the supplier MOQ is applied per cart item, not to pooled demand — arguably contrary to the purpose of a group-buying operation
+
+### 11. The two terms models disagree on the unit-price column name
+
+`ProductClientTerms.unitPrice` was renamed; `ProductSupplierTerms.refPrice` deliberately was not — the sell side needed the rename to stop an admin loading a competitor's price into it, and the buy side has no such surface. Renaming the supplier mirror is a recommended follow-up, not a pending obligation. Until it happens, `refPrice` in the codebase always means supplier terms.
+
+### 12. `HomeOfferSettings` is a singleton by convention, not by constraint
+
+The database allows more than one row; `id Int @id @default(1)` and an upsert on `id: 1` in the data layer are what keep there being exactly one. Anything reading the settings must go through that upsert so a fresh database returns the defaults instead of nothing. Curation is split on purpose: the spotlight, criterion and grid size live on this row, while a pinned position lives on the product it pins (`Product.homeOfferRank`).
 
 ## Implementation Map
 
@@ -602,6 +641,8 @@ Where each capability the original checklist demanded now lives:
 | --- | --- |
 | Status-transition and orchestration layer | `src/shared/common/fulfillment-transitions.ts` + command services under `src/server/services/admin/` and `src/server/services/operations/` |
 | Decimal-safe quantity/money helpers | `Prisma.Decimal` throughout; pure planners under `src/server/services/admin/` |
+| Sell-side pricing and the offer discount | `calculateLineTotal` and its display helpers in `src/shared/common/commerce.helpers.ts` (ADR 0008) |
+| Home offers curation and ranking | `src/server/services/home/` (composition and the pure ranking) + `src/server/services/admin/home-offers.{data,service}.ts` (settings, pins, spotlight) |
 | Active/valid record query helpers | `src/server/services/_base/terms-validity.ts` |
 | Checkout submission service | `src/server/services/checkout/checkout.service.ts` + `mercadopago-reconciliation.service.ts` (ADR 0001) |
 | Aggregation service (draft/review/execute) | `src/server/services/admin/operation.service.ts` + `src/server/services/operations/{operation-execution.service,operation-review,operation-counters}.ts` (ADR 0006) |
@@ -625,6 +666,7 @@ Where each capability the original checklist demanded now lives:
 | `0004-physical-packages-with-legs` | Packages are physical, carry a leg, conservation checked per leg; consolidated default, fractionation/promotion | Domain map; flow steps 7–8; invariant 3 |
 | `0005-demand-conservation-and-rollover-reaggregation` | Conservation invariant; roll over status ladder; re-aggregation by default (`includeRollOver: true`) | Design philosophy 4; alternate flows; invariant 3 |
 | `0006-operation-draft-and-reviewed-fingerprint` | Draft → review (omissions) → execute with fingerprint refusal; drafts reserve nothing | Design philosophy 9; flow step 5; modeling limit 7 |
+| `0008-offer-discount-is-an-attribute-of-client-terms` | The discount is two columns on `ProductClientTerms`, applied inside `calculateLineTotal`; no promotion entity, no stacking, no precedence | Design philosophy 7; domain map (`ProductClientTerms` pricing columns); flow step 1; invariant 2 |
 
 Stable working rules that predate the ADRs and still hold:
 

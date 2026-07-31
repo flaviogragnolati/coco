@@ -200,6 +200,7 @@ model Product {
   unit              ProductUnit
   brandId           Int?
   defaultSupplierId Int?
+  homeOfferRank     Int? // pinned position in the home offers grid; null means the automatic ranking decides
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @default(now()) @updatedAt
 
@@ -208,9 +209,11 @@ model Product {
   productClientTerms      ProductClientTerms[]
   productSupplierTerms    ProductSupplierTerms[]
   productLocalConstraints ProductLocalConstraints[]
+  homeOfferSpotlightOf    HomeOfferSettings[]
 
   @@index([brandId])
   @@index([defaultSupplierId])
+  @@index([homeOfferRank])
   @@map("product")
 }
 
@@ -221,6 +224,26 @@ enum ProductUnit {
   box
   gr
   other
+}
+
+// Singleton: always read and written through an upsert on `id: 1`.
+model HomeOfferSettings {
+  id                 Int                 @id @default(1)
+  spotlightProductId Int? // explicit hero pick; falls back to the top of the ranking when null or no longer vigente
+  criterion          HomeOffersCriterion @default(marketSaving)
+  offersLimit        Int                 @default(4)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
+
+  spotlightProduct Product? @relation(fields: [spotlightProductId], references: [id], onDelete: SetNull)
+
+  @@index([spotlightProductId])
+  @@map("home_offer_settings")
+}
+
+enum HomeOffersCriterion {
+  marketSaving
+  discountPercent
 }
 
 model Supplier {
@@ -276,21 +299,23 @@ model Destination {
 }
 
 model ProductClientTerms {
-  id        Int       @id @default(autoincrement())
-  productId Int
-  moq       Decimal   @db.Decimal(18, 4) // minimum order quantity for the product
-  moqPrice  Decimal   @db.Decimal(18, 2) // price for the minimum order quantity
-  step      Decimal?  @db.Decimal(18, 4) // step quantity for the product, increase over the moq (ex: if moq is 10 and step is 5, the allowed order quantities are 10, 15, 20, etc.)
-  stepPrice Decimal?  @db.Decimal(18, 2) // price for the step quantity
-  max       Decimal?  @db.Decimal(18, 4) // maximum order quantity for the product, null means no maximum
-  refPrice  Decimal?  @db.Decimal(18, 2) // calculated reference price for the product, used for display purposes (ex: "$10/kg")
-  currency  Currency  @default(ARS)
-  active    Boolean   @default(true)
-  deleted   Boolean   @default(false)
-  fromDate  DateTime  @default(now())
-  toDate    DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  moq             Decimal   @db.Decimal(18, 4) // minimum order quantity for the product
+  moqPrice        Decimal   @db.Decimal(18, 2) // price for the minimum order quantity
+  step            Decimal?  @db.Decimal(18, 4) // step quantity for the product, increase over the moq (ex: if moq is 10 and step is 5, the allowed order quantities are 10, 15, 20, etc.)
+  stepPrice       Decimal?  @db.Decimal(18, 2) // price for the step quantity
+  max             Decimal?  @db.Decimal(18, 4) // maximum order quantity for the product, null means no maximum
+  unitPrice       Decimal?  @db.Decimal(18, 2) // our own per-unit price, for display and comparison (ex: "$10/kg")
+  marketPrice     Decimal?  @db.Decimal(18, 2) // per-unit price other shops charge; an unverified admin claim, never billed
+  discountPercent Decimal?  @db.Decimal(5, 2) // discount off our own price, charged inside calculateLineTotal (ADR 0008)
+  currency        Currency  @default(ARS)
+  active          Boolean   @default(true)
+  deleted         Boolean   @default(false)
+  fromDate        DateTime  @default(now())
+  toDate          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
 
   product   Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
   cartItems CartItem[]

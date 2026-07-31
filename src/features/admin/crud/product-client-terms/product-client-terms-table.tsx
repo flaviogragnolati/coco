@@ -2,6 +2,7 @@
 
 import { ArchiveXIcon, PencilIcon, Trash2Icon } from "lucide-react";
 
+import { Badge } from "~/components/ui/badge";
 import { CrudRowActions } from "~/features/admin/crud/_components/crud-row-actions";
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
@@ -51,6 +52,32 @@ const productClientTermsColumns: CrudColumn<ProductClientTermsListItem>[] = [
 				{terms.step ? `${terms.step} / ${terms.stepPrice ?? "-"} ` : "Sin step"}
 			</span>
 		),
+	},
+	{
+		key: "unitPrice",
+		header: "Unitario",
+		cell: (terms) => (
+			<span className="font-mono text-xs">{terms.unitPrice ?? "-"}</span>
+		),
+	},
+	{
+		key: "marketPrice",
+		header: "Góndola",
+		cell: (terms) => (
+			<span className="font-mono text-muted-foreground text-xs">
+				{terms.marketPrice ?? "-"}
+			</span>
+		),
+	},
+	{
+		key: "discountPercent",
+		header: "Descuento",
+		cell: (terms) =>
+			terms.discountPercent ? (
+				<Badge variant="highlight">-{terms.discountPercent}%</Badge>
+			) : (
+				<span className="text-muted-foreground text-xs">Sin descuento</span>
+			),
 	},
 	{
 		key: "status",

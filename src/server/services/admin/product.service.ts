@@ -110,7 +110,9 @@ function mapPreviewHomeOffer(product: CatalogProductDetail): HomeOffer {
 		imageUrl: product.imageUrl,
 		moq: product.terms.moq,
 		moqPrice: product.terms.moqPrice,
-		refPrice: product.terms.refPrice,
+		unitPrice: product.terms.unitPrice,
+		marketPrice: product.terms.marketPrice,
+		discountPercent: product.terms.discountPercent,
 		currency: product.terms.currency,
 	};
 }

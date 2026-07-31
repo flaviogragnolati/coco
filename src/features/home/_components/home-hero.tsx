@@ -15,14 +15,26 @@ import { ProductImage } from "~/features/catalog/_components/product-image";
 import type { HomeOffer } from "~/shared/common/home.types";
 import { heroBenefits } from "../home-content";
 import {
+	getMarketComparison,
 	getOfferBlockPrice,
+	getOfferDiscountLabel,
 	getOfferMinimumLabel,
+	getOfferStrikethroughPrice,
 	getOfferUnitReference,
 } from "../home-formatters";
 
 export function HomeHero({ spotlightOffer }: { spotlightOffer?: HomeOffer }) {
 	const unitReference = spotlightOffer
 		? getOfferUnitReference(spotlightOffer)
+		: null;
+	const strikethroughPrice = spotlightOffer
+		? getOfferStrikethroughPrice(spotlightOffer)
+		: null;
+	const discountLabel = spotlightOffer
+		? getOfferDiscountLabel(spotlightOffer)
+		: null;
+	const marketComparison = spotlightOffer
+		? getMarketComparison(spotlightOffer)
 		: null;
 
 	return (
@@ -53,7 +65,7 @@ export function HomeHero({ spotlightOffer }: { spotlightOffer?: HomeOffer }) {
 								<ArrowRightIcon data-icon="inline-end" />
 							</Link>
 						</Button>
-						<Button asChild size="lg" variant="outline">
+						<Button asChild size="lg" variant="inverse">
 							<Link href="#como-funciona">
 								Cómo funciona
 								<ArrowRightIcon data-icon="inline-end" />
@@ -83,7 +95,7 @@ export function HomeHero({ spotlightOffer }: { spotlightOffer?: HomeOffer }) {
 							<div className="flex flex-wrap items-center justify-between gap-2">
 								<Badge variant="highlight">
 									<SparklesIcon data-icon="inline-start" />
-									Oferta protagonista
+									Producto destacado
 								</Badge>
 								<span className="text-muted-foreground text-xs">
 									{spotlightOffer.brandName ?? "Producto seleccionado"}
@@ -97,14 +109,27 @@ export function HomeHero({ spotlightOffer }: { spotlightOffer?: HomeOffer }) {
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="flex flex-col gap-1 py-5">
-							<p className="font-heading font-semibold text-3xl">
-								{getOfferBlockPrice(spotlightOffer)}
-							</p>
+							<div className="flex flex-wrap items-baseline gap-2">
+								<p className="font-heading font-semibold text-3xl">
+									{getOfferBlockPrice(spotlightOffer)}
+								</p>
+								{strikethroughPrice ? (
+									<p className="text-muted-foreground text-sm line-through">
+										{strikethroughPrice}
+									</p>
+								) : null}
+								{discountLabel ? (
+									<Badge variant="highlight">{discountLabel}</Badge>
+								) : null}
+							</div>
 							<p className="text-muted-foreground text-xs">
 								{getOfferMinimumLabel(spotlightOffer)}
 							</p>
 							{unitReference ? (
 								<p className="text-muted-foreground text-xs">{unitReference}</p>
+							) : null}
+							{marketComparison ? (
+								<p className="text-success text-xs">{marketComparison}</p>
 							) : null}
 						</CardContent>
 						<CardFooter className="pb-5">

@@ -14,8 +14,15 @@ export const homeOfferSchema = z.object({
 	imageUrl: z.string().nullable(),
 	moq: decimalOutputSchema,
 	moqPrice: decimalOutputSchema,
-	refPrice: decimalOutputSchema.nullable(),
+	unitPrice: decimalOutputSchema.nullable(),
+	marketPrice: decimalOutputSchema.nullable(),
+	discountPercent: decimalOutputSchema.nullable(),
 	currency: catalogCurrencySchema,
 });
 
 export const homeOffersOutputSchema = z.array(homeOfferSchema);
+
+export const homeContentOutputSchema = z.object({
+	spotlight: homeOfferSchema.nullable(),
+	offers: homeOffersOutputSchema,
+});

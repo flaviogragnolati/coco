@@ -97,6 +97,26 @@ export function validateStepCoherence(
 	}
 }
 
+/**
+ * The upper bound is exclusive: 100% off is a giveaway, not a discount, and it
+ * would price a line at zero all the way through to Mercado Pago.
+ */
+export function validateDiscountPercentRange(
+	value: { discountPercent?: string },
+	ctx: z.RefinementCtx,
+) {
+	if (!value.discountPercent) return;
+
+	const percent = Number(value.discountPercent);
+	if (!Number.isFinite(percent) || percent < 0 || percent >= 100) {
+		ctx.addIssue({
+			code: "custom",
+			message: "El descuento debe estar entre 0 y 100 (100 no incluido)",
+			path: ["discountPercent"],
+		});
+	}
+}
+
 export function requiredDecimalString(label: string, scale: number) {
 	const pattern = new RegExp(`^\\d+(?:\\.\\d{1,${scale}})?$`);
 
@@ -140,6 +160,28 @@ export function optionalDecimalString(label: string, scale: number) {
 				.refine((value) => Number(value) > 0, {
 					message: `${label} debe ser mayor a 0`,
 				})
+				.optional(),
+		);
+}
+
+/**
+ * Like {@link optionalDecimalString} but admits `0`. Quantities and prices are
+ * meaningless at zero, which is why the shared helper rejects it; a percentage
+ * is not — `0` and an empty field both mean "no discount" and must be equally
+ * accepted (ADR 0008).
+ */
+export function optionalNonNegativeDecimalString(label: string, scale: number) {
+	const pattern = new RegExp(`^\\d+(?:\\.\\d{1,${scale}})?$`);
+
+	return z
+		.string()
+		.trim()
+		.optional()
+		.transform((value) => (value && value.length > 0 ? value : undefined))
+		.pipe(
+			z
+				.string()
+				.regex(pattern, `${label} debe tener hasta ${scale} decimales`)
 				.optional(),
 		);
 }

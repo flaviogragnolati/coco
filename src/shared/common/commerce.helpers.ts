@@ -86,28 +86,99 @@ export function selectProductImage(
 		: (product.cardImageUrl ?? product.cartImageUrl);
 }
 
+type DiscountableTerms = Pick<CatalogClientTerms, "discountPercent">;
+
+/**
+ * The single interpretation of `discountPercent`. Clamped so a malformed or
+ * out-of-range value can only ever make the offer *less* aggressive, never
+ * negative and never above the full price.
+ */
+function getDiscountMultiplier(terms: DiscountableTerms) {
+	const percent = toNumber(terms.discountPercent);
+	if (percent === null) return 1;
+	return 1 - Math.min(Math.max(percent, 0), 100) / 100;
+}
+
+export function getOfferMoqPrice(
+	terms: Pick<CatalogClientTerms, "moqPrice" | "discountPercent">,
+): number {
+	return (toNumber(terms.moqPrice) ?? 0) * getDiscountMultiplier(terms);
+}
+
+/**
+ * Discounted alongside `moqPrice` and never on its own: discounting only the
+ * MOQ block would make the marginal step cost more than the minimum, which is
+ * not what any admin means by a percentage off (ADR 0008).
+ */
+export function getOfferStepPrice(
+	terms: Pick<CatalogClientTerms, "stepPrice" | "discountPercent">,
+): number | null {
+	const stepPrice = toNumber(terms.stepPrice);
+	if (stepPrice === null) return null;
+	return stepPrice * getDiscountMultiplier(terms);
+}
+
 export function getDisplayPrice(terms: CatalogClientTerms) {
-	return terms.refPrice ?? terms.moqPrice;
+	return terms.unitPrice ?? terms.moqPrice;
 }
 
 export function getPriceLabel(
 	terms: CatalogClientTerms,
 	unit: CatalogProductUnit,
 ) {
-	if (terms.refPrice) return `Precio ref. por ${productUnitLabelMap[unit]}`;
+	if (terms.unitPrice)
+		return `Precio unitario por ${productUnitLabelMap[unit]}`;
 	return `Precio MOQ por ${formatQuantity(terms.moq, unit)}`;
 }
 
+/**
+ * Always the *offer* unit price: both branches apply the discount, so the
+ * catalog can never advertise a number the cart will not charge.
+ */
 export function getPerUnitPrice(
-	terms: Pick<CatalogClientTerms, "refPrice" | "moqPrice" | "moq">,
+	terms: Pick<
+		CatalogClientTerms,
+		"unitPrice" | "moqPrice" | "moq" | "discountPercent"
+	>,
 ): number | null {
-	const refPrice = toNumber(terms.refPrice);
-	if (refPrice !== null) return refPrice;
+	const unitPrice = toNumber(terms.unitPrice);
+	if (unitPrice !== null) return unitPrice * getDiscountMultiplier(terms);
 
-	const moqPrice = toNumber(terms.moqPrice);
 	const moq = toNumber(terms.moq);
-	if (moqPrice === null || moq === null || moq <= 0) return null;
-	return moqPrice / moq;
+	if (toNumber(terms.moqPrice) === null || moq === null || moq <= 0)
+		return null;
+	return getOfferMoqPrice(terms) / moq;
+}
+
+/**
+ * What the customer saves against what other shops charge. `marketPrice` is an
+ * unverified admin claim, so this returns `null` rather than a negative saving
+ * whenever it fails to beat our own price — a "saving" of less than nothing is
+ * not a fact worth rendering.
+ */
+export function getMarketSaving(
+	terms: Pick<
+		CatalogClientTerms,
+		"unitPrice" | "moqPrice" | "moq" | "discountPercent" | "marketPrice"
+	>,
+): { perUnit: number; perBlock: number; percent: number } | null {
+	const marketPrice = toNumber(terms.marketPrice);
+	const offerUnitPrice = getPerUnitPrice(terms);
+	if (
+		marketPrice === null ||
+		marketPrice <= 0 ||
+		offerUnitPrice === null ||
+		marketPrice <= offerUnitPrice
+	)
+		return null;
+
+	const perUnit = marketPrice - offerUnitPrice;
+	const moq = toNumber(terms.moq) ?? 0;
+	return {
+		perUnit,
+		perBlock: perUnit * moq,
+		percent: (perUnit / marketPrice) * 100,
+	};
 }
 
 function getMaxValidQuantity(terms: CatalogClientTerms) {
@@ -208,10 +279,10 @@ export function calculateLineTotal(
 	terms: CatalogClientTerms,
 	quantity: string,
 ) {
-	const moqPrice = toNumber(terms.moqPrice) ?? 0;
+	const moqPrice = getOfferMoqPrice(terms);
 	const moq = toNumber(terms.moq) ?? 0;
 	const step = toNumber(terms.step);
-	const stepPrice = toNumber(terms.stepPrice);
+	const stepPrice = getOfferStepPrice(terms);
 	const quantityNumber =
 		toNumber(normalizeCartQuantity(quantity, terms)) ?? moq;
 

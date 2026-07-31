@@ -11,8 +11,10 @@ import {
 	dateInputSchema,
 	optionalDateInputSchema,
 	optionalDecimalString,
+	optionalNonNegativeDecimalString,
 	requiredDecimalString,
 	validateDateRange,
+	validateDiscountPercentRange,
 	validateStepCoherence,
 } from "./_crud-schema-helpers";
 
@@ -37,7 +39,9 @@ const productClientTermsInputFieldsSchema = z.object({
 	step: optionalDecimalString("Step", 4),
 	stepPrice: optionalDecimalString("Precio step", 2),
 	max: optionalDecimalString("Maximo", 4),
-	refPrice: optionalDecimalString("Precio de referencia", 2),
+	unitPrice: optionalDecimalString("Precio unitario", 2),
+	marketPrice: optionalDecimalString("Precio de góndola", 2),
+	discountPercent: optionalNonNegativeDecimalString("Descuento (%)", 2),
 	currency: currencySchema.default("ARS"),
 	active: z.boolean().default(true),
 	fromDate: dateInputSchema.default(() => toDateTimeLocalValue(new Date())),
@@ -47,7 +51,8 @@ const productClientTermsInputFieldsSchema = z.object({
 export const productClientTermsCreateInputSchema =
 	productClientTermsInputFieldsSchema
 		.superRefine(validateDateRange)
-		.superRefine(validateStepCoherence);
+		.superRefine(validateStepCoherence)
+		.superRefine(validateDiscountPercentRange);
 
 export const productClientTermsUpdateInputSchema =
 	productClientTermsInputFieldsSchema
@@ -55,7 +60,8 @@ export const productClientTermsUpdateInputSchema =
 			id: productClientTermsIdSchema,
 		})
 		.superRefine(validateDateRange)
-		.superRefine(validateStepCoherence);
+		.superRefine(validateStepCoherence)
+		.superRefine(validateDiscountPercentRange);
 
 export const productClientTermsDeleteInputSchema = z.object({
 	id: productClientTermsIdSchema,
@@ -78,7 +84,9 @@ export const productClientTermsListItemSchema = z.object({
 	step: decimalOutputSchema.nullable(),
 	stepPrice: decimalOutputSchema.nullable(),
 	max: decimalOutputSchema.nullable(),
-	refPrice: decimalOutputSchema.nullable(),
+	unitPrice: decimalOutputSchema.nullable(),
+	marketPrice: decimalOutputSchema.nullable(),
+	discountPercent: decimalOutputSchema.nullable(),
 	currency: currencySchema,
 	active: z.boolean(),
 	deleted: z.boolean(),

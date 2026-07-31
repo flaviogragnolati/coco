@@ -115,7 +115,9 @@ const seedClientTermsSelect = {
 	step: true,
 	stepPrice: true,
 	max: true,
-	refPrice: true,
+	unitPrice: true,
+	marketPrice: true,
+	discountPercent: true,
 	currency: true,
 	active: true,
 	deleted: true,
@@ -205,7 +207,9 @@ function buildProductSnapshot(product: SeedProduct, terms: SeedClientTerms) {
 			step: decimalString(terms.step),
 			stepPrice: decimalString(terms.stepPrice),
 			max: decimalString(terms.max),
-			refPrice: decimalString(terms.refPrice),
+			unitPrice: decimalString(terms.unitPrice),
+			marketPrice: decimalString(terms.marketPrice),
+			discountPercent: decimalString(terms.discountPercent),
 			currency: terms.currency,
 			fromDate: terms.fromDate.toISOString(),
 			toDate: terms.toDate?.toISOString() ?? null,
@@ -237,7 +241,9 @@ function buildPriceSnapshot(terms: SeedClientTerms, quantity: string) {
 			step: decimalString(terms.step),
 			stepPrice: decimalString(terms.stepPrice),
 			max: decimalString(terms.max),
-			refPrice: decimalString(terms.refPrice),
+			unitPrice: decimalString(terms.unitPrice),
+			marketPrice: decimalString(terms.marketPrice),
+			discountPercent: decimalString(terms.discountPercent),
 		},
 	});
 }
@@ -809,7 +815,9 @@ async function upsertProductClientTerms(
 		step?: string;
 		stepPrice?: string;
 		max?: string;
-		refPrice?: string;
+		unitPrice?: string;
+		marketPrice?: string;
+		discountPercent?: string;
 		currency?: "ARS" | "USD" | "EUR" | "BRL";
 		active?: boolean;
 		deleted?: boolean;
@@ -832,7 +840,9 @@ async function upsertProductClientTerms(
 		step: input.step ?? null,
 		stepPrice: input.stepPrice ?? null,
 		max: input.max ?? null,
-		refPrice: input.refPrice ?? null,
+		unitPrice: input.unitPrice ?? null,
+		marketPrice: input.marketPrice ?? null,
+		discountPercent: input.discountPercent ?? null,
 		currency: input.currency ?? "ARS",
 		active: input.active ?? true,
 		deleted: input.deleted ?? false,
@@ -1277,7 +1287,9 @@ async function seedMasterData(tx: Tx) {
 			step: "10.0000",
 			stepPrice: "11000.00",
 			max: "500.0000",
-			refPrice: "1200.00",
+			unitPrice: "1200.00",
+			marketPrice: "1650.00",
+			discountPercent: "25.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		aceite: await upsertProductClientTerms(tx, {
@@ -1287,7 +1299,7 @@ async function seedMasterData(tx: Tx) {
 			step: "1.0000",
 			stepPrice: "45.00",
 			max: "30.0000",
-			refPrice: "49.00",
+			unitPrice: "49.00",
 			currency: "USD",
 			fromDate: CURRENT_FROM_DATE,
 		}),
@@ -1298,7 +1310,7 @@ async function seedMasterData(tx: Tx) {
 			step: "1.0000",
 			stepPrice: "34000.00",
 			max: "80.0000",
-			refPrice: "36000.00",
+			unitPrice: "36000.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		queso: await upsertProductClientTerms(tx, {
@@ -1308,7 +1320,8 @@ async function seedMasterData(tx: Tx) {
 			step: "5.0000",
 			stepPrice: "44000.00",
 			max: "120.0000",
-			refPrice: "9500.00",
+			unitPrice: "9500.00",
+			marketPrice: "11800.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		yerba: await upsertProductClientTerms(tx, {
@@ -1318,7 +1331,7 @@ async function seedMasterData(tx: Tx) {
 			step: "1.0000",
 			stepPrice: "42000.00",
 			max: "100.0000",
-			refPrice: "44000.00",
+			unitPrice: "44000.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		dulce: await upsertProductClientTerms(tx, {
@@ -1328,7 +1341,7 @@ async function seedMasterData(tx: Tx) {
 			step: "6.0000",
 			stepPrice: "84000.00",
 			max: "72.0000",
-			refPrice: "15000.00",
+			unitPrice: "15000.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		manzana: await upsertProductClientTerms(tx, {
@@ -1338,7 +1351,7 @@ async function seedMasterData(tx: Tx) {
 			step: "25.0000",
 			stepPrice: "40000.00",
 			max: "300.0000",
-			refPrice: "1700.00",
+			unitPrice: "1700.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		bandejaFuture: await upsertProductClientTerms(tx, {
@@ -1348,7 +1361,7 @@ async function seedMasterData(tx: Tx) {
 			step: "2.0000",
 			stepPrice: "150.00",
 			max: "40.0000",
-			refPrice: "80.00",
+			unitPrice: "80.00",
 			currency: "BRL",
 			fromDate: FUTURE_FROM_DATE,
 		}),
@@ -1358,7 +1371,7 @@ async function seedMasterData(tx: Tx) {
 			moqPrice: "25000.00",
 			step: "10.0000",
 			stepPrice: "24000.00",
-			refPrice: "2500.00",
+			unitPrice: "2500.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		mixExpired: await upsertProductClientTerms(tx, {
@@ -1367,7 +1380,7 @@ async function seedMasterData(tx: Tx) {
 			moqPrice: "50000.00",
 			step: "5.0000",
 			stepPrice: "24000.00",
-			refPrice: "5000.00",
+			unitPrice: "5000.00",
 			fromDate: EXPIRED_FROM_DATE,
 			toDate: EXPIRED_TO_DATE,
 		}),

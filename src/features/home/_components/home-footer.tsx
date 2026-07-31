@@ -36,13 +36,13 @@ export function HomeFooter() {
 						<Link className="hover:opacity-100" href="/products">
 							Catálogo
 						</Link>
-						<Link className="hover:text-foreground" href="/login">
+						<Link className="hover:opacity-100" href="/login">
 							Ingresar
 						</Link>
-						<Link className="hover:text-foreground" href="/my-orders">
+						<Link className="hover:opacity-100" href="/my-orders">
 							Mis pedidos
 						</Link>
-						<Link className="hover:text-foreground" href="/profile">
+						<Link className="hover:opacity-100" href="/profile">
 							Perfil
 						</Link>
 					</div>

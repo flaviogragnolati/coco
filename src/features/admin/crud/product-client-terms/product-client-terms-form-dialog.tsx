@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SaveIcon } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "~/components/ui/button";
@@ -32,6 +32,13 @@ import type {
 	ProductClientTermsFormInput,
 	ProductClientTermsFormValues,
 } from "~/shared/common/admin-crud/product-client-terms.types";
+import {
+	formatCurrency,
+	getOfferMoqPrice,
+	getPerUnitPrice,
+	productUnitLabelMap,
+	toNumber,
+} from "~/shared/common/commerce.helpers";
 import {
 	defaultProductClientTermsFormValues,
 	productClientTermsDetailToFormValues,
@@ -80,6 +87,41 @@ export function ProductClientTermsFormDialog({
 		mode === "create"
 			? "Agregar términos de cliente"
 			: "Editar términos de cliente";
+
+	const productId = form.watch("productId");
+	const currency = form.watch("currency") ?? "ARS";
+	const moq = form.watch("moq") ?? "";
+	const moqPrice = form.watch("moqPrice") ?? "";
+	const unitPrice = form.watch("unitPrice") ?? "";
+	const discountPercent = form.watch("discountPercent") ?? "";
+
+	const unit = products.find((product) => product.id === productId)?.unit;
+	const unitLabel = unit ? productUnitLabelMap[unit] : "unidad";
+
+	const offerPreview = useMemo(() => {
+		if ((toNumber(discountPercent) ?? 0) <= 0) return null;
+
+		const terms = {
+			moq,
+			moqPrice,
+			unitPrice: unitPrice || null,
+			discountPercent,
+		};
+		const parts: string[] = [];
+
+		if (toNumber(moqPrice) !== null) {
+			parts.push(`${formatCurrency(getOfferMoqPrice(terms), currency)} el MOQ`);
+		}
+
+		const offerUnitPrice = getPerUnitPrice(terms);
+		if (offerUnitPrice !== null) {
+			parts.push(
+				`${formatCurrency(offerUnitPrice, currency)} por ${unitLabel}`,
+			);
+		}
+
+		return parts.length > 0 ? parts.join(" · ") : null;
+	}, [currency, discountPercent, moq, moqPrice, unitLabel, unitPrice]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -275,18 +317,60 @@ export function ProductClientTermsFormDialog({
 								/>
 								<FieldError errors={[errors.max]} />
 							</Field>
-							<Field data-invalid={Boolean(errors.refPrice)}>
-								<FieldLabel htmlFor="product-client-terms-ref-price">
-									Precio ref. <OptionalHint />
+							<Field data-invalid={Boolean(errors.unitPrice)}>
+								<FieldLabel htmlFor="product-client-terms-unit-price">
+									Precio unitario <OptionalHint />
 								</FieldLabel>
 								<Input
-									aria-invalid={Boolean(errors.refPrice)}
+									aria-invalid={Boolean(errors.unitPrice)}
 									disabled={isSubmitting}
-									id="product-client-terms-ref-price"
+									id="product-client-terms-unit-price"
 									inputMode="decimal"
-									{...form.register("refPrice")}
+									{...form.register("unitPrice")}
 								/>
-								<FieldError errors={[errors.refPrice]} />
+								<FieldDescription>
+									Nuestro precio por {unitLabel}, para mostrar y comparar.
+								</FieldDescription>
+								<FieldError errors={[errors.unitPrice]} />
+							</Field>
+							<Field data-invalid={Boolean(errors.marketPrice)}>
+								<FieldLabel htmlFor="product-client-terms-market-price">
+									Precio de góndola <OptionalHint />
+								</FieldLabel>
+								<Input
+									aria-invalid={Boolean(errors.marketPrice)}
+									disabled={isSubmitting}
+									id="product-client-terms-market-price"
+									inputMode="decimal"
+									{...form.register("marketPrice")}
+								/>
+								<FieldDescription>
+									Lo que cobran otros comercios por {unitLabel}. Se usa solo
+									para comparar: nunca se factura.
+								</FieldDescription>
+								<FieldError errors={[errors.marketPrice]} />
+							</Field>
+							<Field data-invalid={Boolean(errors.discountPercent)}>
+								<FieldLabel htmlFor="product-client-terms-discount-percent">
+									Descuento (%) <OptionalHint />
+								</FieldLabel>
+								<Input
+									aria-invalid={Boolean(errors.discountPercent)}
+									disabled={isSubmitting}
+									id="product-client-terms-discount-percent"
+									inputMode="decimal"
+									{...form.register("discountPercent")}
+								/>
+								<FieldDescription>
+									Baja lo que paga el cliente: se aplica al precio MOQ y al
+									precio step.
+									{offerPreview ? (
+										<span className="mt-1 block font-medium text-foreground">
+											Queda en {offerPreview}
+										</span>
+									) : null}
+								</FieldDescription>
+								<FieldError errors={[errors.discountPercent]} />
 							</Field>
 						</FieldGroup>
 					</FieldSet>

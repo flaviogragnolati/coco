@@ -3,7 +3,8 @@ import type {
 	CatalogProductUnit,
 } from "~/shared/common/catalog.types";
 import {
-	getDisplayPrice,
+	getOfferMoqPrice,
+	getPerUnitPrice,
 	productUnitLabelMap,
 	toNumber,
 } from "~/shared/common/commerce.helpers";
@@ -49,8 +50,16 @@ export function normalizeSearch(value: string) {
 		.replace(/\p{Diacritic}/gu, "");
 }
 
+/**
+ * The price the customer would actually be charged, so filtering and sorting
+ * rank products by the same number the card advertises. Falls back to the
+ * MOQ block price when the terms carry no unit price, and to `0` when they
+ * carry no usable price at all.
+ */
 export function productPrice(product: CatalogProductListItem) {
-	return toNumber(getDisplayPrice(product.terms)) ?? 0;
+	const { terms } = product;
+	if (toNumber(terms.unitPrice) === null) return getOfferMoqPrice(terms);
+	return getPerUnitPrice(terms) ?? 0;
 }
 
 /**
