@@ -56,7 +56,7 @@ export function normalizeSearch(value: string) {
  * MOQ block price when the terms carry no unit price, and to `0` when they
  * carry no usable price at all.
  */
-export function productPrice(product: CatalogProductListItem) {
+export function productPrice(product: Pick<CatalogProductListItem, "terms">) {
 	const { terms } = product;
 	if (toNumber(terms.unitPrice) === null) return getOfferMoqPrice(terms);
 	return getPerUnitPrice(terms) ?? 0;
@@ -170,6 +170,60 @@ export function sortCatalog(
 				left.name.localeCompare(right.name, "es"),
 			);
 	}
+}
+
+export type SimilarProductReference = Pick<
+	CatalogProductListItem,
+	"id" | "unit" | "brand" | "terms"
+>;
+
+/**
+ * Products to propose alongside `current`: same brand first, same unit second,
+ * each tier ordered by how close its price is to the current product's.
+ *
+ * The catalog has no category, so the relation is derived rather than declared.
+ * It never falls through to unrelated products: returning fewer than `limit`
+ * results — or none — is the intended behavior, because padding the list would
+ * make "Productos similares" a lie.
+ */
+export function selectSimilarProducts(
+	products: CatalogProductListItem[],
+	current: SimilarProductReference,
+	limit = 3,
+): CatalogProductListItem[] {
+	const referencePrice = productPrice(current);
+	const compare = (
+		left: CatalogProductListItem,
+		right: CatalogProductListItem,
+	) => {
+		const distance =
+			Math.abs(productPrice(left) - referencePrice) -
+			Math.abs(productPrice(right) - referencePrice);
+		if (distance !== 0) return distance;
+		const byName = left.name.localeCompare(right.name, "es");
+		if (byName !== 0) return byName;
+		return left.id - right.id;
+	};
+
+	const candidates = products.filter((product) => product.id !== current.id);
+
+	// A missing brand is not a brand two products can share, so a brandless
+	// current product skips this tier instead of matching every other one.
+	const brandTier = current.brand
+		? candidates
+				.filter((product) => product.brand?.id === current.brand?.id)
+				.sort(compare)
+		: [];
+
+	const brandTierIds = new Set(brandTier.map((product) => product.id));
+	const unitTier = candidates
+		.filter(
+			(product) =>
+				product.unit === current.unit && !brandTierIds.has(product.id),
+		)
+		.sort(compare);
+
+	return [...brandTier, ...unitTier].slice(0, limit);
 }
 
 export function computeBrandFacets(

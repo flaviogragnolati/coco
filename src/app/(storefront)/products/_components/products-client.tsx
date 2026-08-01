@@ -285,8 +285,10 @@ export function ProductsClient({
 			<ProductDetailsDialog
 				cartItem={selectedCartItem}
 				disabled={cartActions.isPending}
+				inCartTermsIds={inCartTermsIds}
 				onAdd={handleAdd}
 				onDecrement={cartActions.decrement}
+				onDetails={params.setProductId}
 				onIncrement={cartActions.increment}
 				onOpenChange={(open) => {
 					if (!open) params.setProductId(null);
@@ -294,6 +296,7 @@ export function ProductsClient({
 				onQuantityCommit={(item, quantity) =>
 					cartActions.updateQuantity(item, quantity)
 				}
+				onRemove={cartActions.removeItem}
 				open={params.productId !== null}
 				productId={params.productId}
 			/>

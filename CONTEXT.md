@@ -204,6 +204,10 @@ _Avoid_: Oferta protagonista, hero offer, featured offer
 The order in which non-pinned current products compete for the home grid: by money saved against the market price, or by offer discount, whichever criterion the admin selected. Terms missing the criterion's input rank last.
 _Avoid_: Sort, top offers, query
 
+**Similar product**:
+Another current catalog product proposed alongside the one a customer is looking at, related by shared brand first and shared unit second. The relation is derived, not declared: the catalog has no category, so nothing in the data marks two products as similar. Spanish-facing UI labels it "Productos similares".
+_Avoid_: Related product, category, recommendation
+
 **Client terms**:
 The active customer-facing commercial terms for a product: minimum order quantity and its price, optional step and step price, optional unit price, optional market price, optional offer discount, currency, and validity window. The single price source for catalog and cart.
 _Avoid_: Pricing, price terms

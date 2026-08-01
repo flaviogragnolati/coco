@@ -12,6 +12,7 @@ import {
 	matchScore,
 	normalizeSearch,
 	productPrice,
+	selectSimilarProducts,
 	sortCatalog,
 } from "./catalog-filtering";
 
@@ -241,6 +242,188 @@ test("sortCatalog relevance orders by match score when searching", () => {
 	expect(
 		sortCatalog(products, "relevance", "aceite").map((product) => product.name),
 	).toStrictEqual(["Aceite puro", "Mezcla con aceite", "Otro"]);
+});
+
+test("selectSimilarProducts ranks brand matches above unit matches", () => {
+	const current = makeProduct({
+		name: "Actual",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+	const sameBrand = makeProduct({
+		name: "Misma marca",
+		brand: { id: 1, name: "Alfa" },
+		unit: "box",
+		terms: { moqPrice: "900" },
+	});
+	const sameUnit = makeProduct({
+		name: "Misma unidad",
+		brand: { id: 2, name: "Beta" },
+		unit: "kg",
+		terms: { moqPrice: "100" },
+	});
+	const unrelated = makeProduct({
+		name: "Sin relación",
+		brand: { id: 2, name: "Beta" },
+		unit: "box",
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, unrelated, sameUnit, sameBrand],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual(["Misma marca", "Misma unidad"]);
+});
+
+test("selectSimilarProducts never returns the current product", () => {
+	const current = makeProduct({
+		name: "Actual",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+	const sibling = makeProduct({
+		name: "Hermano",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+
+	expect(
+		selectSimilarProducts([current, sibling], current).map(
+			(product) => product.name,
+		),
+	).toStrictEqual(["Hermano"]);
+});
+
+test("selectSimilarProducts does not group brandless products by their missing brand", () => {
+	const current = makeProduct({ name: "Actual", brand: null, unit: "kg" });
+	const brandlessOtherUnit = makeProduct({
+		name: "Sin marca otra unidad",
+		brand: null,
+		unit: "box",
+	});
+	const sameUnit = makeProduct({
+		name: "Misma unidad",
+		brand: { id: 3, name: "Gama" },
+		unit: "kg",
+	});
+
+	expect(
+		selectSimilarProducts([current, brandlessOtherUnit, sameUnit], current).map(
+			(product) => product.name,
+		),
+	).toStrictEqual(["Misma unidad"]);
+});
+
+test("selectSimilarProducts orders each tier by price proximity", () => {
+	const current = makeProduct({
+		name: "Actual",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+		terms: { moqPrice: "100" },
+	});
+	const near = makeProduct({
+		name: "Cerca",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+		terms: { moqPrice: "110" },
+	});
+	const far = makeProduct({
+		name: "Lejos",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+		terms: { moqPrice: "500" },
+	});
+
+	expect(
+		selectSimilarProducts([current, far, near], current).map(
+			(product) => product.name,
+		),
+	).toStrictEqual(["Cerca", "Lejos"]);
+});
+
+test("selectSimilarProducts breaks price ties by name", () => {
+	const current = makeProduct({
+		name: "Actual",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+		terms: { moqPrice: "100" },
+	});
+	const above = makeProduct({
+		name: "Zeta",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+		terms: { moqPrice: "120" },
+	});
+	const below = makeProduct({
+		name: "Ananá",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+		terms: { moqPrice: "80" },
+	});
+
+	expect(
+		selectSimilarProducts([current, above, below], current).map(
+			(product) => product.name,
+		),
+	).toStrictEqual(["Ananá", "Zeta"]);
+});
+
+test("selectSimilarProducts returns fewer than the limit rather than padding", () => {
+	const current = makeProduct({
+		name: "Actual",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+	const sibling = makeProduct({
+		name: "Hermano",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+	const unrelated = makeProduct({
+		name: "Sin relación",
+		brand: { id: 2, name: "Beta" },
+		unit: "box",
+	});
+
+	expect(
+		selectSimilarProducts([current, sibling, unrelated], current, 3),
+	).toHaveLength(1);
+});
+
+test("selectSimilarProducts returns an empty list when nothing is related", () => {
+	const current = makeProduct({
+		name: "Actual",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+	const unrelated = makeProduct({
+		name: "Sin relación",
+		brand: { id: 2, name: "Beta" },
+		unit: "box",
+	});
+
+	expect(selectSimilarProducts([current, unrelated], current)).toStrictEqual(
+		[],
+	);
+});
+
+test("selectSimilarProducts caps the result at the requested limit", () => {
+	const current = makeProduct({
+		name: "Actual",
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+	const siblings = ["A", "B", "C", "D"].map((name) =>
+		makeProduct({ name, brand: { id: 1, name: "Alfa" }, unit: "kg" }),
+	);
+
+	expect(selectSimilarProducts([current, ...siblings], current)).toHaveLength(
+		3,
+	);
+	expect(
+		selectSimilarProducts([current, ...siblings], current, 2),
+	).toHaveLength(2);
 });
 
 test("computeBrandFacets counts products per brand sorted by label", () => {
