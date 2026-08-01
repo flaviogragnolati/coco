@@ -2,8 +2,8 @@ import "server-only";
 
 import { TRPCError } from "@trpc/server";
 
-import { env } from "~/env";
 import { Prisma } from "~/prisma/client";
+import { externalPaymentInstructionsSchema } from "~/schemas/admin/payment.schemas";
 import { cartSnapshotSchema } from "~/schemas/cart.schemas";
 import {
 	checkoutAddressSchema,
@@ -14,8 +14,10 @@ import {
 	orderListOutputSchema,
 } from "~/schemas/checkout.schemas";
 import { db } from "~/server/db";
-import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
-import { submitOrderForCompletedPayment } from "~/server/services/payments/order-submission.service";
+import type {
+	ExternalPaymentInstructions,
+	ExternalPaymentSettings,
+} from "~/shared/common/admin-crud/payment.types";
 import type { CartItem, CartSnapshot } from "~/shared/common/cart.types";
 import type {
 	CheckoutAddress,
@@ -23,11 +25,11 @@ import type {
 	CheckoutAddressUpdateInput,
 	CheckoutConfirmInput,
 	CheckoutPaymentMethod,
-	CheckoutPaymentMethodCreateInput,
-	CheckoutPaymentMethodUpdateInput,
 	CheckoutPaymentResult,
 	CheckoutState,
+	OrderDeclareReceiptInput,
 	OrderDetail,
+	OrderExternalPayment,
 	OrderListOutput,
 } from "~/shared/common/checkout.types";
 import {
@@ -37,6 +39,10 @@ import {
 } from "~/shared/common/commerce.helpers";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
+import {
+	EXTERNAL_PROVIDER,
+	getExternalPaymentConfig,
+} from "../payments/external/external-payment-config.service";
 import { getMercadoPagoConfig } from "../payments/mercadopago/mercadopago-config.service";
 import { createMercadoPagoPreference } from "../payments/mercadopago/mercadopago-preference.service";
 import {
@@ -46,36 +52,36 @@ import {
 	type CheckoutPaymentMethodRecord,
 	cancelTransaction,
 	createCheckoutAddress,
-	createCheckoutPaymentMethod,
 	createPendingTransaction,
 	createUserOrder,
+	declareTransactionReceipt,
 	findCheckoutAddressById,
 	findCheckoutCartByUserId,
 	findCheckoutPaymentMethodById,
+	findExternalPaymentMethod,
 	findLiveOrderByCartId,
 	findMercadoPagoPaymentMethod,
+	findOrCreateExternalPaymentMethod,
 	findOrCreateMercadoPagoPaymentMethod,
 	findOrderByUserId,
 	findTransactionByIdempotencyKey,
 	listCheckoutAddresses,
-	listCheckoutPaymentMethods,
 	listOrdersByUserId,
+	markTransactionAsExternalPending,
 	type OrderDetailRecord,
 	type OrderListRecord,
 	updateCartStatus,
 	updateCheckoutAddress,
-	updateCheckoutPaymentMethod,
 	updateOrderStatus,
-	updateTransactionFromGateway,
 	updateTransactionWithMercadoPagoPreference,
 } from "./checkout.data";
 import {
-	type PaymentGatewayRequest,
-	type PaymentGatewayResponse,
-	paymentGateway,
-} from "./payment-gateway";
+	isCancellablePaymentAttempt,
+	isSpentPaymentAttempt,
+} from "./payment-attempt.decision";
 
 const TERMS_TEXT = "lorem ipsum";
+const HOUR_IN_MS = 60 * 60 * 1000;
 
 type CheckoutCartItemRecord = CheckoutCartRecord["cartItems"][number];
 
@@ -233,7 +239,10 @@ function toOrderListItem(record: OrderListRecord) {
 	};
 }
 
-function toOrderDetail(record: OrderDetailRecord): OrderDetail {
+function toOrderDetail(
+	record: OrderDetailRecord,
+	externalPayment: OrderExternalPayment | null,
+): OrderDetail {
 	const latestTransaction = record.transactions[0];
 
 	return orderDetailSchema.parse({
@@ -251,6 +260,7 @@ function toOrderDetail(record: OrderDetailRecord): OrderDetail {
 		shippingAddressSnapshot: record.shippingAddressSnapshot,
 		termsSnapshot: record.termsSnapshot,
 		acceptedTermsAt: record.acceptedTermsAt,
+		externalPayment,
 		items: record.items.map((item) => ({
 			...item,
 			quantity: item.quantity.toString(),
@@ -279,14 +289,6 @@ function getAddressFromSnapshot(record: OrderDetailRecord): CheckoutAddress {
 	});
 }
 
-function mapGatewayStatusToTransactionStatus(
-	response: PaymentGatewayResponse,
-): "pending" | "completed" | "failed" {
-	if (response.status === "succeeded") return "completed";
-	if (response.status === "failed") return "failed";
-	return "pending";
-}
-
 function mapTransactionStatusToPaymentStatus(
 	status:
 		| "pending"
@@ -308,6 +310,7 @@ function buildPaymentResult(input: {
 	shippingAddress: CheckoutAddress;
 	paymentMethod: CheckoutPaymentMethod;
 	message?: string;
+	externalPayment?: ExternalPaymentInstructions | null;
 }): CheckoutPaymentResult {
 	const status = mapTransactionStatusToPaymentStatus(input.transaction.status);
 	const message =
@@ -346,41 +349,78 @@ function buildPaymentResult(input: {
 					: (input.transaction.checkoutUrl ??
 						input.transaction.sandboxCheckoutUrl)
 				: null,
+		externalPayment: input.externalPayment ?? null,
 		shippingAddress: input.shippingAddress,
 		paymentMethod: input.paymentMethod,
 	});
 }
 
-function buildPaymentRequest(input: {
-	cart: CheckoutCartRecord;
-	order: OrderDetailRecord;
-	transaction: OrderDetailRecord["transactions"][number];
-	total: CartSnapshot["totals"][number];
-	userId: string;
-	paymentMethod: CheckoutPaymentMethod;
-	idempotencyKey: string;
-}): PaymentGatewayRequest {
+function buildExternalPaymentInstructions(input: {
+	settings: ExternalPaymentSettings;
+	orderCode: string;
+	transaction: Pick<
+		OrderDetailRecord["transactions"][number],
+		"amount" | "currency" | "expiresAt"
+	>;
+}): ExternalPaymentInstructions {
+	return externalPaymentInstructionsSchema.parse({
+		...input.settings,
+		amount: input.transaction.amount.toString(),
+		currency: input.transaction.currency,
+		orderCode: input.orderCode,
+		expiresAt: input.transaction.expiresAt,
+	});
+}
+
+/**
+ * Transfer data for an attempt the user still has to pay. A settled, dead or
+ * Mercado Pago attempt has nothing to show, so the CBU stops being handed out
+ * the moment the attempt leaves `pending` (ADR 0010).
+ */
+async function loadExternalPaymentInstructions(
+	database: CheckoutDbClient,
+	input: {
+		orderCode: string;
+		transaction: OrderDetailRecord["transactions"][number];
+	},
+) {
+	if (input.transaction.provider !== EXTERNAL_PROVIDER) return null;
+	if (input.transaction.status !== "pending") return null;
+
+	const config = await getExternalPaymentConfig(database);
+
+	return buildExternalPaymentInstructions({
+		settings: config.settings,
+		orderCode: input.orderCode,
+		transaction: input.transaction,
+	});
+}
+
+async function loadOrderExternalPayment(
+	database: CheckoutDbClient,
+	order: OrderDetailRecord,
+): Promise<OrderExternalPayment | null> {
+	const latestTransaction = order.transactions[0];
+	if (!latestTransaction) return null;
+
+	const instructions = await loadExternalPaymentInstructions(database, {
+		orderCode: order.code,
+		transaction: latestTransaction,
+	});
+	if (!instructions) return null;
+
 	return {
-		idempotencyKey: input.idempotencyKey,
-		userId: input.userId,
-		cartId: input.cart.id,
-		cartCode: input.cart.code,
-		orderId: input.order.id,
-		orderCode: input.order.code,
-		transactionId: input.transaction.id,
-		amount: input.total.amount,
-		currency: input.total.currency,
-		paymentMethod: {
-			id: input.paymentMethod.id,
-			type: input.paymentMethod.type,
-			label: input.paymentMethod.label,
-			details: input.paymentMethod.details,
-			provider: input.paymentMethod.provider,
-			externalPaymentMethodId: input.paymentMethod.externalPaymentMethodId,
-		},
+		...instructions,
+		declaredReceiptReference: latestTransaction.declaredReceiptReference,
+		declaredReceiptAt: latestTransaction.declaredReceiptAt,
 	};
 }
 
+/**
+ * The payment methods checkout offers: one per enabled provider, never a
+ * user-minted one. `enabled` on each `payment_provider_config` row is the only
+ * switch (ADR 0010).
+ */
 export async function start(userId: string): Promise<CheckoutState> {
 	return db.$transaction(async (tx) => {
 		const cart = await getRequiredCheckoutCart(tx, userId);
@@ -388,29 +428,26 @@ export async function start(userId: string): Promise<CheckoutState> {
 			cart.status === "atCheckout"
 				? cart
 				: await updateCartStatus(tx, cart.id, "atCheckout");
-		const [addresses, paymentMethods] = await Promise.all([
+		const [addresses, mercadoPagoConfig, externalConfig] = await Promise.all([
 			listCheckoutAddresses(tx, userId),
-			listCheckoutPaymentMethods(tx, userId),
+			getMercadoPagoConfig(tx),
+			getExternalPaymentConfig(tx),
 		]);
-		const mercadoPagoConfig = await getMercadoPagoConfig(tx);
-		const mercadoPagoMethod = mercadoPagoConfig.enabled
-			? await findOrCreateMercadoPagoPaymentMethod(tx, userId)
-			: null;
-		const checkoutPaymentMethods = filterProductionPaymentMethods(
-			mercadoPagoConfig.enabled
-				? [
-						...(mercadoPagoMethod ? [mercadoPagoMethod] : []),
-						...paymentMethods.filter(
-							(method) => method.provider !== "mercadopago",
-						),
-					]
-				: paymentMethods,
-		);
+
+		const paymentMethods: CheckoutPaymentMethodRecord[] = [];
+		if (mercadoPagoConfig.enabled) {
+			paymentMethods.push(
+				await findOrCreateMercadoPagoPaymentMethod(tx, userId),
+			);
+		}
+		if (externalConfig.enabled) {
+			paymentMethods.push(await findOrCreateExternalPaymentMethod(tx, userId));
+		}
 
 		return checkoutStateSchema.parse({
 			cart: mapCart(checkoutCart),
 			addresses: addresses.map(toCheckoutAddress),
-			paymentMethods: checkoutPaymentMethods.map(toCheckoutPaymentMethod),
+			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
 			termsText: TERMS_TEXT,
 		});
 	});
@@ -419,29 +456,27 @@ export async function start(userId: string): Promise<CheckoutState> {
 export async function getState(userId: string): Promise<CheckoutState> {
 	return db.$transaction(async (tx) => {
 		const cart = await getRequiredCheckoutCart(tx, userId);
-		const [addresses, paymentMethods] = await Promise.all([
+		const [addresses, mercadoPagoConfig, externalConfig] = await Promise.all([
 			listCheckoutAddresses(tx, userId),
-			listCheckoutPaymentMethods(tx, userId),
+			getMercadoPagoConfig(tx),
+			getExternalPaymentConfig(tx),
 		]);
-		const mercadoPagoConfig = await getMercadoPagoConfig(tx);
-		const mercadoPagoMethod = mercadoPagoConfig.enabled
-			? await findMercadoPagoPaymentMethod(tx, userId)
-			: null;
-		const checkoutPaymentMethods = filterProductionPaymentMethods(
-			mercadoPagoConfig.enabled
-				? [
-						...(mercadoPagoMethod ? [mercadoPagoMethod] : []),
-						...paymentMethods.filter(
-							(method) => method.provider !== "mercadopago",
-						),
-					]
-				: paymentMethods,
-		);
+
+		// Unlike `start`, reading the checkout state never mints a payment method.
+		const paymentMethods: CheckoutPaymentMethodRecord[] = [];
+		if (mercadoPagoConfig.enabled) {
+			const method = await findMercadoPagoPaymentMethod(tx, userId);
+			if (method) paymentMethods.push(method);
+		}
+		if (externalConfig.enabled) {
+			const method = await findExternalPaymentMethod(tx, userId);
+			if (method) paymentMethods.push(method);
+		}
 
 		return checkoutStateSchema.parse({
 			cart: mapCart(cart),
 			addresses: addresses.map(toCheckoutAddress),
-			paymentMethods: checkoutPaymentMethods.map(toCheckoutPaymentMethod),
+			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
 			termsText: TERMS_TEXT,
 		});
 	});
@@ -468,12 +503,14 @@ export async function leave(userId: string): Promise<CartSnapshot> {
 		const latestAttempt = liveOrder?.transactions[0] ?? null;
 
 		// A settled payment should already have moved the cart out of `atCheckout`;
-		// refusing here keeps `leave` from ever cancelling an order that was paid.
+		// refusing here keeps `leave` from ever cancelling an order that was paid,
+		// or one whose transfer the user already reported (ADR 0010).
 		if (latestAttempt && !isCancellablePaymentAttempt(latestAttempt)) {
 			throw new TRPCError({
 				code: "PRECONDITION_FAILED",
-				message:
-					"Hay un pago en curso para este carrito. Esperá a que el proveedor lo resuelva.",
+				message: latestAttempt.declaredReceiptReference
+					? "Ya informaste una transferencia para este pedido. Esperá a que la confirmemos antes de volver al carrito."
+					: "Hay un pago en curso para este carrito. Esperá a que el proveedor lo resuelva.",
 			});
 		}
 
@@ -496,7 +533,6 @@ export async function leave(userId: string): Promise<CartSnapshot> {
 					status: null,
 					items: [],
 					itemCount: 0,
-					totalQuantity: "0",
 					totals: [],
 				},
 	);
@@ -527,88 +563,50 @@ export async function updateAddress(
 }
 
 /**
- * User-managed payment methods are all mock-backed
- * (`createCheckoutPaymentMethod` hardcodes `provider: "mock"`), so production
- * must neither mint nor offer them — the mock gateway would approve them for
- * free (finding #26).
+ * The provider that will carry the attempt, resolved from the method the user
+ * picked and refused if that provider is off. Anything outside the two offered
+ * providers is rejected here: legacy `mock` methods stay in the database
+ * (`UserTransaction.paymentMethod` is `onDelete: Restrict`) and remain
+ * selectable by id even though checkout no longer lists them (ADR 0010).
  */
-function assertPaymentMethodManagementAvailable() {
-	if (env.APP_ENV === "production") {
-		throw new TRPCError({
-			code: "PRECONDITION_FAILED",
-			message: "Los métodos de pago manuales no están disponibles.",
-		});
-	}
-}
-
-function filterProductionPaymentMethods(
-	methods: CheckoutPaymentMethodRecord[],
+async function resolvePaymentProviderConfig(
+	database: CheckoutDbClient,
+	paymentMethod: CheckoutPaymentMethod,
 ) {
-	if (env.APP_ENV !== "production") return methods;
+	if (
+		paymentMethod.provider === "mercadopago" ||
+		paymentMethod.type === "mercadopago"
+	) {
+		const config = await getMercadoPagoConfig(database);
 
-	return methods.filter((method) => method.provider === "mercadopago");
-}
+		if (!config.enabled) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message: "Mercado Pago no está habilitado para checkout.",
+			});
+		}
 
-export async function createPaymentMethod(
-	userId: string,
-	input: CheckoutPaymentMethodCreateInput,
-) {
-	assertPaymentMethodManagementAvailable();
-
-	return checkoutPaymentMethodSchema.parse(
-		await createCheckoutPaymentMethod(db, userId, input),
-	);
-}
-
-export async function updatePaymentMethod(
-	userId: string,
-	input: CheckoutPaymentMethodUpdateInput,
-) {
-	assertPaymentMethodManagementAvailable();
-
-	const existing = await findCheckoutPaymentMethodById(db, userId, input.id);
-	if (!existing) {
-		throw new TRPCError({
-			code: "NOT_FOUND",
-			message: "No encontramos ese método de pago en tu perfil.",
-		});
+		return { provider: "mercadopago" as const, config };
 	}
 
-	return checkoutPaymentMethodSchema.parse(
-		await updateCheckoutPaymentMethod(db, input),
-	);
-}
+	if (paymentMethod.provider === EXTERNAL_PROVIDER) {
+		const config = await getExternalPaymentConfig(database);
 
-/**
- * Whether confirming again should mint a new attempt on the live order. Only a
- * dead attempt qualifies — failed, cancelled, or a pending one whose provider
- * window has closed. Every other state (completed, in process, still-payable
- * pending, refunded, charged back) is answered with the attempt that exists,
- * which is what makes a browser-back re-confirm idempotent.
- */
-function isSpentPaymentAttempt(
-	transaction: OrderDetailRecord["transactions"][number],
-	now: Date,
-) {
-	if (transaction.status === "failed" || transaction.status === "cancelled") {
-		return true;
+		if (!config.enabled) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message: "El pago externo no está habilitado para checkout.",
+			});
+		}
+
+		return { provider: "external" as const, config };
 	}
-	if (transaction.status !== "pending") return false;
-	return transaction.expiresAt !== null && transaction.expiresAt <= now;
-}
 
-/**
- * Whether abandoning the attempt is still the user's call. A payment the
- * provider is holding, or one that already took money, is not.
- */
-function isCancellablePaymentAttempt(
-	transaction: OrderDetailRecord["transactions"][number],
-) {
-	return (
-		transaction.status === "pending" ||
-		transaction.status === "failed" ||
-		transaction.status === "cancelled"
-	);
+	throw new TRPCError({
+		code: "PRECONDITION_FAILED",
+		message:
+			"Ese método de pago ya no está disponible. Elegí otro para continuar.",
+	});
 }
 
 function buildReusedAttemptMessage(
@@ -616,9 +614,15 @@ function buildReusedAttemptMessage(
 ) {
 	if (transaction.status !== "pending") return undefined;
 
-	return transaction.provider === "mercadopago"
-		? "Ya tenés un pago iniciado para este carrito. Te redirigimos a Mercado Pago para completarlo."
-		: undefined;
+	if (transaction.provider === "mercadopago") {
+		return "Ya tenés un pago iniciado para este carrito. Te redirigimos a Mercado Pago para completarlo.";
+	}
+
+	if (transaction.provider === EXTERNAL_PROVIDER) {
+		return "Ya tenés un pedido esperando tu transferencia. Usá estos datos para completarla.";
+	}
+
+	return undefined;
 }
 
 async function createLiveUserOrder(
@@ -656,6 +660,10 @@ async function getExistingPaymentResult(
 		transaction: existing,
 		shippingAddress: getAddressFromSnapshot(existing.userOrder),
 		paymentMethod: toCheckoutPaymentMethod(existing.paymentMethod),
+		externalPayment: await loadExternalPaymentInstructions(db, {
+			orderCode: existing.userOrder.code,
+			transaction: existing,
+		}),
 	});
 }
 
@@ -695,18 +703,10 @@ export async function confirmAndPay(
 
 		const address = toCheckoutAddress(addressRecord);
 		const paymentMethod = toCheckoutPaymentMethod(paymentRecord);
-		const mercadoPagoConfig =
-			paymentMethod.provider === "mercadopago" ||
-			paymentMethod.type === "mercadopago"
-				? await getMercadoPagoConfig(tx)
-				: null;
-
-		if (mercadoPagoConfig && !mercadoPagoConfig.enabled) {
-			throw new TRPCError({
-				code: "PRECONDITION_FAILED",
-				message: "Mercado Pago no está habilitado para checkout.",
-			});
-		}
+		const providerConfig = await resolvePaymentProviderConfig(
+			tx,
+			paymentMethod,
+		);
 
 		const liveOrder = await findLiveOrderByCartId(tx, cart.id);
 		const latestAttempt = liveOrder?.transactions[0] ?? null;
@@ -724,6 +724,10 @@ export async function confirmAndPay(
 					shippingAddress: getAddressFromSnapshot(liveOrder),
 					paymentMethod: toCheckoutPaymentMethod(latestAttempt.paymentMethod),
 					message: buildReusedAttemptMessage(latestAttempt),
+					externalPayment: await loadExternalPaymentInstructions(tx, {
+						orderCode: liveOrder.code,
+						transaction: latestAttempt,
+					}),
 				}),
 			};
 		}
@@ -767,27 +771,30 @@ export async function confirmAndPay(
 				amount: total.amount,
 				currency: total.currency,
 				paymentMethod,
-				provider: mercadoPagoConfig ? "mercadopago" : "mock",
+				provider: providerConfig.provider,
 			},
-			provider: mercadoPagoConfig ? "mercadopago" : "mock",
-			providerMode: mercadoPagoConfig?.mode ?? null,
+			provider: providerConfig.provider,
+			providerMode:
+				providerConfig.provider === "mercadopago"
+					? providerConfig.config.mode
+					: null,
 		});
 
 		return {
 			kind: "created" as const,
 			address,
 			cart,
-			mercadoPagoConfig,
 			order,
 			paymentMethod,
-			total,
+			providerConfig,
 			transaction,
 		};
 	});
 
 	if (prepared.kind === "existing") return prepared.result;
 
-	if (prepared.mercadoPagoConfig) {
+	if (prepared.providerConfig.provider === "mercadopago") {
+		const mercadoPagoConfig = prepared.providerConfig.config;
 		const preference = await createMercadoPagoPreference({
 			cart: prepared.cart,
 			order: {
@@ -796,11 +803,11 @@ export async function confirmAndPay(
 				user: prepared.order.user,
 			},
 			transaction: prepared.transaction,
-			config: prepared.mercadoPagoConfig,
+			config: mercadoPagoConfig,
 		});
 		const transaction = await updateTransactionWithMercadoPagoPreference(db, {
 			id: prepared.transaction.id,
-			providerMode: prepared.mercadoPagoConfig.mode,
+			providerMode: mercadoPagoConfig.mode,
 			...preference,
 		});
 
@@ -814,64 +821,38 @@ export async function confirmAndPay(
 		});
 	}
 
-	const gatewayRequest = buildPaymentRequest({
-		cart: prepared.cart,
-		order: prepared.order,
-		transaction: prepared.transaction,
-		total: prepared.total,
-		userId,
-		paymentMethod: prepared.paymentMethod,
-		idempotencyKey: input.idempotencyKey,
+	const externalSettings = prepared.providerConfig.config.settings;
+	// No provider will ever call back for a transfer, so the attempt is left
+	// pending and no domain event is dispatched: only an admin settling it in
+	// `/admin/payments` submits the order (ADR 0010).
+	const transaction = await markTransactionAsExternalPending(db, {
+		id: prepared.transaction.id,
+		expiresAt: new Date(
+			Date.now() + externalSettings.expiresInHours * HOUR_IN_MS,
+		),
+		requestSnapshot: {
+			idempotencyKey: input.idempotencyKey,
+			cart: { id: prepared.cart.id, code: prepared.cart.code },
+			order: { id: prepared.order.id, code: prepared.order.code },
+			amount: prepared.transaction.amount.toString(),
+			currency: prepared.transaction.currency,
+			paymentMethod: prepared.paymentMethod,
+			provider: EXTERNAL_PROVIDER,
+		},
 	});
-	const gatewayResponse = await paymentGateway.capturePayment(gatewayRequest);
-
-	const finalized = await db.$transaction(async (tx) => {
-		const transaction = await updateTransactionFromGateway(tx, {
-			id: prepared.transaction.id,
-			status: mapGatewayStatusToTransactionStatus(gatewayResponse),
-			provider: gatewayResponse.provider,
-			externalTransactionId: gatewayResponse.externalTransactionId,
-			providerStatus: gatewayResponse.providerStatus,
-			failureCode: gatewayResponse.failureCode,
-			failureMessage: gatewayResponse.failureMessage,
-			responseSnapshot: {
-				request: gatewayRequest,
-				response: gatewayResponse.raw,
-			},
-		});
-
-		if (gatewayResponse.status === "succeeded") {
-			const order = await submitOrderForCompletedPayment(tx, {
-				orderId: prepared.order.id,
-				cartId: prepared.cart.id,
-				transactionId: transaction.id,
-				actor: { source: "user", actorId: userId },
-			});
-
-			return { order, transaction, shouldDispatchDomainEvents: true };
-		}
-
-		if (gatewayResponse.status === "failed") {
-			const order = await updateOrderStatus(tx, prepared.order.id, "failed");
-			return { order, transaction, shouldDispatchDomainEvents: false };
-		}
-
-		return {
-			order: prepared.order,
-			transaction,
-			shouldDispatchDomainEvents: false,
-		};
-	});
-
-	if (finalized.shouldDispatchDomainEvents) {
-		await DomainEventDispatcher.wake();
-	}
 
 	return buildPaymentResult({
-		order: finalized.order,
-		transaction: finalized.transaction,
+		order: prepared.order,
+		transaction,
 		shippingAddress: prepared.address,
 		paymentMethod: prepared.paymentMethod,
+		message:
+			"Registramos tu pedido. Hacé la transferencia con estos datos; confirmamos el pedido cuando la verifiquemos.",
+		externalPayment: buildExternalPaymentInstructions({
+			settings: externalSettings,
+			orderCode: prepared.order.code,
+			transaction,
+		}),
 	});
 }
 
@@ -880,10 +861,7 @@ export async function listMine(userId: string): Promise<OrderListOutput> {
 	return orderListOutputSchema.parse(records.map(toOrderListItem));
 }
 
-export async function getMine(
-	userId: string,
-	orderId: number,
-): Promise<OrderDetail> {
+async function getRequiredOrder(userId: string, orderId: number) {
 	const order = await findOrderByUserId(db, userId, orderId);
 	if (!order) {
 		throw new TRPCError({
@@ -892,5 +870,53 @@ export async function getMine(
 		});
 	}
 
-	return toOrderDetail(order);
+	return order;
+}
+
+export async function getMine(
+	userId: string,
+	orderId: number,
+): Promise<OrderDetail> {
+	const order = await getRequiredOrder(userId, orderId);
+
+	return toOrderDetail(order, await loadOrderExternalPayment(db, order));
+}
+
+/**
+ * Records the transfer reference the user says they sent. It settles nothing:
+ * the attempt stays `pending` until an admin verifies the money landed, so no
+ * status changes and no domain event is dispatched here (ADR 0010).
+ */
+export async function declareExternalReceipt(
+	userId: string,
+	input: OrderDeclareReceiptInput,
+): Promise<OrderDetail> {
+	const order = await getRequiredOrder(userId, input.orderId);
+	const latestAttempt = order.transactions[0];
+
+	if (
+		!latestAttempt ||
+		latestAttempt.provider !== EXTERNAL_PROVIDER ||
+		latestAttempt.status !== "pending"
+	) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message: "Este pedido no tiene una transferencia pendiente de informar.",
+		});
+	}
+
+	if (isSpentPaymentAttempt(latestAttempt, new Date())) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message:
+				"El plazo para transferir venció. Volvé a confirmar el pedido para obtener datos nuevos.",
+		});
+	}
+
+	await declareTransactionReceipt(db, {
+		id: latestAttempt.id,
+		reference: input.reference,
+	});
+
+	return getMine(userId, input.orderId);
 }

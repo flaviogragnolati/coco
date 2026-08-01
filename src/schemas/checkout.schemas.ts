@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
+import { externalPaymentInstructionsSchema } from "~/schemas/admin/payment.schemas";
 import { cartSnapshotSchema } from "~/schemas/cart.schemas";
 import { catalogCurrencySchema } from "~/schemas/catalog.schemas";
 
@@ -14,13 +15,6 @@ const emptyStringToNull = (value: unknown) => {
 const optionalTextInputSchema = z
 	.preprocess(emptyStringToNull, z.string().nullable().optional())
 	.transform((value) => value ?? null);
-
-const safePaymentTextSchema = (message: string) =>
-	requiredText(message)
-		.max(120, "Usá una descripción corta")
-		.refine((value) => !/\d{12,}/.test(value.replace(/[\s-]/g, "")), {
-			message: "No ingreses números completos de tarjeta ni datos sensibles",
-		});
 
 export const checkoutAddressTypeSchema = z.enum([
 	"all",
@@ -70,28 +64,6 @@ export const checkoutPaymentMethodIdSchema = z
 	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
-/**
- * Users may only mint the manual (mock-backed) method types. `mercadopago`
- * methods are created server-side by `findOrCreateMercadoPagoPaymentMethod`;
- * accepting it as user input would route a self-made method into the Mercado
- * Pago branch of `confirmAndPay`.
- */
-export const checkoutPaymentMethodCreatableTypeSchema = z.enum([
-	"credit_card",
-	"bank_transfer",
-	"google_pay",
-	"cash",
-	"other",
-]);
-
-export const checkoutPaymentMethodFieldsSchema = z.object({
-	type: checkoutPaymentMethodCreatableTypeSchema.default("credit_card"),
-	label: safePaymentTextSchema("El nombre del método es obligatorio"),
-	details: safePaymentTextSchema(
-		"La descripción segura del método es obligatoria",
-	),
-});
-
 export const checkoutPaymentMethodSchema = z.object({
 	id: checkoutPaymentMethodIdSchema,
 	type: checkoutPaymentMethodTypeSchema,
@@ -101,14 +73,6 @@ export const checkoutPaymentMethodSchema = z.object({
 	externalPaymentMethodId: z.string().nullable(),
 	active: z.boolean(),
 });
-
-export const checkoutPaymentMethodCreateInputSchema =
-	checkoutPaymentMethodFieldsSchema;
-
-export const checkoutPaymentMethodUpdateInputSchema =
-	checkoutPaymentMethodFieldsSchema.extend({
-		id: checkoutPaymentMethodIdSchema,
-	});
 
 export const checkoutStateSchema = z.object({
 	cart: cartSnapshotSchema,
@@ -169,6 +133,8 @@ export const checkoutPaymentResultSchema = z.object({
 		sandboxCheckoutUrl: z.string().nullable().optional(),
 	}),
 	redirectUrl: z.string().nullable().optional(),
+	/** Transfer data the user needs while an external attempt stays pending (ADR 0010). */
+	externalPayment: externalPaymentInstructionsSchema.nullable().optional(),
 	shippingAddress: checkoutAddressSchema,
 	paymentMethod: checkoutPaymentMethodSchema,
 });
@@ -209,12 +175,32 @@ export const orderGetInputSchema = z.object({
 	id: z.number().int().positive(),
 });
 
+export const orderDeclareReceiptInputSchema = z.object({
+	orderId: z.number().int().positive(),
+	reference: z
+		.string()
+		.trim()
+		.min(3, "Ingresá la referencia del comprobante")
+		.max(120, "La referencia es demasiado larga"),
+});
+
+export const orderExternalPaymentSchema =
+	externalPaymentInstructionsSchema.extend({
+		declaredReceiptReference: z.string().nullable(),
+		declaredReceiptAt: z.date().nullable(),
+	});
+
 export const orderDetailSchema = orderListItemSchema.extend({
 	cartCode: z.string(),
 	billingAddressSnapshot: z.unknown().nullable(),
 	shippingAddressSnapshot: z.unknown().nullable(),
 	termsSnapshot: z.unknown().nullable(),
 	acceptedTermsAt: z.date().nullable(),
+	/**
+	 * Transfer data plus whatever the user already declared, present only while
+	 * the latest attempt is external and pending (ADR 0010).
+	 */
+	externalPayment: orderExternalPaymentSchema.nullable(),
 	items: z.array(
 		z.object({
 			id: z.number().int().positive(),

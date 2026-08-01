@@ -4,6 +4,7 @@ import {
 	AlertCircleIcon,
 	ChevronLeftIcon,
 	HomeIcon,
+	LandmarkIcon,
 	PackageCheckIcon,
 	ShoppingBagIcon,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { ExternalPaymentDetails } from "~/features/checkout/external-payment-details";
 import { cn } from "~/lib/utils";
 import type { CheckoutPaymentResult } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
@@ -54,6 +56,9 @@ export function CheckoutResultPanel({
 	onRetry: () => void;
 }) {
 	const succeeded = result.status === "succeeded";
+	// An external attempt is registered, not failed: it is waiting on a transfer
+	// the user still has to make (ADR 0010).
+	const externalPayment = result.externalPayment ?? null;
 
 	return (
 		<main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-6">
@@ -69,6 +74,8 @@ export function CheckoutResultPanel({
 							>
 								{succeeded ? (
 									<PackageCheckIcon className="size-5" />
+								) : externalPayment ? (
+									<LandmarkIcon className="size-5" />
 								) : (
 									<AlertCircleIcon className="size-5" />
 								)}
@@ -77,12 +84,22 @@ export function CheckoutResultPanel({
 								<CardTitle>
 									{succeeded
 										? "Compra confirmada"
-										: "No se pudo confirmar el pago"}
+										: externalPayment
+											? "Pedido registrado, esperando tu transferencia"
+											: "No se pudo confirmar el pago"}
 								</CardTitle>
 								<CardDescription>{result.message}</CardDescription>
 							</div>
 						</div>
-						<Badge variant={succeeded ? "success" : "destructive"}>
+						<Badge
+							variant={
+								succeeded
+									? "success"
+									: externalPayment
+										? "warning"
+										: "destructive"
+							}
+						>
 							{orderStatusLabelMap[result.order.status]}
 						</Badge>
 					</div>
@@ -115,6 +132,14 @@ export function CheckoutResultPanel({
 							</span>
 						</ResultField>
 					</div>
+					{externalPayment ? (
+						<div className="flex flex-col gap-3 rounded-3xl border p-3">
+							<span className="font-medium text-sm">
+								Datos para la transferencia
+							</span>
+							<ExternalPaymentDetails instructions={externalPayment} />
+						</div>
+					) : null}
 					{result.status === "failed" ? (
 						<Alert variant="destructive">
 							<AlertCircleIcon />

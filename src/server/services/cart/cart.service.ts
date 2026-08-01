@@ -54,7 +54,6 @@ function emptyCart(): CartSnapshot {
 		status: null,
 		items: [],
 		itemCount: 0,
-		totalQuantity: "0",
 		totals: [],
 	};
 }

@@ -9,15 +9,13 @@ import { cn } from "~/lib/utils";
 
 const CONFIRMATION_MS = 1500;
 
-/**
- * The repo's only clipboard consumer for now; if a second one appears this
- * belongs in `shared/common/`.
- */
 export function CopyIdentifierButton({
 	value,
+	label,
 	className,
 }: {
 	value: string;
+	label?: string;
 	className?: string;
 }) {
 	const [copied, setCopied] = useState(false);
@@ -38,7 +36,7 @@ export function CopyIdentifierButton({
 		try {
 			await navigator.clipboard.writeText(value);
 			setCopied(true);
-			toast.success(`Copiado: ${value}`);
+			toast.success(`Copiado: ${label ?? value}`);
 		} catch {
 			toast.error("No se pudo copiar al portapapeles");
 		}
@@ -46,7 +44,7 @@ export function CopyIdentifierButton({
 
 	return (
 		<Button
-			aria-label={`Copiar ${value}`}
+			aria-label={`Copiar ${label ?? value}`}
 			className={cn("shrink-0", className)}
 			onClick={copy}
 			size="icon-xs"

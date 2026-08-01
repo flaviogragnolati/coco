@@ -68,6 +68,8 @@ export const paymentAttemptDetailSelect = {
 	providerOrderId: true,
 	failureCode: true,
 	failureMessage: true,
+	declaredReceiptReference: true,
+	declaredReceiptAt: true,
 	requestSnapshot: true,
 	responseSnapshot: true,
 	paymentProviderEvents: {
@@ -204,6 +206,28 @@ export async function findPaymentAttemptById(db: PaymentDbClient, id: number) {
 	return db.userTransaction.findUnique({
 		where: { id },
 		select: paymentAttemptDetailSelect,
+	});
+}
+
+export async function findPaymentAttemptWithCartById(
+	db: PaymentDbClient,
+	id: number,
+) {
+	return db.userTransaction.findUnique({
+		where: { id },
+		select: {
+			id: true,
+			provider: true,
+			status: true,
+			userOrderId: true,
+			userOrder: {
+				select: {
+					id: true,
+					code: true,
+					cartId: true,
+				},
+			},
+		},
 	});
 }
 

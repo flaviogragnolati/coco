@@ -12,7 +12,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AddressFormDialog } from "~/app/(storefront)/checkout/_components/address-form-dialog";
-import { PaymentMethodFormDialog } from "~/app/(storefront)/checkout/_components/payment-method-form-dialog";
 import { PageHeader } from "~/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
@@ -34,7 +33,6 @@ import {
 import { Skeleton } from "~/components/ui/skeleton";
 import type {
 	CheckoutAddress,
-	CheckoutPaymentMethod,
 	CheckoutPaymentResult,
 	CheckoutState,
 } from "~/shared/common/checkout.types";
@@ -106,9 +104,6 @@ export function CheckoutClient() {
 	const [editingAddress, setEditingAddress] = useState<CheckoutAddress | null>(
 		null,
 	);
-	const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-	const [editingPaymentMethod, setEditingPaymentMethod] =
-		useState<CheckoutPaymentMethod | null>(null);
 	const [acceptedTerms, setAcceptedTerms] = useState(false);
 	const [summarySheetOpen, setSummarySheetOpen] = useState(false);
 	const [paymentAttemptKey, setPaymentAttemptKey] = useState(() =>
@@ -183,51 +178,6 @@ export function CheckoutClient() {
 			setSelectedAddressId(address.id);
 			setAddressDialogOpen(false);
 			toast.success("Dirección actualizada");
-		},
-	});
-
-	const createPaymentMethod = api.checkout.createPaymentMethod.useMutation({
-		onError(error) {
-			toast.error(error.message || "No se pudo guardar el método de pago");
-		},
-		onSuccess(paymentMethod) {
-			setCheckout((current) =>
-				current
-					? {
-							...current,
-							paymentMethods: [
-								paymentMethod,
-								...current.paymentMethods.filter(
-									(item) => item.id !== paymentMethod.id,
-								),
-							],
-						}
-					: current,
-			);
-			setSelectedPaymentMethodId(paymentMethod.id);
-			setPaymentDialogOpen(false);
-			toast.success("Método de pago guardado");
-		},
-	});
-
-	const updatePaymentMethod = api.checkout.updatePaymentMethod.useMutation({
-		onError(error) {
-			toast.error(error.message || "No se pudo actualizar el método de pago");
-		},
-		onSuccess(paymentMethod) {
-			setCheckout((current) =>
-				current
-					? {
-							...current,
-							paymentMethods: current.paymentMethods.map((item) =>
-								item.id === paymentMethod.id ? paymentMethod : item,
-							),
-						}
-					: current,
-			);
-			setSelectedPaymentMethodId(paymentMethod.id);
-			setPaymentDialogOpen(false);
-			toast.success("Método de pago actualizado");
 		},
 	});
 
@@ -347,8 +297,6 @@ export function CheckoutClient() {
 	);
 	const addressMutationPending =
 		createAddress.isPending || updateAddress.isPending;
-	const paymentMutationPending =
-		createPaymentMethod.isPending || updatePaymentMethod.isPending;
 
 	const selection: CheckoutSelection = {
 		hasItems: liveCart.items.length > 0,
@@ -442,14 +390,6 @@ export function CheckoutClient() {
 
 					{currentStep === "payment" ? (
 						<CheckoutPaymentStep
-							onAdd={() => {
-								setEditingPaymentMethod(null);
-								setPaymentDialogOpen(true);
-							}}
-							onEdit={(paymentMethod) => {
-								setEditingPaymentMethod(paymentMethod);
-								setPaymentDialogOpen(true);
-							}}
 							onSelect={setSelectedPaymentMethodId}
 							paymentMethods={checkout.paymentMethods}
 							selectedPaymentMethodId={selectedPaymentMethodId}
@@ -544,17 +484,6 @@ export function CheckoutClient() {
 					else createAddress.mutate(values);
 				}}
 				open={addressDialogOpen}
-			/>
-
-			<PaymentMethodFormDialog
-				isSubmitting={paymentMutationPending}
-				onOpenChange={setPaymentDialogOpen}
-				onSubmit={(values) => {
-					if ("id" in values) updatePaymentMethod.mutate(values);
-					else createPaymentMethod.mutate(values);
-				}}
-				open={paymentDialogOpen}
-				paymentMethod={editingPaymentMethod}
 			/>
 		</main>
 	);

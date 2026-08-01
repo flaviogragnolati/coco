@@ -61,7 +61,6 @@ test("an empty cart has no totals", () => {
 	const snapshot = buildCartSnapshot([], meta);
 
 	expect(snapshot.itemCount).toBe(0);
-	expect(snapshot.totalQuantity).toBe("0");
 	expect(snapshot.totals).toEqual([]);
 });
 
@@ -80,7 +79,6 @@ test("sums items sharing a currency into one total", () => {
 	);
 
 	expect(snapshot.itemCount).toBe(2);
-	expect(snapshot.totalQuantity).toBe("5");
 	expect(snapshot.totals).toEqual([{ currency: "ARS", amount: "150.50" }]);
 });
 

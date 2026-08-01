@@ -1,16 +1,13 @@
 "use client";
 
 import {
+	BanknoteArrowUpIcon,
 	CheckCircle2Icon,
 	CreditCardIcon,
-	PencilIcon,
-	PlusIcon,
-	ShieldCheckIcon,
+	WalletIcon,
 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -20,7 +17,6 @@ import {
 } from "~/components/ui/card";
 import {
 	Empty,
-	EmptyContent,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
@@ -29,125 +25,92 @@ import {
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import { SelectableTile } from "./selectable-tile";
 
-export function paymentTypeLabel(type: CheckoutPaymentMethod["type"]) {
-	switch (type) {
-		case "credit_card":
-			return "Tarjeta";
-		case "mercadopago":
-			return "Mercado Pago";
-		case "bank_transfer":
-			return "Transferencia";
-		case "google_pay":
-			return "Google Pay";
-		case "cash":
-			return "Efectivo";
-		default:
-			return "Otro";
-	}
+const PAYMENT_PROVIDER_COPY = {
+	mercadopago: {
+		title: "Mercado Pago",
+		description: "Pagás con tarjeta, dinero en cuenta o efectivo",
+	},
+	external: {
+		title: "Pago externo",
+		description:
+			"Transferencia bancaria. Te damos los datos al confirmar el pedido",
+	},
+} as const;
+
+/**
+ * Copy comes from the provider, never from `type`: the external method is a
+ * `bank_transfer` internally, and the user has no business seeing either that
+ * or the raw provider slug.
+ */
+export function paymentMethodCopy(paymentMethod: CheckoutPaymentMethod) {
+	return (
+		PAYMENT_PROVIDER_COPY[
+			paymentMethod.provider as keyof typeof PAYMENT_PROVIDER_COPY
+		] ?? { title: paymentMethod.label, description: paymentMethod.details }
+	);
 }
 
 export function CheckoutPaymentStep({
 	paymentMethods,
 	selectedPaymentMethodId,
-	onAdd,
-	onEdit,
 	onSelect,
 }: {
 	paymentMethods: CheckoutPaymentMethod[];
 	selectedPaymentMethodId: number | null;
-	onAdd: () => void;
-	onEdit: (paymentMethod: CheckoutPaymentMethod) => void;
 	onSelect: (id: number) => void;
 }) {
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex items-start justify-between gap-3">
-					<div className="flex flex-col gap-1">
-						<CardTitle>Método de pago</CardTitle>
-						<CardDescription>
-							Elegí cómo iniciar el intento de pago para este pedido.
-						</CardDescription>
-					</div>
-					<Button onClick={onAdd} type="button" variant="outline">
-						<PlusIcon data-icon="inline-start" />
-						Nuevo
-					</Button>
-				</div>
+				<CardTitle>Método de pago</CardTitle>
+				<CardDescription>
+					Elegí cómo iniciar el intento de pago para este pedido.
+				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-3">
-				<Alert>
-					<ShieldCheckIcon />
-					<AlertTitle>Pago externo</AlertTitle>
-					<AlertDescription>
-						Mercado Pago usa Checkout Pro y confirma el pedido después de la
-						aprobación del proveedor.
-					</AlertDescription>
-				</Alert>
 				{paymentMethods.length === 0 ? (
 					<Empty>
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<CreditCardIcon />
 							</EmptyMedia>
-							<EmptyTitle>Sin métodos de pago</EmptyTitle>
+							<EmptyTitle>Sin medios de pago habilitados</EmptyTitle>
 							<EmptyDescription>
-								Agregá una referencia tokenizada para continuar.
+								Ahora mismo no hay ningún medio de pago disponible. Escribinos a
+								soporte para que lo habilitemos.
 							</EmptyDescription>
 						</EmptyHeader>
-						<EmptyContent>
-							<Button onClick={onAdd} type="button">
-								<PlusIcon data-icon="inline-start" />
-								Agregar método
-							</Button>
-						</EmptyContent>
 					</Empty>
 				) : (
 					<div className="flex flex-col gap-3">
 						{paymentMethods.map((paymentMethod) => {
 							const selected = paymentMethod.id === selectedPaymentMethodId;
+							const copy = paymentMethodCopy(paymentMethod);
 
 							return (
 								<SelectableTile
 									actions={
-										<>
-											{selected ? (
-												<Badge variant="success">
-													<CheckCircle2Icon data-icon="inline-start" />
-													Seleccionado
-												</Badge>
-											) : null}
-											{paymentMethod.provider === "mercadopago" ? null : (
-												<Button
-													onClick={() => onEdit(paymentMethod)}
-													size="sm"
-													type="button"
-													variant="outline"
-												>
-													<PencilIcon data-icon="inline-start" />
-													Editar
-												</Button>
-											)}
-										</>
+										selected ? (
+											<Badge variant="success">
+												<CheckCircle2Icon data-icon="inline-start" />
+												Seleccionado
+											</Badge>
+										) : null
 									}
 									key={paymentMethod.id}
 									onSelect={() => onSelect(paymentMethod.id)}
 									selected={selected}
 								>
 									<span className="flex items-center gap-2 font-medium text-sm">
-										{selected ? (
-											<CheckCircle2Icon className="size-4 text-success" />
+										{paymentMethod.provider === "external" ? (
+											<BanknoteArrowUpIcon className="size-4 text-muted-foreground" />
 										) : (
-											<CreditCardIcon className="size-4 text-muted-foreground" />
+											<WalletIcon className="size-4 text-muted-foreground" />
 										)}
-										{paymentMethod.label}
+										{copy.title}
 									</span>
 									<span className="text-muted-foreground text-xs/relaxed">
-										{paymentTypeLabel(paymentMethod.type)} ·{" "}
-										{paymentMethod.details}
-									</span>
-									<span className="text-muted-foreground text-xs">
-										{paymentMethod.provider}
+										{copy.description}
 									</span>
 								</SelectableTile>
 							);

@@ -18,6 +18,14 @@ _Avoid_: Operation, payment operation
 A disputed or externally reversed customer payment after a completed payment attempt. It is distinct from a refund because it is not the platform's ordinary refund path.
 _Avoid_: Refund, payment failure
 
+**External payment**:
+A payment attempt the platform never captures: the customer moves the money outside the app and an admin settles the attempt by hand. Its outcome is an administrative decision, never a provider response. Spanish-facing UI labels it "Pago externo".
+_Avoid_: Manual payment, offline payment, transfer
+
+**Declared receipt**:
+The transfer reference a customer reports for an external payment. It records a claim, not a settlement: the attempt stays pending until an admin confirms it. Spanish-facing UI labels it "Comprobante declarado".
+_Avoid_: Verified receipt, proof of payment
+
 **Operation**:
 An aggregation batch for submitted customer demand.
 _Avoid_: Job, run

@@ -93,12 +93,8 @@ export function CheckoutOrderStep({
 				<Separator />
 				<div className="grid gap-2 text-xs">
 					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">Productos</span>
+						<span className="text-muted-foreground">Líneas</span>
 						<span className="font-medium">{cart.itemCount}</span>
-					</div>
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">Unidades acumuladas</span>
-						<span className="font-medium">{cart.totalQuantity}</span>
 					</div>
 				</div>
 				<Separator />

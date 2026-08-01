@@ -3,9 +3,9 @@
 import { ArrowUpRightIcon, MessageSquarePlusIcon } from "lucide-react";
 import Link from "next/link";
 
+import { CopyIdentifierButton } from "~/components/copy-identifier-button";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { CopyIdentifierButton } from "./copy-identifier-button";
 import { type GlossaryEntry, glossaryKindLabels } from "./glossary.types";
 
 const kindVariant = {

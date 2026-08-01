@@ -14,6 +14,45 @@ export const paymentsGlossaryEntries: GlossaryEntry[] = [
 		aliases: ["Reembolso", "Fallo de pago"],
 		href: "/admin/payments",
 	},
+	{
+		slug: "concepto-pago-externo",
+		kind: "concept",
+		section: "payments",
+		label: "Pago externo",
+		term: "External payment",
+		definition:
+			"Un intento de pago que la plataforma nunca captura: el cliente mueve el dinero fuera de la app y un admin lo liquida a mano. Su resultado es una decisión administrativa, nunca una respuesta del proveedor.",
+		aliases: ["Pago manual", "Pago offline", "Transferencia"],
+		occurrences: [
+			{ code: "UserTransaction.provider", db: "user_transaction.provider" },
+			{
+				code: "PaymentProviderConfig.provider",
+				db: "payment_provider_config.provider",
+			},
+		],
+		href: "/admin/payments",
+	},
+	{
+		slug: "concepto-comprobante-declarado",
+		kind: "concept",
+		section: "payments",
+		label: "Comprobante declarado",
+		term: "Declared receipt",
+		definition:
+			"La referencia de transferencia que el cliente informa para un pago externo. Registra una declaración, no una liquidación: el intento sigue pendiente hasta que un admin la confirma.",
+		aliases: ["Comprobante verificado", "Constancia de pago"],
+		occurrences: [
+			{
+				code: "UserTransaction.declaredReceiptReference",
+				db: "user_transaction.declaredReceiptReference",
+			},
+			{
+				code: "UserTransaction.declaredReceiptAt",
+				db: "user_transaction.declaredReceiptAt",
+			},
+		],
+		href: "/admin/payments",
+	},
 
 	// --- Entidades -----------------------------------------------------------
 	{

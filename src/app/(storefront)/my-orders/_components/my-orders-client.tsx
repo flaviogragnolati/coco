@@ -102,7 +102,7 @@ export function MyOrdersClient({ orders }: { orders: OrderListOutput }) {
 					</EmptyContent>
 				</Empty>
 			) : (
-				<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+				<section className="grid gap-4 md:grid-cols-2">
 					{visibleOrders.map((order) => {
 						const statusChip = orderStatusChipConfigMap[order.status];
 						const StatusIcon = statusChip.icon;
@@ -111,40 +111,43 @@ export function MyOrdersClient({ orders }: { orders: OrderListOutput }) {
 							<Card key={order.id}>
 								<CardHeader>
 									<div className="flex items-start justify-between gap-3">
-										<div className="flex items-start gap-3">
+										<div className="flex min-w-0 items-start gap-3">
 											<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
 												<ShoppingBagIcon className="size-4" />
 											</span>
-											<div className="flex flex-col gap-1">
-												<CardTitle>{order.code}</CardTitle>
+											<div className="flex min-w-0 flex-col gap-1">
+												<CardTitle className="font-semibold text-xl">
+													{order.currency
+														? formatCurrency(order.totalAmount, order.currency)
+														: "-"}
+												</CardTitle>
 												<CardDescription>
 													{formatDateTimeMedium(order.createdAt)}
 												</CardDescription>
 											</div>
 										</div>
-										<Badge variant={statusChip.variant}>
+										<Badge className="shrink-0" variant={statusChip.variant}>
 											<StatusIcon data-icon="inline-start" />
 											{statusChip.label}
 										</Badge>
 									</div>
 								</CardHeader>
-								<CardContent className="flex flex-col gap-3 text-xs">
-									<div className="flex items-center justify-between gap-3">
-										<span className="text-muted-foreground">Items</span>
-										<span className="font-medium">{order.itemCount}</span>
-									</div>
-									<div className="flex items-center justify-between gap-3">
-										<span className="text-muted-foreground">Pago</span>
-										<span className="font-medium">
-											{paymentStatusLabel(order.latestTransactionStatus)}
+								<CardContent className="flex flex-col gap-2 text-xs">
+									<div className="min-w-0">
+										<span
+											className="block truncate font-mono text-muted-foreground"
+											title={order.code}
+										>
+											{order.code}
 										</span>
 									</div>
-									<div className="flex items-center justify-between gap-3">
-										<span className="text-muted-foreground">Monto</span>
-										<span className="font-heading font-semibold text-base">
-											{order.currency
-												? formatCurrency(order.totalAmount, order.currency)
-												: "-"}
+									<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+										<span>
+											{order.itemCount}{" "}
+											{order.itemCount === 1 ? "ítem" : "ítems"}
+										</span>
+										<span>
+											Pago: {paymentStatusLabel(order.latestTransactionStatus)}
 										</span>
 									</div>
 								</CardContent>

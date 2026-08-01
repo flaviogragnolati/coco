@@ -41,6 +41,8 @@ The authoritative glossary lives in `CONTEXT.md`. The terms used most in this do
 
 - Customer request: the user-facing demand captured by `Cart`, `CartItem`, `UserOrder`, and `UserOrderItem`
 - Commercial state: the status that answers whether the customer order and payment lifecycle is pending, processing, completed, failed, cancelled, refunded, or charged back
+- External payment: a payment attempt the platform never captures — the customer moves the money outside the app and an admin settles the attempt by hand (ADR 0010)
+- Declared receipt: the transfer reference a customer reports for an external payment; a claim, not a settlement — the attempt stays pending until an admin confirms it (ADR 0010)
 - Operational state: the status that answers where demand is inside sourcing, packaging, shipment, and delivery
 - Aggregate status: a summary status for display, **recomputed from the live records that back it** (ADR 0002), never carried forward by events
 - Snapshot: JSON data copied at the time of a meaningful business event so later mutations do not rewrite history
@@ -149,7 +151,7 @@ Operations no longer execute on creation. A draft is created with its parameters
 | --- | --- | --- | --- |
 | `Address` | User address book entry | Belongs to `User` | Never used directly as immutable order history; always snapshotted |
 | `PaymentMethod` | Saved payment method | Belongs to `User`; referenced by `UserTransaction` | Historical payments remain attached even if method is later disabled |
-| `PaymentProviderConfig` | Payment provider configuration | Standalone | Mercado Pago mode (`sandbox \| production`) and credentials context; superadmin-managed (ADR 0001) |
+| `PaymentProviderConfig` | Payment provider configuration | Standalone | One row per provider, keyed by the unique `provider` string, with `enabled` gating whether checkout offers it. `mercadopago` holds its mode (`sandbox \| production`) and credentials context (ADR 0001); `external` holds the bank-transfer data customers are shown — holder, bank, CBU, alias, tax id, instructions, `expiresInHours` — in `settings`, and leaves `mode` at its default because an external payment has no sandbox (ADR 0010) |
 | `PaymentProviderEvent` | Inbound payment provider notification | Standalone (references by value) | Webhook ingestion record with status `received \| processed \| failed \| ignored \| rejected`; reconciliation input (ADR 0001) |
 
 ### Catalog, commercial pricing, and sourcing inputs
@@ -189,7 +191,20 @@ The discount is an attribute of the terms row, not a promotion entity (ADR 0008)
 | `CartItem` | Requested product line | Belongs to `Cart` and one `ProductClientTerms`; has many allocations, tracking events, roll overs, and `UserOrderItem` records | The root traceability record for a customer request line; keeps the initial product snapshot |
 | `UserOrder` | Commercial order record | Belongs to `User` and `Cart`; has many `UserOrderItem` and `UserTransaction` | Holds address and terms snapshots; closure is derived (ADR 0002) |
 | `UserOrderItem` | Commercial order line | Belongs to `UserOrder`; must reference `sourceCartItem` | Manual order lines are out of scope |
-| `UserTransaction` | Customer payment record | Belongs to `UserOrder` and `PaymentMethod` | Payment lifecycle is separate from fulfillment lifecycle; carries gateway request/response snapshots |
+| `UserTransaction` | Customer payment record | Belongs to `UserOrder` and `PaymentMethod` | Payment lifecycle is separate from fulfillment lifecycle; carries gateway request/response snapshots and, for external payments, the declared-receipt columns below (ADR 0010) |
+
+#### `UserTransaction` external-payment columns
+
+An attempt with `provider = "external"` has no gateway to ask: the customer moves the money outside the app and an admin settles the attempt by hand (ADR 0010). Two nullable columns record what the customer claims, and neither moves `status` on its own:
+
+| Column | Type | Meaning | Written by |
+| --- | --- | --- | --- |
+| `declaredReceiptReference` | `Text`, nullable | The transfer reference the customer reports — a **declared receipt**, an unverified claim | The customer, from `/my-orders/[orderId]`; re-declarable while the attempt is still pending |
+| `declaredReceiptAt` | `DateTime`, nullable | When that claim was last made | The same write |
+
+They live as columns rather than inside `requestSnapshot` because a snapshot is an immutable record of creation time, and a declaration arrives later.
+
+While the attempt is `pending`, `providerStatus` walks `awaiting_transfer → receipt_declared`, and `expiresAt` comes from the provider config's `expiresInHours`, so an unpaid transfer becomes a spent attempt that re-confirming replaces. Only the admin actions in `/admin/payments` end it, both audited: settling writes `externalTransactionId` with the verified reference, `providerStatus = settled_manually`, `completedAt` and an actor-stamped `responseSnapshot`, then runs the same `submitOrderForCompletedPayment` transition the Mercado Pago webhook runs; rejecting writes `status = failed` with `failureCode = external_rejected` and the reason, and fails the order.
 
 ### Aggregation, sourcing, and rebatching
 
@@ -382,6 +397,7 @@ Records: `Cart`, `UserOrder`, `UserOrderItem`, `UserTransaction` (`src/server/se
 - `Cart.status` moves `pending → atCheckout`
 - checkout start creates `UserOrder(pending)` with billing/shipping/terms snapshots, `UserOrderItem` rows frozen from cart items, and the payment attempt
 - `confirmAndPay` creates the Mercado Pago Checkout Pro preference and redirects (ADR 0001)
+- with the external payment option, `confirmAndPay` instead leaves the attempt `pending` with `provider = "external"` and an `expiresAt`, and returns the transfer instructions — no redirect, no gateway call (ADR 0010)
 
 ### 4. Payment reconciliation gates fulfillment (ADR 0001)
 
@@ -396,6 +412,8 @@ The final payment result is reconciled through signed webhooks followed by a Mer
 - one `cart.item.submittedToOrder` domain event per cart item; `DomainEventDispatcher.wake()` after commit
 
 Payment-before-fulfillment is therefore explicit: demand only becomes aggregable once its submission events exist.
+
+An external payment reaches that same transaction through the admin settle action instead of a webhook — the transition, the events and the `DomainEventDispatcher.wake()` after commit are identical, only the trigger is administrative (ADR 0010). A declared receipt is not that trigger.
 
 ### 5. Aggregation: draft, review, execute (ADR 0006)
 
@@ -475,6 +493,13 @@ After every projection, `UserOrderClosureProjector` re-derives closure per affec
 - `UserTransaction.status = failed | refunded | chargedBack`, mirrored on `UserOrder` by the payment services
 - fulfillment never starts for unpaid demand (step 4 gates it); post-fulfillment refund/chargeback is a commercial state change that preserves fulfillment history
 - the closure projector cannot touch these outcomes — its source set is `processing` only
+
+### External payment waits for an admin decision
+
+- the attempt stays `pending` with `provider = "external"` and its `expiresAt` while the customer transfers the money; the order stays `pending` and the cart stays `atCheckout`
+- the customer may declare a receipt reference (and correct it) from the order detail; nothing about the attempt's status changes
+- the admin settles (order → `processing`, demand submitted) or rejects (attempt and order → `failed`) from `/admin/payments`; leaving checkout is refused once a receipt has been declared (ADR 0010)
+- an expired attempt nobody settled is simply spent: re-confirming mints a new one
 
 ### Supplier cuts or cancels demand (post-allocation roll over)
 
@@ -556,7 +581,7 @@ This section is normative, and each rule now names its implementation. The datab
 
 ### 7. Payment and fulfillment gating is explicit
 
-- sourcing starts only after payment reconciliation submits the demand (step 4)
+- sourcing starts only after payment reconciliation submits the demand (step 4); for an external payment the submitting act is the admin settlement, never the customer's declared receipt (ADR 0010)
 - packaging starts only from `confirmed`/`readyForReceipt` supplier orders; requesting requires the operation `completed`
 - gates live in the command guards, not in status coincidence
 
@@ -667,6 +692,7 @@ Where each capability the original checklist demanded now lives:
 | `0005-demand-conservation-and-rollover-reaggregation` | Conservation invariant; roll over status ladder; re-aggregation by default (`includeRollOver: true`) | Design philosophy 4; alternate flows; invariant 3 |
 | `0006-operation-draft-and-reviewed-fingerprint` | Draft → review (omissions) → execute with fingerprint refusal; drafts reserve nothing | Design philosophy 9; flow step 5; modeling limit 7 |
 | `0008-offer-discount-is-an-attribute-of-client-terms` | The discount is two columns on `ProductClientTerms`, applied inside `calculateLineTotal`; no promotion entity, no stacking, no precedence | Design philosophy 7; domain map (`ProductClientTerms` pricing columns); flow step 1; invariant 2 |
+| `0010-external-payments-are-admin-settled` | An external payment is settled only by an admin; the declared receipt is a claim, not a settlement; transfer data lives in `payment_provider_config` under `provider: "external"` | Domain map (`PaymentProviderConfig`, `UserTransaction` external-payment columns); flow steps 3–4; alternate flows; invariant 7 |
 
 Stable working rules that predate the ADRs and still hold:
 

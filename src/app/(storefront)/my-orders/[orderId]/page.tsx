@@ -26,6 +26,7 @@ import {
 } from "~/shared/common/order-display";
 import type { UserOrderItemTimeline } from "~/shared/common/tracking.types";
 import { api } from "~/trpc/server";
+import { ExternalPaymentPanel } from "./_components/external-payment-panel";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
 	return typeof value === "object" && value !== null
@@ -144,6 +145,13 @@ export default async function OrderDetailPage({
 			</section>
 
 			<CustomerOrderJourney view={journeyView} />
+
+			{order.externalPayment ? (
+				<ExternalPaymentPanel
+					externalPayment={order.externalPayment}
+					orderId={order.id}
+				/>
+			) : null}
 
 			<div className="grid gap-4 lg:grid-cols-[1fr_20rem] lg:items-start">
 				<Card>

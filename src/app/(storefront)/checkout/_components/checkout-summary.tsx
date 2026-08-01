@@ -22,7 +22,10 @@ import type {
 	CheckoutAddress,
 	CheckoutPaymentMethod,
 } from "~/shared/common/checkout.types";
-import { formatCurrency } from "~/shared/common/commerce.helpers";
+import {
+	formatCurrency,
+	formatQuantity,
+} from "~/shared/common/commerce.helpers";
 import type { CheckoutStepId } from "./checkout-steps";
 
 const ITEM_PEEK_LIMIT = 4;
@@ -101,7 +104,10 @@ export function CheckoutSummary({
 								className="flex items-center justify-between gap-3 text-xs"
 								key={item.productClientTermsId}
 							>
-								<span className="min-w-0 truncate text-muted-foreground">
+								<span className="shrink-0 text-muted-foreground">
+									{formatQuantity(item.quantity, item.product.unit)}
+								</span>
+								<span className="min-w-0 flex-1 truncate">
 									{item.product.name}
 								</span>
 								<span className="shrink-0 font-medium">
@@ -117,18 +123,6 @@ export function CheckoutSummary({
 						) : null}
 					</div>
 				) : null}
-
-				<Separator />
-				<div className="grid gap-2 text-xs">
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">Productos</span>
-						<span className="font-medium">{cart.itemCount}</span>
-					</div>
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">Unidades acumuladas</span>
-						<span className="font-medium">{cart.totalQuantity}</span>
-					</div>
-				</div>
 
 				<Separator />
 				<div className="flex flex-col gap-2">

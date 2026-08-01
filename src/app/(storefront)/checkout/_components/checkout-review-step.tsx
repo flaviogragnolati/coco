@@ -29,7 +29,7 @@ import type {
 	CheckoutPaymentMethod,
 } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
-import { paymentTypeLabel } from "./checkout-payment-step";
+import { paymentMethodCopy } from "./checkout-payment-step";
 import type { CheckoutStepId } from "./checkout-steps";
 
 function ReviewSection({
@@ -154,9 +154,11 @@ export function CheckoutReviewStep({
 						title="Pago"
 					>
 						<div className="flex flex-col gap-1">
-							<span className="text-xs/relaxed">{paymentMethod.label}</span>
+							<span className="text-xs/relaxed">
+								{paymentMethodCopy(paymentMethod).title}
+							</span>
 							<span className="text-muted-foreground text-xs">
-								{paymentTypeLabel(paymentMethod.type)} · {paymentMethod.details}
+								{paymentMethodCopy(paymentMethod).description}
 							</span>
 						</div>
 					</ReviewSection>

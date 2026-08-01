@@ -72,10 +72,6 @@ export function CartSummary({
 						<span className="text-muted-foreground">Líneas</span>
 						<span className="font-medium">{cart.itemCount}</span>
 					</div>
-					<div className="flex items-center justify-between gap-3">
-						<span className="text-muted-foreground">Unidades acumuladas</span>
-						<span className="font-medium">{cart.totalQuantity}</span>
-					</div>
 				</div>
 				<Separator />
 				<div className="flex flex-col gap-2">

@@ -49,7 +49,6 @@ export const cartSnapshotSchema = z.object({
 	status: cartStatusSchema.nullable(),
 	items: z.array(cartItemSchema),
 	itemCount: z.number().int().nonnegative(),
-	totalQuantity: decimalOutputSchema,
 	totals: z.array(cartTotalSchema),
 });
 

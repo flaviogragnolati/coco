@@ -1,7 +1,11 @@
 import {
+	externalPaymentConfigSchema,
+	externalPaymentConfigUpdateInputSchema,
 	paymentAttemptActionInputSchema,
 	paymentAttemptDetailSchema,
 	paymentAttemptListOutputSchema,
+	paymentAttemptRejectInputSchema,
+	paymentAttemptSettleInputSchema,
 	paymentEventActionInputSchema,
 	paymentEventDetailSchema,
 	paymentEventIgnoreInputSchema,
@@ -41,6 +45,26 @@ export const paymentRouter = createTRPCRouter({
 			paymentService.reconcileAttempt(input.id, toAdminActor(ctx.session.user)),
 		),
 
+	settleExternalAttempt: adminProcedure
+		.input(paymentAttemptSettleInputSchema)
+		.output(paymentAttemptDetailSchema)
+		.mutation(({ ctx, input }) =>
+			paymentService.settleExternalAttempt(
+				input,
+				toAdminActor(ctx.session.user),
+			),
+		),
+
+	rejectExternalAttempt: adminProcedure
+		.input(paymentAttemptRejectInputSchema)
+		.output(paymentAttemptDetailSchema)
+		.mutation(({ ctx, input }) =>
+			paymentService.rejectExternalAttempt(
+				input,
+				toAdminActor(ctx.session.user),
+			),
+		),
+
 	listEvents: adminProcedure
 		.input(paymentListInputSchema)
 		.output(paymentEventListOutputSchema)
@@ -74,6 +98,21 @@ export const paymentRouter = createTRPCRouter({
 		.output(paymentProviderConfigSchema)
 		.mutation(({ ctx, input }) =>
 			paymentService.updateProviderConfig(
+				input,
+				toAdminActor(ctx.session.user),
+				ctx.db,
+			),
+		),
+
+	getExternalConfig: adminProcedure
+		.output(externalPaymentConfigSchema)
+		.query(({ ctx }) => paymentService.getExternalConfig(ctx.db)),
+
+	updateExternalConfig: superadminProcedure
+		.input(externalPaymentConfigUpdateInputSchema)
+		.output(externalPaymentConfigSchema)
+		.mutation(({ ctx, input }) =>
+			paymentService.updateExternalConfig(
 				input,
 				toAdminActor(ctx.session.user),
 				ctx.db,

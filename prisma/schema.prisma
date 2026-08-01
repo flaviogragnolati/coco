@@ -612,33 +612,37 @@ model UserOrderItem {
 }
 
 model UserTransaction {
-  id                      Int                   @id @default(autoincrement())
-  amount                  Decimal               @db.Decimal(18, 2)
-  currency                Currency              @default(ARS)
-  status                  UserTransactionStatus @default(pending)
-  provider                String                @default("mock") @db.Text
-  providerMode            PaymentProviderMode?
-  externalTransactionId   String?               @db.Text
-  providerPreferenceId    String?               @db.Text
-  providerPaymentId       String?               @db.Text
-  providerMerchantOrderId String?               @db.Text
-  providerOrderId         String?               @db.Text
-  idempotencyKey          String                @unique @db.Text
-  providerStatus          String?               @db.Text
-  providerStatusDetail    String?               @db.Text
-  failureCode             String?               @db.Text
-  failureMessage          String?               @db.Text
-  checkoutUrl             String?               @db.Text
-  sandboxCheckoutUrl      String?               @db.Text
-  requestSnapshot         Json?                 @db.JsonB
-  responseSnapshot        Json?                 @db.JsonB
-  paymentMethodId         Int
-  userOrderId             Int
-  completedAt             DateTime?
-  cancelledAt             DateTime?
-  expiresAt               DateTime?
-  createdAt               DateTime              @default(now())
-  updatedAt               DateTime              @default(now()) @updatedAt
+  id                       Int                   @id @default(autoincrement())
+  amount                   Decimal               @db.Decimal(18, 2)
+  currency                 Currency              @default(ARS)
+  status                   UserTransactionStatus @default(pending)
+  provider                 String                @default("mock") @db.Text
+  providerMode             PaymentProviderMode?
+  externalTransactionId    String?               @db.Text
+  providerPreferenceId     String?               @db.Text
+  providerPaymentId        String?               @db.Text
+  providerMerchantOrderId  String?               @db.Text
+  providerOrderId          String?               @db.Text
+  idempotencyKey           String                @unique @db.Text
+  providerStatus           String?               @db.Text
+  providerStatusDetail     String?               @db.Text
+  // Receipt reference informed by the user for an external payment. Declaring it never
+  // settles the attempt: only an admin does (docs/adr/0010-external-payments-are-admin-settled.md).
+  declaredReceiptReference String?               @db.Text
+  declaredReceiptAt        DateTime?
+  failureCode              String?               @db.Text
+  failureMessage           String?               @db.Text
+  checkoutUrl              String?               @db.Text
+  sandboxCheckoutUrl       String?               @db.Text
+  requestSnapshot          Json?                 @db.JsonB
+  responseSnapshot         Json?                 @db.JsonB
+  paymentMethodId          Int
+  userOrderId              Int
+  completedAt              DateTime?
+  cancelledAt              DateTime?
+  expiresAt                DateTime?
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @default(now()) @updatedAt
 
   userOrder             UserOrder              @relation(fields: [userOrderId], references: [id])
   paymentMethod         PaymentMethod          @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)

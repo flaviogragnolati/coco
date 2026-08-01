@@ -51,9 +51,13 @@ import type {
 	CrudSortDirection,
 } from "~/shared/common/admin-crud/crud.types";
 import type {
+	ExternalPaymentConfig,
+	ExternalPaymentSettings,
 	MercadoPagoSettings,
 	PaymentAttemptDetail,
 	PaymentAttemptListItem,
+	PaymentAttemptRejectInput,
+	PaymentAttemptSettleInput,
 	PaymentEventDetail,
 	PaymentEventListItem,
 	PaymentProviderConfig,
@@ -63,7 +67,15 @@ import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { api } from "~/trpc/react";
 import { resolvePaymentStatus } from "./payment.mappers";
 
-const provider = "mercadopago";
+const EXTERNAL_PROVIDER = "external";
+
+const providerFilterOptions = [
+	{ value: "all", label: "Todos" },
+	{ value: "mercadopago", label: "Mercado Pago" },
+	{ value: EXTERNAL_PROVIDER, label: "Pago externo" },
+] as const;
+
+type ProviderFilter = (typeof providerFilterOptions)[number]["value"];
 
 function formatDate(value: Date | null) {
 	return value ? formatDateTimeShort(value) : "Sin dato";
@@ -81,16 +93,109 @@ function PaymentStatusBadge({ status }: { status: string }) {
 	return <StatusChip config={resolvePaymentStatus(status)} />;
 }
 
+/**
+ * The settle/reject pair only renders while the attempt is `pending`: a
+ * successful action refetches the detail with its new status, which is what
+ * clears these inputs (ADR 0010 — an external payment is settled by hand).
+ */
+function ExternalAttemptActions({
+	attempt,
+	onSettle,
+	isSettling,
+	onReject,
+	isRejecting,
+}: {
+	attempt: PaymentAttemptDetail;
+	onSettle: (input: PaymentAttemptSettleInput) => void;
+	isSettling: boolean;
+	onReject: (input: PaymentAttemptRejectInput) => void;
+	isRejecting: boolean;
+}) {
+	const [receiptReference, setReceiptReference] = useState(
+		attempt.declaredReceiptReference ?? "",
+	);
+	const [note, setNote] = useState("");
+	const [reason, setReason] = useState("");
+	const isBusy = isSettling || isRejecting;
+
+	return (
+		<div className="grid gap-3 md:grid-cols-2">
+			<div className="flex flex-col gap-2 border p-3">
+				<h3 className="font-medium text-sm">Marcar cobrado</h3>
+				<p className="text-muted-foreground text-xs">
+					Verificá la transferencia en el banco antes de liquidar: el pedido
+					pasa a preparación y no se deshace solo.
+				</p>
+				<Input
+					onChange={(event) => setReceiptReference(event.target.value)}
+					placeholder="Referencia del comprobante"
+					value={receiptReference}
+				/>
+				<Textarea
+					onChange={(event) => setNote(event.target.value)}
+					placeholder="Nota (opcional)"
+					value={note}
+				/>
+				<Button
+					disabled={isBusy || receiptReference.trim().length < 3}
+					onClick={() =>
+						onSettle({
+							id: attempt.id,
+							receiptReference: receiptReference.trim(),
+							note: note.trim() || null,
+						})
+					}
+					type="button"
+				>
+					<CheckCircle2Icon data-icon="inline-start" />
+					Marcar cobrado
+				</Button>
+			</div>
+			<div className="flex flex-col gap-2 border p-3">
+				<h3 className="font-medium text-sm">Rechazar</h3>
+				<p className="text-muted-foreground text-xs">
+					El pedido queda como fallido y el usuario ve el motivo.
+				</p>
+				<Input
+					onChange={(event) => setReason(event.target.value)}
+					placeholder="Motivo del rechazo"
+					value={reason}
+				/>
+				<Button
+					className="mt-auto"
+					disabled={isBusy || reason.trim().length < 5}
+					onClick={() => onReject({ id: attempt.id, reason: reason.trim() })}
+					type="button"
+					variant="outline"
+				>
+					<XCircleIcon data-icon="inline-start" />
+					Rechazar
+				</Button>
+			</div>
+		</div>
+	);
+}
+
 function AttemptDetail({
 	attempt,
 	onReconcile,
 	isReconciling,
+	onSettle,
+	isSettling,
+	onReject,
+	isRejecting,
 }: {
 	attempt: PaymentAttemptDetail | null;
 	onReconcile: (id: number) => void;
 	isReconciling: boolean;
+	onSettle: (input: PaymentAttemptSettleInput) => void;
+	isSettling: boolean;
+	onReject: (input: PaymentAttemptRejectInput) => void;
+	isRejecting: boolean;
 }) {
 	if (!attempt) return null;
+
+	const isExternal = attempt.provider === EXTERNAL_PROVIDER;
 
 	return (
 		<Card>
@@ -106,18 +211,46 @@ function AttemptDetail({
 						<span className="text-muted-foreground">Idempotencia</span>
 						<p className="break-all font-medium">{attempt.idempotencyKey}</p>
 					</div>
-					<div className="border p-3 text-xs">
-						<span className="text-muted-foreground">Preferencia</span>
-						<p className="break-all font-medium">
-							{attempt.providerPreferenceId ?? "Sin dato"}
-						</p>
-					</div>
-					<div className="border p-3 text-xs">
-						<span className="text-muted-foreground">Pago</span>
-						<p className="break-all font-medium">
-							{attempt.providerPaymentId ?? "Sin dato"}
-						</p>
-					</div>
+					{isExternal ? (
+						<>
+							<div className="border p-3 text-xs">
+								<span className="text-muted-foreground">
+									Comprobante declarado
+								</span>
+								<p className="break-all font-medium">
+									{attempt.declaredReceiptReference ?? "Sin declarar"}
+								</p>
+								<span className="text-muted-foreground">
+									{attempt.declaredReceiptAt
+										? formatDate(attempt.declaredReceiptAt)
+										: "El usuario todavía no informó la transferencia"}
+								</span>
+							</div>
+							<div className="border p-3 text-xs">
+								<span className="text-muted-foreground">
+									Referencia liquidada
+								</span>
+								<p className="break-all font-medium">
+									{attempt.externalTransactionId ?? "Sin dato"}
+								</p>
+							</div>
+						</>
+					) : (
+						<>
+							<div className="border p-3 text-xs">
+								<span className="text-muted-foreground">Preferencia</span>
+								<p className="break-all font-medium">
+									{attempt.providerPreferenceId ?? "Sin dato"}
+								</p>
+							</div>
+							<div className="border p-3 text-xs">
+								<span className="text-muted-foreground">Pago</span>
+								<p className="break-all font-medium">
+									{attempt.providerPaymentId ?? "Sin dato"}
+								</p>
+							</div>
+						</>
+					)}
 				</div>
 				{attempt.failureCode ? (
 					<div className="border border-destructive/40 p-3 text-xs">
@@ -130,23 +263,40 @@ function AttemptDetail({
 						) : null}
 					</div>
 				) : null}
-				<div className="flex flex-wrap gap-2">
-					<Button
-						disabled={isReconciling || !attempt.providerPaymentId}
-						onClick={() => onReconcile(attempt.id)}
-						type="button"
-					>
-						<RefreshCcwIcon data-icon="inline-start" />
-						Reconciliar ahora
-					</Button>
-					{attempt.checkoutUrl ? (
-						<Button asChild type="button" variant="outline">
-							<a href={attempt.checkoutUrl} rel="noreferrer" target="_blank">
-								Abrir checkout
-							</a>
+				{isExternal ? (
+					attempt.status === "pending" ? (
+						<ExternalAttemptActions
+							attempt={attempt}
+							isRejecting={isRejecting}
+							isSettling={isSettling}
+							key={attempt.id}
+							onReject={onReject}
+							onSettle={onSettle}
+						/>
+					) : (
+						<p className="text-muted-foreground text-xs">
+							El intento ya no está pendiente: no admite liquidación ni rechazo.
+						</p>
+					)
+				) : (
+					<div className="flex flex-wrap gap-2">
+						<Button
+							disabled={isReconciling || !attempt.providerPaymentId}
+							onClick={() => onReconcile(attempt.id)}
+							type="button"
+						>
+							<RefreshCcwIcon data-icon="inline-start" />
+							Reconciliar ahora
 						</Button>
-					) : null}
-				</div>
+						{attempt.checkoutUrl ? (
+							<Button asChild type="button" variant="outline">
+								<a href={attempt.checkoutUrl} rel="noreferrer" target="_blank">
+									Abrir checkout
+								</a>
+							</Button>
+						) : null}
+					</div>
+				)}
 				<div className="grid gap-3 md:grid-cols-2">
 					<div className="flex flex-col gap-2">
 						<h3 className="font-medium text-sm">Request snapshot</h3>
@@ -507,6 +657,150 @@ function ConfigEditor({
 	);
 }
 
+function ExternalConfigEditor({
+	config,
+	onSubmit,
+	isSaving,
+}: {
+	config: ExternalPaymentConfig | undefined;
+	onSubmit: (input: {
+		enabled: boolean;
+		settings: ExternalPaymentSettings;
+	}) => void;
+	isSaving: boolean;
+}) {
+	const [enabled, setEnabled] = useState(false);
+	const [settings, setSettings] = useState<ExternalPaymentSettings | null>(
+		null,
+	);
+
+	useEffect(() => {
+		if (!config) return;
+		setEnabled(config.enabled);
+		setSettings(config.settings);
+	}, [config]);
+
+	if (!config || !settings) return <CrudLoadingState />;
+
+	const setSetting = <K extends keyof ExternalPaymentSettings>(
+		key: K,
+		value: ExternalPaymentSettings[K],
+	) =>
+		setSettings((current) =>
+			current ? { ...current, [key]: value } : current,
+		);
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle className="flex items-center gap-2">
+					<SettingsIcon />
+					Configuración pago externo
+				</CardTitle>
+				<CardDescription>
+					Datos de transferencia que ve el usuario al elegir pago externo. Cada
+					cobro lo liquida un admin a mano.
+				</CardDescription>
+			</CardHeader>
+			<CardContent className="flex flex-col gap-5">
+				<FieldGroup className="grid gap-3 md:grid-cols-2">
+					<Field orientation="horizontal">
+						<FieldContent>
+							<FieldLabel>Proveedor habilitado</FieldLabel>
+							<FieldDescription>
+								Permite mostrar Pago externo en checkout.
+							</FieldDescription>
+						</FieldContent>
+						<Switch checked={enabled} onCheckedChange={setEnabled} />
+					</Field>
+					<Field>
+						<FieldLabel htmlFor="external-expiration">
+							Vencimiento en horas
+						</FieldLabel>
+						<Input
+							id="external-expiration"
+							min={1}
+							onChange={(event) =>
+								setSetting("expiresInHours", Number(event.target.value))
+							}
+							type="number"
+							value={settings.expiresInHours}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor="external-holder">Titular</FieldLabel>
+						<Input
+							id="external-holder"
+							onChange={(event) =>
+								setSetting("accountHolder", event.target.value)
+							}
+							value={settings.accountHolder}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor="external-bank">Banco</FieldLabel>
+						<Input
+							id="external-bank"
+							onChange={(event) => setSetting("bankName", event.target.value)}
+							value={settings.bankName}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor="external-cbu">CBU</FieldLabel>
+						<Input
+							id="external-cbu"
+							onChange={(event) => setSetting("cbu", event.target.value)}
+							value={settings.cbu}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor="external-alias">Alias</FieldLabel>
+						<Input
+							id="external-alias"
+							onChange={(event) =>
+								setSetting("alias", event.target.value || null)
+							}
+							value={settings.alias ?? ""}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor="external-tax-id">CUIT</FieldLabel>
+						<Input
+							id="external-tax-id"
+							onChange={(event) =>
+								setSetting("taxId", event.target.value || null)
+							}
+							value={settings.taxId ?? ""}
+						/>
+					</Field>
+				</FieldGroup>
+				<Field>
+					<FieldLabel htmlFor="external-instructions">Instrucciones</FieldLabel>
+					<Textarea
+						id="external-instructions"
+						onChange={(event) =>
+							setSetting("instructions", event.target.value || null)
+						}
+						value={settings.instructions ?? ""}
+					/>
+					<FieldDescription>
+						Texto libre que acompaña los datos de transferencia.
+					</FieldDescription>
+				</Field>
+				<div className="flex justify-end">
+					<Button
+						disabled={isSaving}
+						onClick={() => onSubmit({ enabled, settings })}
+						type="button"
+					>
+						Guardar configuración
+					</Button>
+				</div>
+			</CardContent>
+		</Card>
+	);
+}
+
 export function PaymentsAdminClient() {
 	const [search, setSearch] = useState("");
 	const [selectedAttemptId, setSelectedAttemptId] = useState<number | null>(
@@ -514,17 +808,23 @@ export function PaymentsAdminClient() {
 	);
 	const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 	const [ignoreReason, setIgnoreReason] = useState("");
+	const [providerFilter, setProviderFilter] = useState<ProviderFilter>("all");
 	const [sortDirection, setSortDirection] = useState<CrudSortDirection>("desc");
 	const utils = api.useUtils();
 
 	const listInput = useMemo(
-		() => ({ provider, search: search.trim() || undefined }),
-		[search],
+		() => ({
+			// "Todos" is the absence of the filter, not an empty provider name.
+			provider: providerFilter === "all" ? undefined : providerFilter,
+			search: search.trim() || undefined,
+		}),
+		[providerFilter, search],
 	);
 	const attemptsQuery = api.admin.payment.listAttempts.useQuery(listInput);
 	const eventsQuery = api.admin.payment.listEvents.useQuery(listInput);
 	const statsQuery = api.admin.payment.getAttemptStats.useQuery();
 	const configQuery = api.admin.payment.getProviderConfig.useQuery();
+	const externalConfigQuery = api.admin.payment.getExternalConfig.useQuery();
 	const attemptDetailQuery = api.admin.payment.getAttemptById.useQuery(
 		{ id: selectedAttemptId ?? 0 },
 		{ enabled: selectedAttemptId !== null },
@@ -564,6 +864,7 @@ export function PaymentsAdminClient() {
 			utils.admin.payment.getAttemptById.invalidate(),
 			utils.admin.payment.getEventById.invalidate(),
 			utils.admin.payment.getProviderConfig.invalidate(),
+			utils.admin.payment.getExternalConfig.invalidate(),
 		]);
 	};
 
@@ -589,11 +890,33 @@ export function PaymentsAdminClient() {
 			await invalidatePayments();
 		},
 	});
+	const settleMutation = api.admin.payment.settleExternalAttempt.useMutation({
+		onError: (error) => toast.error(error.message),
+		onSuccess: async () => {
+			toast.success("Pago externo marcado como cobrado");
+			await invalidatePayments();
+		},
+	});
+	const rejectMutation = api.admin.payment.rejectExternalAttempt.useMutation({
+		onError: (error) => toast.error(error.message),
+		onSuccess: async () => {
+			toast.success("Pago externo rechazado");
+			await invalidatePayments();
+		},
+	});
 	const updateConfigMutation =
 		api.admin.payment.updateProviderConfig.useMutation({
 			onError: (error) => toast.error(error.message),
 			onSuccess: async () => {
 				toast.success("Configuración actualizada");
+				await invalidatePayments();
+			},
+		});
+	const updateExternalConfigMutation =
+		api.admin.payment.updateExternalConfig.useMutation({
+			onError: (error) => toast.error(error.message),
+			onSuccess: async () => {
+				toast.success("Configuración de pago externo actualizada");
 				await invalidatePayments();
 			},
 		});
@@ -706,7 +1029,7 @@ export function PaymentsAdminClient() {
 
 	return (
 		<CrudPageShell
-			description="Trazabilidad de intentos de pago, eventos de proveedor y configuración de Mercado Pago."
+			description="Trazabilidad de intentos de pago, eventos de proveedor, liquidación de pagos externos y configuración de proveedores."
 			title="Pagos"
 		>
 			{statsQuery.data ? (
@@ -739,19 +1062,37 @@ export function PaymentsAdminClient() {
 				/>
 			) : null}
 			<div className="flex flex-col gap-3 rounded-2xl border p-3 lg:flex-row lg:items-end lg:justify-between">
-				<Field>
-					<FieldLabel htmlFor="payment-search">Buscar</FieldLabel>
-					<div className="relative">
-						<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							className="pl-8"
-							id="payment-search"
-							onChange={(event) => setSearch(event.target.value)}
-							placeholder="Pedido, email, preferencia, pago o request id"
-							value={search}
-						/>
-					</div>
-				</Field>
+				<div className="flex flex-col gap-3 lg:flex-1 lg:flex-row lg:items-end">
+					<Field>
+						<FieldLabel htmlFor="payment-search">Buscar</FieldLabel>
+						<div className="relative">
+							<SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								className="pl-8"
+								id="payment-search"
+								onChange={(event) => setSearch(event.target.value)}
+								placeholder="Pedido, email, preferencia, pago o request id"
+								value={search}
+							/>
+						</div>
+					</Field>
+					<Field className="lg:max-w-56">
+						<FieldLabel htmlFor="payment-provider">Proveedor</FieldLabel>
+						<Select
+							id="payment-provider"
+							onChange={(event) =>
+								setProviderFilter(event.target.value as ProviderFilter)
+							}
+							value={providerFilter}
+						>
+							{providerFilterOptions.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
+						</Select>
+					</Field>
+				</div>
 				<CrudSortToggle onChange={setSortDirection} value={sortDirection} />
 			</div>
 			<Tabs defaultValue="attempts">
@@ -759,6 +1100,7 @@ export function PaymentsAdminClient() {
 					<TabsTrigger value="attempts">Intentos</TabsTrigger>
 					<TabsTrigger value="events">Eventos</TabsTrigger>
 					<TabsTrigger value="config">Config</TabsTrigger>
+					<TabsTrigger value="external-config">Pago externo</TabsTrigger>
 				</TabsList>
 				<TabsContent className="flex flex-col gap-4" value="attempts">
 					{attemptsQuery.isLoading ? <CrudLoadingState /> : null}
@@ -782,7 +1124,11 @@ export function PaymentsAdminClient() {
 					<AttemptDetail
 						attempt={attemptDetailQuery.data ?? null}
 						isReconciling={reconcileMutation.isPending}
+						isRejecting={rejectMutation.isPending}
+						isSettling={settleMutation.isPending}
 						onReconcile={(id) => reconcileMutation.mutate({ id })}
+						onReject={(input) => rejectMutation.mutate(input)}
+						onSettle={(input) => settleMutation.mutate(input)}
 					/>
 				</TabsContent>
 				<TabsContent className="flex flex-col gap-4" value="events">
@@ -824,6 +1170,17 @@ export function PaymentsAdminClient() {
 							config={configQuery.data}
 							isSaving={updateConfigMutation.isPending}
 							onSubmit={(input) => updateConfigMutation.mutate(input)}
+						/>
+					)}
+				</TabsContent>
+				<TabsContent value="external-config">
+					{externalConfigQuery.isError ? (
+						<CrudErrorState message={externalConfigQuery.error.message} />
+					) : (
+						<ExternalConfigEditor
+							config={externalConfigQuery.data}
+							isSaving={updateExternalConfigMutation.isPending}
+							onSubmit={(input) => updateExternalConfigMutation.mutate(input)}
 						/>
 					)}
 				</TabsContent>

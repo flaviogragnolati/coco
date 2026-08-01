@@ -110,6 +110,8 @@ export const paymentAttemptDetailSchema = paymentAttemptListItemSchema.extend({
 	providerOrderId: z.string().nullable(),
 	failureCode: z.string().nullable(),
 	failureMessage: z.string().nullable(),
+	declaredReceiptReference: z.string().nullable(),
+	declaredReceiptAt: z.date().nullable(),
 	requestSnapshot: jsonLikeSchema,
 	responseSnapshot: jsonLikeSchema,
 	events: z.array(
@@ -226,6 +228,42 @@ export const paymentProviderConfigUpdateInputSchema = z.object({
 	confirmation: z.string().trim().min(1, "La confirmación es obligatoria"),
 });
 
+export const externalPaymentSettingsSchema = z.object({
+	accountHolder: z.string().trim().max(120, "El titular es demasiado largo"),
+	bankName: z.string().trim().max(120, "El banco es demasiado largo"),
+	cbu: z.string().trim().max(64, "El CBU es demasiado largo"),
+	alias: nullableTextSchema,
+	taxId: nullableTextSchema,
+	instructions: nullableTextSchema,
+	expiresInHours: z.coerce
+		.number()
+		.int()
+		.positive("La expiración debe ser positiva")
+		.default(72),
+});
+
+export const externalPaymentInstructionsSchema =
+	externalPaymentSettingsSchema.extend({
+		amount: decimalOutputSchema,
+		currency: catalogCurrencySchema,
+		orderCode: z.string(),
+		expiresAt: z.date().nullable(),
+	});
+
+export const externalPaymentConfigSchema = z.object({
+	id: z.number().int().positive().nullable(),
+	provider: z.literal("external"),
+	enabled: z.boolean(),
+	settings: externalPaymentSettingsSchema,
+	createdAt: z.date().nullable(),
+	updatedAt: z.date().nullable(),
+});
+
+export const externalPaymentConfigUpdateInputSchema = z.object({
+	enabled: z.boolean(),
+	settings: externalPaymentSettingsSchema,
+});
+
 export const paymentAttemptActionInputSchema = z.object({
 	id: paymentAttemptIdSchema,
 });
@@ -237,4 +275,18 @@ export const paymentEventActionInputSchema = z.object({
 export const paymentEventIgnoreInputSchema =
 	paymentEventActionInputSchema.extend({
 		reason: z.string().trim().min(5, "Indicá un motivo para ignorar el evento"),
+	});
+
+export const paymentAttemptSettleInputSchema =
+	paymentAttemptActionInputSchema.extend({
+		receiptReference: z
+			.string()
+			.trim()
+			.min(3, "Ingresá la referencia del comprobante"),
+		note: nullableTextSchema,
+	});
+
+export const paymentAttemptRejectInputSchema =
+	paymentAttemptActionInputSchema.extend({
+		reason: z.string().trim().min(5, "Indicá un motivo para rechazar el pago"),
 	});

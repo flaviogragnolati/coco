@@ -312,10 +312,8 @@ export function buildCartSnapshot(
 	meta: Pick<CartSnapshot, "id" | "code" | "status">,
 ): CartSnapshot {
 	const totalsByCurrency = new Map<CatalogCurrency, number>();
-	let totalQuantity = 0;
 
 	for (const item of items) {
-		totalQuantity += toNumber(item.quantity) ?? 0;
 		totalsByCurrency.set(
 			item.terms.currency,
 			(totalsByCurrency.get(item.terms.currency) ?? 0) +
@@ -329,7 +327,6 @@ export function buildCartSnapshot(
 		status: meta.status,
 		items,
 		itemCount: items.length,
-		totalQuantity: toQuantityString(totalQuantity),
 		totals: Array.from(totalsByCurrency.entries()).map(
 			([currency, amount]) => ({
 				currency,

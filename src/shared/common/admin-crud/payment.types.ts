@@ -1,10 +1,16 @@
 import type { z } from "zod";
 
 import type {
+	externalPaymentConfigSchema,
+	externalPaymentConfigUpdateInputSchema,
+	externalPaymentInstructionsSchema,
+	externalPaymentSettingsSchema,
 	mercadoPagoSettingsSchema,
 	paymentAttemptDetailSchema,
 	paymentAttemptListItemSchema,
 	paymentAttemptListOutputSchema,
+	paymentAttemptRejectInputSchema,
+	paymentAttemptSettleInputSchema,
 	paymentEventDetailSchema,
 	paymentEventIgnoreInputSchema,
 	paymentEventListItemSchema,
@@ -41,4 +47,22 @@ export type PaymentProviderConfigFormInput = z.input<
 >;
 export type PaymentEventIgnoreInput = z.output<
 	typeof paymentEventIgnoreInputSchema
+>;
+export type ExternalPaymentSettings = z.output<
+	typeof externalPaymentSettingsSchema
+>;
+export type ExternalPaymentInstructions = z.output<
+	typeof externalPaymentInstructionsSchema
+>;
+export type PaymentAttemptSettleInput = z.output<
+	typeof paymentAttemptSettleInputSchema
+>;
+export type PaymentAttemptRejectInput = z.output<
+	typeof paymentAttemptRejectInputSchema
+>;
+export type ExternalPaymentConfig = z.output<
+	typeof externalPaymentConfigSchema
+>;
+export type ExternalPaymentConfigUpdateInput = z.output<
+	typeof externalPaymentConfigUpdateInputSchema
 >;

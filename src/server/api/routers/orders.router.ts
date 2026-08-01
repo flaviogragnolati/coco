@@ -1,4 +1,5 @@
 import {
+	orderDeclareReceiptInputSchema,
 	orderDetailSchema,
 	orderGetInputSchema,
 	orderListOutputSchema,
@@ -18,5 +19,12 @@ export const ordersRouter = createTRPCRouter({
 		.output(orderDetailSchema)
 		.query(({ ctx, input }) => {
 			return checkoutService.getMine(ctx.session.user.id, input.id);
+		}),
+
+	declareExternalReceipt: protectedProcedure
+		.input(orderDeclareReceiptInputSchema)
+		.output(orderDetailSchema)
+		.mutation(({ ctx, input }) => {
+			return checkoutService.declareExternalReceipt(ctx.session.user.id, input);
 		}),
 });

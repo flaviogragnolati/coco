@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 
+import type { Prisma } from "~/prisma/client";
 import {
+	externalPaymentConfigSchema,
 	paymentAttemptDetailSchema,
 	paymentAttemptListOutputSchema,
 	paymentEventDetailSchema,
@@ -9,11 +11,25 @@ import {
 	paymentStatsSchema,
 } from "~/schemas/admin/payment.schemas";
 import { db } from "~/server/db";
+import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import type {
+	ExternalPaymentConfigUpdateInput,
+	PaymentAttemptRejectInput,
+	PaymentAttemptSettleInput,
 	PaymentEventIgnoreInput,
 	PaymentListInput,
 	PaymentProviderConfigUpdateInput,
 } from "~/shared/common/admin-crud/payment.types";
+import {
+	rejectExternalTransaction,
+	settleExternalTransaction,
+	updateOrderStatus,
+} from "../checkout/checkout.data";
+import {
+	EXTERNAL_PROVIDER,
+	getExternalPaymentConfig,
+	upsertExternalPaymentConfig,
+} from "../payments/external/external-payment-config.service";
 import {
 	getMercadoPagoConfig,
 	upsertMercadoPagoConfig,
@@ -22,8 +38,10 @@ import {
 	reconcileMercadoPagoAttempt,
 	reprocessMercadoPagoEvent,
 } from "../payments/mercadopago/mercadopago-reconciliation.service";
+import { submitOrderForCompletedPayment } from "../payments/order-submission.service";
 import {
 	findPaymentAttemptById,
+	findPaymentAttemptWithCartById,
 	findPaymentEventById,
 	getPaymentStats,
 	listPaymentAttempts,
@@ -108,6 +126,166 @@ export async function updateProviderConfig(
 		});
 
 		return paymentProviderConfigSchema.parse(after);
+	});
+}
+
+/**
+ * An external payment is settled by hand, so the guard is the only thing
+ * standing between a double click and a second submission: only a `pending`
+ * attempt of the external provider can be settled or rejected (ADR 0010).
+ */
+async function readSettleableExternalAttempt(
+	tx: Prisma.TransactionClient,
+	id: number,
+) {
+	const attempt = await findPaymentAttemptWithCartById(tx, id);
+
+	if (!attempt) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "No se encontró el intento de pago.",
+		});
+	}
+
+	if (attempt.provider !== EXTERNAL_PROVIDER) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message: "El intento no corresponde a un pago externo.",
+		});
+	}
+
+	if (attempt.status !== "pending") {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message: "Solo se puede accionar sobre un intento pendiente.",
+		});
+	}
+
+	return attempt;
+}
+
+async function readAttemptDetail(tx: Prisma.TransactionClient, id: number) {
+	const attempt = await findPaymentAttemptById(tx, id);
+
+	if (!attempt) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "No se encontró el intento de pago.",
+		});
+	}
+
+	return { ...attempt, events: attempt.paymentProviderEvents };
+}
+
+export async function settleExternalAttempt(
+	input: PaymentAttemptSettleInput,
+	actor: AdminMutationActor,
+) {
+	const settled = await db.$transaction(async (tx) => {
+		const attempt = await readSettleableExternalAttempt(tx, input.id);
+		const before = await readAttemptDetail(tx, input.id);
+
+		await settleExternalTransaction(tx, {
+			id: attempt.id,
+			receiptReference: input.receiptReference,
+			responseSnapshot: {
+				source: "admin",
+				action: "settle",
+				actorId: actor.id,
+				actorName: actor.name ?? null,
+				receiptReference: input.receiptReference,
+				note: input.note,
+				at: new Date().toISOString(),
+			},
+		});
+
+		await submitOrderForCompletedPayment(tx, {
+			orderId: attempt.userOrder.id,
+			cartId: attempt.userOrder.cartId,
+			transactionId: attempt.id,
+			actor: { source: "admin", actorId: actor.id },
+		});
+
+		const after = await readAttemptDetail(tx, input.id);
+
+		await writeAdminAuditLog(tx, {
+			action: "paymentAttempt.settleExternal",
+			actor,
+			entityType: "userTransaction",
+			entityId: String(input.id),
+			before,
+			after,
+			metadata: {
+				receiptReference: input.receiptReference,
+				note: input.note,
+			},
+		});
+
+		return after;
+	});
+
+	// The dispatcher only ever wakes after the commit: waking inside the
+	// transaction would hand out events that a rollback leaves phantom.
+	await DomainEventDispatcher.wake();
+
+	return paymentAttemptDetailSchema.parse(settled);
+}
+
+export async function rejectExternalAttempt(
+	input: PaymentAttemptRejectInput,
+	actor: AdminMutationActor,
+) {
+	return db.$transaction(async (tx) => {
+		const attempt = await readSettleableExternalAttempt(tx, input.id);
+		const before = await readAttemptDetail(tx, input.id);
+
+		await rejectExternalTransaction(tx, {
+			id: attempt.id,
+			reason: input.reason,
+		});
+		await updateOrderStatus(tx, attempt.userOrder.id, "failed");
+
+		const after = await readAttemptDetail(tx, input.id);
+
+		await writeAdminAuditLog(tx, {
+			action: "paymentAttempt.rejectExternal",
+			actor,
+			entityType: "userTransaction",
+			entityId: String(input.id),
+			before,
+			after,
+			metadata: { reason: input.reason },
+		});
+
+		return paymentAttemptDetailSchema.parse(after);
+	});
+}
+
+export async function getExternalConfig(database: AdminDb) {
+	return externalPaymentConfigSchema.parse(
+		await getExternalPaymentConfig(database),
+	);
+}
+
+export async function updateExternalConfig(
+	input: ExternalPaymentConfigUpdateInput,
+	actor: AdminMutationActor,
+	database: AdminDb,
+) {
+	return database.$transaction(async (tx) => {
+		const before = await getExternalPaymentConfig(tx);
+		const after = await upsertExternalPaymentConfig(tx, input);
+
+		await writeAdminAuditLog(tx, {
+			action: "paymentProviderConfig.update",
+			actor,
+			entityType: "paymentProviderConfig",
+			entityId: EXTERNAL_PROVIDER,
+			before,
+			after,
+		});
+
+		return externalPaymentConfigSchema.parse(after);
 	});
 }
 

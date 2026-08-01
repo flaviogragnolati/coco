@@ -13,7 +13,6 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
-import { Separator } from "~/components/ui/separator";
 import {
 	Sheet,
 	SheetContent,
@@ -105,15 +104,6 @@ export function CartSheet({
 				{hasHydrated && hasItems ? (
 					<SheetFooter className="border-t pt-4">
 						<div className="flex flex-col gap-2">
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-muted-foreground text-xs">
-									Unidades acumuladas
-								</span>
-								<span className="font-medium text-sm">
-									{cart.totalQuantity}
-								</span>
-							</div>
-							<Separator />
 							<span className="text-muted-foreground text-xs">
 								Totales estimados
 							</span>

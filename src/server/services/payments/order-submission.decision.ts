@@ -1,7 +1,12 @@
 import type { DomainEventInput } from "~/shared/common/domain-events.types";
 
+/**
+ * `admin` is what distinguishes a manually settled external payment from a
+ * gateway-confirmed one in the event trail (ADR 0010).
+ */
 export type OrderSubmissionActor =
 	| { source: "user"; actorId: string }
+	| { source: "admin"; actorId: string }
 	| { source: "system"; actorReference: string };
 
 export type OrderSubmissionPair = {

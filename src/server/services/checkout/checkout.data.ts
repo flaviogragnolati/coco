@@ -5,8 +5,6 @@ import type { db as prismaDb } from "~/server/db";
 import type {
 	CheckoutAddressCreateInput,
 	CheckoutAddressUpdateInput,
-	CheckoutPaymentMethodCreateInput,
-	CheckoutPaymentMethodUpdateInput,
 } from "~/shared/common/checkout.types";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import { cartProductClientTermsSelect } from "../cart/cart.data";
@@ -72,6 +70,8 @@ const orderTransactionSelect = {
 	providerPaymentId: true,
 	providerStatus: true,
 	providerStatusDetail: true,
+	declaredReceiptReference: true,
+	declaredReceiptAt: true,
 	failureCode: true,
 	failureMessage: true,
 	checkoutUrl: true,
@@ -265,21 +265,6 @@ export async function updateCheckoutAddress(
 	});
 }
 
-export async function listCheckoutPaymentMethods(
-	db: CheckoutDbClient,
-	userId: string,
-) {
-	return db.paymentMethod.findMany({
-		where: {
-			userId,
-			active: true,
-			deleted: false,
-		},
-		select: checkoutPaymentMethodSelect,
-		orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-	});
-}
-
 export async function findCheckoutPaymentMethodById(
 	db: CheckoutDbClient,
 	userId: string,
@@ -291,46 +276,6 @@ export async function findCheckoutPaymentMethodById(
 			userId,
 			active: true,
 			deleted: false,
-		},
-		select: checkoutPaymentMethodSelect,
-	});
-}
-
-export async function createCheckoutPaymentMethod(
-	db: CheckoutDbClient,
-	userId: string,
-	input: CheckoutPaymentMethodCreateInput,
-) {
-	return db.paymentMethod.create({
-		data: {
-			userId,
-			type: input.type,
-			label: input.label,
-			details: input.details,
-			provider: "mock",
-			externalPaymentMethodId: `pm_mock_${crypto.randomUUID()}`,
-			active: true,
-			deleted: false,
-			metadata: toPrismaInputJson({
-				source: "checkout",
-				tokenized: true,
-			}),
-		},
-		select: checkoutPaymentMethodSelect,
-	});
-}
-
-export async function updateCheckoutPaymentMethod(
-	db: CheckoutDbClient,
-	input: CheckoutPaymentMethodUpdateInput,
-) {
-	return db.paymentMethod.update({
-		where: { id: input.id },
-		data: {
-			type: input.type,
-			label: input.label,
-			details: input.details,
-			active: true,
 		},
 		select: checkoutPaymentMethodSelect,
 	});
@@ -439,37 +384,6 @@ export async function createPendingTransaction(
 	});
 }
 
-export async function updateTransactionFromGateway(
-	db: CheckoutDbClient,
-	input: {
-		id: number;
-		status: "pending" | "completed" | "failed";
-		provider: string;
-		externalTransactionId: string | null;
-		providerStatus: string;
-		failureCode: string | null;
-		failureMessage: string | null;
-		responseSnapshot: unknown;
-	},
-) {
-	const completedAt = input.status === "completed" ? new Date() : null;
-
-	return db.userTransaction.update({
-		where: { id: input.id },
-		data: {
-			status: input.status,
-			completedAt,
-			provider: input.provider,
-			externalTransactionId: input.externalTransactionId,
-			providerStatus: input.providerStatus,
-			failureCode: input.failureCode,
-			failureMessage: input.failureMessage,
-			responseSnapshot: toPrismaInputJson(input.responseSnapshot),
-		},
-		select: orderTransactionSelect,
-	});
-}
-
 export async function updateTransactionWithMercadoPagoPreference(
 	db: CheckoutDbClient,
 	input: {
@@ -525,7 +439,7 @@ export async function findOrCreateMercadoPagoPaymentMethod(
 			userId,
 			type: "mercadopago",
 			label: "Mercado Pago",
-			details: "Checkout Pro",
+			details: "Tarjeta, dinero en cuenta o efectivo",
 			provider: "mercadopago",
 			externalPaymentMethodId: "mercadopago_checkout_pro",
 			active: true,
@@ -553,6 +467,128 @@ export async function findMercadoPagoPaymentMethod(
 		},
 		select: checkoutPaymentMethodSelect,
 		orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+	});
+}
+
+export async function findOrCreateExternalPaymentMethod(
+	db: CheckoutDbClient,
+	userId: string,
+) {
+	const existing = await findExternalPaymentMethod(db, userId);
+
+	if (existing) return existing;
+
+	return db.paymentMethod.create({
+		data: {
+			userId,
+			type: "bank_transfer",
+			label: "Pago externo",
+			details: "Transferencia bancaria",
+			provider: "external",
+			externalPaymentMethodId: "external_bank_transfer",
+			active: true,
+			deleted: false,
+			metadata: toPrismaInputJson({
+				source: "checkout",
+				checkout: "external",
+			}),
+		},
+		select: checkoutPaymentMethodSelect,
+	});
+}
+
+export async function findExternalPaymentMethod(
+	db: CheckoutDbClient,
+	userId: string,
+) {
+	return db.paymentMethod.findFirst({
+		where: {
+			userId,
+			type: "bank_transfer",
+			provider: "external",
+			active: true,
+			deleted: false,
+		},
+		select: checkoutPaymentMethodSelect,
+		orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+	});
+}
+
+export async function markTransactionAsExternalPending(
+	db: CheckoutDbClient,
+	input: {
+		id: number;
+		expiresAt: Date;
+		requestSnapshot: unknown;
+	},
+) {
+	return db.userTransaction.update({
+		where: { id: input.id },
+		data: {
+			provider: "external",
+			providerStatus: "awaiting_transfer",
+			expiresAt: input.expiresAt,
+			requestSnapshot: toPrismaInputJson(input.requestSnapshot),
+		},
+		select: orderTransactionSelect,
+	});
+}
+
+/** Records what the user says they transferred. It never settles the attempt: only an admin does. */
+export async function declareTransactionReceipt(
+	db: CheckoutDbClient,
+	input: {
+		id: number;
+		reference: string;
+	},
+) {
+	return db.userTransaction.update({
+		where: { id: input.id },
+		data: {
+			declaredReceiptReference: input.reference,
+			declaredReceiptAt: new Date(),
+			providerStatus: "receipt_declared",
+		},
+		select: orderTransactionSelect,
+	});
+}
+
+export async function settleExternalTransaction(
+	db: CheckoutDbClient,
+	input: {
+		id: number;
+		receiptReference: string;
+		responseSnapshot: unknown;
+	},
+) {
+	return db.userTransaction.update({
+		where: { id: input.id },
+		data: {
+			status: "completed",
+			completedAt: new Date(),
+			externalTransactionId: input.receiptReference,
+			providerStatus: "settled_manually",
+			responseSnapshot: toPrismaInputJson(input.responseSnapshot),
+		},
+		select: orderTransactionSelect,
+	});
+}
+
+export async function rejectExternalTransaction(
+	db: CheckoutDbClient,
+	input: {
+		id: number;
+		reason: string;
+	},
+) {
+	return db.userTransaction.update({
+		where: { id: input.id },
+		data: {
+			status: "failed",
+			failureCode: "external_rejected",
+			failureMessage: input.reason,
+		},
+		select: orderTransactionSelect,
 	});
 }
 
