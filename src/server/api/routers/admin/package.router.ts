@@ -15,6 +15,7 @@ import {
 	packageSplitOutputSchema,
 	packageStatsSchema,
 	packageWriteOffInputSchema,
+	packageWriteOffOutputSchema,
 } from "~/schemas/admin/package.schemas";
 import { mapServiceError } from "~/server/api/_shared/map-service-error";
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
@@ -44,7 +45,7 @@ export const packageRouter = createTRPCRouter({
 
 	writeOff: adminProcedure
 		.input(packageWriteOffInputSchema)
-		.output(packageDetailSchema)
+		.output(packageWriteOffOutputSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
 				return await packageService.writeOff(

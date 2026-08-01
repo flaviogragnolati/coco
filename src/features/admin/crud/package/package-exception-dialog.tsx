@@ -9,8 +9,11 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { PackageDetail } from "~/shared/common/admin-crud/package.types";
+import { packageDisclosures } from "./package.effects";
 
 /**
  * Serves both `markDelayed` and `markFailed`, exactly as its shipment sibling
@@ -39,16 +42,9 @@ export function PackageExceptionDialog({
 	}, [open]);
 
 	const isFailure = target === "failed";
-	const liveLines =
-		pkg?.packageLines.filter((line) => line.status !== "cancelled") ?? [];
 
 	return (
 		<CrudFormDialogShell
-			description={
-				isFailure
-					? "El paquete queda fallido sin tocar el resto del envío. Después hay que darlo de baja."
-					: "El paquete queda demorado sin tocar el resto del envío."
-			}
 			footer={
 				<>
 					<Button
@@ -98,27 +94,14 @@ export function PackageExceptionDialog({
 				</Field>
 			</FieldGroup>
 
-			<section className="flex flex-col gap-2 rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Demanda que pasa a excepción
-				</h3>
-				{liveLines.length === 0 ? (
-					<p className="text-muted-foreground text-xs">Sin líneas activas.</p>
-				) : (
-					liveLines.flatMap((line) =>
-						line.packageAllocations.map((allocation) => (
-							<span
-								className="text-muted-foreground text-xs"
-								key={allocation.id}
-							>
-								{allocation.demandAllocation.cartItem.code} —{" "}
-								{allocation.quantity} —{" "}
-								{allocation.demandAllocation.cartItem.cart.user.name}
-							</span>
-						)),
-					)
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(
+					isFailure
+						? packageDisclosures.markFailed
+						: packageDisclosures.markDelayed,
+					{ pkg },
 				)}
-			</section>
+			/>
 		</CrudFormDialogShell>
 	);
 }

@@ -9,8 +9,11 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { SupplierOrderDetail } from "~/shared/common/admin-crud/supplier-order.types";
+import { supplierOrderDisclosures } from "./supplier-order.effects";
 
 type SupplierOrderLotItem =
 	SupplierOrderDetail["lots"][number]["lotItems"][number];
@@ -42,19 +45,9 @@ export function SupplierOrderCancelDialog({
 	}, [open]);
 
 	const isLine = lotItem !== undefined;
-	const affectedLines = isLine
-		? [lotItem]
-		: (supplierOrder?.lots.flatMap((lot) =>
-				lot.lotItems.filter((item) => item.status !== "cancelled"),
-			) ?? []);
 
 	return (
 		<CrudFormDialogShell
-			description={
-				isLine
-					? "La línea se cancela y su demanda vuelve a rollover para reagruparse en una operación futura."
-					: "La orden, sus lotes y sus líneas se cancelan; toda la demanda activa vuelve a rollover."
-			}
 			footer={
 				<>
 					<Button
@@ -99,28 +92,15 @@ export function SupplierOrderCancelDialog({
 				</Field>
 			</FieldGroup>
 
-			<section className="flex flex-col gap-2 rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Demanda que vuelve a rollover
-				</h3>
-				{affectedLines.length === 0 ? (
-					<p className="text-muted-foreground text-xs">Sin líneas activas.</p>
-				) : (
-					affectedLines.map((line) => (
-						<div className="flex flex-col gap-1 text-xs" key={line.id}>
-							<span className="font-medium">
-								{line.code} · {line.product.name}
-							</span>
-							{line.demandAllocations.map((allocation) => (
-								<span className="text-muted-foreground" key={allocation.id}>
-									{allocation.cartItem.cart.code} / {allocation.cartItem.code} —{" "}
-									{allocation.quantity}
-								</span>
-							))}
-						</div>
-					))
+			{/* One dialog, two commands: the entry is picked by the same flag the copy is. */}
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(
+					isLine
+						? supplierOrderDisclosures.cancelLine
+						: supplierOrderDisclosures.cancel,
+					{ supplierOrder, lotItem },
 				)}
-			</section>
+			/>
 		</CrudFormDialogShell>
 	);
 }

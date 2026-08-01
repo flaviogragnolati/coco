@@ -1,8 +1,11 @@
 "use client";
 
 import { Button } from "~/components/ui/button";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { OperationDetail } from "~/shared/common/admin-crud/operation.types";
+import { operationDisclosures } from "./operation.effects";
 
 /**
  * Hard delete — `Operation` has no soft-delete column, so there is nothing to
@@ -28,8 +31,8 @@ export function OperationDeleteDialog({
 		<CrudFormDialogShell
 			description={
 				isDraft
-					? "El borrador se descarta definitivamente. La demanda que agrupaba queda intacta y entra en la próxima operación."
-					: "La operación se elimina definitivamente. Solo es posible sobre una operación fallida que no dejó lotes ni rollovers."
+					? "Descartar un borrador y eliminar una operación fallida son el mismo acto: ninguna de las dos dejó lotes ni rollovers."
+					: "Solo es posible sobre una operación fallida que no dejó lotes ni rollovers."
 			}
 			footer={
 				<>
@@ -60,6 +63,12 @@ export function OperationDeleteDialog({
 					Motivo de la falla: {operation.failureReason}
 				</p>
 			) : null}
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(operationDisclosures.delete, {
+					operation,
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

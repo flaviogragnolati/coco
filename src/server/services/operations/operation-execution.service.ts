@@ -3,6 +3,7 @@ import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
 import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
 import { runSerializable } from "~/server/services/admin/_base/serializable-transaction";
+import { buildOperationExecutionEvents } from "~/server/services/admin/operations-effects/operation-event-builders";
 import {
 	calculateAssignableQuantity,
 	type OperationSupplierTermCandidate,
@@ -872,66 +873,34 @@ async function publishEvents(
 		rollOvers: MaterializedRollOver[];
 	},
 ) {
-	await DomainEventPublisher.publishMany(db, [
-		...input.demandItems.map((demand) => ({
-			type: "operation.cartItem.included" as const,
-			eventKey: `operation:${input.operationId}:cartItem:${demand.cartItemId}:source:${demand.sourceKey}:included`,
-			aggregateType: "CartItem" as const,
-			aggregateId: String(demand.cartItemId),
-			actor: {
-				source: "admin" as const,
-				actorId: input.actor.id,
-			},
-			payload: {
-				operationId: String(input.operationId),
-				cartItemId: String(demand.cartItemId),
-				cartId: String(demand.cartId),
+	await DomainEventPublisher.publishMany(
+		db,
+		buildOperationExecutionEvents({
+			operationId: input.operationId,
+			actor: input.actor,
+			demandItems: input.demandItems.map((demand) => ({
+				sourceKey: demand.sourceKey,
+				sourceRollOverId: demand.sourceRollOverId,
+				cartItemId: demand.cartItemId,
+				cartId: demand.cartId,
+				cartCode: demand.cartCode,
 				quantity: demand.quantity.toString(),
-				metadata: {
-					sourceKey: demand.sourceKey,
-					...(demand.sourceRollOverId === undefined
-						? {}
-						: { sourceRollOverId: String(demand.sourceRollOverId) }),
-					cartCode: demand.cartCode,
-				},
-			},
-		})),
-		...input.allocations.map((allocation) => ({
-			type: "operation.cartItem.allocatedToLotItem" as const,
-			eventKey: `operation:${input.operationId}:cartItem:${allocation.cartItemId}:lotItem:${allocation.lotItemId}:allocated`,
-			aggregateType: "CartItem" as const,
-			aggregateId: String(allocation.cartItemId),
-			actor: {
-				source: "admin" as const,
-				actorId: input.actor.id,
-			},
-			payload: {
-				operationId: String(input.operationId),
-				cartItemId: String(allocation.cartItemId),
-				cartId: String(allocation.cartId),
-				lotId: String(allocation.lotId),
-				lotItemId: String(allocation.lotItemId),
+			})),
+			allocations: input.allocations.map((allocation) => ({
+				cartItemId: allocation.cartItemId,
+				cartId: allocation.cartId,
+				lotId: allocation.lotId,
+				lotItemId: allocation.lotItemId,
 				quantity: allocation.quantity.toString(),
-			},
-		})),
-		...input.rollOvers.map((rollOver) => ({
-			type: "rollover.preAllocation.created" as const,
-			eventKey: `operation:${input.operationId}:cartItem:${rollOver.cartItemId}:rollover:${rollOver.id}:created`,
-			aggregateType: "RollOver" as const,
-			aggregateId: String(rollOver.id),
-			actor: {
-				source: "admin" as const,
-				actorId: input.actor.id,
-			},
-			payload: {
-				operationId: String(input.operationId),
-				rolloverId: String(rollOver.id),
-				cartItemId: String(rollOver.cartItemId),
-				cartId: String(rollOver.cartId),
+			})),
+			rollOvers: input.rollOvers.map((rollOver) => ({
+				id: rollOver.id,
+				cartItemId: rollOver.cartItemId,
+				cartId: rollOver.cartId,
 				quantity: rollOver.quantity.toString(),
-			},
-		})),
-	]);
+			})),
+		}),
+	);
 }
 
 function buildSummary(input: {

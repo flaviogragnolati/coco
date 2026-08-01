@@ -25,6 +25,15 @@ import {
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
 import {
+	buildAnnouncedToast,
+	buildAppliedToast,
+} from "~/features/admin/crud/_lib/fulfillment-effects";
+import type { CommandDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects.types";
+import {
+	type PackageDisclosureContext,
+	packageDisclosures,
+} from "~/features/admin/crud/package/package.effects";
+import {
 	packageLegOptions,
 	packageStatusOptions,
 } from "~/features/admin/crud/package/package.mappers";
@@ -153,9 +162,23 @@ export function PackagesClient({
 
 	const closeCommand = () => setOpenCommand(null);
 
+	/**
+	 * The pure-ladder commands report the effects they announced, resolved against
+	 * the detail the dialog was showing: a successful one performed exactly that
+	 * cascade by construction.
+	 */
+	const announce = (
+		title: string,
+		disclosure: CommandDisclosure<PackageDisclosureContext>,
+	) => buildAnnouncedToast(title, disclosure, { pkg: detailQuery.data });
+
 	const writeOffMutation = api.admin.package.writeOff.useMutation({
-		onSuccess: async () => {
-			toast.warning("Paquete dado de baja");
+		onSuccess: async (result) => {
+			const { title, description } = buildAppliedToast(
+				"Paquete dado de baja",
+				result.applied,
+			);
+			toast.warning(title, { description });
 			closeCommand();
 			await invalidateNeighbours();
 		},
@@ -166,9 +189,11 @@ export function PackagesClient({
 
 	const fractionateMutation = api.admin.package.fractionate.useMutation({
 		onSuccess: async (result) => {
-			toast.success(
-				`Fraccionado en ${result.createdPackageIds.length} paquete(s) de salida`,
+			const { title, description } = buildAppliedToast(
+				"Paquete fraccionado",
+				result.applied,
 			);
+			toast.success(title, { description });
 			closeCommand();
 			// The command creates rows the current selection does not describe, and can
 			// touch several sources at once — the whole list has to drop, not one row.
@@ -182,7 +207,11 @@ export function PackagesClient({
 
 	const promoteMutation = api.admin.package.promote.useMutation({
 		onSuccess: async () => {
-			toast.success("Paquete promovido a la pata de salida");
+			const { title, description } = announce(
+				"Paquete promovido a la pata de salida",
+				packageDisclosures.promote,
+			);
+			toast.success(title, { description });
 			closeCommand();
 			await invalidateNeighbours();
 		},
@@ -193,9 +222,11 @@ export function PackagesClient({
 
 	const splitMutation = api.admin.package.split.useMutation({
 		onSuccess: async (result) => {
-			toast.success(
-				`Dividido en ${result.createdPackageIds.length} paquete(s)`,
+			const { title, description } = buildAppliedToast(
+				"Paquete dividido",
+				result.applied,
 			);
+			toast.success(title, { description });
 			closeCommand();
 			setSelectedPackageId(null);
 			await invalidateNeighbours();
@@ -207,7 +238,11 @@ export function PackagesClient({
 
 	const markDelayedMutation = api.admin.package.markDelayed.useMutation({
 		onSuccess: async () => {
-			toast.warning("Paquete marcado como demorado");
+			const { title, description } = announce(
+				"Paquete marcado como demorado",
+				packageDisclosures.markDelayed,
+			);
+			toast.warning(title, { description });
 			closeCommand();
 			await invalidateNeighbours();
 		},
@@ -218,7 +253,11 @@ export function PackagesClient({
 
 	const markFailedMutation = api.admin.package.markFailed.useMutation({
 		onSuccess: async () => {
-			toast.error("Paquete marcado como fallido");
+			const { title, description } = announce(
+				"Paquete marcado como fallido",
+				packageDisclosures.markFailed,
+			);
+			toast.error(title, { description });
 			closeCommand();
 			await invalidateNeighbours();
 		},
@@ -230,7 +269,11 @@ export function PackagesClient({
 	const confirmDeliveryMutation = api.admin.package.confirmDelivery.useMutation(
 		{
 			onSuccess: async () => {
-				toast.success("Entrega confirmada");
+				const { title, description } = announce(
+					"Entrega confirmada",
+					packageDisclosures.confirmDelivery,
+				);
+				toast.success(title, { description });
 				closeCommand();
 				await invalidateNeighbours();
 			},
@@ -242,7 +285,11 @@ export function PackagesClient({
 
 	const recoverMutation = api.admin.package.recover.useMutation({
 		onSuccess: async () => {
-			toast.success("Paquete recuperado");
+			const { title, description } = announce(
+				"Paquete recuperado",
+				packageDisclosures.recover,
+			);
+			toast.success(title, { description });
 			closeCommand();
 			await invalidateNeighbours();
 		},

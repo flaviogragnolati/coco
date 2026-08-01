@@ -25,6 +25,15 @@ import {
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
 import {
+	buildAnnouncedToast,
+	buildAppliedToast,
+} from "~/features/admin/crud/_lib/fulfillment-effects";
+import type { CommandDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects.types";
+import {
+	type ShipmentDisclosureContext,
+	shipmentDisclosures,
+} from "~/features/admin/crud/shipment/shipment.effects";
+import {
 	shipmentStatusOptions,
 	shipmentTypeOptions,
 } from "~/features/admin/crud/shipment/shipment.mappers";
@@ -159,9 +168,23 @@ export function ShipmentsClient({
 		]);
 	};
 
-	const commandOptions = (successMessage: string, failureMessage: string) => ({
+	/**
+	 * The pure-ladder commands report the effects they announced, resolved against
+	 * the detail the dialog was showing: a successful one performed exactly that
+	 * cascade by construction.
+	 */
+	const commandOptions = (
+		successMessage: string,
+		failureMessage: string,
+		disclosure: CommandDisclosure<ShipmentDisclosureContext>,
+	) => ({
 		onSuccess: async () => {
-			toast.success(successMessage);
+			const { title, description } = buildAnnouncedToast(
+				successMessage,
+				disclosure,
+				{ shipment: detailQuery.data },
+			);
+			toast.success(title, { description });
 			setOpenCommand(null);
 			await invalidateShipmentQueries();
 		},
@@ -171,28 +194,61 @@ export function ShipmentsClient({
 	});
 
 	const dispatchMutation = api.admin.shipment.dispatch.useMutation(
-		commandOptions("Envío despachado", "No se pudo despachar el envío"),
+		commandOptions(
+			"Envío despachado",
+			"No se pudo despachar el envío",
+			shipmentDisclosures.dispatch,
+		),
 	);
-	const receiveMutation = api.admin.shipment.receive.useMutation(
-		commandOptions("Envío recibido", "No se pudo recibir el envío"),
-	);
+	const receiveMutation = api.admin.shipment.receive.useMutation({
+		onSuccess: async (result) => {
+			const { title, description } = buildAppliedToast(
+				"Envío recibido",
+				result.applied,
+			);
+			toast.success(title, { description });
+			setOpenCommand(null);
+			await invalidateShipmentQueries();
+		},
+		onError: (error) => {
+			toast.error(error.message || "No se pudo recibir el envío");
+		},
+	});
 	const markDelayedMutation = api.admin.shipment.markDelayed.useMutation(
-		commandOptions("Envío demorado", "No se pudo demorar el envío"),
+		commandOptions(
+			"Envío demorado",
+			"No se pudo demorar el envío",
+			shipmentDisclosures.markDelayed,
+		),
 	);
 	const markFailedMutation = api.admin.shipment.markFailed.useMutation(
-		commandOptions("Envío marcado como fallido", "No se pudo marcar el envío"),
+		commandOptions(
+			"Envío marcado como fallido",
+			"No se pudo marcar el envío",
+			shipmentDisclosures.markFailed,
+		),
 	);
 	const deliverMutation = api.admin.shipment.deliver.useMutation(
-		commandOptions("Envío entregado", "No se pudo entregar el envío"),
+		commandOptions(
+			"Envío entregado",
+			"No se pudo entregar el envío",
+			shipmentDisclosures.deliver,
+		),
 	);
 	const addPackagesMutation = api.admin.shipment.addPackages.useMutation(
-		commandOptions("Paquetes agregados", "No se pudieron agregar los paquetes"),
+		commandOptions(
+			"Paquetes agregados",
+			"No se pudieron agregar los paquetes",
+			shipmentDisclosures.addPackages,
+		),
 	);
 	const createEndUserMutation = api.admin.shipment.createEndUser.useMutation({
 		// Like `retry`, this returns a shipment the current selection does not
 		// describe — the selection has to follow the result id.
 		onSuccess: async (result) => {
-			toast.success("Envío al cliente creado");
+			toast.success("Envío al cliente creado", {
+				description: `${result.internalCode} · ${result.packageCount} paquete(s) · ${result.transportedQuantity}`,
+			});
 			setCreateOpen(false);
 			setSelectedShipmentId(result.id);
 			await invalidateShipmentQueries();
@@ -205,7 +261,9 @@ export function ShipmentsClient({
 		// `retry` returns a *different* shipment; the selection has to follow the
 		// result id or the operator stays on the emptied failed one.
 		onSuccess: async (result) => {
-			toast.success("Envío reintentado");
+			toast.success("Envío reintentado", {
+				description: `${result.internalCode} · ${result.packageCount} paquete(s) reasignado(s)`,
+			});
 			setOpenCommand(null);
 			setSelectedShipmentId(result.id);
 			await invalidateShipmentQueries();

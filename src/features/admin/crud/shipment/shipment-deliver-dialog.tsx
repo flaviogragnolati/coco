@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { ShipmentDetail } from "~/shared/common/admin-crud/shipment.types";
+import { shipmentDisclosures } from "./shipment.effects";
 
 /**
  * The consequence differs by mode, so the copy states it in plain Spanish: a home
@@ -36,11 +39,6 @@ export function ShipmentDeliverDialog({
 
 	return (
 		<CrudFormDialogShell
-			description={
-				isHomeDelivery
-					? `Se confirmará la entrega de ${packages.length} paquete(s). La demanda afectada pasa a entregada.`
-					: "El envío llegará al punto de retiro; cada cliente confirma su retiro por separado desde su paquete."
-			}
 			footer={
 				<>
 					<Button
@@ -68,25 +66,13 @@ export function ShipmentDeliverDialog({
 			open={open}
 			title={`Entregar ${shipment?.internalCode ?? "envío"}`}
 		>
-			<section className="flex flex-col gap-2 rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Paquetes del envío
-				</h3>
-				{packages.length === 0 ? (
-					<p className="text-muted-foreground text-xs">Sin paquetes.</p>
-				) : (
-					packages.map((pkg) => (
-						<div className="flex justify-between gap-2 text-xs" key={pkg.id}>
-							<span className="font-medium">
-								#{pkg.id} {pkg.name}
-							</span>
-							<span className="text-muted-foreground">
-								{pkg.lineCount} líneas · {pkg.lineQuantity}
-							</span>
-						</div>
-					))
-				)}
-			</section>
+			{/* The two modes differ in exactly one way, and it is the reason the
+			    column exists — the panel states which one applies. */}
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(shipmentDisclosures.deliver, {
+					shipment,
+				})}
+			/>
 
 			<Field>
 				<FieldLabel htmlFor="shipment-deliver-notes">Notas</FieldLabel>

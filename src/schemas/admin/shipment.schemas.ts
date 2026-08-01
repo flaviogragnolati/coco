@@ -6,6 +6,7 @@ import {
 	requiredText,
 	sortDirectionSchema,
 } from "~/schemas/admin/_crud-schema-helpers";
+import { appliedEffectsSchema } from "~/schemas/admin/applied-effects.schemas";
 import {
 	diagnosticStateSchema,
 	highestDiagnosticSeveritySchema,
@@ -238,6 +239,15 @@ export const shipmentRetryInputSchema = z.object({
 		internalCode: requiredText("El código interno es obligatorio"),
 		trackingCode: optionalTrimmedText,
 	}),
+});
+
+/**
+ * A receipt is decided by the quantities the operator declares, so it reports the
+ * shortfall it actually absorbed alongside the detail (CONTEXT.md, "Applied effects").
+ */
+export const shipmentReceiveOutputSchema = z.object({
+	detail: shipmentDetailSchema,
+	applied: appliedEffectsSchema,
 });
 
 export const shipmentListOutputSchema = z.object({

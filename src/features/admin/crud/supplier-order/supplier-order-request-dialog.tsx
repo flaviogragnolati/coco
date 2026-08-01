@@ -9,8 +9,11 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { SupplierOrderDetail } from "~/shared/common/admin-crud/supplier-order.types";
+import { supplierOrderDisclosures } from "./supplier-order.effects";
 
 export function SupplierOrderRequestDialog({
 	open,
@@ -38,7 +41,6 @@ export function SupplierOrderRequestDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="Se marcará la orden, sus lotes y sus líneas como solicitadas al proveedor."
 			footer={
 				<>
 					<Button
@@ -91,30 +93,11 @@ export function SupplierOrderRequestDialog({
 				</Field>
 			</FieldGroup>
 
-			<section className="flex flex-col gap-2 rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Líneas a solicitar ({liveLines.length})
-				</h3>
-				{liveLines.length === 0 ? (
-					<p className="text-muted-foreground text-xs">
-						La orden no tiene líneas activas.
-					</p>
-				) : (
-					liveLines.map((lotItem) => (
-						<div
-							className="flex justify-between gap-2 border-t pt-2 text-xs first:border-t-0 first:pt-0"
-							key={lotItem.id}
-						>
-							<span>
-								{lotItem.code} · {lotItem.product.name}
-							</span>
-							<span>
-								{lotItem.quantity} {lotItem.product.unit}
-							</span>
-						</div>
-					))
-				)}
-			</section>
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(supplierOrderDisclosures.request, {
+					supplierOrder,
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

@@ -162,6 +162,14 @@ _Avoid_: Commercial state, request state
 A read-only signal with a stable code and severity that compares operational records, quantities, and statuses to reveal missing evidence or inconsistent fulfillment lineage.
 _Avoid_: Correction, mutation, action
 
+**Effect disclosure**:
+What a lifecycle command states before it runs and confirms after: the records it changes, the demand it moves, what the customer will see, how it is undone, and which action comes next. Declared as data anchored to the transition ladders and the domain events rather than written as prose per dialog, so a ladder change breaks a test instead of leaving a screen lying. Spanish-facing UI labels it "Qué va a pasar".
+_Avoid_: Warning, confirmation copy, aviso, disclaimer
+
+**Applied effects**:
+The summary a quantity-moving command returns describing what it actually did, as opposed to what its effect disclosure announced. It exists only where the admin's own input decides the outcome — a partial supplier confirmation, a receipt with a shortfall — and is the command's own report, never a re-read of the record afterwards.
+_Avoid_: Result, response, mutation output
+
 **Fulfillment exception**:
 A derived condition: demand whose lineage has a delayed or failed package or shipment touching live quantity. It clears automatically when the records recover or the quantity is rerouted.
 _Avoid_: Incident, error state

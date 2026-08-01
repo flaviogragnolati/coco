@@ -25,6 +25,7 @@ import {
 	emptyOmissions,
 	pruneOmissions,
 } from "~/server/services/operations/operation-review";
+import type { AppliedEffects } from "~/shared/common/admin-crud/applied-effects.types";
 import type {
 	OperationCancelInput,
 	OperationCreateInput,
@@ -71,7 +72,10 @@ import {
 	updateDraftOperation,
 	updateOperationForRerun,
 } from "./operation.data";
-import { planOperationCompensation } from "./operation-compensation";
+import {
+	type CompensationPlan,
+	planOperationCompensation,
+} from "./operation-compensation";
 import {
 	calculateOperationDiagnostics,
 	type OperationDiagnosticsOptions,
@@ -609,7 +613,10 @@ async function compensate(
 
 	const plan = planOperationCompensation(record);
 
-	await applyOperationCompensation(tx, {
+	// The reopened count is the one number the plan cannot hold: the roll overs
+	// this operation *consumed* belong to other operations, so only the write knows
+	// how many came back to `open`.
+	const reopened = await applyOperationCompensation(tx, {
 		operationId: record.id,
 		lotIds: plan.lotIds,
 		lotItemIds: plan.lotItemIds,
@@ -630,19 +637,49 @@ async function compensate(
 		},
 	);
 
-	return { plan, effects };
+	return { plan, effects, reopenedRollOverCount: reopened.count };
+}
+
+/**
+ * What the compensation actually did, built from the plan it just ran rather than
+ * from a re-read of the record — the same values the audit `metadata` receives, so
+ * the two agree by construction.
+ */
+function compensationApplied(input: {
+	plan: CompensationPlan;
+	reopenedRollOverCount: number;
+}): AppliedEffects {
+	const counted = (code: string, count: number) => ({
+		code,
+		count,
+		quantity: null,
+	});
+
+	return [
+		counted("lotsCancelled", input.plan.lotIds.length),
+		counted("linesCancelled", input.plan.lotItemIds.length),
+		counted("ordersCancelled", input.plan.supplierOrderIds.length),
+		counted("ownRollOversCancelled", input.plan.createdRollOverIds.length),
+		counted("consumedRollOversReopened", input.reopenedRollOverCount),
+		counted("cartItemsExcluded", input.plan.affectedCartItems.length),
+	];
 }
 
 export async function cancel(
 	input: OperationCancelInput,
 	actor: AdminMutationActor,
 	database: AdminDb,
-): Promise<OperationDetail> {
+): Promise<{ detail: OperationDetail; applied: AppliedEffects }> {
 	const result = await runSerializable(database, async (tx) => {
 		const record = await loadForCommand(tx, input.id);
 		const before = await loadDetail(tx, record.id);
 
-		const { plan, effects } = await compensate(tx, record, actor, input.reason);
+		const { plan, effects, reopenedRollOverCount } = await compensate(
+			tx,
+			record,
+			actor,
+			input.reason,
+		);
 
 		const after = await loadDetail(tx, record.id);
 
@@ -660,11 +697,15 @@ export async function cancel(
 				cancelledLotItemIds: plan.lotItemIds,
 				cancelledSupplierOrderIds: plan.supplierOrderIds,
 				cancelledRollOverIds: plan.createdRollOverIds,
+				reopenedRollOverCount,
 				excludedCartItems: plan.affectedCartItems,
 			},
 		});
 
-		return after;
+		return {
+			detail: after,
+			applied: compensationApplied({ plan, reopenedRollOverCount }),
+		};
 	});
 
 	await DomainEventDispatcher.wake();

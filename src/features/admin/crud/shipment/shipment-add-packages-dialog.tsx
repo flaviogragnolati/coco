@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { ShipmentDetail } from "~/shared/common/admin-crud/shipment.types";
 import { OutboundPackagePicker } from "./outbound-package-picker";
+import { shipmentDisclosures } from "./shipment.effects";
 
 /** The incremental half of the create dialog: more packages while still assembling. */
 export function ShipmentAddPackagesDialog({
@@ -31,7 +34,7 @@ export function ShipmentAddPackagesDialog({
 			description={
 				shipment?.deliveryMode === "homeDelivery"
 					? "El envío es a domicilio, así que los paquetes agregados deben ser del mismo cliente."
-					: "Los paquetes agregados quedan listos para salir con este envío."
+					: "El envío es a un punto de retiro, así que puede agrupar paquetes de varios clientes."
 			}
 			footer={
 				<>
@@ -85,6 +88,13 @@ export function ShipmentAddPackagesDialog({
 					)
 				}
 				selectedIds={packageIds}
+			/>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(shipmentDisclosures.addPackages, {
+					shipment,
+					selection: { packageCount: packageIds.length },
+				})}
 			/>
 		</CrudFormDialogShell>
 	);

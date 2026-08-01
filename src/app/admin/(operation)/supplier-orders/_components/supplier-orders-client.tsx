@@ -23,6 +23,11 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
+import {
+	buildAnnouncedToast,
+	buildAppliedToast,
+} from "~/features/admin/crud/_lib/fulfillment-effects";
+import { supplierOrderDisclosures } from "~/features/admin/crud/supplier-order/supplier-order.effects";
 import { supplierOrderStatusOptions } from "~/features/admin/crud/supplier-order/supplier-order.mappers";
 import { SupplierOrderCancelDialog } from "~/features/admin/crud/supplier-order/supplier-order-cancel-dialog";
 import { SupplierOrderConfirmDialog } from "~/features/admin/crud/supplier-order/supplier-order-confirm-dialog";
@@ -132,9 +137,17 @@ export function SupplierOrdersClient({
 		]);
 	};
 
+	// The pure-ladder commands report the effects they announced, resolved against
+	// the detail the dialog was showing: a successful one performed exactly that
+	// cascade by construction.
 	const requestMutation = api.admin.supplierOrder.request.useMutation({
 		onSuccess: async () => {
-			toast.success("Orden solicitada al proveedor");
+			const { title, description } = buildAnnouncedToast(
+				"Orden solicitada al proveedor",
+				supplierOrderDisclosures.request,
+				{ supplierOrder: detailQuery.data },
+			);
+			toast.success(title, { description });
 			setRequestOpen(false);
 			await invalidateSupplierOrderQueries();
 		},
@@ -144,8 +157,12 @@ export function SupplierOrdersClient({
 	});
 
 	const confirmMutation = api.admin.supplierOrder.confirm.useMutation({
-		onSuccess: async () => {
-			toast.success("Orden confirmada");
+		onSuccess: async (result) => {
+			const { title, description } = buildAppliedToast(
+				"Orden confirmada",
+				result.applied,
+			);
+			toast.success(title, { description });
 			setConfirmOpen(false);
 			await invalidateSupplierOrderQueries();
 		},
@@ -156,8 +173,12 @@ export function SupplierOrdersClient({
 
 	const registerDispatchMutation =
 		api.admin.supplierOrder.registerDispatch.useMutation({
-			onSuccess: async () => {
-				toast.success("Despacho registrado");
+			onSuccess: async (result) => {
+				const { title, description } = buildAppliedToast(
+					"Despacho registrado",
+					result.applied,
+				);
+				toast.success(title, { description });
 				setDispatchOpen(false);
 				await invalidateSupplierOrderQueries();
 			},
@@ -168,7 +189,12 @@ export function SupplierOrdersClient({
 
 	const cancelMutation = api.admin.supplierOrder.cancel.useMutation({
 		onSuccess: async () => {
-			toast.warning("Orden cancelada");
+			const { title, description } = buildAnnouncedToast(
+				"Orden cancelada",
+				supplierOrderDisclosures.cancel,
+				{ supplierOrder: detailQuery.data },
+			);
+			toast.warning(title, { description });
 			setCancelTarget(null);
 			await invalidateSupplierOrderQueries();
 		},
@@ -179,7 +205,15 @@ export function SupplierOrdersClient({
 
 	const cancelLineMutation = api.admin.supplierOrder.cancelLine.useMutation({
 		onSuccess: async () => {
-			toast.warning("Línea cancelada");
+			const { title, description } = buildAnnouncedToast(
+				"Línea cancelada",
+				supplierOrderDisclosures.cancelLine,
+				{
+					supplierOrder: detailQuery.data,
+					lotItem: cancelTarget?.lotItem,
+				},
+			);
+			toast.warning(title, { description });
 			setCancelTarget(null);
 			await invalidateSupplierOrderQueries();
 		},

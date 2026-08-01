@@ -1104,6 +1104,50 @@ lot detail's newly-enabled buttons, and Phase 5's attach-then-detach against the
 now-existing unassigned shipment are a manual pass. The seed makes that pass far
 more valuable than before: every screen now has real rows in every state.
 
+### 21.11 The commands are self-describing (2026-08-01)
+
+**Not a phase, and it adds no command**: every one of the 27 lifecycle commands
+now states its effects before it runs and confirms them after. It implements §15
+#5 — "one truth, consumed by services, diagnostics **and UI**" — at the last
+surface that was still writing its own prose.
+
+**Where it lives.** The declarative catalogs are
+`src/features/admin/crud/{operation,supplier-order,shipment,package}/*.effects.ts`,
+keyed by `entity.command`; the vocabulary and the resolver are in
+`src/features/admin/crud/_lib/fulfillment-effects{.types,}.ts`; the panel is
+`_components/crud-effects-panel.tsx` ("Qué va a pasar"). The catalogs are **data,
+not prose**: a transition is a `(record, from, to)` triple and a customer-facing
+effect names a `DomainEventType`.
+
+**What keeps it honest.** Two suites, both anchored server-side:
+
+- `src/shared/common/fulfillment-command-events.ts` declares, per command, the
+  event types it publishes, and
+  `operations-effects/fulfillment-effects.test.ts` asserts each non-empty entry
+  against the **pure event builders**. That contract is why the supplier-order,
+  operation, roll over and execution builders were extracted into
+  `supplier-order-event-builders.ts` and `operation-event-builders.ts`: their
+  handlers reach `DomainEventPublisher`, which is `server-only` and therefore
+  unreachable from a test. Behaviour-preserving moves, nothing else.
+- `_lib/fulfillment-effects.test.ts` checks every catalog entry: completeness
+  over all 27 with no orphans, every transition legal against its ladder (or
+  enum-checked for `operation`, `packageLine` and `rollOver`, which have none by
+  design), every customer claim present in `COMMAND_EVENT_TYPES`, every status
+  resolvable through the `*StatusLabelMap`s, every `undo`/`next` naming a real
+  command, and every applied code rendered in exactly one place.
+
+**Applied effects.** Seven commands — `operation.cancel`,
+`supplierOrder.{confirm, registerDispatch}`, `shipment.receive`,
+`package.{writeOff, fractionate, split}` — return a `{ code, count, quantity }`
+summary built from the plan they just ran, the same values the audit `metadata`
+already receives, so the two agree by construction. The server sends codes and
+numbers only; the Spanish stays in the client catalog. Every other command
+reports the effects it announced in past tense, which is sound precisely because
+a successful pure-ladder command performed exactly that cascade.
+
+**No schema change, no new `Serializable` call site, no behavioural change to any
+command, guard, cascade or event.**
+
 ## 22. Suggested next skills
 
 | Skill | When to invoke | Inputs | Expected output |

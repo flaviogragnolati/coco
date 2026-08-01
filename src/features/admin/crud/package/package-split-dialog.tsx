@@ -3,10 +3,13 @@
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
-import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
+import { Field, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import {
+	fromScaled,
 	sumScaled,
 	toScaled,
 } from "~/features/admin/crud/supplier-order/supplier-order-quantity";
@@ -14,6 +17,7 @@ import type {
 	PackageDetail,
 	PackageSplitInput,
 } from "~/shared/common/admin-crud/package.types";
+import { packageDisclosures } from "./package.effects";
 
 type Target = { key: number; name: string; lines: Record<number, string> };
 
@@ -65,6 +69,27 @@ export function PackageSplitDialog({
 		Object.values(target.lines).every((value) => (toScaled(value) ?? 0n) <= 0n),
 	);
 
+	const emptiedLineCount = lines.filter(
+		(line) =>
+			movedFor(line.id) > 0n &&
+			movedFor(line.id) === (toScaled(line.quantity) ?? 0n),
+	).length;
+	const split = {
+		targetCount: targets.length,
+		lineCount: targets.reduce(
+			(total, target) =>
+				total +
+				Object.values(target.lines).filter(
+					(value) => (toScaled(value) ?? 0n) > 0n,
+				).length,
+			0,
+		),
+		quantity: fromScaled(totalMoved),
+		emptiedLineCount,
+		// A package with nothing live left no longer covers any demand.
+		emptiesSource: lines.length > 0 && emptiedLineCount === lines.length,
+	};
+
 	const setLine = (targetKey: number, lineId: number, value: string) => {
 		setTargets((current) =>
 			current.map((target) =>
@@ -77,7 +102,7 @@ export function PackageSplitDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="El paquete se reparte en los bultos físicos reales. No se pierde cantidad: lo que sale del origen se crea en el destino, sobre el mismo envío."
+			description="El paquete se reparte en los bultos físicos reales, con la cantidad que lleve cada uno."
 			footer={
 				<>
 					<Button
@@ -213,10 +238,12 @@ export function PackageSplitDialog({
 						<PlusIcon className="size-4" /> Agregar paquete destino
 					</Button>
 
-					<FieldDescription>
-						Lo que quede en cada línea se conserva en el paquete de origen. Una
-						línea que se vacía queda cancelada, con su cantidad como historia.
-					</FieldDescription>
+					<CrudEffectsPanel
+						disclosure={resolveDisclosure(packageDisclosures.split, {
+							pkg,
+							split,
+						})}
+					/>
 
 					{overCommitted ? (
 						<p className="text-destructive text-xs">

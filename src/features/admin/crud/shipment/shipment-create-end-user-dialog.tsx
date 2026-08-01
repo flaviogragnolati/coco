@@ -10,10 +10,13 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import { deliveryModeLabelMap } from "~/features/admin/crud/shipment/shipment.mappers";
 import type { DeliveryMode } from "~/shared/common/admin-crud/shipment.types";
 import { OutboundPackagePicker } from "./outbound-package-picker";
+import { shipmentDisclosures } from "./shipment.effects";
 
 /**
  * Builds an end-user delivery from packed outbound packages. Depot pickup is
@@ -63,7 +66,6 @@ export function ShipmentCreateEndUserDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="El envío se crea listo para despachar con los paquetes seleccionados. Despachar es un paso aparte."
 			footer={
 				<>
 					<Button
@@ -167,6 +169,14 @@ export function ShipmentCreateEndUserDialog({
 					)
 				}
 				selectedIds={packageIds}
+			/>
+
+			{/* Resolved against the current selection, so the counts move as packages
+			    are picked. */}
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(shipmentDisclosures.createEndUser, {
+					selection: { packageCount: packageIds.length },
+				})}
 			/>
 		</CrudFormDialogShell>
 	);

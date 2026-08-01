@@ -12,14 +12,20 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import { supplierOrderRegisterDispatchInputSchema } from "~/schemas/admin/supplier-order.schemas";
 import type {
 	SupplierOrderDetail,
 	SupplierOrderRegisterDispatchFormInput,
 	SupplierOrderRegisterDispatchInput,
 } from "~/shared/common/admin-crud/supplier-order.types";
-import { sumScaled, toScaled } from "./supplier-order-quantity";
+import {
+	type SupplierOrderDispatchDraft,
+	supplierOrderDisclosures,
+} from "./supplier-order.effects";
+import { fromScaled, sumScaled, toScaled } from "./supplier-order-quantity";
 
 type SupplierOrderLotItem =
 	SupplierOrderDetail["lots"][number]["lotItems"][number];
@@ -62,6 +68,35 @@ function defaultValues(supplierOrder?: SupplierOrderDetail): DispatchFormInput {
 			lotItemId: lotItem.id,
 			quantity: lotItem.remainingQuantity,
 		})),
+	};
+}
+
+function dispatchDraft(
+	lotItems: SupplierOrderLotItem[],
+	lines: DispatchFormInput["lines"] | undefined,
+): SupplierOrderDispatchDraft {
+	const cartItems = new Set<number>();
+	let lineCount = 0;
+	let total = 0n;
+
+	lotItems.forEach((lotItem, index) => {
+		const declared = toScaled(lines?.[index]?.quantity ?? "") ?? 0n;
+		// A zero means "not in this dispatch": the server skips the line entirely.
+		if (declared <= 0n) return;
+
+		lineCount += 1;
+		total += declared;
+		for (const allocation of lotItem.demandAllocations) {
+			if ((toScaled(allocation.quantity) ?? 0n) > 0n) {
+				cartItems.add(allocation.cartItem.id);
+			}
+		}
+	});
+
+	return {
+		lineCount,
+		quantity: fromScaled(total),
+		cartItemCount: cartItems.size,
 	};
 }
 
@@ -155,7 +190,7 @@ export function SupplierOrderDispatchDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="Registrar el despacho crea el envío interno y el paquete de entrada consolidado. Un segundo paso confirma la salida."
+			description="Cada línea se despacha por su cantidad; la de abajo viene precargada con lo que queda pendiente."
 			footer={
 				<>
 					<Button
@@ -259,6 +294,16 @@ export function SupplierOrderDispatchDialog({
 					))
 				)}
 			</form>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(
+					supplierOrderDisclosures.registerDispatch,
+					{
+						supplierOrder,
+						dispatch: dispatchDraft(lines, watchedLines),
+					},
+				)}
+			/>
 		</CrudFormDialogShell>
 	);
 }

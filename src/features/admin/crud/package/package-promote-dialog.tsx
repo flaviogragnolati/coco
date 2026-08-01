@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { PackageDetail } from "~/shared/common/admin-crud/package.types";
+import { packageDisclosures } from "./package.effects";
 
 /**
  * Promotion is a confirmation, not a form: the whole package moves to the
@@ -38,7 +41,6 @@ export function PackagePromoteDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="El paquete pasa a la pata de salida y vuelve a estado listo para envío: su “recibido” registraba la llegada de entrada, no la entrega al cliente."
 			footer={
 				<>
 					<Button
@@ -91,16 +93,11 @@ export function PackagePromoteDialog({
 						? `${customer.code} — ${customer.user.name}`
 						: "Sin asignaciones activas"}
 				</p>
-				<h3 className="mt-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Contenido
-				</h3>
-				{liveLines.map((line) => (
-					<span className="text-muted-foreground text-xs" key={line.id}>
-						{line.lotItem.code} · {line.lotItem.product.name} — {line.quantity}{" "}
-						{line.lotItem.product.unit}
-					</span>
-				))}
 			</section>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(packageDisclosures.promote, { pkg })}
+			/>
 		</CrudFormDialogShell>
 	);
 }

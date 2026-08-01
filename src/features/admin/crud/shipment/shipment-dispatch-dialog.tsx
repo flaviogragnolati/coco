@@ -1,8 +1,11 @@
 "use client";
 
 import { Button } from "~/components/ui/button";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { ShipmentDetail } from "~/shared/common/admin-crud/shipment.types";
+import { shipmentDisclosures } from "./shipment.effects";
 
 /**
  * Confirming departure takes no input — it is the second half of the two-step
@@ -25,7 +28,6 @@ export function ShipmentDispatchDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="El envío pasa a en tránsito y sus paquetes con él. La demanda afectada empieza a leerse como en traslado interno."
 			footer={
 				<>
 					<Button
@@ -49,23 +51,11 @@ export function ShipmentDispatchDialog({
 			open={open}
 			title={`Despachar ${shipment?.internalCode ?? "envío"}`}
 		>
-			<section className="flex flex-col gap-2 rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Paquetes que salen
-				</h3>
-				{packages.length === 0 ? (
-					<p className="text-muted-foreground text-xs">Sin paquetes.</p>
-				) : (
-					packages.map((pkg) => (
-						<div className="flex justify-between gap-2 text-xs" key={pkg.id}>
-							<span className="font-medium">{pkg.name}</span>
-							<span className="text-muted-foreground">
-								{pkg.lineCount} líneas · {pkg.lineQuantity}
-							</span>
-						</div>
-					))
-				)}
-			</section>
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(shipmentDisclosures.dispatch, {
+					shipment,
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

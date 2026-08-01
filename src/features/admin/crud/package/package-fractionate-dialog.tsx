@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import {
+	fromScaled,
 	sumScaled,
 	toScaled,
 } from "~/features/admin/crud/supplier-order/supplier-order-quantity";
@@ -16,6 +19,7 @@ import type {
 } from "~/shared/common/admin-crud/package.types";
 import { api } from "~/trpc/react";
 import { InboundPackagePicker } from "./inbound-package-picker";
+import { packageDisclosures } from "./package.effects";
 
 export function PackageFractionateDialog({
 	open,
@@ -96,9 +100,22 @@ export function PackageFractionateDialog({
 			(quantities[row.packagedAllocationId] ?? "") === row.fractionableQuantity,
 	);
 
+	// The disclosure counts what the operator has actually left in the boxes: a row
+	// zeroed out takes its customer, its line and its quantity out of the pass.
+	const taken = rows.filter(
+		(row) => (toScaled(quantities[row.packagedAllocationId] ?? "") ?? 0n) > 0n,
+	);
+	const fractionate = {
+		customerCount: new Set(taken.map((row) => row.cartId)).size,
+		lineCount: new Set(taken.map((row) => `${row.cartId}:${row.lotItemId}`))
+			.size,
+		quantity: fromScaled(total),
+		cartItemCount: new Set(taken.map((row) => row.cartItemCode)).size,
+	};
+
 	return (
 		<CrudFormDialogShell
-			description="Cada cliente recibe un paquete de salida propio. El paquete de entrada no se toca: queda como la evidencia de que la mercadería llegó."
+			description="Cada cliente recibe un paquete de salida propio, con lo que se le fraccione de la selección."
 			footer={
 				<>
 					<Button
@@ -227,6 +244,13 @@ export function PackageFractionateDialog({
 					Alguna cantidad supera lo disponible.
 				</p>
 			) : null}
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(packageDisclosures.fractionate, {
+					pkg,
+					fractionate,
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

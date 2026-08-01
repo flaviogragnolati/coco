@@ -24,6 +24,7 @@ import type {
 	packageStatsSchema,
 	packageStatusSchema,
 	packageWriteOffInputSchema,
+	packageWriteOffOutputSchema,
 } from "~/schemas/admin/package.schemas";
 
 export type PackageStatus = z.output<typeof packageStatusSchema>;
@@ -40,6 +41,9 @@ export type PackageDetail = z.output<typeof packageDetailSchema>;
 export type PackageStats = z.output<typeof packageStatsSchema>;
 export type PackageGetByIdInput = z.output<typeof packageGetByIdInputSchema>;
 export type PackageWriteOffInput = z.output<typeof packageWriteOffInputSchema>;
+export type PackageWriteOffOutput = z.output<
+	typeof packageWriteOffOutputSchema
+>;
 /** Pre-transform shape the write-off form binds to. */
 export type PackageWriteOffFormInput = z.input<
 	typeof packageWriteOffInputSchema

@@ -1,6 +1,14 @@
 import { expect, test } from "vitest";
 import { domainEventSchema } from "~/schemas/domain-events.schemas";
-import type { DomainEventInput } from "~/shared/common/domain-events.types";
+import type {
+	DomainEventInput,
+	DomainEventType,
+} from "~/shared/common/domain-events.types";
+import {
+	COMMAND_EVENT_TYPES,
+	type LifecycleCommandId,
+	lifecycleCommandIds,
+} from "~/shared/common/fulfillment-command-events";
 import {
 	buildExceptionEvents,
 	buildExceptionResolvedEvents,
@@ -15,12 +23,25 @@ import {
 	buildWriteOffResolvedEvents,
 	buildWriteOffRollOverEvents,
 } from "./fulfillment-event-builders";
+import {
+	buildOperationCompensatedEvents,
+	buildOperationExecutionEvents,
+	buildRollOverResolvedEvent,
+} from "./operation-event-builders";
 import type {
+	AdminOperationChangeSet,
 	AdminOperationsEffectContext,
 	AdminPackageChangeSet,
 	AdminPackagedLineChange,
+	AdminRollOverChangeSet,
 	AdminShipmentChangeSet,
+	AdminSupplierOrderChangeSet,
 } from "./operations-effects.types";
+import {
+	buildConfirmedEvents,
+	buildRequestedEvents,
+	buildSupplierOrderRollOverEvents,
+} from "./supplier-order-event-builders";
 
 const ctx: AdminOperationsEffectContext = {
 	// The builders are pure — they read only the actor, never the client.
@@ -87,6 +108,196 @@ const fractionationChangeSet: AdminPackageChangeSet = {
 	packageName: "Fraccionamiento — Ada",
 	packagedLines: [{ ...line, packageId: 8, packageLotItemId: 80 }],
 };
+
+const supplierOrderChangeSet: AdminSupplierOrderChangeSet = {
+	supplierOrderId: 3,
+	supplierOrderCode: "SO-1",
+	operationId: 2,
+	requestedLines: [
+		{
+			lotId: 20,
+			lotItemId: 700,
+			allocations: [
+				{ cartItemId: 1, cartId: 11, quantity: "6" },
+				{ cartItemId: 2, cartId: 12, quantity: "4" },
+			],
+		},
+	],
+	// One line survives a cut and one is refused outright, so a confirmation
+	// produces both facts it can produce.
+	confirmedLines: [
+		{
+			lotId: 20,
+			lotItemId: 700,
+			allocations: [{ cartItemId: 1, cartId: 11, quantity: "5" }],
+		},
+	],
+	createdRollOvers: [
+		{
+			rollOverId: 91,
+			operationId: 2,
+			cartItemId: 1,
+			cartId: 11,
+			quantity: "1",
+			reason: "Confirmacion parcial del proveedor",
+		},
+		{
+			rollOverId: 92,
+			operationId: 2,
+			cartItemId: 2,
+			cartId: 12,
+			quantity: "4",
+			reason: "Linea no confirmada por el proveedor",
+		},
+	],
+};
+
+const operationChangeSet: AdminOperationChangeSet = {
+	operationId: 2,
+	operationCode: "OP-1",
+	reason: "Compensacion administrativa",
+	excludedCartItems: [
+		{ cartItemId: 1, cartId: 11, quantity: "6" },
+		{ cartItemId: 2, cartId: 12, quantity: "4" },
+	],
+};
+
+const rollOverChangeSet: AdminRollOverChangeSet = {
+	rollOverId: 90,
+	operationId: 2,
+	cartItemId: 1,
+	cartId: 11,
+	quantity: "2",
+	reason: "Resuelto con el cliente",
+};
+
+const executionInput = {
+	operationId: 2,
+	actor: { id: "admin-1", name: "Ada", role: "admin" as const },
+	demandItems: [
+		{
+			sourceKey: "orderItem:1",
+			cartItemId: 1,
+			cartId: 11,
+			cartCode: "CART-1",
+			quantity: "6",
+		},
+		{
+			sourceKey: "rollOver:90",
+			sourceRollOverId: 90,
+			cartItemId: 2,
+			cartId: 12,
+			cartCode: "CART-2",
+			quantity: "4",
+		},
+	],
+	allocations: [
+		{ cartItemId: 1, cartId: 11, lotId: 20, lotItemId: 700, quantity: "6" },
+	],
+	rollOvers: [{ id: 93, cartItemId: 2, cartId: 12, quantity: "1" }],
+};
+
+/**
+ * Every builder a command runs, driven by fixtures that exercise each branch: a
+ * confirmation with one cut and one refused line, a delivery in each mode, a
+ * receipt that also clears a delay. The declared entry must equal the set of
+ * types these produce — no more (the command would be lying to the customer) and
+ * no less (the disclosure would omit a fact).
+ */
+const eventsByCommand: Partial<
+	Record<LifecycleCommandId, () => DomainEventInput[]>
+> = {
+	"operation.execute": () => buildOperationExecutionEvents(executionInput),
+	"operation.cancel": () =>
+		buildOperationCompensatedEvents(ctx, operationChangeSet),
+	"operation.rerun": () => [
+		...buildOperationCompensatedEvents(ctx, operationChangeSet),
+		...buildOperationExecutionEvents(executionInput),
+	],
+	"rollOver.resolve": () => [
+		buildRollOverResolvedEvent(ctx, rollOverChangeSet),
+	],
+	"supplierOrder.request": () =>
+		buildRequestedEvents(ctx, supplierOrderChangeSet),
+	"supplierOrder.confirm": () => [
+		...buildConfirmedEvents(ctx, supplierOrderChangeSet),
+		...buildSupplierOrderRollOverEvents(ctx, supplierOrderChangeSet),
+	],
+	"supplierOrder.registerDispatch": () =>
+		buildShipmentPackagedEvents(ctx, shipmentChangeSet),
+	"supplierOrder.cancel": () =>
+		buildSupplierOrderRollOverEvents(ctx, supplierOrderChangeSet),
+	"supplierOrder.cancelLine": () =>
+		buildSupplierOrderRollOverEvents(ctx, supplierOrderChangeSet),
+	"shipment.dispatch": () => [
+		...buildMovementEvents(ctx, shipmentChangeSet, "dispatched", "internal"),
+		...buildMovementEvents(ctx, shipmentChangeSet, "dispatched", "endUser"),
+	],
+	"shipment.receive": () => [
+		...buildMovementEvents(ctx, shipmentChangeSet, "received", "internal"),
+		...buildRollOverEvents(ctx, shipmentChangeSet),
+		...buildExceptionResolvedEvents(ctx, shipmentChangeSet, "receipt"),
+	],
+	"shipment.deliver": () => [
+		...buildMovementEvents(ctx, shipmentChangeSet, "received", "endUser"),
+		...buildPickupArrivalEvents(ctx, shipmentChangeSet),
+		...buildExceptionResolvedEvents(ctx, shipmentChangeSet, "receipt"),
+	],
+	"shipment.markDelayed": () =>
+		buildExceptionEvents(ctx, {
+			...shipmentChangeSet,
+			exceptionStatus: "delayed",
+		}),
+	"shipment.markFailed": () =>
+		buildExceptionEvents(ctx, {
+			...shipmentChangeSet,
+			exceptionStatus: "failed",
+		}),
+	"shipment.retry": () =>
+		buildExceptionResolvedEvents(ctx, shipmentChangeSet, "retry"),
+	"package.fractionate": () =>
+		buildFractionationEvents(ctx, fractionationChangeSet),
+	"package.writeOff": () => [
+		...buildWriteOffRollOverEvents(ctx, packageChangeSet),
+		...buildWriteOffResolvedEvents(ctx, packageChangeSet),
+	],
+	"package.confirmDelivery": () => [
+		...buildPackageDeliveryEvents(ctx, collectedChangeSet),
+		...buildPackageRecoveredEvents(ctx, collectedChangeSet),
+	],
+	"package.recover": () => buildPackageRecoveredEvents(ctx, packageChangeSet),
+	"package.markDelayed": () =>
+		buildPackageExceptionEvents(ctx, {
+			...packageChangeSet,
+			exceptionStatus: "delayed",
+		}),
+	"package.markFailed": () =>
+		buildPackageExceptionEvents(ctx, {
+			...packageChangeSet,
+			exceptionStatus: "failed",
+		}),
+};
+
+test.each(
+	lifecycleCommandIds,
+)("%s publishes exactly the event types it declares", (command) => {
+	const declared = COMMAND_EVENT_TYPES[command];
+	const build = eventsByCommand[command];
+
+	if (declared.length === 0) {
+		// An empty entry is a claim that nothing is published, so it must not have
+		// a builder at all — a builder returning `[]` would prove nothing.
+		expect(build).toBeUndefined();
+		return;
+	}
+
+	if (!build) throw new Error(`No fixture drives ${command}`);
+
+	const produced = new Set<DomainEventType>(
+		build().map((event) => event.type as DomainEventType),
+	);
+	expect(Array.from(produced).sort()).toEqual([...declared].sort());
+});
 
 /** Every event this phase can publish, from every builder, in one list. */
 function allEvents(): DomainEventInput[] {

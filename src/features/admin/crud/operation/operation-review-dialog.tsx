@@ -20,12 +20,18 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
 import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import { useDebouncedValue } from "~/features/admin/crud/_lib/use-debounced-value";
+import {
+	type OperationExecutePreview,
+	operationDisclosures,
+} from "~/features/admin/crud/operation/operation.effects";
 import {
 	fromScaled,
 	sumScaled,
@@ -126,6 +132,28 @@ function previewFromRows(rows: OperationReviewRow[], omitted: Set<string>) {
 			),
 			lotCount: groups.length,
 		},
+	};
+}
+
+/**
+ * The execute disclosure counts from the plan the review is showing, not from the
+ * draft: a draft holds no lots yet, and these are the same rows the command will
+ * run on (ADR 0006).
+ */
+function executePreview(
+	preview: ReturnType<typeof previewFromRows>,
+): OperationExecutePreview {
+	return {
+		lotCount: preview.totals.lotCount,
+		lotItemCount: preview.groups.reduce(
+			(total, group) => total + group.lotItemCount,
+			0,
+		),
+		eligibleItemCount: preview.totals.eligibleItemCount,
+		assignedItemCount: preview.totals.assignedItemCount,
+		assignedQuantity: preview.totals.assignedQuantity,
+		rollOverItemCount: preview.totals.rollOverItemCount,
+		rollOverQuantity: preview.totals.rollOverQuantity,
 	};
 }
 
@@ -251,7 +279,11 @@ export function OperationReviewDialog({
 
 	const executeMutation = api.admin.operation.execute.useMutation({
 		onSuccess: async (operation) => {
-			toast.success("Operación ejecutada");
+			// The returned detail carries the real counters, so the report is the
+			// execution's own numbers rather than the preview's.
+			toast.success("Operación ejecutada", {
+				description: `${operation.lotCount} lote(s) · ${operation.supplierOrderCount} orden(es) · asignada ${operation.assignedQuantity} · rollover ${operation.rollOverQuantity}`,
+			});
 			onExecuted(operation.id);
 			onOpenChange(false);
 		},
@@ -438,6 +470,15 @@ export function OperationReviewDialog({
 				</div>
 
 				<Totals totals={preview.totals} />
+
+				{/* The preview above shows the *data* the execution would group; this
+				    shows the *effects* running it would have. */}
+				<CrudEffectsPanel
+					disclosure={resolveDisclosure(operationDisclosures.execute, {
+						operation: data.operation,
+						preview: executePreview(preview),
+					})}
+				/>
 
 				<div className="rounded-md border p-3">
 					<p className="mb-2 font-medium text-sm">

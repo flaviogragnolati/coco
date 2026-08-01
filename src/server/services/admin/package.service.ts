@@ -12,6 +12,7 @@ import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
 import { writeAdminAuditLog } from "~/server/services/admin/_base/admin-audit";
 import { recomputeOperationCounters } from "~/server/services/operations/operation-counters";
+import type { AppliedEffects } from "~/shared/common/admin-crud/applied-effects.types";
 import type {
 	PackageConfirmDeliveryInput,
 	PackageDetail,
@@ -419,7 +420,7 @@ export async function writeOff(
 	input: PackageWriteOffInput,
 	actor: AdminMutationActor,
 	database: AdminDb,
-): Promise<PackageDetail> {
+): Promise<{ detail: PackageDetail; applied: AppliedEffects }> {
 	const result = await runSerializable(database, async (tx) => {
 		const record = await findPackageForCommand(tx, input.id);
 		if (!record) throwNotFound("Paquete");
@@ -553,7 +554,28 @@ export async function writeOff(
 			},
 		});
 
-		return after;
+		// Built from the plans the write-off just ran, not from a re-read: the same
+		// values the audit metadata receives, so the two agree by construction.
+		return {
+			detail: after,
+			applied: [
+				{
+					code: "writtenOffQuantity",
+					count: null,
+					quantity: sumDecimals(plans.map((plan) => plan.quantity)).toString(),
+				},
+				{
+					code: "rollOversCreated",
+					count: createdRollOvers.length,
+					quantity: null,
+				},
+				{
+					code: "cartItemsAffected",
+					count: new Set(rollOverRows.map((row) => row.cartItemId)).size,
+					quantity: null,
+				},
+			],
+		};
 	});
 
 	await DomainEventDispatcher.wake();
@@ -889,7 +911,25 @@ export async function fractionate(
 			},
 		});
 
-		return { createdPackageIds, sourcePackageIds: sourceIds };
+		return {
+			createdPackageIds,
+			sourcePackageIds: sourceIds,
+			applied: [
+				{
+					code: "packagesCreated",
+					count: createdPackageIds.length,
+					quantity: null,
+				},
+				{ code: "customersServed", count: groups.length, quantity: null },
+				{
+					code: "fractionatedQuantity",
+					count: null,
+					quantity: sumDecimals(
+						groups.flatMap((group) => group.lines.map((line) => line.quantity)),
+					).toString(),
+				},
+			],
+		};
 	});
 
 	await DomainEventDispatcher.wake();
@@ -1198,7 +1238,22 @@ export async function split(
 			},
 		});
 
-		return { sourcePackageId: record.id, createdPackageIds };
+		return {
+			sourcePackageId: record.id,
+			createdPackageIds,
+			applied: [
+				{
+					code: "packagesCreated",
+					count: createdPackageIds.length,
+					quantity: null,
+				},
+				{
+					code: "movedQuantity",
+					count: null,
+					quantity: sumDecimals(Array.from(movedByLineId.values())).toString(),
+				},
+			],
+		};
 	});
 
 	await DomainEventDispatcher.wake();

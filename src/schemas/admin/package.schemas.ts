@@ -6,6 +6,7 @@ import {
 	requiredText,
 	sortDirectionSchema,
 } from "~/schemas/admin/_crud-schema-helpers";
+import { appliedEffectsSchema } from "~/schemas/admin/applied-effects.schemas";
 import {
 	diagnosticStateSchema,
 	highestDiagnosticSeveritySchema,
@@ -347,11 +348,22 @@ export const packageRecoverInputSchema = z.object({
 export const packageFractionateOutputSchema = z.object({
 	createdPackageIds: z.array(packageIdSchema),
 	sourcePackageIds: z.array(packageIdSchema),
+	applied: appliedEffectsSchema,
 });
 
 export const packageSplitOutputSchema = z.object({
 	sourcePackageId: packageIdSchema,
 	createdPackageIds: z.array(packageIdSchema),
+	applied: appliedEffectsSchema,
+});
+
+/**
+ * A write-off is decided by the quantities the operator declares, so it reports
+ * what it actually absorbed alongside the detail (CONTEXT.md, "Applied effects").
+ */
+export const packageWriteOffOutputSchema = z.object({
+	detail: packageDetailSchema,
+	applied: appliedEffectsSchema,
 });
 
 export const packageListOutputSchema = z.object({

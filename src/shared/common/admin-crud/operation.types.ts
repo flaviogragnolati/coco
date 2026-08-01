@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import type {
 	operationCancelInputSchema,
+	operationCancelOutputSchema,
 	operationCommandKeySchema,
 	operationCreateFieldsSchema,
 	operationCreateInputSchema,
@@ -56,6 +57,9 @@ export type OperationCreateFormValues = z.output<
 >;
 export type OperationCommandKey = z.output<typeof operationCommandKeySchema>;
 export type OperationCancelInput = z.output<typeof operationCancelInputSchema>;
+export type OperationCancelOutput = z.output<
+	typeof operationCancelOutputSchema
+>;
 export type OperationRerunInput = z.output<typeof operationRerunInputSchema>;
 export type OperationRerunFormValues = z.output<
 	typeof operationCreateFieldsSchema

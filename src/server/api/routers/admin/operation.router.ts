@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
 	operationCancelInputSchema,
+	operationCancelOutputSchema,
 	operationDeleteInputSchema,
 	operationDetailSchema,
 	operationDraftCreateInputSchema,
@@ -105,7 +106,7 @@ export const operationRouter = createTRPCRouter({
 
 	cancel: adminProcedure
 		.input(operationCancelInputSchema)
-		.output(operationDetailSchema)
+		.output(operationCancelOutputSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
 				return await operationService.cancel(

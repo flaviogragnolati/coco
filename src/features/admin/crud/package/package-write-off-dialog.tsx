@@ -13,8 +13,11 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import {
+	fromScaled,
 	sumScaled,
 	toScaled,
 } from "~/features/admin/crud/supplier-order/supplier-order-quantity";
@@ -24,6 +27,10 @@ import type {
 	PackageWriteOffFormInput,
 	PackageWriteOffInput,
 } from "~/shared/common/admin-crud/package.types";
+import {
+	type PackageWriteOffDraft,
+	packageDisclosures,
+} from "./package.effects";
 
 type PackageLine = PackageDetail["packageLines"][number];
 
@@ -49,6 +56,41 @@ function defaultValues(pkg?: PackageDetail): WriteOffFormInput {
 			quantity: line.quantity,
 		})),
 		reason: "",
+	};
+}
+
+function writeOffDraft(
+	lines: PackageLine[],
+	declared: WriteOffFormInput["lines"] | undefined,
+): PackageWriteOffDraft {
+	const cartItems = new Set<number>();
+	let lineCount = 0;
+	let total = 0n;
+	let survivors = 0;
+
+	lines.forEach((line, index) => {
+		const available = toScaled(line.quantity) ?? 0n;
+		const quantity = toScaled(declared?.[index]?.quantity ?? "") ?? 0n;
+		if (quantity <= 0n || quantity > available) {
+			survivors += 1;
+			return;
+		}
+
+		total += quantity;
+		// Only a line emptied by the write-off is cancelled; a partial one survives.
+		if (quantity === available) lineCount += 1;
+		else survivors += 1;
+
+		for (const allocation of line.packageAllocations) {
+			cartItems.add(allocation.demandAllocation.cartItem.id);
+		}
+	});
+
+	return {
+		lineCount,
+		quantity: fromScaled(total),
+		cartItemCount: cartItems.size,
+		emptiesPackage: lines.length > 0 && survivors === 0,
 	};
 }
 
@@ -151,7 +193,7 @@ export function PackageWriteOffDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="La cantidad dada de baja sale del paquete y vuelve a rollover para la demanda que la absorbe. Es el cierre de un paquete demorado o fallido."
+			description="Cada línea se da de baja por su cantidad; la de abajo viene precargada con todo lo que el paquete lleva."
 			footer={
 				<>
 					<Button
@@ -207,6 +249,13 @@ export function PackageWriteOffDialog({
 					))
 				)}
 			</form>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(packageDisclosures.writeOff, {
+					pkg,
+					writeOff: writeOffDraft(lines, watchedLines),
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

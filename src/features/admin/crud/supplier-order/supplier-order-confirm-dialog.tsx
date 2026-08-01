@@ -17,13 +17,19 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import { supplierOrderConfirmInputSchema } from "~/schemas/admin/supplier-order.schemas";
 import type {
 	SupplierOrderConfirmFormInput,
 	SupplierOrderConfirmInput,
 	SupplierOrderDetail,
 } from "~/shared/common/admin-crud/supplier-order.types";
+import {
+	type SupplierOrderConfirmDraft,
+	supplierOrderDisclosures,
+} from "./supplier-order.effects";
 import {
 	fromScaled,
 	previewLifoAbsorption,
@@ -56,6 +62,80 @@ function defaultValues(supplierOrder?: SupplierOrderDetail): ConfirmFormInput {
 			lotItemId: lotItem.id,
 			confirmedQuantity: lotItem.quantity,
 		})),
+	};
+}
+
+/**
+ * The disclosure's counts, from the same numbers the operator is typing. The cut
+ * split mirrors the server: the manual overrides when they are on, the LIFO walk
+ * otherwise — `previewLifoAbsorption` is the client mirror of `planCutAbsorption`.
+ */
+function confirmDraft(
+	lotItems: SupplierOrderLotItem[],
+	lines: ConfirmFormInput["lines"] | undefined,
+): SupplierOrderConfirmDraft {
+	const cutCartItems = new Set<number>();
+	const confirmedCartItems = new Set<number>();
+	let linesConfirmed = 0;
+	let linesCancelled = 0;
+	let cutTotal = 0n;
+
+	lotItems.forEach((lotItem, index) => {
+		const line = lines?.[index];
+		const requested = toScaled(lotItem.quantity) ?? 0n;
+		const confirmed = toScaled(line?.confirmedQuantity ?? "");
+		if (confirmed === null || confirmed > requested) return;
+
+		const cut = requested - confirmed;
+		const removedByAllocationId = new Map<number, bigint>();
+
+		if (cut > 0n) {
+			cutTotal += cut;
+			const entries =
+				line?.overrides ??
+				previewLifoAbsorption(
+					lotItem.demandAllocations.map((allocation) => ({
+						id: allocation.id,
+						quantity: allocation.quantity,
+					})),
+					cut,
+				).map((entry) => ({
+					allocationId: entry.allocationId,
+					removedQuantity: entry.removedQuantity,
+				}));
+
+			for (const entry of entries) {
+				removedByAllocationId.set(
+					entry.allocationId,
+					toScaled(entry.removedQuantity ?? "") ?? 0n,
+				);
+			}
+		}
+
+		if (confirmed === 0n) {
+			linesCancelled += 1;
+		} else {
+			linesConfirmed += 1;
+		}
+
+		for (const allocation of lotItem.demandAllocations) {
+			const removed = removedByAllocationId.get(allocation.id) ?? 0n;
+			if (removed > 0n) cutCartItems.add(allocation.cartItem.id);
+
+			const remaining = (toScaled(allocation.quantity) ?? 0n) - removed;
+			// A fully cut allocation gets its roll over notice instead of a confirmation.
+			if (confirmed > 0n && remaining > 0n) {
+				confirmedCartItems.add(allocation.cartItem.id);
+			}
+		}
+	});
+
+	return {
+		linesConfirmed,
+		linesCancelled,
+		cutQuantity: fromScaled(cutTotal),
+		cutCartItemCount: cutCartItems.size,
+		confirmedCartItemCount: confirmedCartItems.size,
 	};
 }
 
@@ -288,7 +368,7 @@ export function SupplierOrderConfirmDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="Cada línea se confirma por su cantidad. Lo que el proveedor no confirma se convierte en rollover para la demanda que lo absorbe."
+			description="Cada línea se confirma por su cantidad; la de abajo viene precargada con lo solicitado."
 			footer={
 				<>
 					<Button
@@ -352,6 +432,13 @@ export function SupplierOrderConfirmDialog({
 					))
 				)}
 			</form>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(supplierOrderDisclosures.confirm, {
+					supplierOrder,
+					confirm: confirmDraft(lines, watchedLines),
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

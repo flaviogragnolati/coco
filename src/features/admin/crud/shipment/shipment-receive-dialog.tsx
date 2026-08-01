@@ -15,7 +15,9 @@ import {
 import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import {
 	fromScaled,
 	toScaled,
@@ -26,6 +28,10 @@ import type {
 	ShipmentReceiveFormInput,
 	ShipmentReceiveInput,
 } from "~/shared/common/admin-crud/shipment.types";
+import {
+	type ShipmentReceiveDraft,
+	shipmentDisclosures,
+} from "./shipment.effects";
 
 type ShipmentPackage = ShipmentDetail["packages"][number];
 type ShipmentPackageLine = ShipmentPackage["lines"][number];
@@ -62,6 +68,37 @@ function defaultValues(shipment?: ShipmentDetail): ReceiveFormInput {
 		})),
 		final: false,
 		finalReason: undefined,
+	};
+}
+
+function receiveDraft(
+	lines: Array<{ pkg: ShipmentPackage; line: ShipmentPackageLine }>,
+	declared: ReceiveFormInput["lines"] | undefined,
+	final: boolean,
+): ShipmentReceiveDraft {
+	const shortfallCartItems = new Set<number>();
+	let lineCount = 0;
+	let shortfall = 0n;
+
+	lines.forEach(({ line }, index) => {
+		const dispatched = toScaled(line.quantity) ?? 0n;
+		const received = toScaled(declared?.[index]?.receivedQuantity ?? "");
+		if (received === null || received > dispatched) return;
+
+		if (received > 0n) lineCount += 1;
+		if (received === dispatched) return;
+
+		shortfall += dispatched - received;
+		for (const allocation of line.allocations) {
+			shortfallCartItems.add(allocation.cartItemId);
+		}
+	});
+
+	return {
+		lineCount,
+		shortfallQuantity: fromScaled(shortfall),
+		shortfallCartItemCount: shortfallCartItems.size,
+		final,
 	};
 }
 
@@ -185,7 +222,7 @@ export function ShipmentReceiveDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="Cada línea se recibe por su cantidad. Lo que falta se convierte en rollover para la demanda que lo absorbe."
+			description="Cada línea se recibe por su cantidad; la de abajo viene precargada con lo despachado."
 			footer={
 				<>
 					<Button
@@ -269,6 +306,13 @@ export function ShipmentReceiveDialog({
 					) : null}
 				</FieldGroup>
 			</form>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(shipmentDisclosures.receive, {
+					shipment,
+					receive: receiveDraft(lines, watchedLines, final),
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

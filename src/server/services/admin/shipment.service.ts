@@ -11,6 +11,7 @@ import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
 import { writeAdminAuditLog } from "~/server/services/admin/_base/admin-audit";
 import { recomputeOperationCounters } from "~/server/services/operations/operation-counters";
+import type { AppliedEffects } from "~/shared/common/admin-crud/applied-effects.types";
 import type {
 	PackageLotItemStatus,
 	PackageStatus,
@@ -551,7 +552,7 @@ export async function receive(
 	input: ShipmentReceiveInput,
 	actor: AdminMutationActor,
 	database: AdminDb,
-): Promise<ShipmentDetail> {
+): Promise<{ detail: ShipmentDetail; applied: AppliedEffects }> {
 	const result = await runSerializable(database, async (tx) => {
 		const record = await findShipmentForReceipt(tx, input.id);
 		if (!record) throwNotFound("Envio");
@@ -741,7 +742,33 @@ export async function receive(
 			},
 		});
 
-		return after;
+		// Built from the plans the receipt just ran, not from a re-read: the same
+		// values the audit metadata receives, so the two agree by construction.
+		return {
+			detail: after,
+			applied: [
+				{
+					code: "linesReceived",
+					count: plans.filter((plan) => !plan.receivedQuantity.isZero()).length,
+					quantity: null,
+				},
+				{
+					code: "shortfallQuantity",
+					count: null,
+					quantity: sumDecimals(plans.map((plan) => plan.shortfall)).toString(),
+				},
+				{
+					code: "rollOversCreated",
+					count: createdRollOvers.length,
+					quantity: null,
+				},
+				{
+					code: "cartItemsAffected",
+					count: new Set(rollOverRows.map((row) => row.cartItemId)).size,
+					quantity: null,
+				},
+			],
+		};
 	});
 
 	await DomainEventDispatcher.wake();

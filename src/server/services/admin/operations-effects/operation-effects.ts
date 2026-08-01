@@ -1,5 +1,5 @@
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
-import type { DomainEventInput } from "~/shared/common/domain-events.types";
+import { buildOperationCompensatedEvents } from "./operation-event-builders";
 import type {
 	AdminOperationChangeSet,
 	AdminOperationEffectHandler,
@@ -30,38 +30,12 @@ function skippedSummary(
 	return [{ handler: HANDLER, action, status: "skipped", message }];
 }
 
-function adminActor(ctx: AdminOperationsEffectContext) {
-	return {
-		source: "admin" as const,
-		actorId: ctx.actor.id,
-		actorReference: ctx.actor.name,
-	};
-}
-
 export class OperationEffects implements AdminOperationEffectHandler {
 	async onOperationCompensated(
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminOperationChangeSet,
 	) {
-		// An operation leaves `completed` only once, so (operation, cart item) is a
-		// stable key — the status guard makes a second compensation impossible.
-		const events: DomainEventInput[] = changeSet.excludedCartItems.map(
-			(entry) => ({
-				type: "operation.cartItem.excluded",
-				eventKey: `operation:${changeSet.operationId}:cartItem:${entry.cartItemId}:excluded`,
-				aggregateType: "CartItem",
-				aggregateId: String(entry.cartItemId),
-				actor: adminActor(ctx),
-				payload: {
-					operationId: String(changeSet.operationId),
-					cartItemId: String(entry.cartItemId),
-					cartId: String(entry.cartId),
-					quantity: entry.quantity,
-					reason: changeSet.reason,
-					metadata: { operationCode: changeSet.operationCode },
-				},
-			}),
-		);
+		const events = buildOperationCompensatedEvents(ctx, changeSet);
 
 		if (events.length === 0) {
 			return skippedSummary(

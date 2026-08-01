@@ -10,6 +10,7 @@ import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import type { AdminMutationActor } from "~/server/services/admin/_base/admin-audit";
 import { writeAdminAuditLog } from "~/server/services/admin/_base/admin-audit";
 import { recomputeOperationCounters } from "~/server/services/operations/operation-counters";
+import type { AppliedEffects } from "~/shared/common/admin-crud/applied-effects.types";
 import type {
 	SupplierOrderCancelInput,
 	SupplierOrderCancelLineInput,
@@ -576,7 +577,7 @@ export async function confirm(
 	input: SupplierOrderConfirmInput,
 	actor: AdminMutationActor,
 	database: AdminDb,
-): Promise<SupplierOrderDetail> {
+): Promise<{ detail: SupplierOrderDetail; applied: AppliedEffects }> {
 	const result = await runSerializable(database, async (tx) => {
 		const record = await loadForCommand(tx, input.id);
 		assertLegal(
@@ -764,7 +765,35 @@ export async function confirm(
 			},
 		});
 
-		return after;
+		// Built from the plan the command just ran, not from a re-read: the same
+		// values the audit metadata receives, so the two agree by construction.
+		return {
+			detail: after,
+			applied: [
+				{
+					code: "linesConfirmed",
+					count: plans.filter((plan) => !plan.cancelled).length,
+					quantity: null,
+				},
+				{
+					code: "linesCancelled",
+					count: plans.filter((plan) => plan.cancelled).length,
+					quantity: null,
+				},
+				{
+					code: "rollOverQuantity",
+					count: null,
+					quantity: sumDecimals(
+						rollOverRows.map((row) => row.quantity),
+					).toString(),
+				},
+				{
+					code: "cartItemsCut",
+					count: new Set(rollOverRows.map((row) => row.cartItemId)).size,
+					quantity: null,
+				},
+			],
+		};
 	});
 
 	await DomainEventDispatcher.wake();
@@ -833,7 +862,7 @@ export async function registerDispatch(
 	input: SupplierOrderRegisterDispatchInput,
 	actor: AdminMutationActor,
 	database: AdminDb,
-): Promise<SupplierOrderDetail> {
+): Promise<{ detail: SupplierOrderDetail; applied: AppliedEffects }> {
 	const result = await runSerializable(database, async (tx) => {
 		const record = await loadForCommand(tx, input.id);
 
@@ -1014,7 +1043,19 @@ export async function registerDispatch(
 			},
 		});
 
-		return after;
+		return {
+			detail: after,
+			applied: [
+				{ code: "shipmentsCreated", count: 1, quantity: null },
+				{ code: "packagesCreated", count: 1, quantity: null },
+				{ code: "linesPackaged", count: plans.length, quantity: null },
+				{
+					code: "dispatchedQuantity",
+					count: null,
+					quantity: sumDecimals(plans.map((plan) => plan.quantity)).toString(),
+				},
+			],
+		};
 	});
 
 	await DomainEventDispatcher.wake();

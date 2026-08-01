@@ -18,7 +18,9 @@ import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import { operationCreateInputSchema } from "~/schemas/admin/operation.schemas";
 import type { DestinationListItem } from "~/shared/common/admin-crud/destination.types";
 import type {
@@ -26,17 +28,8 @@ import type {
 	OperationCreateFormValues,
 	OperationDetail,
 } from "~/shared/common/admin-crud/operation.types";
+import { operationDisclosures } from "./operation.effects";
 import { rerunOperationFormValues } from "./operation.mappers";
-
-const rerunNoticeByStatus: Partial<Record<OperationDetail["status"], string>> =
-	{
-		completed:
-			"La operación de origen se compensa primero: sus lotes y órdenes se cancelan y su demanda vuelve a la cola. Todo ocurre en una sola transacción.",
-		failed:
-			"La operación fallida se reejecuta en el lugar con los parámetros de abajo.",
-		cancelled:
-			"Se crea y ejecuta una operación nueva; la cancelada queda como está.",
-	};
 
 export function OperationRerunDialog({
 	open,
@@ -106,12 +99,6 @@ export function OperationRerunDialog({
 			open={open}
 			title={`Reejecutar ${operation?.code ?? "operación"}`}
 		>
-			{operation ? (
-				<p className="text-muted-foreground text-xs">
-					{rerunNoticeByStatus[operation.status]}
-				</p>
-			) : null}
-
 			<form
 				className="flex flex-col gap-5"
 				id="operation-rerun-form"
@@ -215,6 +202,12 @@ export function OperationRerunDialog({
 					<FieldError errors={[errors.notes]} />
 				</Field>
 			</form>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(operationDisclosures.rerun, {
+					operation,
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

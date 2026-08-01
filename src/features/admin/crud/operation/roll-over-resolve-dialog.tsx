@@ -10,8 +10,14 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import {
+	buildAnnouncedToast,
+	resolveDisclosure,
+} from "~/features/admin/crud/_lib/fulfillment-effects";
 import { api } from "~/trpc/react";
+import { rollOverDisclosures } from "./operation.effects";
 
 /**
  * Owns its own mutation so the operation detail dialog stays presentational and
@@ -35,7 +41,12 @@ export function RollOverResolveDialog({
 
 	const resolveMutation = api.admin.rollOver.resolve.useMutation({
 		onSuccess: async () => {
-			toast.success("Rollover resuelto");
+			const { title, description } = buildAnnouncedToast(
+				"Rollover resuelto",
+				rollOverDisclosures.resolve,
+				{ rollOver },
+			);
+			toast.success(title, { description });
 			onOpenChange(false);
 			await Promise.all([
 				utils.admin.operation.invalidate(),
@@ -52,7 +63,6 @@ export function RollOverResolveDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="Resolver registra una decisión sobre la cantidad reprogramada: no mueve dinero ni vuelve a crear demanda."
 			footer={
 				<>
 					<Button
@@ -98,10 +108,15 @@ export function RollOverResolveDialog({
 					/>
 					<FieldDescription>
 						Obligatorio. Queda en la auditoría y en el tracking del item.
-						{rollOver ? ` Cantidad: ${rollOver.quantity}.` : null}
 					</FieldDescription>
 				</Field>
 			</FieldGroup>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(rollOverDisclosures.resolve, {
+					rollOver,
+				})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

@@ -15,6 +15,7 @@ import type {
 	shipmentListItemSchema,
 	shipmentListOutputSchema,
 	shipmentReceiveInputSchema,
+	shipmentReceiveOutputSchema,
 	shipmentRetryInputSchema,
 	shipmentStatsSchema,
 	shipmentStatusSchema,
@@ -35,6 +36,9 @@ export type ShipmentStats = z.output<typeof shipmentStatsSchema>;
 export type ShipmentGetByIdInput = z.output<typeof shipmentGetByIdInputSchema>;
 export type ShipmentIdInput = z.output<typeof shipmentIdInputSchema>;
 export type ShipmentReceiveInput = z.output<typeof shipmentReceiveInputSchema>;
+export type ShipmentReceiveOutput = z.output<
+	typeof shipmentReceiveOutputSchema
+>;
 /** Pre-transform shape the receive form binds to (`final` defaulted). */
 export type ShipmentReceiveFormInput = z.input<
 	typeof shipmentReceiveInputSchema

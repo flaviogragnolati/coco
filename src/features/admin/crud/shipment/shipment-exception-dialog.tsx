@@ -9,8 +9,11 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { ShipmentDetail } from "~/shared/common/admin-crud/shipment.types";
+import { shipmentDisclosures } from "./shipment.effects";
 
 /**
  * Serves both `markDelayed` and `markFailed`: the target switches the copy and
@@ -42,11 +45,6 @@ export function ShipmentExceptionDialog({
 
 	return (
 		<CrudFormDialogShell
-			description={
-				isFailure
-					? "El envío y sus paquetes quedan fallidos. Después hay que reintentar con un envío nuevo o dar de baja los paquetes."
-					: "El envío y sus paquetes quedan demorados. Se puede recibir igual cuando llegue, o escalar a fallido."
-			}
 			footer={
 				<>
 					<Button
@@ -96,28 +94,14 @@ export function ShipmentExceptionDialog({
 				</Field>
 			</FieldGroup>
 
-			<section className="flex flex-col gap-2 rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Demanda que pasa a excepción
-				</h3>
-				{(shipment?.packages ?? []).length === 0 ? (
-					<p className="text-muted-foreground text-xs">Sin paquetes.</p>
-				) : (
-					shipment?.packages.map((pkg) => (
-						<div className="flex flex-col gap-1 text-xs" key={pkg.id}>
-							<span className="font-medium">{pkg.name}</span>
-							{pkg.lines.flatMap((line) =>
-								line.allocations.map((allocation) => (
-									<span className="text-muted-foreground" key={allocation.id}>
-										{allocation.cartItemCode} — {allocation.quantity} —{" "}
-										{allocation.userName}
-									</span>
-								)),
-							)}
-						</div>
-					))
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(
+					isFailure
+						? shipmentDisclosures.markFailed
+						: shipmentDisclosures.markDelayed,
+					{ shipment },
 				)}
-			</section>
+			/>
 		</CrudFormDialogShell>
 	);
 }

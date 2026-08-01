@@ -6,12 +6,14 @@ import type {
 	supplierOrderCancelLineInputSchema,
 	supplierOrderCommandKeySchema,
 	supplierOrderConfirmInputSchema,
+	supplierOrderConfirmOutputSchema,
 	supplierOrderDetailSchema,
 	supplierOrderIdInputSchema,
 	supplierOrderListInputSchema,
 	supplierOrderListItemSchema,
 	supplierOrderListOutputSchema,
 	supplierOrderRegisterDispatchInputSchema,
+	supplierOrderRegisterDispatchOutputSchema,
 	supplierOrderRequestInputSchema,
 	supplierOrderStatsSchema,
 	supplierOrderStatusSchema,
@@ -46,6 +48,9 @@ export type SupplierOrderConfirmInput = z.output<
 export type SupplierOrderConfirmFormInput = z.input<
 	typeof supplierOrderConfirmInputSchema
 >;
+export type SupplierOrderConfirmOutput = z.output<
+	typeof supplierOrderConfirmOutputSchema
+>;
 export type SupplierOrderCancelInput = z.output<
 	typeof supplierOrderCancelInputSchema
 >;
@@ -58,4 +63,7 @@ export type SupplierOrderRegisterDispatchInput = z.output<
 /** Pre-transform shape the dispatch form binds to (`trackingCode` optional). */
 export type SupplierOrderRegisterDispatchFormInput = z.input<
 	typeof supplierOrderRegisterDispatchInputSchema
+>;
+export type SupplierOrderRegisterDispatchOutput = z.output<
+	typeof supplierOrderRegisterDispatchOutputSchema
 >;

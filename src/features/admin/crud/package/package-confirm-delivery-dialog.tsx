@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { PackageDetail } from "~/shared/common/admin-crud/package.types";
+import { packageDisclosures } from "./package.effects";
 
 /**
  * The per-package handover: depot pickup, pickup-point collection, or a delayed
@@ -40,8 +43,8 @@ export function PackageConfirmDeliveryDialog({
 		<CrudFormDialogShell
 			description={
 				pkg?.shipment
-					? "Se registra el retiro de este paquete. El envío no cambia: cada cliente retira por separado."
-					: "Se registra la entrega en depósito. El paquete pasa a recibido sin haber viajado."
+					? "Se registra el retiro de este paquete en el punto."
+					: "Se registra la entrega en depósito: el paquete llega al cliente sin haber viajado."
 			}
 			footer={
 				<>
@@ -79,20 +82,13 @@ export function PackageConfirmDeliveryDialog({
 						? `${customer.code} — ${customer.user.name}`
 						: "Sin asignaciones activas"}
 				</p>
-				<h3 className="mt-2 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Contenido
-				</h3>
-				{liveLines.length === 0 ? (
-					<p className="text-muted-foreground text-xs">Sin líneas activas.</p>
-				) : (
-					liveLines.map((line) => (
-						<span className="text-muted-foreground text-xs" key={line.id}>
-							{line.lotItem.code} · {line.lotItem.product.name} —{" "}
-							{line.quantity} {line.lotItem.product.unit}
-						</span>
-					))
-				)}
 			</section>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(packageDisclosures.confirmDelivery, {
+					pkg,
+				})}
+			/>
 
 			<Field>
 				<FieldLabel htmlFor="package-confirm-delivery-notes">Notas</FieldLabel>

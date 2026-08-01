@@ -9,6 +9,7 @@ import {
 	shipmentListInputSchema,
 	shipmentListOutputSchema,
 	shipmentReceiveInputSchema,
+	shipmentReceiveOutputSchema,
 	shipmentRetryInputSchema,
 	shipmentStatsSchema,
 } from "~/schemas/admin/shipment.schemas";
@@ -55,7 +56,7 @@ export const shipmentRouter = createTRPCRouter({
 
 	receive: adminProcedure
 		.input(shipmentReceiveInputSchema)
-		.output(shipmentDetailSchema)
+		.output(shipmentReceiveOutputSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
 				return await shipmentService.receive(

@@ -27,7 +27,12 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
+import {
+	buildAnnouncedToast,
+	buildAppliedToast,
+} from "~/features/admin/crud/_lib/fulfillment-effects";
 import { useDebouncedValue } from "~/features/admin/crud/_lib/use-debounced-value";
+import { operationDisclosures } from "~/features/admin/crud/operation/operation.effects";
 import {
 	operationStatusOptions,
 	operationStrategyOptions,
@@ -149,7 +154,12 @@ export function OperationsClient({
 	// review, which is the only path to execution (ADR 0006).
 	const createMutation = api.admin.operation.createDraft.useMutation({
 		onSuccess: async (operation) => {
-			toast.success("Borrador creado");
+			const { title, description } = buildAnnouncedToast(
+				"Borrador creado",
+				operationDisclosures.createDraft,
+				{ operation },
+			);
+			toast.success(title, { description });
 			setCreateOpen(false);
 			setReviewOperationId(operation.id);
 			await invalidateOperationQueries();
@@ -164,10 +174,16 @@ export function OperationsClient({
 	};
 
 	const cancelMutation = api.admin.operation.cancel.useMutation({
-		onSuccess: async (operation) => {
-			toast.success("Operación cancelada");
+		// The compensation reports what it actually cancelled and reopened; the
+		// consumed roll overs belong to other operations, so only the server knows.
+		onSuccess: async (result) => {
+			const { title, description } = buildAppliedToast(
+				"Operación cancelada",
+				result.applied,
+			);
+			toast.success(title, { description });
 			setCommand(null);
-			setSelectedOperationId(operation.id);
+			setSelectedOperationId(result.detail.id);
 			await invalidateOperationQueries();
 		},
 		onError: (error) => {
@@ -179,7 +195,9 @@ export function OperationsClient({
 		// `rerun` may return a *different* operation than the one acted on — the
 		// selection follows the result, which is the point of the compound command.
 		onSuccess: async (operation) => {
-			toast.success("Operación reejecutada");
+			toast.success("Operación reejecutada", {
+				description: `${operation.code} · ${operation.lotCount} lote(s) · ${operation.supplierOrderCount} orden(es) · asignada ${operation.assignedQuantity} · rollover ${operation.rollOverQuantity}`,
+			});
 			setCommand(null);
 			setSelectedOperationId(operation.id);
 			await invalidateOperationQueries();
@@ -191,7 +209,9 @@ export function OperationsClient({
 
 	const removeMutation = api.admin.operation.remove.useMutation({
 		onSuccess: async () => {
-			toast.success("Operación eliminada");
+			toast.success("Operación eliminada", {
+				description: "La demanda que agrupaba entra en la próxima operación",
+			});
 			setCommand(null);
 			setSelectedOperationId(null);
 			await invalidateOperationQueries();

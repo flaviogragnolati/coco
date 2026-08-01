@@ -5,6 +5,7 @@ import {
 	requiredText,
 	sortDirectionSchema,
 } from "~/schemas/admin/_crud-schema-helpers";
+import { appliedEffectsSchema } from "~/schemas/admin/applied-effects.schemas";
 import {
 	lotItemStatusSchema,
 	lotStatusSchema,
@@ -164,6 +165,21 @@ export const supplierOrderDetailSchema = supplierOrderListItemSchema.extend({
 	lots: z.array(supplierOrderLotSchema),
 	diagnostics: z.array(operationalDiagnosticSchema),
 	availableActions: z.array(supplierOrderAvailableActionSchema),
+});
+
+/**
+ * `confirm` and `registerDispatch` are the two supplier-loop commands the admin's
+ * own quantities decide, so they report what they actually did alongside the
+ * detail (CONTEXT.md, "Applied effects").
+ */
+export const supplierOrderConfirmOutputSchema = z.object({
+	detail: supplierOrderDetailSchema,
+	applied: appliedEffectsSchema,
+});
+
+export const supplierOrderRegisterDispatchOutputSchema = z.object({
+	detail: supplierOrderDetailSchema,
+	applied: appliedEffectsSchema,
 });
 
 export const supplierOrderListOutputSchema = z.object({

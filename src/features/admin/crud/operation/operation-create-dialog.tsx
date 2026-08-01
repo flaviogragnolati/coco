@@ -18,13 +18,16 @@ import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import { operationCreateInputSchema } from "~/schemas/admin/operation.schemas";
 import type { DestinationListItem } from "~/shared/common/admin-crud/destination.types";
 import type {
 	OperationCreateFormInput,
 	OperationCreateFormValues,
 } from "~/shared/common/admin-crud/operation.types";
+import { operationDisclosures } from "./operation.effects";
 import { defaultOperationCreateFormValues } from "./operation.mappers";
 
 export function OperationCreateDialog({
@@ -193,6 +196,10 @@ export function OperationCreateDialog({
 					<FieldError errors={[errors.notes]} />
 				</Field>
 			</form>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(operationDisclosures.createDraft, {})}
+			/>
 		</CrudFormDialogShell>
 	);
 }

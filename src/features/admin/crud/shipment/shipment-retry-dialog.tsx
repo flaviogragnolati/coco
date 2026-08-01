@@ -12,12 +12,15 @@ import {
 	FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects-panel";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
+import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import { shipmentRetryInputSchema } from "~/schemas/admin/shipment.schemas";
 import type {
 	ShipmentDetail,
 	ShipmentRetryInput,
 } from "~/shared/common/admin-crud/shipment.types";
+import { shipmentDisclosures } from "./shipment.effects";
 
 type RetryFormInput = {
 	id: number;
@@ -65,7 +68,6 @@ export function ShipmentRetryDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="Los paquetes activos se mueven a un envío nuevo conservando su identidad. El envío fallido queda vacío como historia."
 			footer={
 				<>
 					<Button
@@ -136,27 +138,11 @@ export function ShipmentRetryDialog({
 						<FieldDescription>Opcional.</FieldDescription>
 					</Field>
 				</FieldGroup>
-
-				<section className="flex flex-col gap-2 rounded-2xl border p-3">
-					<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-						Paquetes que se reasignan
-					</h3>
-					{packages.length === 0 ? (
-						<p className="text-muted-foreground text-xs">Sin paquetes.</p>
-					) : (
-						packages.map((pkg) => (
-							<div className="flex justify-between gap-2 text-xs" key={pkg.id}>
-								<span className="font-medium">
-									#{pkg.id} {pkg.name}
-								</span>
-								<span className="text-muted-foreground">
-									{pkg.lineCount} líneas · {pkg.lineQuantity}
-								</span>
-							</div>
-						))
-					)}
-				</section>
 			</form>
+
+			<CrudEffectsPanel
+				disclosure={resolveDisclosure(shipmentDisclosures.retry, { shipment })}
+			/>
 		</CrudFormDialogShell>
 	);
 }

@@ -2,11 +2,13 @@ import {
 	supplierOrderCancelInputSchema,
 	supplierOrderCancelLineInputSchema,
 	supplierOrderConfirmInputSchema,
+	supplierOrderConfirmOutputSchema,
 	supplierOrderDetailSchema,
 	supplierOrderIdInputSchema,
 	supplierOrderListInputSchema,
 	supplierOrderListOutputSchema,
 	supplierOrderRegisterDispatchInputSchema,
+	supplierOrderRegisterDispatchOutputSchema,
 	supplierOrderRequestInputSchema,
 	supplierOrderStatsSchema,
 } from "~/schemas/admin/supplier-order.schemas";
@@ -53,7 +55,7 @@ export const supplierOrderRouter = createTRPCRouter({
 
 	confirm: adminProcedure
 		.input(supplierOrderConfirmInputSchema)
-		.output(supplierOrderDetailSchema)
+		.output(supplierOrderConfirmOutputSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
 				return await supplierOrderService.confirm(
@@ -102,7 +104,7 @@ export const supplierOrderRouter = createTRPCRouter({
 	 */
 	registerDispatch: adminProcedure
 		.input(supplierOrderRegisterDispatchInputSchema)
-		.output(supplierOrderDetailSchema)
+		.output(supplierOrderRegisterDispatchOutputSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
 				return await supplierOrderService.registerDispatch(

@@ -6,6 +6,7 @@ import {
 	sortDirectionSchema,
 } from "~/schemas/admin/_crud-schema-helpers";
 import { userIdSchema } from "~/schemas/admin/address.schemas";
+import { appliedEffectsSchema } from "~/schemas/admin/applied-effects.schemas";
 import { destinationIdSchema } from "~/schemas/admin/destination.schemas";
 import {
 	diagnosticStateSchema,
@@ -353,6 +354,16 @@ export const operationDetailSchema = operationListItemSchema.extend({
 	rollOvers: z.array(rollOverDetailSchema),
 	supplierOrders: z.array(supplierOrderSummarySchema),
 	diagnostics: z.array(operationalDiagnosticSchema),
+});
+
+/**
+ * Compensation is decided by what the operation actually holds, so `cancel`
+ * reports what it did alongside the detail rather than leaving the client to
+ * diff two payloads (CONTEXT.md, "Applied effects").
+ */
+export const operationCancelOutputSchema = z.object({
+	detail: operationDetailSchema,
+	applied: appliedEffectsSchema,
 });
 
 export const operationStatsSchema = z.object({
