@@ -1,0 +1,6 @@
+interface:
+  display_name: "Explain"
+  short_description: "Re-explain technical content in clearer project language"
+  default_prompt: "Use $q-code-explain to re-explain the previous technical point in clear project language."
+policy:
+  allow_implicit_invocation: false

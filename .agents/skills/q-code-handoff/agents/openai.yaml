@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Create a self-contained, redacted session handoff"
+  default_prompt: "Use $q-code-handoff to create a self-contained handoff for the next session."

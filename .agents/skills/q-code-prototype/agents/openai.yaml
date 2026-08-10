@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prototype"
+  short_description: "Build a throwaway prototype to answer a design question"
+  default_prompt: "Use $q-code-prototype to build a disposable prototype that answers this design question."

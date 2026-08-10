@@ -1,0 +1,4 @@
+interface:
+  display_name: "Domain and Data Modeling"
+  short_description: "Define canonical domain semantics and supporting ERDs"
+  default_prompt: "Use $q-plan-domain-model to define the canonical domain model, data dictionary, and supporting ERD."

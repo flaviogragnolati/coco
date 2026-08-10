@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Code Comments"
+  short_description: "Audit comments and docstrings without behavior changes"
+  default_prompt: "Use $q-review-comments to audit the affected comments and docstrings without changing behavior."

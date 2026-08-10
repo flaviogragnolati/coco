@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proposal Discovery"
+  short_description: "Turn client evidence into a proposal-ready discovery brief"
+  default_prompt: "Use $q-proposal-discovery to turn this client evidence into a traceable proposal-ready discovery brief."

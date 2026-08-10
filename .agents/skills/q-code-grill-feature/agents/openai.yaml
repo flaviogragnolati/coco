@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature Grill"
+  short_description: "Align a bounded feature and create its execution plan"
+  default_prompt: "Use $q-code-grill-feature to align this bounded feature and create an execution-ready plan."

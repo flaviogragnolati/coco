@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Review"
+  short_description: "Review one change against standards and its specification"
+  default_prompt: "Use $q-review-code to review this change against repository standards and its originating specification."

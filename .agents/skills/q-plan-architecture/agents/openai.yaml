@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architecture and Standards"
+  short_description: "Define architecture, ADRs, standards, and diagrams"
+  default_prompt: "Use $q-plan-architecture to define architecture, ADRs, and project standards from the confirmed technical foundation."

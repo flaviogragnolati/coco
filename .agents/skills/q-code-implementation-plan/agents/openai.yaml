@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implementation Plan"
+  short_description: "Create a repository-grounded execution plan"
+  default_prompt: "Use $q-code-implementation-plan to create a repository-grounded execution plan for this settled work."

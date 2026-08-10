@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codebase Review"
+  short_description: "Audit a codebase or release candidate"
+  default_prompt: "Use $q-review-codebase to audit this codebase against generic standards and its versioned project profile, then rank evidence-backed findings."

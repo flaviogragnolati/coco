@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit Docs"
+  short_description: "Audit durable documentation for drift and breakage"
+  default_prompt: "Use $q-review-docs to diagnose this durable documentation for drift and breakage without changing it."

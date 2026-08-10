@@ -1,0 +1,4 @@
+interface:
+  display_name: "Module and Feature Decomposition"
+  short_description: "Decompose architecture into modules and vertical features"
+  default_prompt: "Use $q-plan-features to turn the approved architecture into modules, features, and vertical slices."

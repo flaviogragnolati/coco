@@ -1,0 +1,4 @@
+interface:
+  display_name: "Simple Fix"
+  short_description: "Apply a minimal confirmed fix with regression coverage"
+  default_prompt: "Use $q-code-fix to apply this confirmed narrow fix and prove it with focused regression coverage."

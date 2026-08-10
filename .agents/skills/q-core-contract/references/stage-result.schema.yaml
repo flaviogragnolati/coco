@@ -1,0 +1,33 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar stage result
+type: object
+required: [schema_version, stage_result, orchestration]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  stage_result:
+    type: object
+    required: [skill_id, mode, outcome, authored_outputs, derived_outputs, updated_outputs, references_added, traceability_delta, decisions_added_or_updated, risks_added_or_updated, stale_artifacts, blockers, warnings, required_user_actions, next_recommended_action]
+    properties:
+      skill_id: {type: string}
+      mode: {enum: [orchestrated, standalone]}
+      outcome: {enum: [completed, completed_with_warnings, blocked]}
+      authored_outputs: {type: array}
+      derived_outputs: {type: array}
+      updated_outputs: {type: array}
+      references_added: {type: array}
+      traceability_delta: {type: array}
+      decisions_added_or_updated: {type: array}
+      risks_added_or_updated: {type: array}
+      stale_artifacts: {type: array}
+      blockers: {type: array}
+      warnings: {type: array}
+      required_user_actions: {type: array}
+      next_recommended_action: {type: [string, "null"]}
+  orchestration:
+    type: object
+    required: [mode, global_state_updated, reconciliation_required]
+    properties:
+      mode: {enum: [orchestrated, standalone]}
+      global_state_updated: {type: boolean}
+      reconciliation_required: {type: boolean}

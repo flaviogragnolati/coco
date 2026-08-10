@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Core Definition"
+  short_description: "Define canonical product intent, scope, and requirements"
+  default_prompt: "Use $q-plan-product-core to establish the canonical product core from these sources."

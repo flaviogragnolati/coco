@@ -1,0 +1,4 @@
+interface:
+  display_name: "To Tickets"
+  short_description: "Create optional durable tickets for distributed execution"
+  default_prompt: "Use $q-code-tickets to turn this settled work into optional durable tickets for distributed execution."

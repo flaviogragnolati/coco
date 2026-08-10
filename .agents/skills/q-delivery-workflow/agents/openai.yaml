@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Coding Workflow"
+  short_description: "Plan, build, review, and deliver software"
+  default_prompt: "Use $q-delivery-workflow to plan and coordinate this profile-driven delivery from the current project state."

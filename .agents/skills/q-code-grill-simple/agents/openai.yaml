@@ -1,0 +1,4 @@
+interface:
+  display_name: "Simple Grill"
+  short_description: "Align a small change and create a reduced execution plan"
+  default_prompt: "Use $q-code-grill-simple to align this small change and create a reduced execution plan."

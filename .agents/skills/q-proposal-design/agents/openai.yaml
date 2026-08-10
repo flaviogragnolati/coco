@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commercial Proposal Design"
+  short_description: "Create the canonical commercial proposal source"
+  default_prompt: "Use $q-proposal-design to create the canonical commercial proposal source from this discovery brief."

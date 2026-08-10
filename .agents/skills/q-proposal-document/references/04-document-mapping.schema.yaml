@@ -1,0 +1,90 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: quasar://schemas/document-mapping/1.0
+title: Quasar Commercial Document Mapping
+type: object
+additionalProperties: false
+required: [schema_version, artifact, source, document, decisions]
+properties:
+  schema_version:
+    const: "1.0"
+  artifact:
+    type: object
+    additionalProperties: false
+    required: [artifact_id, creation_mode, semantic_authority, version, lifecycle]
+    properties:
+      artifact_id:
+        const: commercial-document-mapping
+      creation_mode:
+        const: authored
+      semantic_authority:
+        const: supporting
+      version:
+        type: string
+        pattern: '^[0-9]+\.[0-9]+(?:\.[0-9]+)?$'
+      lifecycle:
+        enum: [Working, Active, Superseded, Archived]
+  source:
+    type: object
+    additionalProperties: false
+    required: [artifact_id, path, version, sha256]
+    properties:
+      artifact_id:
+        type: string
+        minLength: 1
+      path:
+        type: string
+        minLength: 1
+      version:
+        type: string
+        pattern: '^[0-9]+\.[0-9]+(?:\.[0-9]+)?$'
+      sha256:
+        type: string
+        pattern: '^[a-fA-F0-9]{64}$'
+  document:
+    type: object
+    additionalProperties: false
+    required: [mode, audience, include, general_terms_ref, output_basename, pdf_required]
+    properties:
+      mode:
+        enum: [draft, issued]
+      audience:
+        enum: [internal, client]
+      include:
+        type: object
+        additionalProperties: false
+        required: [alternatives, technical_solution, general_terms, signatures, change_control]
+        properties:
+          alternatives:
+            oneOf: [{type: boolean}, {const: auto}]
+          technical_solution:
+            oneOf: [{type: boolean}, {const: auto}]
+          general_terms:
+            type: boolean
+          signatures:
+            oneOf: [{type: boolean}, {const: auto}]
+          change_control:
+            oneOf: [{type: boolean}, {const: auto}]
+      general_terms_ref:
+        type: [string, 'null']
+      output_basename:
+        type: string
+        pattern: '^[a-z0-9][a-z0-9._-]*$'
+      pdf_required:
+        type: boolean
+  decisions:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [id, description, source_refs]
+      properties:
+        id:
+          type: string
+          pattern: '^DOC-[0-9]{3,}$'
+        description:
+          type: string
+          minLength: 1
+        source_refs:
+          type: array
+          uniqueItems: true
+          items: {type: string}

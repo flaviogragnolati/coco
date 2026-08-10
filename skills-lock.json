@@ -1,180 +1,402 @@
 {
-	"version": 1,
-	"skills": {
-		"better-auth-best-practices": {
-			"source": "better-auth/skills",
-			"sourceType": "github",
-			"skillPath": "better-auth/best-practices/SKILL.md",
-			"computedHash": "a4c830509e85557b59339d8d93a4e243e9e59c686e7678854d39230e12c2a6dc"
-		},
-		"caching": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/server/skills/caching/SKILL.md",
-			"computedHash": "c4f3f4bb6b04529e85705dc9c64043caf92818226fae7a95eeba28da79a6b45e"
-		},
-		"diagnose": {
-			"source": "mattpocock/skills",
-			"sourceType": "github",
-			"skillPath": "skills/engineering/diagnose/SKILL.md",
-			"computedHash": "15939a26f86edec2d4862042b8564e5a062cb81d04e047a0cea6305c8830b5f5"
-		},
-		"error-handling": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/server/skills/error-handling/SKILL.md",
-			"computedHash": "5816a0b5e2e7a33b2bf5b130201bba4251b0865688f4c647a780f39af277c6b8"
-		},
-		"grill-with-docs": {
-			"source": "mattpocock/skills",
-			"sourceType": "github",
-			"skillPath": "skills/engineering/grill-with-docs/SKILL.md",
-			"computedHash": "eb0e91e84277283dc2b23ed544399e53afd6b5287e5b6929f25fe8aa608e164b"
-		},
-		"handoff": {
-			"source": "mattpocock/skills",
-			"sourceType": "github",
-			"skillPath": "skills/productivity/handoff/SKILL.md",
-			"computedHash": "1a78d774f8a59db5daa6e65e20a6596872fa8cde769f9a6e3a09b678dd5ae8cc"
-		},
-		"improve-codebase-architecture": {
-			"source": "mattpocock/skills",
-			"sourceType": "github",
-			"skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
-			"computedHash": "ef32aea0a8fab9b365ff9e08a95f8d353e20ca21ea46ec2e73587c86dd341351"
-		},
-		"links": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/client/skills/links/SKILL.md",
-			"computedHash": "1a3b8d6ebed34539510683825ce88372b0bec28f01a75456c60bdc79568d41ec"
-		},
-		"middlewares": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/server/skills/middlewares/SKILL.md",
-			"computedHash": "f6e57c21ef44f645b7cb3f144901497631abb6dbe8aa37a0bfcce48459b274b3"
-		},
-		"neon-postgres": {
-			"source": "neondatabase/agent-skills",
-			"sourceType": "github",
-			"computedHash": "391693eee67001639ab65474df185da3ea5cf9ee4b99badecfd64561113edbb4"
-		},
-		"nextjs-app-router": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/next/skills/nextjs-app-router/SKILL.md",
-			"computedHash": "4590350d634d82de296ac22c62791a207b8b823d75bc2ec2af535b84abba20ab"
-		},
-		"nextjs-app-router-patterns": {
-			"source": "wshobson/agents",
-			"sourceType": "github",
-			"skillPath": "plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/SKILL.md",
-			"computedHash": "b4fea42eecf1f803155ef7fa133d5286ee8f2dbba3e616954e9e43c6f0ffc144"
-		},
-		"nextjs-best-practices": {
-			"source": "sickn33/antigravity-awesome-skills",
-			"sourceType": "github",
-			"skillPath": "skills/nextjs-best-practices/SKILL.md",
-			"computedHash": "5344522f15f544513456e77b858377368f24e680732af5efeb5a67bbab021bc1"
-		},
-		"postgres-best-practices": {
-			"source": "neondatabase/postgres-skills",
-			"sourceType": "github",
-			"computedHash": "76ad432ee02cdc525f24fe8a483b17de8a730c56118380852b60ce0159948a88"
-		},
-		"prisma-cli": {
-			"source": "prisma/skills",
-			"sourceType": "github",
-			"computedHash": "b9d9314e3716af725997843c5026ba0e258fb2d27a986190bf2ad53be67b72b9"
-		},
-		"prisma-client-api": {
-			"source": "prisma/skills",
-			"sourceType": "github",
-			"computedHash": "0434410e48fb796bbdc3ad0050654bfc9cf72c89b30dbad098ee5c9f655b7f85"
-		},
-		"prisma-database-setup": {
-			"source": "prisma/skills",
-			"sourceType": "github",
-			"computedHash": "46d2dc2f9c968722376bbb6a1a1389c82bd7cceb5973ac1486c54890514b8959"
-		},
-		"prisma-driver-adapter-implementation": {
-			"source": "prisma/skills",
-			"sourceType": "github",
-			"computedHash": "2e00b0d05f0da23796f6d44684e19219b74cf993f8a2df6e5b044812f375bbc6"
-		},
-		"prisma-postgres": {
-			"source": "prisma/skills",
-			"sourceType": "github",
-			"computedHash": "d090d1206fb6a2dd9f7b9f658d851ccd653132512c53c6e0a164110d9ee80005"
-		},
-		"prisma-upgrade-v7": {
-			"source": "prisma/skills",
-			"sourceType": "github",
-			"computedHash": "2e4d54a4c7a0fc2476e81686718a765f5eb2cacfb2fb0822f3109c76bf4a9bb0"
-		},
-		"react-hook-form-zod": {
-			"source": "jackspace/ClaudeSkillz",
-			"sourceType": "github",
-			"computedHash": "405ab7dc1b9d6266e403cba581da563597a1ca8e6e203d8cfe85ddccd1621f19"
-		},
-		"request-refactor-plan": {
-			"source": "mattpocock/skills",
-			"sourceType": "github",
-			"skillPath": "skills/deprecated/request-refactor-plan/SKILL.md",
-			"computedHash": "176cf1d0c4dc4fc4d958c4bc4ed67f222f2656bda2f3f15e3a3e98b2e5edaf2f"
-		},
-		"server-side-calls": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/server/skills/server-side-calls/SKILL.md",
-			"computedHash": "c6b3a9b12a4eaf8c7411cdf1b4858eb26321fa64ce9d61872190e69e0dd15b22"
-		},
-		"shadcn": {
-			"source": "shadcn/ui",
-			"sourceType": "github",
-			"computedHash": "507f011a70e8b3ae242bdc0bb5b39fd91a1d4049a0f3c281991ccf84973d591c"
-		},
-		"subscriptions": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/server/skills/subscriptions/SKILL.md",
-			"computedHash": "9da7fc9d98616564a67d7ff567641b517cb321fefc281ac6ca245517a2ef71ad"
-		},
-		"to-prd": {
-			"source": "mattpocock/skills",
-			"sourceType": "github",
-			"skillPath": "skills/engineering/to-prd/SKILL.md",
-			"computedHash": "a6d6d475f1d01c201937fa0c306e55b7056b02023ad615bc92f57514e831dd31"
-		},
-		"trpc": {
-			"source": "mindrally/skills",
-			"sourceType": "github",
-			"skillPath": "trpc/SKILL.md",
-			"computedHash": "c806ba379dcdbf2020d02ad36f24811d8b7435f34338d896a0fcb91db03ab0b5"
-		},
-		"trpc-router": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/server/skills/trpc-router/SKILL.md",
-			"computedHash": "dd22c754d042bbc48826d7289463e5cfc40725899c576e25bf9766706a4b2850"
-		},
-		"validators": {
-			"source": "trpc/trpc",
-			"sourceType": "github",
-			"skillPath": "packages/server/skills/validators/SKILL.md",
-			"computedHash": "2bd2393213400f414b3592b3ca6369177fb17229076fa6c4435578410b28607b"
-		},
-		"zoom-out": {
-			"source": "mattpocock/skills",
-			"sourceType": "github",
-			"skillPath": "skills/engineering/zoom-out/SKILL.md",
-			"computedHash": "8357aeaece3b709c442eab67e64b86844e05e2f1ea95b109565eba50b6def36e"
-		},
-		"zustand-state-management": {
-			"source": "jackspace/ClaudeSkillz",
-			"sourceType": "github",
-			"computedHash": "bbcaae4d523472f0b855756017b198229b1541291613c8a26cf843ed809a5823"
-		}
-	}
+  "version": 1,
+  "skills": {
+    "better-auth-best-practices": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "skillPath": "better-auth/best-practices/SKILL.md",
+      "computedHash": "a4c830509e85557b59339d8d93a4e243e9e59c686e7678854d39230e12c2a6dc"
+    },
+    "caching": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/caching/SKILL.md",
+      "computedHash": "c4f3f4bb6b04529e85705dc9c64043caf92818226fae7a95eeba28da79a6b45e"
+    },
+    "diagnose": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/diagnose/SKILL.md",
+      "computedHash": "15939a26f86edec2d4862042b8564e5a062cb81d04e047a0cea6305c8830b5f5"
+    },
+    "error-handling": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/error-handling/SKILL.md",
+      "computedHash": "5816a0b5e2e7a33b2bf5b130201bba4251b0865688f4c647a780f39af277c6b8"
+    },
+    "grill-with-docs": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
+      "computedHash": "eb0e91e84277283dc2b23ed544399e53afd6b5287e5b6929f25fe8aa608e164b"
+    },
+    "handoff": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/handoff/SKILL.md",
+      "computedHash": "1a78d774f8a59db5daa6e65e20a6596872fa8cde769f9a6e3a09b678dd5ae8cc"
+    },
+    "improve-codebase-architecture": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
+      "computedHash": "ef32aea0a8fab9b365ff9e08a95f8d353e20ca21ea46ec2e73587c86dd341351"
+    },
+    "links": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/client/skills/links/SKILL.md",
+      "computedHash": "1a3b8d6ebed34539510683825ce88372b0bec28f01a75456c60bdc79568d41ec"
+    },
+    "middlewares": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/middlewares/SKILL.md",
+      "computedHash": "f6e57c21ef44f645b7cb3f144901497631abb6dbe8aa37a0bfcce48459b274b3"
+    },
+    "neon-postgres": {
+      "source": "neondatabase/agent-skills",
+      "sourceType": "github",
+      "computedHash": "391693eee67001639ab65474df185da3ea5cf9ee4b99badecfd64561113edbb4"
+    },
+    "nextjs-app-router": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/next/skills/nextjs-app-router/SKILL.md",
+      "computedHash": "4590350d634d82de296ac22c62791a207b8b823d75bc2ec2af535b84abba20ab"
+    },
+    "nextjs-app-router-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/frontend-mobile-development/skills/nextjs-app-router-patterns/SKILL.md",
+      "computedHash": "b4fea42eecf1f803155ef7fa133d5286ee8f2dbba3e616954e9e43c6f0ffc144"
+    },
+    "nextjs-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-best-practices/SKILL.md",
+      "computedHash": "5344522f15f544513456e77b858377368f24e680732af5efeb5a67bbab021bc1"
+    },
+    "postgres-best-practices": {
+      "source": "neondatabase/postgres-skills",
+      "sourceType": "github",
+      "computedHash": "76ad432ee02cdc525f24fe8a483b17de8a730c56118380852b60ce0159948a88"
+    },
+    "prisma-cli": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "computedHash": "b9d9314e3716af725997843c5026ba0e258fb2d27a986190bf2ad53be67b72b9"
+    },
+    "prisma-client-api": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "computedHash": "0434410e48fb796bbdc3ad0050654bfc9cf72c89b30dbad098ee5c9f655b7f85"
+    },
+    "prisma-database-setup": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "computedHash": "46d2dc2f9c968722376bbb6a1a1389c82bd7cceb5973ac1486c54890514b8959"
+    },
+    "prisma-driver-adapter-implementation": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "computedHash": "2e00b0d05f0da23796f6d44684e19219b74cf993f8a2df6e5b044812f375bbc6"
+    },
+    "prisma-postgres": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "computedHash": "d090d1206fb6a2dd9f7b9f658d851ccd653132512c53c6e0a164110d9ee80005"
+    },
+    "prisma-upgrade-v7": {
+      "source": "prisma/skills",
+      "sourceType": "github",
+      "computedHash": "2e4d54a4c7a0fc2476e81686718a765f5eb2cacfb2fb0822f3109c76bf4a9bb0"
+    },
+    "q-code-debug": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-debug/SKILL.md",
+      "computedHash": "5059a8e525efa465be270a1fb24eaa252afb72b0441a227f839f63958fbb268e"
+    },
+    "q-code-explain": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-explain/SKILL.md",
+      "computedHash": "8b05e0da42f113276d2d2d76a3a7f1d60c30c98fbc7cee9323f60072a3976d06"
+    },
+    "q-code-explore": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-explore/SKILL.md",
+      "computedHash": "cf19d5f9a14191bc1379342208d898ec3b9d881c6edac8ad6f8e9a0a91325d0b"
+    },
+    "q-code-fix": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-fix/SKILL.md",
+      "computedHash": "0db62ef0b0211778364a024dd0aab789ccba63c0e6930933361ab70cb964a7c1"
+    },
+    "q-code-grill-design": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-grill-design/SKILL.md",
+      "computedHash": "2300713ef6f3e5c9af84e1a37a0b6295e214c2739a7e7d7e70ef0fb16369eea3"
+    },
+    "q-code-grill-feature": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-grill-feature/SKILL.md",
+      "computedHash": "0e2d4a17cc3d888d3b046b8d34a5934ea89687d2fc7a36f32dc3398232d24900"
+    },
+    "q-code-grill-simple": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-grill-simple/SKILL.md",
+      "computedHash": "b705ec3e408ec1ff5ddd1298dd60ced6da5c0f26997a203d592b23b04539ac8b"
+    },
+    "q-code-handoff": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-handoff/SKILL.md",
+      "computedHash": "7aad1c2c2519c25669cc40dde1058e116d88f7bfb9f36d0f24e756baf05a7111"
+    },
+    "q-code-implement": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-implement/SKILL.md",
+      "computedHash": "7d36d2c476fe193032d2068dc65525f2a3ee0d8717b4096c6f5bbed14a787f86"
+    },
+    "q-code-implementation-plan": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-implementation-plan/SKILL.md",
+      "computedHash": "923ebda681dcf9aaef113bfa564bb2940081f7256f1fae227bf5aec0b88b060d"
+    },
+    "q-code-merge-conflicts": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-merge-conflicts/SKILL.md",
+      "computedHash": "c3416f9857a2493ea8e52422a7c560ea351fddf66da5d4316e20ab9d65e6e9b5"
+    },
+    "q-code-prototype": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-prototype/SKILL.md",
+      "computedHash": "7bfe3de214a03522ced6efc1e98ad8be5861e2c0f35c7a6ebe3e11684636a3e6"
+    },
+    "q-code-research": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-research/SKILL.md",
+      "computedHash": "766b3197bfa28334d4af6e1d4762812c3df60c90ab6a04d66c187b36924bb878"
+    },
+    "q-code-tdd": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-tdd/SKILL.md",
+      "computedHash": "c3adcfbd907ae2fc549024c19679dda44a579f45ef13ed9a36448f02aeeacb65"
+    },
+    "q-code-tickets": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-tickets/SKILL.md",
+      "computedHash": "b3c1f3b197a90e444e46f2e08da73a1ae9bbcc51a2ea83c2e60a82efb9373c00"
+    },
+    "q-code-zoom-out": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/code/q-code-zoom-out/SKILL.md",
+      "computedHash": "298caf7a9ae932f9efbc2a2b328bb0a143c49e5898f7ed83c5b20705fa0cdb59"
+    },
+    "q-core-contract": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/core/q-core-contract/SKILL.md",
+      "computedHash": "f0028d879cb244bf422950c86b44d04e242844aa1cbabc0808e8929b2d053584"
+    },
+    "q-delivery-workflow": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/delivery/q-delivery-workflow/SKILL.md",
+      "computedHash": "50409986e5182e6e3ebddcfc5594f6ef5a12b1be17420b2f507f770e2705d662"
+    },
+    "q-plan-architecture": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/plan/q-plan-architecture/SKILL.md",
+      "computedHash": "56516916ab5fb61b494046a5862cbc602effa94e0ccbc8e3b662e8b71b071f61"
+    },
+    "q-plan-backlog": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/plan/q-plan-backlog/SKILL.md",
+      "computedHash": "773f862d69bbbf8eb990b5157026f54b96e49c132c6303788d4ea446e8b4d19e"
+    },
+    "q-plan-domain-model": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/plan/q-plan-domain-model/SKILL.md",
+      "computedHash": "da744420619d54d36a207103802d2fd913dde27ad270462b61ceb402a03e6dce"
+    },
+    "q-plan-features": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/plan/q-plan-features/SKILL.md",
+      "computedHash": "1937b2c93f591a533f95022b247a9c73c8307a2f2f71f2e71585a5c3c46022d3"
+    },
+    "q-plan-product-core": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/plan/q-plan-product-core/SKILL.md",
+      "computedHash": "3005f4b108ef13ab1a87fb951938525cc6fe53f708fdbc9157e4d1b5729d13fb"
+    },
+    "q-plan-tech-foundation": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/plan/q-plan-tech-foundation/SKILL.md",
+      "computedHash": "8078252d5500dcffa25b25981234dc0d192987f703322ef16908cfbcaa831283"
+    },
+    "q-proposal-design": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/proposal/q-proposal-design/SKILL.md",
+      "computedHash": "0be7c1dec16312b7a214694818bf62b3301f2e99a859016c56b7aea97c439e6c"
+    },
+    "q-proposal-discovery": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/proposal/q-proposal-discovery/SKILL.md",
+      "computedHash": "e38cadfe6e5e474f7b548a81765e0d4e6d8d2e2f4e7098e29c6792582e80a46e"
+    },
+    "q-proposal-document": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/proposal/q-proposal-document/SKILL.md",
+      "computedHash": "e3bd2b572c293f8d82c2df23032f457162a85c79ba75342fb3f0937cb4200ac0"
+    },
+    "q-proposal-web": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/proposal/q-proposal-web/SKILL.md",
+      "computedHash": "47f39807b1ffa70bc6cdbbbe04e21f2bf856bdbf27a93c85b241f8eef0e0a5c3"
+    },
+    "q-proposal-workflow": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/proposal/q-proposal-workflow/SKILL.md",
+      "computedHash": "1cf1b7c8ca06c3650fcaf795fee677e1003dee0152fd2da64206132636b39543"
+    },
+    "q-report-deck": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/report/q-report-deck/SKILL.md",
+      "computedHash": "a8a36ead48a7536b2b30fa1ac4c78c5161ef2b14248d2b0b479eee912d64cb1e"
+    },
+    "q-report-document": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/report/q-report-document/SKILL.md",
+      "computedHash": "6b43c7f4affd3be67603e3d677a2dbd5275574827d717fd3f8dda999b5d3664f"
+    },
+    "q-report-source": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/report/q-report-source/SKILL.md",
+      "computedHash": "6aa666f9ba07040513f6a04521d096846a070d30a8158a20fdc9f2da4c4876fc"
+    },
+    "q-report-workflow": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/report/q-report-workflow/SKILL.md",
+      "computedHash": "f7495db67104707785a4f4a5efb5c2de823d3c7591976eba0b4c698137b8b1bb"
+    },
+    "q-review-code": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/review/q-review-code/SKILL.md",
+      "computedHash": "df1b945db5a7e4a914790ca395809febf9b810c5f78c9947c2a1c54f13a87c04"
+    },
+    "q-review-codebase": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/review/q-review-codebase/SKILL.md",
+      "computedHash": "1254e073f5e36397cfe9cef14bb8d6d98d9fcc8e2d3c83b0e140536c2e1a0014"
+    },
+    "q-review-comments": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/review/q-review-comments/SKILL.md",
+      "computedHash": "9f928b3839cb8d9b7c25795053a1a6500823fa63aacef03cdfb2af5ad7c74630"
+    },
+    "q-review-docs": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/review/q-review-docs/SKILL.md",
+      "computedHash": "58fc690576a2017aa148950a1c93b98123569eba201a169cf683bfcc91d191b6"
+    },
+    "react-hook-form-zod": {
+      "source": "jackspace/ClaudeSkillz",
+      "sourceType": "github",
+      "computedHash": "405ab7dc1b9d6266e403cba581da563597a1ca8e6e203d8cfe85ddccd1621f19"
+    },
+    "request-refactor-plan": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/deprecated/request-refactor-plan/SKILL.md",
+      "computedHash": "176cf1d0c4dc4fc4d958c4bc4ed67f222f2656bda2f3f15e3a3e98b2e5edaf2f"
+    },
+    "server-side-calls": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/server-side-calls/SKILL.md",
+      "computedHash": "c6b3a9b12a4eaf8c7411cdf1b4858eb26321fa64ce9d61872190e69e0dd15b22"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "computedHash": "507f011a70e8b3ae242bdc0bb5b39fd91a1d4049a0f3c281991ccf84973d591c"
+    },
+    "subscriptions": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/subscriptions/SKILL.md",
+      "computedHash": "9da7fc9d98616564a67d7ff567641b517cb321fefc281ac6ca245517a2ef71ad"
+    },
+    "to-prd": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/to-prd/SKILL.md",
+      "computedHash": "a6d6d475f1d01c201937fa0c306e55b7056b02023ad615bc92f57514e831dd31"
+    },
+    "trpc": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "trpc/SKILL.md",
+      "computedHash": "c806ba379dcdbf2020d02ad36f24811d8b7435f34338d896a0fcb91db03ab0b5"
+    },
+    "trpc-router": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/trpc-router/SKILL.md",
+      "computedHash": "dd22c754d042bbc48826d7289463e5cfc40725899c576e25bf9766706a4b2850"
+    },
+    "validators": {
+      "source": "trpc/trpc",
+      "sourceType": "github",
+      "skillPath": "packages/server/skills/validators/SKILL.md",
+      "computedHash": "2bd2393213400f414b3592b3ca6369177fb17229076fa6c4435578410b28607b"
+    },
+    "zoom-out": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/zoom-out/SKILL.md",
+      "computedHash": "8357aeaece3b709c442eab67e64b86844e05e2f1ea95b109565eba50b6def36e"
+    },
+    "zustand-state-management": {
+      "source": "jackspace/ClaudeSkillz",
+      "sourceType": "github",
+      "computedHash": "bbcaae4d523472f0b855756017b198229b1541291613c8a26cf843ed809a5823"
+    }
+  }
 }

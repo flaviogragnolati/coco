@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backlog and Delivery Planning"
+  short_description: "Create and maintain the rolling delivery backlog"
+  default_prompt: "Use $q-plan-backlog to create or refine the rolling high-level backlog."

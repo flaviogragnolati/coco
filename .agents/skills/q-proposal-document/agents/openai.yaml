@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commercial Proposal Document"
+  short_description: "Generate and validate branded proposal DOCX and PDF files"
+  default_prompt: "Use $q-proposal-document to generate and validate the branded proposal DOCX and PDF."

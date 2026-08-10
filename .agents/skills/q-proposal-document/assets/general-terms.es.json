@@ -1,0 +1,247 @@
+{
+  "terms_id": "quasar-general-terms-ar-es-v1",
+  "version": "1.0",
+  "language": "spanish",
+  "authority": "Use only when explicitly referenced by the canonical proposal source.",
+  "source_note": "Base general adaptada de Propuesta_Comercial_Software_Ushuaia_Shipping_v2.docx. Requiere revisión jurídica antes de uso contractual definitivo.",
+  "intro": [
+    "Los presentes Términos y Condiciones integran la propuesta comercial y resultan aplicables al proyecto identificado en la carátula. Las condiciones particulares de la propuesta prevalecerán cuando exista una incompatibilidad expresa con estas condiciones generales."
+  ],
+  "clauses": [
+    {
+      "title": "Definiciones",
+      "paragraphs": [],
+      "bullets": [
+        "EL CLIENTE: la persona humana o jurídica que acepte formalmente la propuesta.",
+        "QUASAR: Ingeniería Quasar SRL.",
+        "LAS PARTES: EL CLIENTE y QUASAR conjuntamente.",
+        "Propuesta: el documento comercial, sus anexos y las versiones o modificaciones aceptadas.",
+        "Entregable: resultado, documento, funcionalidad, configuración o componente identificado en la propuesta o en el Backlog Base.",
+        "Backlog Base: conjunto de historias, requisitos y criterios de aceptación aprobado al cierre del relevamiento.",
+        "Solicitud de Cambio: documento mediante el cual se propone modificar alcance, plazo, precio, responsabilidades o arquitectura.",
+        "Día hábil: día laborable bancario en la República Argentina, salvo definición particular distinta."
+      ]
+    },
+    {
+      "title": "Integración documental y orden de prelación",
+      "paragraphs": [
+        "El acuerdo entre LAS PARTES estará integrado, en orden de prioridad, por:"
+      ],
+      "numbered": [
+        "Solicitudes de Cambio aceptadas por LAS PARTES.",
+        "Condiciones particulares de la propuesta comercial.",
+        "Anexos técnicos y Backlog Base aprobados.",
+        "Los presentes Términos y Condiciones."
+      ],
+      "bullets": [],
+      "subsections": [],
+      "closing": ""
+    },
+    {
+      "title": "Inicio, plazos y dependencias",
+      "paragraphs": [
+        "El inicio efectivo se producirá cuando se encuentren acreditados el anticipo, la aceptación de la propuesta, la designación de responsables y la disponibilidad de la información y los accesos mínimos requeridos.",
+        "Cuando una actividad dependa de información, validaciones, accesos, infraestructura o decisiones de EL CLIENTE, el cronograma quedará suspendido hasta que la dependencia sea satisfecha. Los hitos posteriores se reprogramarán por un período equivalente a la demora, más el tiempo razonable necesario para reorganizar los recursos afectados.",
+        "Si una suspensión atribuible a EL CLIENTE supera quince días corridos, QUASAR podrá revisar la disponibilidad del equipo, el cronograma y los costos de removilización. Toda modificación deberá documentarse mediante el procedimiento de Control de Cambios."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Obligaciones de Quasar",
+      "paragraphs": [],
+      "bullets": [
+        "Ejecutar las actividades y producir los entregables expresamente incluidos.",
+        "Asignar personal con competencias acordes a las funciones indicadas.",
+        "Informar avances, dependencias, riesgos y desvíos relevantes.",
+        "Mantener registros razonables de las decisiones y del estado del proyecto.",
+        "Aplicar prácticas profesionales de desarrollo, control de versiones y pruebas.",
+        "Corregir los defectos cubiertos por el alcance y la garantía.",
+        "Mantener la confidencialidad y aplicar medidas razonables de seguridad."
+      ]
+    },
+    {
+      "title": "Obligaciones del cliente",
+      "paragraphs": [],
+      "bullets": [
+        "Designar representantes autorizados y un responsable operativo con capacidad de decisión.",
+        "Entregar información, documentos, datos, accesos y definiciones completos y oportunos.",
+        "Garantizar que posee derechos suficientes sobre los datos, marcas, imágenes, contenidos y sistemas proporcionados.",
+        "Coordinar la participación de sus usuarios, referentes y proveedores.",
+        "Revisar entregables y responder consultas dentro de los plazos acordados.",
+        "Consolidar internamente sus observaciones y evitar instrucciones contradictorias.",
+        "Ejecutar las pruebas de aceptación y verificar que la solución se adapta a sus procesos y obligaciones regulatorias.",
+        "Abonar honorarios, impuestos, gastos autorizados y servicios de terceros bajo su responsabilidad."
+      ]
+    },
+    {
+      "title": "Comunicación, representantes y seguimiento",
+      "paragraphs": [
+        "Al inicio se identificarán los representantes autorizados y los canales oficiales. Los correos electrónicos de dichos representantes serán válidos para aprobaciones, observaciones, facturación y notificaciones contractuales.",
+        "Los canales de mensajería y las reuniones se utilizarán para coordinación operativa. Las decisiones que afecten alcance, precio, plazos, derechos o responsabilidades deberán confirmarse por escrito. Las minutas se considerarán aceptadas si no son objetadas dentro de tres días hábiles."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Entrega, revisión y aceptación",
+      "paragraphs": [
+        "QUASAR proporcionará acceso a los entregables en un formato razonablemente evaluable antes de requerir su aceptación. La entrega definitiva de código, archivos editables, documentación final y credenciales podrá condicionarse al pago del hito correspondiente.",
+        "EL CLIENTE contará con cinco días hábiles para revisar cada entregable, salvo que la propuesta establezca otro plazo. El rechazo deberá ser escrito, consolidado y fundado en un requisito o criterio de aceptación incumplido.",
+        "Las correcciones necesarias para cumplir el alcance no se computarán como cambios ni estarán sujetas a un límite de revisiones. Las modificaciones de preferencia, ampliaciones o requisitos nuevos se tramitarán conforme al Anexo de Control de Cambios.",
+        "La falta de observaciones dentro del plazo o el uso productivo del entregable constituirá aceptación, sin perjuicio de la garantía aplicable a defectos no detectados durante la revisión."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Honorarios, facturación, moneda y mora",
+      "paragraphs": [
+        "Los honorarios, hitos y moneda serán los establecidos en la propuesta. Salvo indicación expresa, los importes no incluyen impuestos, tasas, retenciones, gastos bancarios ni costos de servicios de terceros.",
+        "Cuando un precio se exprese en dólares estadounidenses y el pago se efectúe en pesos argentinos, se utilizará el tipo de cambio vendedor divisa del Banco de la Nación Argentina correspondiente al día hábil anterior a la emisión de la factura, salvo que las condiciones particulares definan otro mecanismo objetivo.",
+        "Las facturas vencerán a los cinco días hábiles de su emisión, salvo plazo distinto en la propuesta. La mora operará automáticamente al vencimiento. QUASAR podrá suspender actividades mediante notificación escrita mientras persista la falta de pago. La suspensión producirá la correspondiente reprogramación del cronograma."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Calidad de la información de entrada",
+      "paragraphs": [
+        "La confiabilidad de análisis, migraciones, reportes y resultados depende de la integridad, actualidad y exactitud de la información suministrada por EL CLIENTE. QUASAR informará inconsistencias evidentes, pero no será responsable de auditar exhaustivamente la veracidad de los datos salvo que dicha actividad se incluya expresamente.",
+        "Cuando sea necesario utilizar estimaciones o supuestos, estos deberán identificarse. Si información tardía o incorrecta obliga a rehacer trabajo aprobado, el impacto será evaluado mediante una Solicitud de Cambio."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Confidencialidad",
+      "paragraphs": [
+        "Cada parte mantendrá la confidencialidad de la información técnica, comercial, operativa o estratégica recibida de la otra parte y la utilizará exclusivamente para ejecutar el proyecto. El acceso quedará limitado al personal, colaboradores y proveedores que necesiten conocerla y estén sujetos a obligaciones equivalentes.",
+        "No se considerará confidencial la información que sea pública sin incumplimiento, que la parte receptora conociera legítimamente, que reciba de un tercero autorizado o que deba divulgar por una obligación legal. En este último caso, deberá informar previamente cuando resulte legalmente posible.",
+        "La obligación se mantendrá durante el proyecto y por cinco años después de su terminación. Los secretos comerciales conservarán su protección mientras mantengan ese carácter. Un acuerdo de confidencialidad específico podrá ampliar estas obligaciones."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Datos personales y seguridad",
+      "paragraphs": [
+        "Los datos gestionados por la solución pertenecerán a EL CLIENTE. Cuando QUASAR trate datos personales por cuenta de EL CLIENTE, lo hará exclusivamente para ejecutar el proyecto y de acuerdo con instrucciones documentadas."
+      ],
+      "bullets": [
+        "EL CLIENTE será responsable de la licitud, calidad y finalidad del tratamiento de los datos suministrados.",
+        "QUASAR limitará los accesos y aplicará medidas técnicas y organizativas razonables.",
+        "Los datos reales no se utilizarán en ambientes de prueba cuando puedan emplearse datos anonimizados o ficticios.",
+        "Los proveedores cloud y subencargados deberán identificarse cuando tengan acceso relevante a datos personales.",
+        "Los incidentes de seguridad conocidos que afecten datos de EL CLIENTE serán comunicados sin demora irrazonable.",
+        "Al terminar el servicio, los datos se devolverán, exportarán o eliminarán conforme a las instrucciones acordadas y a las obligaciones de conservación aplicables."
+      ]
+    },
+    {
+      "title": "Propiedad intelectual, código y licencias",
+      "paragraphs": [],
+      "bullets": [],
+      "subsections": [
+        {
+          "title": "Materiales del cliente",
+          "paragraphs": [
+            "Los datos, marcas, contenidos, documentos y materiales proporcionados por EL CLIENTE seguirán siendo de su propiedad. EL CLIENTE concede a QUASAR una autorización limitada para utilizarlos durante la ejecución del proyecto."
+          ],
+          "bullets": []
+        },
+        {
+          "title": "Materiales preexistentes de Quasar",
+          "paragraphs": [
+            "Las metodologías, plantillas, librerías, componentes, herramientas, scripts, conocimientos y materiales desarrollados con anterioridad o de uso general permanecerán bajo titularidad de QUASAR. Cuando se incorporen al producto, se otorgará a EL CLIENTE la licencia necesaria para utilizar el sistema entregado."
+          ],
+          "bullets": []
+        },
+        {
+          "title": "Desarrollo específico",
+          "paragraphs": [
+            "Una vez cancelados todos los importes correspondientes, EL CLIENTE será titular de los derechos patrimoniales sobre el código y los materiales desarrollados específicamente para el proyecto, con excepción de los materiales preexistentes y componentes de terceros. La entrega comprenderá el repositorio acordado, código fuente, migraciones de base de datos y documentación identificada como entregable."
+          ],
+          "bullets": []
+        },
+        {
+          "title": "Componentes de terceros",
+          "paragraphs": [
+            "El software open source, servicios SaaS, APIs y componentes de terceros permanecerán sujetos a sus propias licencias y condiciones. QUASAR no podrá transferir derechos que no posea ni garantizar la continuidad indefinida de servicios externos."
+          ],
+          "bullets": []
+        }
+      ]
+    },
+    {
+      "title": "Infraestructura y servicios de terceros",
+      "paragraphs": [
+        "La propuesta o el Anexo Técnico determinarán quién contrata, administra y paga cada servicio de infraestructura. Salvo acuerdo distinto, las cuentas productivas deberán quedar a nombre o bajo control de EL CLIENTE.",
+        "Los precios, límites, disponibilidad y condiciones de proveedores externos pueden cambiar. Las modificaciones de terceros que requieran migraciones, rediseños o costos adicionales no se consideran incluidas automáticamente y se evaluarán mediante Control de Cambios."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Garantía, soporte y mantenimiento",
+      "paragraphs": [
+        "QUASAR otorgará una garantía de sesenta días corridos desde la aceptación final o puesta en producción, lo que ocurra primero, para corregir sin costo adicional defectos reproducibles atribuibles al desarrollo y contrarios al Backlog Base.",
+        "La garantía no incluye nuevas funcionalidades, cambios de preferencia, modificaciones realizadas por terceros, uso contrario a la documentación, datos incorrectos, fallas de conectividad o infraestructura ajena, ni cambios en servicios o APIs externas.",
+        "La propuesta no incluye soporte operativo, monitoreo, mantenimiento correctivo posterior a la garantía, mantenimiento evolutivo ni administración continua de infraestructura. Estos servicios podrán contratarse mediante un abono, bolsa de horas o propuesta independiente."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Responsabilidad",
+      "paragraphs": [
+        "Cada parte responderá por los daños directos que cause por incumplimiento probado de sus obligaciones. Ninguna parte responderá por lucro cesante, pérdida de oportunidad, pérdida indirecta de ingresos o daños consecuenciales, salvo que una norma imperativa disponga lo contrario.",
+        "La responsabilidad acumulada de QUASAR derivada del proyecto no excederá los honorarios efectivamente pagados bajo la propuesta, excepto en casos de dolo, incumplimiento deliberado de confidencialidad o infracción de derechos de terceros atribuible directamente a QUASAR.",
+        "EL CLIENTE deberá mantener copias de la información crítica cuando el servicio de backup no haya sido asignado expresamente a QUASAR. LAS PARTES deberán adoptar medidas razonables para mitigar los daños conocidos."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Suspensión y terminación",
+      "paragraphs": [
+        "Ante un incumplimiento subsanable, la parte afectada notificará el incumplimiento y otorgará un plazo de diez días hábiles para corregirlo. Mientras persista el incumplimiento, podrá suspender las obligaciones directamente afectadas.",
+        "Si el incumplimiento no se subsana, o si existe un incumplimiento grave que torne irrazonable la continuidad, la parte afectada podrá terminar el acuerdo mediante notificación escrita.",
+        "EL CLIENTE podrá terminar sin causa con quince días corridos de preaviso. En tal caso abonará el trabajo efectivamente ejecutado, los hitos aceptados, los compromisos no cancelables asumidos y los costos razonables de cierre. QUASAR entregará los materiales correspondientes a importes pagados, respetando las reglas de propiedad intelectual.",
+        "Al finalizar, LAS PARTES coordinarán la devolución o eliminación de información, transferencia de credenciales y cierre de accesos. Las obligaciones de pago, confidencialidad, propiedad intelectual, datos, responsabilidad y jurisdicción sobrevivirán cuando corresponda."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Fuerza mayor",
+      "paragraphs": [
+        "Ninguna parte será responsable por demoras ocasionadas por acontecimientos imprevisibles o inevitables fuera de su control razonable. La parte afectada deberá notificar, mitigar sus efectos y reanudar el cumplimiento cuando resulte posible. Si la situación se prolonga más de treinta días, cualquiera de LAS PARTES podrá solicitar la reprogramación o terminación ordenada, sin afectar pagos ya devengados."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Subcontratación e independencia",
+      "paragraphs": [
+        "QUASAR podrá utilizar colaboradores o subcontratistas bajo su dirección, manteniendo responsabilidad por el trabajo, confidencialidad y protección de datos. La relación entre LAS PARTES es independiente y no crea sociedad, relación laboral, mandato, representación, exclusividad ni joint venture."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Cumplimiento normativo",
+      "paragraphs": [
+        "QUASAR se compromete a implementar técnicamente el alcance aprobado. EL CLIENTE será responsable de identificar y validar la normativa sectorial, laboral, fiscal, de protección de datos o de cualquier otra naturaleza aplicable a sus operaciones, salvo que el análisis regulatorio se contrate expresamente."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Ley aplicable y resolución de controversias",
+      "paragraphs": [
+        "El acuerdo se regirá por las leyes de la República Argentina. Antes de iniciar una acción judicial, LAS PARTES procurarán resolver la controversia mediante una instancia de negociación directa entre representantes con capacidad de decisión, sin perjuicio de las medidas urgentes que pudieran corresponder.",
+        "La jurisdicción será la que resulte competente conforme a la legislación aplicable, salvo que las condiciones particulares de la propuesta establezcan expresamente otra jurisdicción válida."
+      ],
+      "bullets": []
+    },
+    {
+      "title": "Disposiciones generales",
+      "paragraphs": [],
+      "bullets": [
+        "La propuesta y sus anexos constituyen el acuerdo completo sobre su objeto.",
+        "Toda modificación deberá constar por escrito y ser aceptada por representantes autorizados.",
+        "La falta de ejercicio de un derecho no implica renuncia.",
+        "Si una disposición resultara inválida, las restantes conservarán su vigencia y se procurará reemplazarla por una disposición válida de efecto equivalente.",
+        "Ninguna parte podrá ceder íntegramente el acuerdo sin consentimiento de la otra, salvo reorganización societaria que no afecte el cumplimiento.",
+        "Los títulos se incluyen para facilitar la lectura y no alteran la interpretación."
+      ]
+    }
+  ]
+}

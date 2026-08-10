@@ -1,0 +1,256 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: quasar://schemas/proposal-source/1.0
+title: Quasar Proposal Source Contract
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - artifact
+  - proposal
+  - objects
+  - commercial
+  - delivery
+  - downstream_interfaces
+  - traceability
+properties:
+  schema_version:
+    const: "1.0"
+  artifact:
+    type: object
+    additionalProperties: false
+    required:
+      - artifact_id
+      - creation_mode
+      - semantic_authority
+      - version
+      - lifecycle
+    properties:
+      artifact_id:
+        type: string
+        minLength: 1
+      creation_mode:
+        const: authored
+      semantic_authority:
+        const: canonical
+      version:
+        type: string
+        pattern: '^[0-9]+\.[0-9]+(?:\.[0-9]+)?$'
+      lifecycle:
+        enum: [Working, Active, Superseded, Archived]
+      created_at:
+        type: string
+      updated_at:
+        type: string
+      source_refs:
+        type: array
+        items:
+          type: string
+  proposal:
+    type: object
+    additionalProperties: true
+    required: [proposal_id, version, commercial_status, documentation_language]
+    properties:
+      proposal_id:
+        type: string
+        minLength: 1
+      version:
+        type: string
+        pattern: '^[0-9]+\.[0-9]+(?:\.[0-9]+)?$'
+      commercial_status:
+        enum:
+          - Discovery
+          - Proposal in preparation
+          - Internal Review
+          - Client Draft
+          - Negotiation
+          - Accepted
+          - Rejected
+          - Expired
+          - Superseded
+      documentation_language:
+        enum: [english, spanish]
+      validity:
+        type: [string, 'null']
+      accepted_at:
+        type: [string, 'null']
+      superseded_by:
+        type: [string, 'null']
+  objects:
+    type: object
+    additionalProperties: false
+    required:
+      - findings
+      - evidence
+      - problems
+      - needs
+      - objectives
+      - actors
+      - processes
+      - journeys
+      - capabilities
+      - functional_requirements
+      - business_rules
+      - scope_items
+      - exclusions
+      - deliverables
+      - technical_requirements
+      - non_functional_requirements
+      - constraints
+      - integrations
+      - data_categories
+      - assumptions
+      - inferences
+      - decisions
+      - risks
+    properties:
+      findings: { $ref: '#/$defs/objectList' }
+      evidence: { $ref: '#/$defs/objectList' }
+      problems: { $ref: '#/$defs/objectList' }
+      needs: { $ref: '#/$defs/objectList' }
+      objectives: { $ref: '#/$defs/objectList' }
+      actors: { $ref: '#/$defs/objectList' }
+      processes: { $ref: '#/$defs/objectList' }
+      journeys: { $ref: '#/$defs/objectList' }
+      capabilities: { $ref: '#/$defs/objectList' }
+      functional_requirements: { $ref: '#/$defs/objectList' }
+      business_rules: { $ref: '#/$defs/objectList' }
+      scope_items: { $ref: '#/$defs/objectList' }
+      exclusions: { $ref: '#/$defs/objectList' }
+      deliverables: { $ref: '#/$defs/objectList' }
+      technical_requirements: { $ref: '#/$defs/objectList' }
+      non_functional_requirements: { $ref: '#/$defs/objectList' }
+      constraints: { $ref: '#/$defs/objectList' }
+      integrations: { $ref: '#/$defs/objectList' }
+      data_categories: { $ref: '#/$defs/objectList' }
+      assumptions: { $ref: '#/$defs/objectList' }
+      inferences: { $ref: '#/$defs/objectList' }
+      decisions: { $ref: '#/$defs/objectList' }
+      risks: { $ref: '#/$defs/objectList' }
+  commercial:
+    type: object
+  delivery:
+    type: object
+  downstream_interfaces:
+    type: object
+    additionalProperties: false
+    required: [web, document, development]
+    properties:
+      web:
+        $ref: '#/$defs/referenceInterface'
+      document:
+        $ref: '#/$defs/referenceInterface'
+      development:
+        type: object
+        additionalProperties: false
+        required:
+          - applicable
+          - reason
+          - proposal_version
+          - skill_1_input_refs
+          - skill_2_input_refs
+          - unresolved_refs
+          - readiness
+        properties:
+          applicable:
+            type: boolean
+          reason:
+            type: [string, 'null']
+          proposal_version:
+            type: string
+          skill_1_input_refs:
+            type: array
+            uniqueItems: true
+            items: { type: string }
+          skill_2_input_refs:
+            type: array
+            uniqueItems: true
+            items: { type: string }
+          unresolved_refs:
+            type: array
+            uniqueItems: true
+            items: { type: string }
+          readiness:
+            enum: [Not applicable, Not ready, Ready with assumptions, Ready]
+  traceability:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [source_ref, relationship, target_ref]
+      properties:
+        source_ref: { type: string }
+        relationship:
+          enum: [originates, refines, implements, satisfies, supersedes, constrains, relates]
+        target_ref: { type: string }
+        status: { type: string }
+$defs:
+  objectList:
+    type: array
+    items:
+      $ref: '#/$defs/canonicalObject'
+  canonicalObject:
+    type: object
+    additionalProperties: true
+    required: [id, type, title, maturity, authority_scope, origin_refs]
+    properties:
+      id:
+        type: string
+        pattern: '^[A-Z]+-[0-9]{3,}$'
+      type:
+        enum:
+          - finding
+          - evidence
+          - problem
+          - need
+          - objective
+          - actor
+          - process
+          - journey
+          - capability
+          - functional_requirement
+          - business_rule
+          - scope_item
+          - exclusion
+          - deliverable
+          - technical_requirement
+          - non_functional_requirement
+          - constraint
+          - integration
+          - data_category
+          - assumption
+          - inference
+          - decision
+          - risk
+      title:
+        type: string
+        minLength: 1
+      description:
+        type: [string, 'null']
+      maturity:
+        enum: [Draft, Discovery, Preliminary, Confirmed]
+      authority_scope:
+        enum: [commercial, development, global, presentation]
+      origin_refs:
+        type: array
+        uniqueItems: true
+        items: { type: string }
+      status:
+        type: [string, 'null']
+      refines:
+        type: array
+        items: { type: string }
+      satisfies:
+        type: array
+        items: { type: string }
+      supersedes:
+        type: array
+        items: { type: string }
+  referenceInterface:
+    type: object
+    additionalProperties: false
+    required: [object_refs]
+    properties:
+      object_refs:
+        type: array
+        uniqueItems: true
+        items: { type: string }

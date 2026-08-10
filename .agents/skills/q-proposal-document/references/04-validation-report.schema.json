@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quasar://schemas/document-validation-report/1.0",
+  "title": "Quasar Commercial Document Validation Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["_artifact", "schema_version", "status", "ok", "source", "mapping", "outputs", "checks", "errors", "warnings"],
+  "properties": {
+    "_artifact": {
+      "type": "object",
+      "required": ["creation_mode", "semantic_authority", "generated_from", "generated_by", "generated_at", "do_not_edit"]
+    },
+    "schema_version": {"const": "1.0"},
+    "status": {"enum": ["Passed", "Passed with warnings", "Failed"]},
+    "ok": {"type": "boolean"},
+    "source": {"type": "object"},
+    "mapping": {"type": "object"},
+    "outputs": {"type": "object"},
+    "checks": {"type": "object"},
+    "errors": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}}
+  }
+}

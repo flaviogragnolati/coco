@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resolve Merge Conflicts"
+  short_description: "Resolve Git conflicts while preserving intended behavior"
+  default_prompt: "Use $q-code-merge-conflicts to resolve the current Git conflicts while preserving intended behavior."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement"
+  short_description: "Execute settled work and update its source record"
+  default_prompt: "Use $q-code-implement to execute this settled work against the project profile, verify it, review it, and update its original record."

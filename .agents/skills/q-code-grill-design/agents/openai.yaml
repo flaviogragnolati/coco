@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Grill"
+  short_description: "Align cross-cutting architecture and durable decisions"
+  default_prompt: "Use $q-code-grill-design to align this cross-cutting change and produce a durable architecture design."

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Zoom Out"
+  short_description: "Map modules and callers one abstraction level higher"
+  default_prompt: "Use $q-code-zoom-out to map the relevant modules and callers one abstraction level above this code."
+policy:
+  allow_implicit_invocation: false

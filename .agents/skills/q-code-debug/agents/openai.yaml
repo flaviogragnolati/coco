@@ -1,0 +1,4 @@
+interface:
+  display_name: "Debug"
+  short_description: "Diagnose and fix evidence-backed failures"
+  default_prompt: "Use $q-code-debug to reproduce, diagnose, and fix this failure with project-appropriate regression coverage."

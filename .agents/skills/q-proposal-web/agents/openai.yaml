@@ -1,0 +1,4 @@
+interface:
+  display_name: "Interactive Web Proposal"
+  short_description: "Build a traceable interactive proposal web channel"
+  default_prompt: "Use $q-proposal-web to create a traceable interactive web channel for this proposal."

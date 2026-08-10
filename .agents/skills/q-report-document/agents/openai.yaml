@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generate Quasar Report"
+  short_description: "Render Quasar reports to Markdown, DOCX, and PDF"
+  default_prompt: "Use $q-report-document to render an approved report source as traceable Markdown, DOCX, and PDF documents."
