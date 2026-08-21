@@ -1260,6 +1260,14 @@ async function seedMasterData(tx: Tx) {
 			brandId: brands.pampa.id,
 			defaultSupplierId: suppliers.packNorte.id,
 		}),
+		comboFijo: await upsertProduct(tx, {
+			name: "Combo institucional cantidad fija x12",
+			description:
+				"Combo cerrado que solo se vende de a 12: sus terminos no tienen step.",
+			unit: "box",
+			brandId: brands.pampa.id,
+			defaultSupplierId: suppliers.packNorte.id,
+		}),
 		snackInactivo: await upsertProduct(tx, {
 			name: "Snack estacional de verano",
 			description: "Producto demo inactivo para probar filtros.",
@@ -1364,6 +1372,15 @@ async function seedMasterData(tx: Tx) {
 			unitPrice: "80.00",
 			currency: "BRL",
 			fromDate: FUTURE_FROM_DATE,
+		}),
+		// Fixed quantity: omitting step/stepPrice normalizes them to null, which is
+		// what pins the quantity at MOQ and disables the -/+ controls.
+		cantidadFija: await upsertProductClientTerms(tx, {
+			productId: products.comboFijo.id,
+			moq: "12.0000",
+			moqPrice: "36000.00",
+			unitPrice: "3000.00",
+			fromDate: CURRENT_FROM_DATE,
 		}),
 		snackInactive: await upsertProductClientTerms(tx, {
 			productId: products.snackInactivo.id,
