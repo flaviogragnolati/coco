@@ -2,6 +2,7 @@
 
 import { LogInIcon, PencilIcon, ShoppingBagIcon } from "lucide-react";
 import Link from "next/link";
+import { useId } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
@@ -53,6 +54,8 @@ export function CartSummary({
 	onLeaveCheckout: () => void;
 }) {
 	const atCheckout = cart.status === "atCheckout";
+	const clearBlockedReasonId = useId();
+
 	return (
 		<Card className="lg:sticky lg:top-20">
 			<CardHeader>
@@ -153,6 +156,7 @@ export function CartSummary({
 					</Button>
 				) : null}
 				<Button
+					aria-describedby={atCheckout ? clearBlockedReasonId : undefined}
 					className="w-full"
 					disabled={isPending || atCheckout || cart.itemCount === 0}
 					onClick={onClear}
@@ -161,6 +165,17 @@ export function CartSummary({
 				>
 					Vaciar carrito
 				</Button>
+				{/* Next to the control it explains, not in another card: a disabled
+				    button with no adjacent reason is the original QA complaint. */}
+				{atCheckout ? (
+					<p
+						className="text-center text-muted-foreground text-xs"
+						id={clearBlockedReasonId}
+					>
+						No podés vaciar el carrito mientras haya un pago en curso. Si es un
+						pago externo con comprobante declarado, esperá a que lo confirmemos.
+					</p>
+				) : null}
 			</CardFooter>
 		</Card>
 	);
