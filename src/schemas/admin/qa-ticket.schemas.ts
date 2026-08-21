@@ -25,9 +25,42 @@ export const qaTicketStatusSchema = z.enum([
 	"failed",
 	"blocked",
 	"skipped",
+	"needsClarification",
 ]);
 
-export const qaTicketCreateInputSchema = z.object({
+export const QA_TICKET_CLARIFICATION_REASON_MESSAGE =
+	"Explicá qué falta aclarar para que el caso pueda corregirse";
+
+/**
+ * `needsClarification` says the definition itself is unusable, so the note is
+ * the only place that records *what* is missing. Chained explicitly onto each of
+ * the three commands that can persist a status — create, update and save-result
+ * — so that adding a fourth is a deliberate act rather than something inherited
+ * silently from a shared base.
+ *
+ * `notes` normally arrives through {@link nullishText}, which already collapses
+ * absent, null, empty and whitespace-only into `undefined`; the trim below
+ * repeats that cheaply so the rule survives being composed onto a `notes` field
+ * that does not.
+ */
+function validateClarificationReason(
+	value: {
+		status: z.output<typeof qaTicketStatusSchema>;
+		notes?: string | null;
+	},
+	ctx: z.RefinementCtx,
+) {
+	if (value.status !== "needsClarification") return;
+	if (value.notes && value.notes.trim().length > 0) return;
+
+	ctx.addIssue({
+		code: "custom",
+		message: QA_TICKET_CLARIFICATION_REASON_MESSAGE,
+		path: ["notes"],
+	});
+}
+
+const qaTicketInputFieldsSchema = z.object({
 	section: requiredText("La sección es obligatoria"),
 	title: requiredText("El título es obligatorio"),
 	actor: requiredText("El rol que ejecuta es obligatorio"),
@@ -40,9 +73,15 @@ export const qaTicketCreateInputSchema = z.object({
 	assigneeId: optionalAssigneeId,
 });
 
-export const qaTicketUpdateInputSchema = qaTicketCreateInputSchema.extend({
-	id: qaTicketIdSchema,
-});
+export const qaTicketCreateInputSchema = qaTicketInputFieldsSchema.superRefine(
+	validateClarificationReason,
+);
+
+export const qaTicketUpdateInputSchema = qaTicketInputFieldsSchema
+	.extend({
+		id: qaTicketIdSchema,
+	})
+	.superRefine(validateClarificationReason);
 
 export const qaTicketDeleteInputSchema = z.object({
 	id: qaTicketIdSchema,
@@ -83,13 +122,15 @@ export const qaTicketLogInputSchema = z.object({
 	mimeType: evidenceMimeTypeSchema.optional().default(null),
 });
 
-export const qaTicketSaveResultInputSchema = z.object({
-	id: qaTicketIdSchema,
-	status: qaTicketStatusSchema,
-	notes: nullishText,
-	consoleLog: qaTicketLogInputSchema,
-	networkLog: qaTicketLogInputSchema,
-});
+export const qaTicketSaveResultInputSchema = z
+	.object({
+		id: qaTicketIdSchema,
+		status: qaTicketStatusSchema,
+		notes: nullishText,
+		consoleLog: qaTicketLogInputSchema,
+		networkLog: qaTicketLogInputSchema,
+	})
+	.superRefine(validateClarificationReason);
 
 export const qaTicketClaimInputSchema = z.object({
 	id: qaTicketIdSchema,
@@ -139,6 +180,7 @@ export const qaTicketStatsSchema = z.object({
 	failed: z.number().int().nonnegative(),
 	blocked: z.number().int().nonnegative(),
 	skipped: z.number().int().nonnegative(),
+	needsClarification: z.number().int().nonnegative(),
 	deleted: z.number().int().nonnegative(),
 });
 

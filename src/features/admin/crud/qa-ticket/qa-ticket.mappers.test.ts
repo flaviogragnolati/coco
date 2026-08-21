@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { qaTicketStatusSchema } from "~/schemas/admin/qa-ticket.schemas";
 import {
 	getQaTicketWorkAction,
+	qaTicketResultOptions,
 	qaTicketStatusConfig,
 	qaTicketStatusLabelMap,
 	qaTicketStatusOptions,
@@ -25,10 +26,50 @@ describe("qaTicketStatusConfig", () => {
 		);
 	});
 
+	it("distinguishes a missing environment from a missing definition", () => {
+		expect(qaTicketStatusConfig.needsClarification.label).toBe(
+			"Requiere aclaración",
+		);
+		expect(qaTicketStatusConfig.needsClarification.icon).not.toBe(
+			qaTicketStatusConfig.blocked.icon,
+		);
+		expect(
+			qaTicketStatusConfig.needsClarification.hint?.length,
+		).toBeGreaterThan(0);
+	});
+
 	it("offers one filter option per status", () => {
 		expect(qaTicketStatusOptions.map((option) => option.value)).toEqual([
 			...qaTicketStatusSchema.options,
 		]);
+	});
+});
+
+describe("qaTicketResultOptions", () => {
+	it("offers exactly the statuses a finished run can produce", () => {
+		expect(qaTicketResultOptions.map((option) => option.value)).toEqual([
+			"passed",
+			"failed",
+			"blocked",
+			"skipped",
+			"needsClarification",
+		]);
+	});
+
+	it("excludes the queue positions from the operational selector", () => {
+		const values: string[] = qaTicketResultOptions.map(
+			(option) => option.value,
+		);
+
+		expect(values).not.toContain("pending");
+		expect(values).not.toContain("inProgress");
+	});
+
+	it("reuses the chip metadata instead of a parallel list", () => {
+		for (const option of qaTicketResultOptions) {
+			expect(option.label).toBe(qaTicketStatusLabelMap[option.value]);
+			expect(option.icon).toBe(qaTicketStatusConfig[option.value].icon);
+		}
 	});
 });
 

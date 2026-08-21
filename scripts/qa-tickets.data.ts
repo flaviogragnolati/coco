@@ -5,8 +5,12 @@
  *
  * `section` keeps the literal letter prefix of the doc's heading so alphabetical
  * order is the doc's order. `isRegressionPath` marks the minimum end-to-end
- * regression chain listed at the bottom of the doc, both payment branches
- * included (mock 17, Mercado Pago 21 + 23).
+ * regression chain listed at the bottom of the doc, which now runs through the
+ * Mercado Pago branch only (21 + 23): the mock gateway of the old #17 is gone.
+ *
+ * A code that leaves this list is not erased: it moves to `retiredQaTicketCodes`
+ * below and its row survives, logically deleted. `qa_ticket.code` is identity, so
+ * a retired case has to keep meaning what it meant.
  */
 
 export type QaTicketSeedEntry = {
@@ -170,9 +174,10 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		title: "Inicio del checkout (4 pasos)",
 		actor: "Cliente",
 		feature: "`checkout.start` + stepper",
-		steps: "1) Con carrito con items y sesión activa, ir a `/checkout`.",
+		steps:
+			'Precondiciones: sesión de Cliente activa y carrito editable con al menos un producto vigente.\n1) En `/cart`, anotar el código del carrito y hacer click en "Ir a pagar".\n2) Esperar la carga de `/checkout` y verificar que el paso activo inicial sea "Pedido".\n3) Sin completar dirección ni pago, intentar abrir "Envío", "Pago" y "Confirmar" desde el stepper.\n4) En otra sesión Admin, abrir `/admin/carts`, buscar el código anotado y revisar su estado.',
 		expectedResult:
-			'Se muestra el stepper "Pedido → Envío → Pago → Confirmar"; los pasos futuros están bloqueados con tooltip "Completá los pasos anteriores". En `/admin/carts` el carrito pasa a "En checkout".',
+			'El checkout muestra "Pedido → Envío → Pago → Confirmar" y comienza en "Pedido".\nLos pasos que todavía no cumplen sus precondiciones están deshabilitados y explican "Completá los pasos anteriores".\nEn `/admin/carts`, el mismo carrito figura "En checkout"; todavía no existe una orden ni un intento de pago.',
 		isRegressionPath: true,
 	},
 	{
@@ -193,9 +198,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: 'Address book en el paso "Envío"',
 		steps:
-			'1) En "Envío", click "Nueva".\n2) Enviar el formulario vacío.\n3) Completar Dirección, Ciudad, Provincia, Código postal, País y guardar.\n4) Editarla con "Editar".',
+			'Precondiciones: checkout iniciado y paso "Pedido" completo.\n1) Avanzar a "Envío" y hacer click en "Nueva".\n2) En "Agregar dirección", dejar vacíos los campos obligatorios y hacer click en "Guardar dirección".\n3) Completar Dirección, Ciudad, Provincia / Estado, Código postal y País. Dejar "Complemento" vacío: es opcional y sirve para piso, departamento, oficina u otra referencia interna.\n4) Guardar y comprobar qué tarjeta queda seleccionada.\n5) En esa tarjeta, hacer click en "Editar", cambiar Ciudad y Complemento, y volver a guardar.',
 		expectedResult:
-			'Los campos obligatorios muestran sus mensajes ("La dirección es obligatoria", etc.). Al guardar: toast "Dirección guardada", la tarjeta queda con badge "Seleccionada" y el paso se habilita.',
+			'El envío vacío muestra mensajes de validación junto a cada campo obligatorio.\nEl alta muestra "Dirección guardada"; la nueva tarjeta queda con badge "Seleccionada" y habilita continuar.\nLa edición muestra "Dirección actualizada", conserva la selección y refleja Ciudad y Complemento nuevos.\nEliminar direcciones no forma parte de este caso; la falta de esa capacidad se registra como seguimiento de producto separado.',
 		isRegressionPath: true,
 	},
 	{
@@ -221,18 +226,6 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		expectedResult:
 			"Sin el switch el botón está deshabilitado (no se puede confirmar). Con el switch activo el pago se procesa.",
 		isRegressionPath: false,
-	},
-	{
-		code: 17,
-		section: SECTION_C,
-		title: "Pago mock aprobado",
-		actor: "Cliente",
-		feature: "`confirmAndPay` camino feliz (gateway mock)",
-		steps:
-			'Precondición: MP deshabilitado.\n1) Confirmar con un método cuya referencia NO contiene "fail"/"rechazo".\n2) Observar el panel de resultado.\n3) Ir a "Ver mi pedido".',
-		expectedResult:
-			'Panel "Compra confirmada", carrito local vaciado, orden visible en `/my-orders` en "En procesamiento" con pago "Aprobado". En admin: carrito "Enviado", items "submitted".',
-		isRegressionPath: true,
 	},
 	{
 		code: 18,
@@ -265,9 +258,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Admin",
 		feature: "Revalidación de términos",
 		steps:
-			"1) Cliente arma carrito y llega al checkout.\n2) Admin desactiva los términos/el producto.\n3) Cliente intenta confirmar.",
+			'Precondiciones: dos sesiones abiertas (Cliente y Admin), un producto activo con términos vigentes en el carrito, y el Cliente detenido en "Confirmar" sin pagar.\n1) En la sesión Admin, abrir `/admin/products`, editar ese producto, desactivar "Producto activo" y guardar.\n2) Volver a la sesión Cliente sin refrescar y hacer click en "Confirmar y pagar".\n3) Después del error, usar "Volver al carrito" para salir del checkout y revisar el item inválido.',
 		expectedResult:
-			'Error "Uno de los productos del carrito ya no está disponible. Revisá el carrito antes de continuar." El cliente puede volver al carrito y quitar el producto.',
+			'La confirmación se rechaza con "Uno de los productos del carrito ya no está disponible. Revisá el carrito antes de continuar."\nNo se crea una orden ni un intento de pago nuevo.\nAl volver al carrito, este queda editable para quitar o resincronizar el producto inválido.',
 		isRegressionPath: false,
 	},
 	{
@@ -277,9 +270,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Preferencia MP + redirect",
 		steps:
-			'Precondición: MP habilitado en sandbox.\n1) Confirmar el pedido con el método "Mercado Pago".',
+			'Precondiciones: Mercado Pago habilitado en modo "Sandbox" desde `/admin/payments` → Config, secretos de prueba configurados, URLs públicas HTTPS válidas y un Cliente con carrito/dirección listos. Sandbox es el entorno de Mercado Pago para cuentas, compradores y medios de prueba; no mueve dinero real.\n1) En "Pago", elegir "Mercado Pago" y avanzar a "Confirmar".\n2) Aceptar los términos y hacer click en "Confirmar y pagar".\n3) Sin completar todavía el pago en Checkout Pro, abrir `/admin/payments` en la sesión Admin y buscar el pedido o intento recién creado.',
 		expectedResult:
-			'Toast "Redirigiendo a Mercado Pago" y navegación al checkout de MP (URL sandbox). En `/admin/payments` el intento queda "pending" con preferencia creada; la orden queda "Pendiente" y el carrito sigue "En checkout".',
+			'La app muestra "Redirigiendo a Mercado Pago" y navega al Checkout Pro de prueba.\nEl intento aparece "Pendiente", con proveedor Mercado Pago y preferencia creada; la orden queda "Pendiente" y el carrito "En checkout".\nLa pantalla externa usa únicamente credenciales de comprador y medios de pago de prueba.',
 		isRegressionPath: true,
 	},
 	{
@@ -289,9 +282,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Back URLs success/failure/pending",
 		steps:
-			"1) Completar (o abandonar) el pago en MP y volver por cada back URL.",
+			"Precondiciones: app accesible en la URL configurada para los retornos de Mercado Pago.\n1) Abrir `/checkout/mercadopago/success` y registrar título, badge y alerta.\n2) Abrir `/checkout/mercadopago/failure` y repetir la revisión.\n3) Abrir `/checkout/mercadopago/pending` y repetir la revisión.\n4) Confirmar que ninguna de las tres páginas ofrece o ejecuta una mutación de estado.",
 		expectedResult:
-			'Las tres pantallas ("Pago enviado a confirmación" / "Pago no confirmado" / "Pago pendiente") muestran la alerta "Estado sujeto a reconciliación" y NO cambian ningún estado por sí mismas.',
+			'Success muestra "Pago enviado a confirmación"; failure, "Pago no confirmado"; pending, "Pago pendiente".\nLas tres muestran "Estado sujeto a reconciliación" y explican que esa pantalla no actualiza el pago.\nLas tres permiten ir al inicio o a "Ver mis pedidos"; la verdad del pago sigue dependiendo del webhook firmado y la consulta al proveedor.',
 		isRegressionPath: false,
 	},
 	{
@@ -301,9 +294,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Sistema",
 		feature: "Reconciliación por webhook firmado",
 		steps:
-			"1) Pagar en sandbox con una tarjeta de prueba aprobada.\n2) Esperar el webhook.\n3) Refrescar `/my-orders/[id]` y `/admin/payments`.",
+			"Precondiciones: continuar desde un intento sandbox de #21; usar un comprador de prueba distinto del vendedor y un medio de prueba con resultado aprobado.\n1) Completar el pago en Checkout Pro y volver por la URL de éxito.\n2) En `/admin/payments` → Eventos, esperar el evento asociado y verificar su firma; luego abrir el intento relacionado.\n3) En la sesión Cliente, abrir `/my-orders/[id]` del pedido y refrescar hasta que termine la reconciliación.",
 		expectedResult:
-			'Transacción "Aprobado" (completed), orden "En procesamiento", carrito "Enviado", items submitted. El journey del pedido muestra "Pedido confirmado" (puede demorar unos segundos: el evento de tracking es asíncrono).',
+			'El evento queda vinculado y con firma válida; el intento pasa a "Completado"/"Aprobado".\nLa orden pasa a "En procesamiento", el carrito a "Enviado" y sus items a submitted.\nEl detalle del cliente muestra "Pedido confirmado". La proyección puede aparecer unos segundos después porque el tracking es asíncrono.\nSi el evento no llega por configuración de entorno, el caso queda "Bloqueado", no "Fallido".',
 		isRegressionPath: true,
 	},
 	{
@@ -383,9 +376,10 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		title: "Journey vacío hasta acreditar el pago",
 		actor: "Cliente",
 		feature: "Inicio del seguimiento",
-		steps: "1) Abrir el detalle de un pedido cuyo pago aún no se acreditó.",
+		steps:
+			'Precondiciones: Pago externo habilitado y pedido confirmado por el Cliente, pero todavía no liquidado ni rechazado por un Admin.\n1) En "Mis pedidos", abrir el pedido pendiente creado con Pago externo.\n2) Ubicar la card "Seguimiento del pedido" antes de que el Admin procese el intento.\n3) En otra sesión Admin, comprobar en `/admin/payments` que el intento sigue pendiente.',
 		expectedResult:
-			'Card "Seguimiento del pedido" con "El seguimiento comienza cuando se acredita el pago." — sin etapas.',
+			'La card muestra "El seguimiento comienza cuando se acredita el pago." y no dibuja etapas.\nLa orden y el intento permanecen pendientes; abrir el detalle no acredita ni modifica el pago.',
 		isRegressionPath: false,
 	},
 	{
@@ -395,9 +389,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Admin",
 		feature: "Timeline de 6 etapas del cliente",
 		steps:
-			"1) Con un pedido pagado, el admin avanza el ciclo completo (operación → proveedor → empaque → envío → entrega).\n2) El cliente refresca el detalle después de cada hito.",
+			'Precondiciones: pedido pagado con al menos un item; sesiones Cliente y Admin abiertas; conservar el id del pedido.\n1) Cliente: abrir `/my-orders/[id]` y registrar el estado inicial "Pedido confirmado".\n2) Admin: crear, revisar y ejecutar una operación en `/admin/operations`; Cliente refresca el detalle.\n3) Admin: solicitar y confirmar la orden en `/admin/supplier-orders`; Cliente refresca.\n4) Admin: registrar el despacho, despachar y recibir el envío interno desde `/admin/supplier-orders` y `/admin/shipments`.\n5) Admin: fraccionar o promover el paquete en `/admin/packages`; Cliente refresca.\n6) Admin: crear/despachar el envío al cliente y confirmar entrega desde `/admin/shipments`; Cliente refresca una última vez.',
 		expectedResult:
-			"Las etapas se completan en orden: Pedido confirmado → Preparación → Proveedor → Empaque → Envío → Entrega, con timestamps. La etapa actual queda destacada y las futuras en pendiente.",
+			"El seguimiento conserva seis etapas en orden: Pedido confirmado → Preparación → Proveedor → Empaque → Envío → Entrega.\nCada hito administrativo avanza la etapa correspondiente sin retrocesos; la actual queda destacada, las futuras pendientes y las completadas muestran timestamp.\nLa entrega completa la última etapa. Los cambios pueden requerir un refresco breve por la proyección asíncrona.",
 		isRegressionPath: true,
 	},
 	{
@@ -407,9 +401,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Roll-up del recorrido",
 		steps:
-			"1) Pedido con 2 items en la misma etapa: ver el detalle.\n2) Hacer que un item avance más que el otro (p. ej. uno empaquetado y otro no) y volver a ver.",
+			'Precondiciones: pedido pagado con dos productos distintos y ambos items en "Pedido confirmado".\n1) Abrir `/my-orders/[id]` y revisar la presentación inicial del seguimiento.\n2) En `/admin/operations`, crear un borrador que incluya ambos items; durante "Revisar", omitir uno de ellos y ejecutar la operación solo con el otro.\n3) Volver al detalle del Cliente y refrescar.\n4) En una operación posterior, incorporar el item omitido hasta que ambos vuelvan a la misma etapa y refrescar otra vez.',
 		expectedResult:
-			'Caso 1: un solo stepper ("Todos los productos avanzan juntos por este recorrido."). Caso 2: un recorrido por item con su etapa y badge propios.',
+			'Con ambos items en la misma etapa se muestra un único stepper y "Todos los productos avanzan juntos por este recorrido."\nCuando solo uno entra en operación, se muestran recorridos separados por producto con su etapa y badge propios.\nCuando las etapas convergen nuevamente, la vista vuelve a unificarse sin duplicar el recorrido.',
 		isRegressionPath: false,
 	},
 	{
@@ -833,3 +827,19 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		isRegressionPath: true,
 	},
 ];
+
+/**
+ * Codes that the seed keeps logically deleted. A test lands here when the feature
+ * it validated stopped existing, never when it merely fails: the row keeps its
+ * identity, history and tracking, and only stops showing up in the active board.
+ *
+ * The retirement is monotonic: `qa-seed.ts` may take a code listed here from
+ * active to deleted, and that is the only direction it can move it. Bringing one
+ * back is a deliberate admin action, never the side effect of a seed run.
+ *
+ * - 17 — mock payment gateway, removed by ADR 0010.
+ *
+ * `implementation-plan-qa-coverage-expansion.md` extends this list with 15 and 18
+ * when it runs; it must add to the list, not reimplement the mechanism.
+ */
+export const retiredQaTicketCodes: number[] = [17];

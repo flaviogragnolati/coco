@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
 	claimQaTicket,
+	getQaTicketStats,
 	qaTicketListSelect,
 	replaceQaTicketLog,
 	saveQaTicketResult,
@@ -64,5 +65,56 @@ describe("replaceQaTicketLog", () => {
 			where: { qaTicketId: 42, kind: "consoleLog", slot: 0 },
 		});
 		expect(upsert).not.toHaveBeenCalled();
+	});
+});
+
+describe("getQaTicketStats", () => {
+	function statsDb(byStatus: Array<{ status: string; _count: number }>) {
+		return {
+			qaTicket: {
+				count: vi.fn().mockResolvedValueOnce(9).mockResolvedValueOnce(1),
+				groupBy: vi.fn().mockResolvedValue(byStatus),
+			},
+		};
+	}
+
+	it("reports zero for a status Prisma omitted from the grouping", async () => {
+		const db = statsDb([{ status: "passed", _count: 4 }]);
+
+		await expect(getQaTicketStats(db as never)).resolves.toEqual({
+			total: 9,
+			deleted: 1,
+			pending: 0,
+			inProgress: 0,
+			passed: 4,
+			failed: 0,
+			blocked: 0,
+			skipped: 0,
+			needsClarification: 0,
+		});
+	});
+
+	it("counts the clarification rows once they exist", async () => {
+		const db = statsDb([
+			{ status: "passed", _count: 4 },
+			{ status: "needsClarification", _count: 3 },
+		]);
+
+		await expect(getQaTicketStats(db as never)).resolves.toMatchObject({
+			passed: 4,
+			needsClarification: 3,
+		});
+	});
+
+	it("counts only live tickets by status", async () => {
+		const db = statsDb([]);
+
+		await getQaTicketStats(db as never);
+
+		expect(db.qaTicket.groupBy).toHaveBeenCalledWith({
+			by: ["status"],
+			where: { deleted: false },
+			_count: true,
+		});
 	});
 });

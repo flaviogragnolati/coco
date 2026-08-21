@@ -63,6 +63,10 @@ export function QaTicketFormDialog({
 	const errors = form.formState.errors;
 	const isRegressionPath = Boolean(form.watch("isRegressionPath"));
 	const assigneeId = form.watch("assigneeId");
+	// `notes` stays registered while the field is unmounted (React Hook Form drops
+	// hidden values only under `shouldUnregister: true`, which this form does not
+	// set), so editing a ticket in any other status keeps the note it already had.
+	const needsClarification = form.watch("status") === "needsClarification";
 	const title =
 		mode === "create"
 			? "Agregar ticket de QA"
@@ -252,6 +256,25 @@ export function QaTicketFormDialog({
 							/>
 							<FieldError errors={[errors.assigneeId]} />
 						</Field>
+						{needsClarification ? (
+							<Field
+								className="md:col-span-2"
+								data-invalid={Boolean(errors.notes)}
+							>
+								<FieldLabel htmlFor="qa-ticket-notes">
+									Motivo de aclaración
+								</FieldLabel>
+								<Textarea
+									aria-invalid={Boolean(errors.notes)}
+									disabled={isSubmitting}
+									id="qa-ticket-notes"
+									placeholder="Qué dato, precondición, paso, ubicación u oráculo falta para poder ejecutar o decidir el caso"
+									rows={4}
+									{...form.register("notes")}
+								/>
+								<FieldError errors={[errors.notes]} />
+							</Field>
+						) : null}
 						<Field className="md:col-span-2" orientation="horizontal">
 							<Switch
 								checked={isRegressionPath}

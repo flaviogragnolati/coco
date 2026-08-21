@@ -3,8 +3,14 @@
  *
  * The upsert rewrites only the transcribed text (section, title, actor, feature,
  * steps, expectedResult, isRegressionPath) and never touches `status`, `notes`,
- * `assigneeId`, `deleted` or `evidence`: those fields ARE the QA tracking, so
- * re-running this after a wording fix must not wipe a pass that is underway.
+ * `assigneeId` or `evidence`: those fields ARE the QA tracking, so re-running
+ * this after a wording fix must not wipe a pass that is underway.
+ *
+ * The single exception is `deleted`, and only in one direction: after the
+ * upserts, the codes in `retiredQaTicketCodes` are taken to `deleted: true`.
+ * That write is monotonic — the seed can retire a case whose feature no longer
+ * exists, but it can never resurrect one, so a row retired here stays retired
+ * across every future run. Reactivating one is a deliberate admin action.
  *
  * For the same reason `qa_ticket` is deliberately absent from
  * `resetDemoTransactionalData` and `requiredTables` in `prisma/seed.ts`. The QA
@@ -17,7 +23,7 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "~/prisma/client";
-import { qaTicketSeedEntries } from "./qa-tickets.data";
+import { qaTicketSeedEntries, retiredQaTicketCodes } from "./qa-tickets.data";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -72,8 +78,15 @@ async function main() {
 		else created += 1;
 	}
 
+	// Monotonic logical delete: `deleted: false` in the filter means an already
+	// retired row is left untouched, so the count reports what THIS run retired.
+	const { count: retired } = await db.qaTicket.updateMany({
+		where: { code: { in: retiredQaTicketCodes }, deleted: false },
+		data: { deleted: true },
+	});
+
 	console.info(
-		`QA tickets: ${created} creados, ${updated} actualizados (tracking preservado).`,
+		`QA tickets: ${created} creados, ${updated} actualizados, ${retired} retirados (tracking preservado).`,
 	);
 }
 

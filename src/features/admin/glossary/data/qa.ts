@@ -151,8 +151,21 @@ export const qaGlossaryEntries: GlossaryEntry[] = [
 		section: "qa",
 		label: qaTicketStatusLabelMap.blocked,
 		definition:
-			"El caso no se pudo correr por una dependencia rota o datos faltantes.",
+			"La definición del caso se entiende, pero no se pudo correr por una dependencia rota, un entorno caído o datos faltantes. Cuando lo que falta es la definición misma, el estado es Requiere aclaración.",
 		occurrences: [{ code: "QaTicketStatus.blocked", db: "qa_ticket.status" }],
+		href: "/admin/qa-tickets",
+	},
+	{
+		slug: "estado-qa-requiere-aclaracion",
+		kind: "status",
+		section: "qa",
+		label: qaTicketStatusLabelMap.needsClarification,
+		definition:
+			"La definición del caso no alcanza para ejecutarlo ni para decidir pass/fail de forma determinista: falta un dato, una precondición, un paso, una ubicación o el oráculo contra el cual comparar. El motivo es obligatorio y se guarda en las notas del ticket. No es Bloqueado, que asume una definición suficiente, ni Fallido, que exige haber ejecutado el flujo. El caso conserva a quien detectó la ambigüedad y vuelve a En curso cuando esa persona lo retoma.",
+		aliases: ["No se entiende", "Ambiguo", "Definición insuficiente"],
+		occurrences: [
+			{ code: "QaTicketStatus.needsClarification", db: "qa_ticket.status" },
+		],
 		href: "/admin/qa-tickets",
 	},
 	{

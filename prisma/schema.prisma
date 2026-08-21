@@ -1241,6 +1241,7 @@ enum QaTicketStatus {
   failed
   blocked
   skipped
+  needsClarification
 }
 
 enum QaTicketEvidenceKind {

@@ -238,6 +238,13 @@ While the attempt is `pending`, `providerStatus` walks `awaiting_transfer → re
 | `AuditLog` | Generic audit trail | Optional relation to `User`; generic entity references | Records actor and before/after context beyond fulfillment events |
 | `Channel` | Communication or outbound integration channel | Standalone | Present in schema but not part of the modeled fulfillment path |
 
+### Internal QA tracking
+
+| Model | Role | Key relationships | Notes |
+| --- | --- | --- | --- |
+| `QaTicket` | One manual QA test case | Optional `assignee` (`User`, `SetNull`); has many `QaTicketEvidence` | Merges the specification and the work item: `steps`/`expectedResult` are the definition, `status`/`assigneeId`/`notes` are the live pass. `code` is a stable human identifier that is never renumbered or recycled; retiring a case is `deleted = true` |
+| `QaTicketEvidence` | Current image or log backing a result | Must belong to `QaTicket` (`Cascade`) | Unique on `(qaTicketId, kind, slot)`; content never appears in list, stats, or audit payloads |
+
 ### Relationship chain that matters most
 
 The critical end-to-end lineage for a fulfilled request is:
@@ -281,6 +288,8 @@ Supporting relationships that shape behavior around that chain are:
 | `DeliveryMode` | Shipment | `homeDelivery \| pickupPoint`; null on internal transfers | Classification value | Set at end-user shipment creation; depot pickup is deliberately not a value |
 | `HomeOffersCriterion` | Home offer settings | How the automatic offers ranking sorts: `marketSaving \| discountPercent` | Configuration value, not a lifecycle | Admin, through the home offers section |
 | `DomainEventOutboxStatus` | Outbox row | Dispatch lifecycle of a durable domain event | Infrastructure state | `DomainEventDispatcher` |
+| `QaTicketStatus` | QA ticket | Where one manual test case stands in the current pass: `pending \| inProgress \| passed \| failed \| blocked \| skipped \| needsClarification` | Detailed single-live-state | `qa-ticket.service.ts`; the tester writes results and claims, an admin corrects tracking from the form. No ladder — the next pass overwrites the value and the history lives in `AuditLog` |
+| `QaTicketEvidenceKind` | QA evidence | Which artifact a row holds: `image \| consoleLog \| networkLog` | Classification value | Set at creation, never moved |
 
 ### Legal transitions live in one shared module
 
@@ -600,7 +609,14 @@ This section is normative, and each rule now names its implementation. The datab
 - every admin command writes an audit entry with effect summaries (`writeAdminAuditLog`)
 - the one deliberate exception: `carrier-order.service.ts` publishes nothing — a booking records contracting, never goods
 
-### 10. Address, contact, and locale validation live in application code
+### 10. A QA clarification must say what is missing
+
+- `QaTicketStatus.needsClarification` means the case's own definition does not allow executing it or deciding pass/fail; `blocked` keeps the opposite meaning — the definition is sufficient and the environment, data, or a dependency is not
+- every command that can persist it (`create`, `update`, `saveResult`) requires a non-empty `notes` reason; absent, null, empty, and whitespace-only are all rejected as missing
+- enforced once, in `src/schemas/admin/qa-ticket.schemas.ts`, which the router uses as procedure input, so a direct tRPC payload fails parsing with `BAD_REQUEST` before reaching the service; no command layer restates the rule
+- evidence stays optional, ownership is untouched, and leaving the state is the ordinary claim — there is no automatic transition when the definition is corrected
+
+### 11. Address, contact, and locale validation live in application code
 
 - postal/region/country structure, shipment contact completeness, and destination compatibility with local constraints are app-layer validations
 

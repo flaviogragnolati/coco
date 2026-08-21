@@ -25,6 +25,7 @@ import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
+import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
 import {
 	applyCrudListSort,
 	type CrudListSort,
@@ -39,6 +40,7 @@ import {
 } from "~/features/admin/crud/qa-ticket/qa-ticket.mappers";
 import { QaTicketDetailDialog } from "~/features/admin/crud/qa-ticket/qa-ticket-detail-dialog";
 import { QaTicketFormDialog } from "~/features/admin/crud/qa-ticket/qa-ticket-form-dialog";
+import { buildQaTicketKpis } from "~/features/admin/crud/qa-ticket/qa-ticket-kpis";
 import { QaTicketTable } from "~/features/admin/crud/qa-ticket/qa-ticket-table";
 import type {
 	CrudModalMode,
@@ -345,6 +347,10 @@ export function QaTicketsClient({ currentUserId }: { currentUserId: string }) {
 			description="Cola de ejecución de QA con responsable, resultado y evidencia vigente."
 			title="Tickets de QA"
 		>
+			{statsQuery.data ? (
+				<CrudStatsCards stats={buildQaTicketKpis(statsQuery.data)} />
+			) : null}
+
 			<section className="flex flex-col gap-3 rounded-2xl border p-3">
 				<p className="font-medium text-sm">Estado de la pasada</p>
 				{statsQuery.isLoading ? (

@@ -134,6 +134,32 @@ describe("QA ticket service", () => {
 		expect(writeAdminAuditLog).toHaveBeenCalledOnce();
 	});
 
+	it("takes a clarified ticket back without disturbing its reason", async () => {
+		const reason = "Falta decir con qué usuario entrar";
+		const before = detail({
+			status: "needsClarification",
+			notes: reason,
+			assignee: { id: actor.id, name: actor.name },
+		});
+		const after = detail({
+			status: "inProgress",
+			notes: reason,
+			assignee: { id: actor.id, name: actor.name },
+		});
+		vi.mocked(qaTicketData.findQaTicketById).mockResolvedValue(before);
+		vi.mocked(qaTicketData.claimQaTicket).mockResolvedValue(after);
+		const { db } = database();
+
+		await expect(
+			qaTicketService.claim({ id: 1 }, actor, db as never),
+		).resolves.toMatchObject({ status: "inProgress", notes: reason });
+		expect(qaTicketData.claimQaTicket).toHaveBeenCalledOnce();
+		expect(writeAdminAuditLog).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ action: "qaTicket.claim" }),
+		);
+	});
+
 	it("rejects a foreign assignment before writing", async () => {
 		vi.mocked(qaTicketData.findQaTicketById).mockResolvedValue(
 			detail({ assignee: { id: "admin-2", name: "Admin Dos" } }),

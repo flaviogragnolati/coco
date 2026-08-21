@@ -1,14 +1,7 @@
 "use client";
 
-import {
-	AlertTriangleIcon,
-	BanIcon,
-	CheckCircle2Icon,
-	HandIcon,
-	SaveIcon,
-	SkipForwardIcon,
-} from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { HandIcon, SaveIcon } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Badge } from "~/components/ui/badge";
@@ -21,7 +14,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
-import { Field, FieldLabel } from "~/components/ui/field";
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldLabel,
+} from "~/components/ui/field";
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
@@ -30,6 +28,7 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
+import { QA_TICKET_CLARIFICATION_REASON_MESSAGE } from "~/schemas/admin/qa-ticket.schemas";
 import type {
 	QaTicketDetail,
 	QaTicketLogInput,
@@ -37,20 +36,13 @@ import type {
 	QaTicketStatus,
 } from "~/shared/common/admin-crud/qa-ticket.types";
 import { QA_TICKET_LOG_MAX_BYTES } from "~/shared/common/admin-crud/qa-ticket-evidence.constants";
-import { qaTicketStatusConfig } from "./qa-ticket.mappers";
+import {
+	qaTicketResultOptions,
+	qaTicketStatusConfig,
+} from "./qa-ticket.mappers";
+import { QaTicketDefinition } from "./qa-ticket-definition";
 import { QaTicketImages } from "./qa-ticket-images";
 import { QaTicketLogFields } from "./qa-ticket-log-fields";
-
-const resultOptions = [
-	{ value: "passed", label: "Completo OK", icon: CheckCircle2Icon },
-	{ value: "failed", label: "Fallido", icon: AlertTriangleIcon },
-	{ value: "blocked", label: "Bloqueado", icon: BanIcon },
-	{ value: "skipped", label: "Omitido", icon: SkipForwardIcon },
-] satisfies Array<{
-	value: QaTicketStatus;
-	label: string;
-	icon: typeof SaveIcon;
-}>;
 
 const emptyLog: QaTicketLogInput = {
 	content: "",
@@ -77,23 +69,6 @@ function editableSnapshot(input: {
 	networkLog: QaTicketLogInput;
 }) {
 	return JSON.stringify(input);
-}
-
-function ReadOnlySection({
-	label,
-	children,
-}: {
-	label: string;
-	children: ReactNode;
-}) {
-	return (
-		<section className="flex flex-col gap-1 rounded-2xl border p-3">
-			<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-				{label}
-			</h3>
-			<p className="whitespace-pre-line text-sm">{children}</p>
-		</section>
-	);
 }
 
 export function QaTicketDetailDialog({
@@ -160,6 +135,12 @@ export function QaTicketDetailDialog({
 			QA_TICKET_LOG_MAX_BYTES ||
 		new TextEncoder().encode(networkLog.content).byteLength >
 			QA_TICKET_LOG_MAX_BYTES;
+	// A clarification nobody can act on is worse than none, so Guardar stays
+	// disabled until there is a reason — the same rule the input schema enforces
+	// server-side, restated here only to fail before the round trip.
+	const needsClarification = status === "needsClarification";
+	const clarificationReasonMissing =
+		needsClarification && notes.trim().length === 0;
 	const isOwner = ticket?.assignee?.id === currentUserId;
 	const canClaim =
 		Boolean(ticket) &&
@@ -308,19 +289,15 @@ export function QaTicketDetailDialog({
 								</div>
 							</section>
 
-							<div className="grid gap-4 lg:grid-cols-2">
-								<div className="flex flex-col gap-3">
-									<ReadOnlySection label="Flujo">
-										{ticket.steps}
-									</ReadOnlySection>
-									<ReadOnlySection label="Resultado esperado">
-										{ticket.expectedResult}
-									</ReadOnlySection>
-								</div>
+							<div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">
+								<QaTicketDefinition
+									expectedResult={ticket.expectedResult}
+									steps={ticket.steps}
+								/>
 
-								<section className="flex flex-col gap-4 rounded-2xl border p-4">
+								<section className="flex min-w-0 flex-col gap-4 rounded-2xl border p-4">
 									<div>
-										<h3 className="font-medium">Resultado de la pasada</h3>
+										<h3 className="font-medium">Análisis de la pasada</h3>
 										<p className="text-muted-foreground text-sm">
 											Pendiente y En curso siguen disponibles desde el tracking
 											administrativo.
@@ -337,7 +314,7 @@ export function QaTicketDetailDialog({
 										value={status}
 										variant="outline"
 									>
-										{resultOptions.map((option) => {
+										{qaTicketResultOptions.map((option) => {
 											const Icon = option.icon;
 											return (
 												<ToggleGroupItem
@@ -350,18 +327,36 @@ export function QaTicketDetailDialog({
 											);
 										})}
 									</ToggleGroup>
-									<Field>
+									<Field data-invalid={clarificationReasonMissing}>
 										<FieldLabel htmlFor="qa-ticket-detail-notes">
-											Hallazgo o contexto
+											{needsClarification
+												? "Qué falta aclarar"
+												: "Análisis / hallazgo"}
 										</FieldLabel>
 										<Textarea
+											aria-invalid={clarificationReasonMissing}
 											disabled={!canEdit || isSaving}
 											id="qa-ticket-detail-notes"
 											onChange={(event) => setNotes(event.target.value)}
-											placeholder="Hallazgo, contexto o link al bug"
+											placeholder={
+												needsClarification
+													? "Qué dato, precondición, paso, ubicación u oráculo falta para poder ejecutar o decidir el caso"
+													: "Qué observaste, dónde divergió de lo esperado y link al bug"
+											}
 											rows={6}
 											value={notes}
 										/>
+										{clarificationReasonMissing ? (
+											<FieldError>
+												{QA_TICKET_CLARIFICATION_REASON_MESSAGE}
+											</FieldError>
+										) : needsClarification ? (
+											<FieldDescription>
+												Nombrá el dato, la precondición, el paso, la ubicación o
+												el oráculo que falta. Los logs y las imágenes siguen
+												siendo opcionales.
+											</FieldDescription>
+										) : null}
 									</Field>
 								</section>
 							</div>
@@ -415,7 +410,9 @@ export function QaTicketDetailDialog({
 						Cerrar
 					</Button>
 					<Button
-						disabled={!canEdit || isSaving || logTooLarge}
+						disabled={
+							!canEdit || isSaving || logTooLarge || clarificationReasonMissing
+						}
 						onClick={() => void save()}
 						type="button"
 						variant="highlight"
