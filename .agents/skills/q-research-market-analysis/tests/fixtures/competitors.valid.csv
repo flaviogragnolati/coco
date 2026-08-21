@@ -1,0 +1,5 @@
+competitor_id,competitor_name,feature_id,feature_name,status,finding_refs,as_of,geography,product_scope,notes
+COMP-A,Competitor A,FEAT-1,Feature 1,yes,F-001,2026-08-13,Argentina,SMB software,
+COMP-A,Competitor A,FEAT-2,Feature 2,unknown,,2026-08-13,Argentina,SMB software,No registered evidence
+COMP-B,Competitor B,FEAT-1,Feature 1,partial,F-002,2026-08-13,Argentina,SMB software,
+COMP-B,Competitor B,FEAT-2,Feature 2,no,F-002,2026-08-13,Argentina,SMB software,

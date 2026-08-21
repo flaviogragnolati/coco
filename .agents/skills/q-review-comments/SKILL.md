@@ -34,3 +34,11 @@ Flag comments that are:
 6. Return findings separately from the technical `q-review-code` axis.
 
 When used after `q-code-implement`, the implementer records the result in the original durable execution record.
+
+## Anti-patterns
+
+| # | Anti-pattern | How it shows up | Correct behavior |
+|---|---|---|---|
+| 1 | Validating intention without code | A comment sounds plausible, so it passes without checking current behavior. | Contrast it with the implementation, specification, and relevant history. |
+| 2 | Demanding narration | Self-explanatory statements are flagged for lacking comments. | Ask for comments only where intent, constraints, invariants, or hazards are not evident. |
+| 3 | Fixing behavior during comment review | A misleading comment triggers an unrequested code change. | Report the mismatch and route any behavior fix through an authorized implementation task. |

@@ -14,6 +14,7 @@ properties:
       version: {type: string}
       lifecycle: {enum: [Working, Baselined, Superseded, Archived]}
       report_type: {enum: [progress, feature, milestone, release, completion, consulting, executive, custom]}
+      content_profile: {enum: [general, market-research]}
       project_id: {type: string}
       title: {type: string}
       audience: {type: string}
@@ -92,6 +93,17 @@ properties:
               source_refs:
                 type: array
                 items: {type: string}
+              evidence_refs:
+                type: array
+                items:
+                  type: object
+                  required: [artifact_id, version, ref_type, ref_id]
+                  additionalProperties: false
+                  properties:
+                    artifact_id: {type: string}
+                    version: {type: string}
+                    ref_type: {enum: [finding, calculation, assumption, analysis-result, scenario]}
+                    ref_id: {type: string}
               qualifiers:
                 type: array
                 items: {type: string}

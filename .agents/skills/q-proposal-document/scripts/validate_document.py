@@ -9,13 +9,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from docx import Document
-
 from document_model import (
     as_dict, build_render_model, expected_facts, load_yaml, model_completeness,
     parse_mapping, schema_errors, sha256_file, validate_source_and_mapping,
 )
-from document_builder import CONTACT_EMAIL, WEBSITE
 
 
 PLACEHOLDERS = [
@@ -30,7 +27,7 @@ def normalize(value: str) -> str:
     return ' '.join(value.split())
 
 
-def collect_docx_text(document: Document) -> str:
+def collect_docx_text(document: Any) -> str:
     chunks = [paragraph.text for paragraph in document.paragraphs]
     for table in document.tables:
         for row in table.rows:
@@ -75,6 +72,17 @@ def missing_facts(haystack: str, facts: list[str]) -> list[str]:
 def validate_docx(
     path: Path, model: dict[str, Any], assets: Path
 ) -> tuple[list[str], list[str], dict[str, Any]]:
+    try:
+        from docx import Document
+        from document_builder import CONTACT_EMAIL, WEBSITE
+    except ModuleNotFoundError as exc:
+        dependency = {'docx': 'python-docx', 'PIL': 'Pillow'}.get(
+            exc.name or '', exc.name or 'document runtime'
+        )
+        return [
+            f'Missing dependency: {dependency} is required for DOCX validation'
+        ], [], {}
+
     errors: list[str] = []
     warnings: list[str] = []
     document = Document(path)
@@ -145,7 +153,7 @@ def validate_docx(
     facts = expected_facts(model)
     missing = missing_facts(docx_text, facts)
     for fact in missing:
-        errors.append(f'DOCX is missing canonical fact: {fact}')
+        errors.append(f'DOCX diverges from the canonical proposal source; missing fact: {fact}')
     return errors, warnings, {
         'sections': len(document.sections), 'tables': len(document.tables),
         'editable_controls': control_count, 'canonical_facts_checked': len(facts),
@@ -170,18 +178,11 @@ def validate_pdf(
     facts = expected_facts(model)
     missing = missing_facts(pdf_text, facts)
     for fact in missing:
-        errors.append(f'PDF is missing canonical fact: {fact}')
+        errors.append(f'PDF diverges from the canonical proposal source; missing fact: {fact}')
     return errors, [], {
         'pages': len(reader.pages), 'canonical_facts_checked': len(facts),
         'canonical_facts_missing': missing,
     }
-
-
-def validate_core(path: Path, model: dict[str, Any]) -> list[str]:
-    core_text = path.read_text(encoding='utf-8-sig')
-    source_hash = as_dict(model.get('metadata')).get('source_hash')
-    facts = [fact for fact in expected_facts(model) if fact != source_hash]
-    return missing_facts(core_text, facts)
 
 
 def main() -> None:
@@ -192,7 +193,6 @@ def main() -> None:
     parser.add_argument('--mapping', required=True, type=Path)
     parser.add_argument('--docx', required=True, type=Path)
     parser.add_argument('--pdf', type=Path)
-    parser.add_argument('--core', type=Path)
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument(
         '--visual-review', choices=['passed', 'failed', 'not-run'], default='not-run'
@@ -258,12 +258,6 @@ def main() -> None:
         }
     elif pdf_required:
         errors.append('PDF is required by the document mapping but was not provided')
-
-    if args.core:
-        core_missing = validate_core(args.core.resolve(), model)
-        checks['core'] = {'canonical_facts_missing': core_missing}
-        for fact in core_missing:
-            errors.append(f'02-proposal-core.md is missing canonical fact: {fact}')
 
     mode = as_dict(model.get('options')).get('mode', 'draft')
     if args.visual_review == 'failed':

@@ -1,0 +1,126 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar Marp result
+type: object
+additionalProperties: false
+required: [schema_version, request_id, outcome, owner_skill, generator_skill, operation, runtime, inputs, outputs, validation, speaker_notes, persistent_writes, capability_gaps, warnings, blockers, reconciliation_required, provenance]
+properties:
+  schema_version:
+    const: "1.0"
+  request_id:
+    type: string
+    minLength: 1
+  outcome:
+    enum: [completed, completed_with_warnings, blocked]
+  owner_skill:
+    type: string
+    minLength: 1
+  generator_skill:
+    const: q-tool-marp
+  operation:
+    enum: [create, revise, validate, render]
+  runtime:
+    type: object
+    additionalProperties: false
+    required: [node, marp_cli, browser]
+    properties:
+      node: {type: string, minLength: 1}
+      marp_cli: {type: [string, "null"]}
+      browser:
+        type: [object, "null"]
+        additionalProperties: false
+        required: [kind, path, version, smoke_render]
+        properties:
+          kind: {enum: [chrome, edge, firefox]}
+          path: {type: string, minLength: 1}
+          version: {type: string, minLength: 1}
+          smoke_render: {enum: [passed, failed]}
+  inputs:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [ref, path, sha256]
+      properties:
+        ref: {type: string, minLength: 1}
+        path: {type: string, minLength: 1}
+        sha256: {type: string, pattern: "^[a-f0-9]{64}$"}
+  outputs:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [type, path, sha256, media_type, creation_mode, semantic_authority, authority_scope]
+      properties:
+        type: {enum: [marp-source, theme, asset, html, pdf, pptx, png-title, png]}
+        path: {type: string, minLength: 1}
+        sha256: {type: string, pattern: "^[a-f0-9]{64}$"}
+        media_type: {type: string, minLength: 1}
+        creation_mode: {enum: [authored, derived]}
+        semantic_authority: {enum: [supporting, none]}
+        authority_scope: {enum: [slide-representation, presentation]}
+  validation:
+    type: object
+    additionalProperties: false
+    required: [structural, assets, network, html, notes, rendered, visual, release_readiness]
+    properties:
+      structural: {enum: [passed, failed, unavailable, not-required]}
+      assets: {enum: [passed, failed, unavailable, not-required]}
+      network: {enum: [passed, failed, unavailable, not-required]}
+      html: {enum: [passed, failed, unavailable, not-required]}
+      notes: {enum: [passed, failed, unavailable, not-required]}
+      rendered: {enum: [passed, failed, unavailable, not-required]}
+      visual: {enum: [passed, failed, unavailable, not-required]}
+      release_readiness: {enum: [ready, partial, blocked, not-assessed]}
+  speaker_notes:
+    type: object
+    additionalProperties: false
+    required: [source_count, html, pdf, pptx, images]
+    properties:
+      source_count: {type: integer, minimum: 0}
+      html: {enum: [preserved, omitted, unverified, not-requested]}
+      pdf: {enum: [preserved, omitted, unverified, not-requested]}
+      pptx: {enum: [preserved, omitted, unverified, not-requested]}
+      images: {enum: [omitted, not-requested]}
+  persistent_writes:
+    type: array
+    uniqueItems: true
+    items: {type: string, minLength: 1}
+  capability_gaps:
+    type: array
+    items: {type: string, minLength: 1}
+  warnings:
+    type: array
+    items: {type: string, minLength: 1}
+  blockers:
+    type: array
+    items: {type: string, minLength: 1}
+  reconciliation_required:
+    type: boolean
+  provenance:
+    type: object
+    additionalProperties: false
+    required: [source_refs, theme, assets, command]
+    properties:
+      source_refs:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+      theme:
+        type: object
+        additionalProperties: false
+        required: [path, sha256]
+        properties:
+          path: {type: string, minLength: 1}
+          sha256: {type: string, pattern: "^[a-f0-9]{64}$"}
+      assets:
+        type: array
+        items:
+          type: object
+          additionalProperties: false
+          required: [path, sha256]
+          properties:
+            path: {type: string, minLength: 1}
+            sha256: {type: string, pattern: "^[a-f0-9]{64}$"}
+      command: {type: string, minLength: 1}

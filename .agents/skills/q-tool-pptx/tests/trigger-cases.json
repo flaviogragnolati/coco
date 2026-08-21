@@ -1,0 +1,13 @@
+{
+  "positive": [
+    {"prompt": "Inspect this PPTX and extract its speaker notes.", "expected": "q-tool-pptx"},
+    {"prompt": "Keep slides 4, 2, and 1 in a new PPTX without changing them.", "expected": "q-tool-pptx"},
+    {"prompt": "Fill these approved tokens in a copy of the PowerPoint template.", "expected": "q-tool-pptx"},
+    {"prompt": "Render and structurally validate this deck through the available local backend.", "expected": "q-tool-pptx"}
+  ],
+  "negative": [
+    {"prompt": "Create the branded executive narrative and slide plan for this report.", "expected": "q-report-deck"},
+    {"prompt": "Change the deck recommendation because the strategy changed.", "expected": "upstream-content-owner"},
+    {"prompt": "Redact and validate this PDF export.", "expected": "q-tool-pdf"}
+  ]
+}

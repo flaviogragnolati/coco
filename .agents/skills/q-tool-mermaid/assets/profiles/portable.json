@@ -1,0 +1,7 @@
+{
+  "theme": "neutral",
+  "securityLevel": "strict",
+  "htmlLabels": false,
+  "deterministicIds": true,
+  "flowchart": {"htmlLabels": false, "curve": "linear"}
+}

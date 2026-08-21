@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+import {main} from "../runtime/web-markdown.mjs";
+
+main(process.argv.slice(2)).then((code) => { process.exitCode = code; });

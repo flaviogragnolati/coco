@@ -47,14 +47,39 @@ def parse_mapping(path: Path) -> dict[str, Any]:
 
 
 def schema_errors(instance: dict[str, Any], schema_path: Path) -> list[str]:
-    name = schema_path.name
-    if name == '02-proposal-source.schema.yaml':
-        return validate_proposal_source_shape(instance)
-    if name == '04-document-mapping.schema.yaml':
-        return validate_mapping_shape(instance)
-    if name == '04-validation-report.schema.json':
-        return validate_report_shape(instance)
-    return [f'Unsupported schema profile: {name}']
+    try:
+        import jsonschema
+    except ImportError:
+        return [
+            'Missing dependency: jsonschema>=4.18 with Draft 2020-12 support '
+            'is required for schema validation'
+        ]
+
+    validator_class = getattr(jsonschema, 'Draft202012Validator', None)
+    if validator_class is None:
+        version = getattr(jsonschema, '__version__', 'unknown')
+        return [
+            f'Unsupported dependency: jsonschema {version} has no Draft 2020-12 '
+            'validator; install jsonschema>=4.18'
+        ]
+
+    try:
+        schema = load_yaml(schema_path)
+        validator_class.check_schema(schema)
+    except Exception as exc:
+        return [f'Invalid Draft 2020-12 schema {schema_path.name}: {exc}']
+
+    def error_path(error: Any) -> str:
+        parts = [str(part) for part in error.absolute_path]
+        return '<root>' if not parts else '.'.join(parts)
+
+    return [
+        f'{error_path(error)}: {error.message}'
+        for error in sorted(
+            validator_class(schema).iter_errors(instance),
+            key=lambda item: ([str(part) for part in item.absolute_path], item.message),
+        )
+    ]
 
 
 def as_list(value: Any) -> list[Any]:

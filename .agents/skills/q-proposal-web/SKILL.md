@@ -32,6 +32,10 @@ Publication is a separate side effect and requires explicit authorization.
 6. Validate content fidelity, calculation logic, links, performance, and visual quality.
 7. Regenerate from the corrected canonical source after semantic changes.
 
+When `approved-web-visual-intent-needs-a-structural-diagram` and `q-tool-mermaid` is installed, delegate only approved commercial meaning and treat its SVG as a derived web asset. This skill retains web layout, brand, accessibility, and QA. If the tool is absent, `continue-with-an-accessible-textual-or-native-web-representation`.
+
+When `client-facing-prose-is-drafted-and-the-user-requests-a-clarity-or-ai-pattern-pass-before-the-gate` and `q-tool-humanizer` is installed, pass only the copy this skill authors itself — the headings, navigation, and section introductions of the web presentation plan — with their language and a meaning lock naming every claim, number, name, price, date, citation, and commitment that must not change; never pass a sentence reproduced from the approved source, which the channel must render exactly, and adopt a revision only into the authored plan, never into a generated output. If it is absent, `keep-the-prose-as-authored-and-record-that-no-humanization-pass-ran`.
+
 ## Error routing
 
 Return scope, price, schedule, commitment, or source contradictions to `q-proposal-design`. Fix layout, interaction, accessibility, or presentation defects here.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Database Schema Design"
+  short_description: "Review database schemas, migrations, and query performance"
+  default_prompt: "Use $q-tool-database-schema to design or review this database schema from the confirmed profile and supplied evidence without changing code or the database."

@@ -1,0 +1,108 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar database schema request
+type: object
+additionalProperties: false
+required: [schema_version, request_id, task, caller, owner_skill, scope, caller_context, database_profile, source_refs, supplied_evidence, constraints, intended_result, output, forbidden]
+properties:
+  schema_version:
+    const: "1.0"
+  request_id:
+    type: string
+  task:
+    enum: [physical-design, schema-review, document-model-review, migration-design, performance-review]
+  caller:
+    type: object
+    additionalProperties: false
+    required: [skill_id, workflow, mode]
+    properties:
+      skill_id:
+        type: string
+      workflow:
+        type: [string, "null"]
+      mode:
+        type: string
+        enum: [orchestrated, standalone]
+  owner_skill:
+    type: string
+  scope:
+    type: string
+  caller_context:
+    type: object
+    additionalProperties: false
+    required: [technical_foundation_ref, domain_refs, architecture_refs, feature_refs]
+    properties:
+      technical_foundation_ref:
+        oneOf:
+          - type: "null"
+          - type: object
+            additionalProperties: false
+            required: [artifact_id, version]
+            properties:
+              artifact_id: {type: string}
+              version: {type: string}
+      domain_refs: {$ref: "#/$defs/artifact_ref_list"}
+      architecture_refs: {$ref: "#/$defs/artifact_ref_list"}
+      feature_refs: {$ref: "#/$defs/artifact_ref_list"}
+  database_profile:
+    type: object
+    additionalProperties: false
+    required: [model_family, engine, version, confirmed]
+    properties:
+      model_family:
+        enum: [relational, document, null]
+      engine:
+        type: [string, "null"]
+      version:
+        type: [string, "null"]
+      confirmed:
+        type: boolean
+  source_refs:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [location]
+      properties:
+        artifact_id: {type: [string, "null"]}
+        version: {type: [string, "null"]}
+        location: {type: string}
+        sha256: {type: [string, "null"]}
+  supplied_evidence:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [kind, redacted, locator]
+      properties:
+        kind:
+          enum: [ddl, schema, query, plan, metric, distribution, sample]
+        redacted:
+          const: true
+        locator: {type: string}
+        notes: {type: [string, "null"]}
+  constraints:
+    type: array
+    items: {type: string}
+  intended_result:
+    type: string
+  output:
+    type: object
+    additionalProperties: false
+    required: [path, overwrite, approval_ref]
+    properties:
+      path: {type: [string, "null"]}
+      overwrite: {const: false}
+      approval_ref: {type: [string, "null"]}
+  forbidden:
+    type: array
+    items: {type: string}
+$defs:
+  artifact_ref_list:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [artifact_id, version]
+      properties:
+        artifact_id: {type: string}
+        version: {type: string}

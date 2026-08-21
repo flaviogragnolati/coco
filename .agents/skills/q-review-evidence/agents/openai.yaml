@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evidence Review"
+  short_description: "Review claims and evidence without changing them"
+  default_prompt: "Use $q-review-evidence to assess this claim and its supplied evidence without changing the target."

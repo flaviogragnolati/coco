@@ -1,0 +1,13 @@
+{
+  "theme": "base",
+  "securityLevel": "strict",
+  "deterministicIds": true,
+  "themeVariables": {
+    "background": "#ffffff",
+    "primaryColor": "#e8f0ff",
+    "primaryTextColor": "#111827",
+    "primaryBorderColor": "#1f4b99",
+    "lineColor": "#374151",
+    "fontFamily": "Arial, sans-serif"
+  }
+}

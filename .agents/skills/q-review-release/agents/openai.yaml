@@ -1,0 +1,4 @@
+interface:
+  display_name: "Integral Release Validation"
+  short_description: "Validate a release candidate against evidence"
+  default_prompt: "Use $q-review-release to validate this release candidate against its evidence checklist and return a verdict with named gaps."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ask the Project"
+  short_description: "Answer questions from real project evidence"
+  default_prompt: "Use $q-ask-project to answer this question from the project's documentation, workflow state, and observable implementation."

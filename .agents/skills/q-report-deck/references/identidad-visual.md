@@ -24,7 +24,16 @@ Usar como recursos canónicos los logotipos actuales:
 - Mantener un área libre operacional mínima equivalente al `25 %` de la altura del logotipo alrededor de sus cuatro lados.
 - Usar el logotipo completo en portada y cierre. Usar sólo el isotipo como marca secundaria, separador, numeración o marca de agua.
 - Usar **Ingeniería Quasar** como texto institucional separado cuando sea necesario; no agregarlo dentro del logotipo.
-- Mantener editables los elementos de la presentación. El logotipo permanece como imagen oficial y no se vectoriza por aproximación.
+- En un canal Marp, entregar Markdown, theme CSS y assets locales editables y regenerables. En un canal PPTX nativo que exija edición de objetos, conservar textos, formas y gráficos editables dentro del archivo. El PPTX estándar renderizado por Marp puede usar diapositivas pre-renderizadas y no satisface un requisito de edición de objetos.
+- El logotipo permanece como imagen oficial y no se vectoriza por aproximación en ningún canal.
+
+## Canal Marp
+
+- Usar `assets/marp/quasar.css` y `assets/marp/template-quasar.md` como punto de partida derivado de esta identidad; este documento sigue siendo la fuente de marca.
+- Resolver el logotipo y todo asset a una ruta local dentro de los roots autorizados. No usar Google Fonts, `@import`, URLs remotas ni recursos protocol-relative.
+- Conservar relación `16:9`, azul como dominante, verde como acento y `Aptos, Arial, sans-serif` como stack portable. No agregar gradientes, sombras, glow, biseles ni scripts o HTML arbitrario.
+- Entregar el Markdown exacto, el CSS exacto, los assets requeridos, el comando reproducible de render y sus hashes/versiones. Una edición semántica del Markdown vuelve al owner de contenido; la editabilidad técnica no cambia su autoridad.
+- Mantener notas mediante comentarios Marpit en la fuente. Verificar y declarar su preservación por formato; no asumir que HTML, PDF, PPTX e imágenes conservan la misma superficie de notas.
 
 ## Canvas, márgenes y fondos
 
@@ -243,5 +252,6 @@ No entregar hasta comprobar:
 11. Que todas las diapositivas tengan notas útiles y no contengan información sensible no autorizada.
 12. Que cada `[COMPLETAR]` restante sea real, esté descrito con precisión y se informe al entregar.
 13. Que cada diapositiva se renderice e inspeccione a tamaño completo y el montaje conserve ritmo y continuidad.
-14. Que el PPTX abra correctamente, conserve objetos editables y no duplique fondos, imágenes o logotipos.
-15. Que el cuerpo común use `17–20 pt` cuando el frame lo permita y no exista texto pequeño sin una restricción real.
+14. Que el canal Marp entregue Markdown, CSS y assets resolubles, y que el comando registrado regenere todos los renders solicitados desde esos archivos exactos.
+15. Que el PPTX nativo abra correctamente y conserve objetos editables cuando ese requisito fue solicitado; que un PPTX estándar de Marp esté rotulado como render derivado, no como object-editable.
+16. Que el cuerpo común use `17–20 pt` cuando el frame lo permita y no exista texto pequeño sin una restricción real.

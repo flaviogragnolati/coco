@@ -276,6 +276,10 @@ _Avoid_: Run, execution, ciclo
 The current material supporting a QA ticket's observed result: up to five JPEG, PNG, or WebP images of 2 MiB each, one console log, and one network log of 1 MiB UTF-8 each. Images persist immediately when uploaded; the result and both logs persist together. Evidence is private to active admins, never appears in list or audit payloads, and belongs to the ticket's single live pass rather than an execution history. Image content is stored temporarily as base64 in the isolated `qa_ticket_evidence` table; increasing limits or broadening access requires a storage decision first. Spanish-facing UI labels it "Evidencia de QA".
 _Avoid_: Attachment history, public upload, QA run artifact
 
+**QA clarification**:
+The state a QA ticket reaches when its own definition does not allow executing it or deciding pass/fail deterministically — a missing datum, precondition, step, location, or oracle to compare against. It is neither blocked (which assumes the definition is sufficient and blames the environment, data, or a dependency) nor failed (which requires the flow to have run and diverged). The reason is mandatory and lives in the ticket's notes; evidence stays optional, the tester who spotted the ambiguity keeps the ticket, and taking it back is the existing claim, which moves it to in progress. Spanish-facing UI labels it "Requiere aclaración".
+_Avoid_: No se entiende, ambiguo, bloqueado
+
 **Regression path**:
 The subset of QA tickets that form the end-to-end happy path, marked on the ticket so a tester can run the short sweep instead of all of them. It is a property of the ticket, not a separate suite.
 _Avoid_: Smoke suite, happy path suite

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Plan Conformance"
+  short_description: "Audit implemented work against its approved plan chain"
+  default_prompt: "Use $q-review-plan to audit this work against its approved plan chain and verify every deviation is documented and reconciled."

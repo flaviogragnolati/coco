@@ -1,0 +1,276 @@
+{
+  "schema_version": "1.0",
+  "session": {
+    "session_id": "IS-001",
+    "title": "Onboarding drop-off options",
+    "profile": "product",
+    "intent": "generate-options",
+    "participation_mode": "facilitated-human",
+    "date": "2026-08-13",
+    "facilitator_ref": "P-001",
+    "participants": [
+      {"participant_ref": "P-001", "kind": "human", "role": "product owner"},
+      {"participant_ref": "P-002", "kind": "human", "role": "support lead"},
+      {"participant_ref": "L-001", "kind": "synthetic-lens", "role": "operations lens"}
+    ]
+  },
+  "decision_context": {
+    "decision_ref": "DEC-014",
+    "owner_ref": "P-001",
+    "decision_statement": "Which onboarding change to test first in the next quarter.",
+    "time_horizon": "Q4 2026",
+    "controllable_levers": ["onboarding flow", "support contact policy"],
+    "non_controllable_factors": ["partner identity provider roadmap"]
+  },
+  "input_refs": [
+    {"artifact_id": "DISC-BRIEF-001", "version": "1.2", "authority": "canonical", "usage": "session-input"}
+  ],
+  "scope": {
+    "in_scope": ["first-run experience", "activation within 14 days"],
+    "out_of_scope": ["pricing", "contract terms"],
+    "constraints": [
+      {"statement": "No change to the identity provider before March.", "classification": "real"},
+      {"statement": "Support headcount stays flat.", "classification": "assumed"}
+    ],
+    "prohibited_outputs": ["client-identifying examples"]
+  },
+  "information_governance": {
+    "classification": "internal",
+    "external_ai_use": "permitted-with-abstraction",
+    "approved_record_location": "docs/ideation/"
+  },
+  "workflow": [
+    {"order": 1, "stage": "frame", "status": "completed", "method_or_deviation": null},
+    {"order": 2, "stage": "perspective-map", "status": "completed", "method_or_deviation": null},
+    {"order": 3, "stage": "independent-generation", "status": "completed", "method_or_deviation": "silent written round, 12 minutes"},
+    {"order": 4, "stage": "structured-sharing", "status": "completed", "method_or_deviation": "round robin"},
+    {"order": 5, "stage": "structuring", "status": "completed", "method_or_deviation": null},
+    {"order": 6, "stage": "criteria-and-gates", "status": "completed", "method_or_deviation": null},
+    {"order": 7, "stage": "independent-evaluation", "status": "completed", "method_or_deviation": null},
+    {"order": 8, "stage": "adversarial-review", "status": "completed", "method_or_deviation": null},
+    {"order": 9, "stage": "evidence-routing", "status": "completed", "method_or_deviation": null},
+    {"order": 10, "stage": "disposition-and-snapshot", "status": "completed", "method_or_deviation": null}
+  ],
+  "perspectives": {
+    "represented": ["product", "support"],
+    "affected_not_represented": ["finance"],
+    "missing": ["end users"],
+    "conflicts_or_power_asymmetries": ["the facilitator owns the decision"]
+  },
+  "candidates": [
+    {
+      "candidate_id": "CAND-001",
+      "statement": "Replace the setup wizard with a guided checklist that can be resumed.",
+      "kind": "solution-concept",
+      "provenance": {
+        "origin": "human",
+        "contributor_refs": ["P-001"],
+        "recorded_stage": "independent",
+        "source_refs": [],
+        "ai_tool": null
+      },
+      "assumption_refs": ["ASM-001"],
+      "expected_signals": ["more accounts reach first successful import"],
+      "disconfirming_signals": ["resume rate stays below 5%"],
+      "uncertainties": ["whether abandonment is caused by length or by confusion"],
+      "evidence_status": "not-checked",
+      "status": "candidate"
+    },
+    {
+      "candidate_id": "CAND-002",
+      "statement": "Teams abandon setup because they cannot delegate it to a colleague.",
+      "kind": "opportunity-hypothesis",
+      "provenance": {
+        "origin": "human",
+        "contributor_refs": ["P-002"],
+        "recorded_stage": "independent",
+        "source_refs": [],
+        "ai_tool": null
+      },
+      "opportunity_evidence": {"status": "assumed", "source_refs": []},
+      "assumption_refs": ["ASM-002"],
+      "expected_signals": ["invite-a-colleague usage during setup"],
+      "disconfirming_signals": [],
+      "uncertainties": ["no interview evidence for delegation demand"],
+      "evidence_status": "request-open",
+      "status": "candidate"
+    },
+    {
+      "candidate_id": "CAND-003",
+      "statement": "Pre-fill configuration from the partner directory during signup.",
+      "kind": "solution-concept",
+      "provenance": {
+        "origin": "ai-assisted",
+        "contributor_refs": ["P-001"],
+        "recorded_stage": "discussion",
+        "source_refs": [],
+        "ai_tool": "assistant, alternatives prompt"
+      },
+      "assumption_refs": ["ASM-002"],
+      "expected_signals": ["fewer manual configuration steps"],
+      "disconfirming_signals": [],
+      "uncertainties": ["directory data quality is unknown"],
+      "evidence_status": "not-checked",
+      "status": "candidate"
+    }
+  ],
+  "assumptions": [
+    {
+      "assumption_id": "ASM-001",
+      "statement": "Users abandon setup because it cannot be resumed.",
+      "category": "customer-problem",
+      "status": "untested",
+      "test_or_check": "Compare resume attempts against completion in product analytics.",
+      "owner_ref": "P-001",
+      "evidence_refs": []
+    },
+    {
+      "assumption_id": "ASM-002",
+      "statement": "Administrators are willing to delegate setup to a colleague.",
+      "category": "adoption",
+      "status": "untested",
+      "test_or_check": "Five customer interviews with recent churned trials.",
+      "owner_ref": "P-002",
+      "evidence_refs": []
+    }
+  ],
+  "clusters": [
+    {"cluster_id": "CL-001", "relation": "same activation outcome", "candidate_refs": ["CAND-001", "CAND-003"]}
+  ],
+  "merge_log": [
+    {
+      "entry_id": "ML-001",
+      "action": "split",
+      "source_candidate_refs": ["CAND-001"],
+      "result_candidate_ref": "CAND-003",
+      "rationale": "Resumable checklist and pre-filled configuration assume different causes."
+    }
+  ],
+  "criteria": [
+    {
+      "criterion_id": "CR-001",
+      "name": "time_to_learning",
+      "description": "Time until the riskiest assumption is tested.",
+      "direction": "lower",
+      "weight": 3,
+      "minimum": 1,
+      "maximum": 5,
+      "anchors": ["1 = within two weeks", "5 = more than a quarter"]
+    },
+    {
+      "criterion_id": "CR-002",
+      "name": "user_value",
+      "description": "Value to the administrator completing setup.",
+      "direction": "higher",
+      "weight": 2,
+      "minimum": 1,
+      "maximum": 5,
+      "anchors": ["1 = cosmetic", "5 = removes the blocking step"]
+    }
+  ],
+  "ratings": [
+    {"rating_id": "RT-001", "candidate_ref": "CAND-001", "criterion_ref": "CR-001", "rater_ref": "P-001", "score": 2, "low": 1, "high": 3, "reason": "Analytics already track resume attempts.", "assessability": "assessed"},
+    {"rating_id": "RT-002", "candidate_ref": "CAND-001", "criterion_ref": "CR-002", "rater_ref": "P-002", "score": 4, "low": 3, "high": 5, "reason": "Removes the most reported blocker.", "assessability": "assessed"},
+    {"rating_id": "RT-003", "candidate_ref": "CAND-003", "criterion_ref": "CR-001", "rater_ref": "P-001", "score": 4, "low": 3, "high": 5, "reason": "Requires partner data access first.", "assessability": "assessed"},
+    {"rating_id": "RT-004", "candidate_ref": "CAND-003", "criterion_ref": "CR-002", "rater_ref": "P-002", "score": null, "low": null, "high": null, "reason": "No basis to judge directory coverage.", "assessability": "not-assessable"}
+  ],
+  "adversarial_reviews": [
+    {
+      "review_id": "AR-001",
+      "candidate_ref": "CAND-001",
+      "reviewer_ref": "P-002",
+      "steelman": "A resumable checklist lets an administrator finish across sessions and hand work over.",
+      "refuting_condition": "Abandonment continues at the same step after resume is available.",
+      "alternative_explanations": ["the blocking step is the identity provider consent", "trials abandon for pricing reasons"],
+      "failure_modes": ["partially completed states create support load"],
+      "harmed_stakeholders": ["support team during rollout"],
+      "mitigations": ["staged rollout with a support runbook"],
+      "residual_uncertainty": "The cause of abandonment is still unmeasured.",
+      "reversibility": "reversible",
+      "disposition": "retain"
+    }
+  ],
+  "evidence_requests": [
+    {
+      "request_id": "ERQ-001",
+      "candidate_refs": ["CAND-002"],
+      "uncertainty": "Whether administrators want to delegate setup at all.",
+      "decision_impact": "Removes the opportunity if delegation demand is absent.",
+      "recommended_route": "q-research-scope",
+      "status": "open"
+    }
+  ],
+  "evidence_links": [],
+  "gate_reviews": [
+    {
+      "gate_id": "GATE-001",
+      "name": "privacy and data",
+      "candidate_refs": ["CAND-003"],
+      "result": "review-required",
+      "owner_ref": "P-001",
+      "note": "Partner directory data needs a lawful basis review before any test."
+    },
+    {
+      "gate_id": "GATE-002",
+      "name": "commercial authority",
+      "candidate_refs": ["CAND-001", "CAND-002"],
+      "result": "passed",
+      "owner_ref": "P-001",
+      "note": "No contractual commitment is implied."
+    }
+  ],
+  "decision_log": [
+    {
+      "entry_id": "DL-001",
+      "date": "2026-08-13",
+      "candidate_ref": "CAND-001",
+      "disposition": "advance",
+      "rationale": "Earliest learning with a reversible change.",
+      "decided_by": "P-001",
+      "recommended_route": {"skill": "q-plan-product-core", "intended_use": "supporting-input"},
+      "revisit_trigger": "Analytics show resume is not the blocking step."
+    },
+    {
+      "entry_id": "DL-002",
+      "date": "2026-08-13",
+      "candidate_ref": "CAND-002",
+      "disposition": "evidence-needed",
+      "rationale": "No customer evidence supports the delegation need.",
+      "decided_by": "P-001",
+      "recommended_route": null,
+      "revisit_trigger": "Interview evidence returns."
+    },
+    {
+      "entry_id": "DL-003",
+      "date": "2026-08-13",
+      "candidate_ref": "CAND-003",
+      "disposition": "defer",
+      "rationale": "Blocked by an unresolved privacy review.",
+      "decided_by": "P-001",
+      "recommended_route": null,
+      "revisit_trigger": "Privacy review completes."
+    }
+  ],
+  "dissent": [
+    {"participant_ref": "P-002", "statement": "Prefers pre-filled configuration once the privacy review clears."}
+  ],
+  "ai_use": [
+    {
+      "entry_id": "AI-001",
+      "tool": "assistant",
+      "purpose": "Generate alternative configuration approaches after the human round.",
+      "date": "2026-08-13",
+      "human_first_round_frozen": true,
+      "outputs_used": ["CAND-003"],
+      "human_editor_ref": "P-001"
+    }
+  ],
+  "deviations": ["The second independent round was shortened to five minutes."],
+  "limitations": ["No end users participated.", "No customer interviews were run before the session."],
+  "approval": {
+    "approved_by": "P-001",
+    "approval_ref": "APR-021",
+    "approved_at": "2026-08-13",
+    "scope": "Candidate space, dispositions, and the handoff to product planning."
+  }
+}

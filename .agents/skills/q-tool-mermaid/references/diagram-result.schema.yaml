@@ -1,0 +1,69 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar Mermaid diagram result
+type: object
+required: [schema_version, diagram_result]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  diagram_result:
+    type: object
+    required: [request_id, outcome, owner_skill, generator_skill, selected_type, source, renders, validation, repairs, warnings, blockers, provenance]
+    additionalProperties: false
+    properties:
+      request_id: {type: string}
+      outcome: {enum: [completed, completed_with_warnings, blocked]}
+      owner_skill: {type: string}
+      generator_skill: {const: q-tool-mermaid}
+      selected_type: {type: string}
+      source:
+        type: object
+        required: [path, sha256, creation_mode, semantic_authority]
+        additionalProperties: false
+        properties:
+          path: {type: string}
+          sha256: {type: string}
+          creation_mode: {const: authored}
+          semantic_authority: {const: supporting}
+      renders:
+        type: array
+        items:
+          type: object
+          required: [path, format, creation_mode, semantic_authority, renderer, renderer_version, sha256]
+          additionalProperties: false
+          properties:
+            path: {type: string}
+            format: {enum: [svg, png, pdf, ascii, unicode]}
+            creation_mode: {const: derived}
+            semantic_authority: {const: none}
+            renderer: {enum: [mmdc, pretty]}
+            renderer_version: {type: string}
+            sha256: {type: string}
+      validation:
+        type: object
+        required: [request_contract, syntax, accessibility, security, visual_render, semantic_alignment]
+        additionalProperties: false
+        properties:
+          request_contract: {enum: [passed, failed]}
+          syntax: {enum: [passed, failed, unavailable]}
+          accessibility: {enum: [passed, warnings, unavailable]}
+          security: {enum: [passed, failed]}
+          visual_render: {enum: [passed, failed, unavailable, not-requested]}
+          semantic_alignment: {const: caller-review-required}
+      repairs:
+        type: array
+        items: {type: string}
+      warnings:
+        type: array
+        items: {type: string}
+      blockers:
+        type: array
+        items: {type: string}
+      provenance:
+        type: object
+        required: [generator_skill, source_refs]
+        additionalProperties: false
+        properties:
+          generator_skill: {const: q-tool-mermaid}
+          source_refs:
+            type: array
+            items: {type: string}

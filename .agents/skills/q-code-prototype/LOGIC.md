@@ -68,11 +68,11 @@ Give the user the run command. They'll drive it themselves; the interesting mome
 
 ### 7. Capture the answer and the prototype
 
-Once the prototype has answered its question, capture the answer, then capture the prototype the way the [SKILL](SKILL.md) describes. The logic-specific mapping: the validated reducer / machine / function set lifts into the real module (the decision, absorbed); the TUI shell rides along to the throwaway branch that keeps the prototype as a primary source.
+Once the prototype has answered its question, capture the answer and follow the isolation, optional branch-scoped commit, and promotion rules in the [SKILL](SKILL.md). The logic-specific mapping: `q-code-implement` may later rebuild the validated reducer, machine, or function set under production constraints; the TUI shell remains only in the prototype worktree or its explicitly authorized prototype-branch commit.
 
 ## Anti-patterns
 
-- **Don't add tests.** A prototype that needs tests is no longer a prototype.
+- **Don't require an automated suite.** Use the one reproducible smoke check required by the skill. If the question itself is about a test seam, keep only the smallest disposable harness needed to answer it.
 - **Don't wire it to the real database.** Use an in-memory store unless the question is specifically about persistence.
 - **Don't generalise.** No "what if we wanted to support X later." The prototype answers one question.
 - **Don't blur the logic and the TUI together.** If the reducer / state machine references `console.log`, prompts, or terminal escape codes, it's no longer portable. Keep the TUI as a thin shell over a pure module.

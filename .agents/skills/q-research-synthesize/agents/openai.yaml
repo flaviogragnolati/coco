@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Synthesis"
+  short_description: "Synthesize findings and optional market results by ref"
+  default_prompt: "Use $q-research-synthesize to answer the approved questions from exact finding and optional market-result versions while preserving debates and gaps."

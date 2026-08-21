@@ -95,14 +95,14 @@ Put the switcher in a single shared component so both sub-shapes can reuse it. L
 
 Surface the URL (and the `?variant=` keys). The user will flip through whenever they get to it. The interesting feedback is usually **"I want the header from B with the sidebar from C"** — that's the actual design they want.
 
-### 6. Capture the answer and clean up
+### 6. Capture the answer and route promotion
 
-Once a variant has won, capture the answer — which variant and why — then capture the prototype the way the [SKILL](SKILL.md) describes. Fold the winner into the real code and move the rest onto the throwaway branch, not into main:
+Once a variant has won, capture which variant and why, then follow the isolation and optional branch-scoped commit rules in the [SKILL](SKILL.md). Route production work to `q-code-implement`; do not fold prototype code into the original worktree during this run:
 
-- **Sub-shape A** — fold the winner into the existing page; drop the losing variants and the switcher from main.
-- **Sub-shape B** — promote the winning variant to a real route; drop the throwaway route and the switcher from main.
+- **Sub-shape A** — the production task rebuilds the winning decisions in the existing page and omits losing variants and the switcher.
+- **Sub-shape B** — the production task rebuilds the winner as a real route and omits the throwaway route and switcher.
 
-The full set of variants is the primary source, so it lands on the throwaway branch, not the bin — variant components and the switcher left in the main branch rot fast and confuse the next reader.
+The full set of variants remains a prototype primary source only in the isolated worktree or an explicitly authorized prototype-branch commit. Push, merge, cleanup, and branch/worktree deletion remain separate approvals.
 
 ## Anti-patterns
 

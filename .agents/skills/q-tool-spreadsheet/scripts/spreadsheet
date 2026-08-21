@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_BACKEND="$SCRIPT_DIR/python/spreadsheet_tool.py"
+NODE_BACKEND="$SCRIPT_DIR/node/spreadsheet-tool.mjs"
+
+runtime_override=""
+quiet=0
+args=()
+while (($#)); do
+  case "$1" in
+    --runtime)
+      [[ $# -ge 2 ]] || { echo "Error: --runtime requires python or node" >&2; exit 2; }
+      runtime_override="$2"
+      shift 2
+      ;;
+    --runtime=*)
+      runtime_override="${1#*=}"
+      shift
+      ;;
+    --quiet)
+      quiet=1
+      shift
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if ((${#args[@]} == 0)); then
+  args+=(--help)
+fi
+
+command_name=""
+for token in "${args[@]}"; do
+  case "$token" in
+    -*) ;;
+    *) command_name="$token"; break ;;
+  esac
+done
+[[ -n "$command_name" ]] || command_name="help"
+
+normalize_runtime() {
+  case "${1,,}" in
+    py|python|python3) printf '%s' python ;;
+    node|nodejs) printf '%s' node ;;
+    auto|'') printf '%s' auto ;;
+    *) return 1 ;;
+  esac
+}
+
+PYTHON_BIN="${SPREADSHEET_SKILL_PYTHON:-}"
+if [[ -z "$PYTHON_BIN" ]]; then
+  if [[ -x "$SCRIPT_DIR/python/.venv/bin/python" ]]; then
+    PYTHON_BIN="$SCRIPT_DIR/python/.venv/bin/python"
+  elif command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="$(command -v python3)"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="$(command -v python)"
+  fi
+fi
+NODE_BIN="${SPREADSHEET_SKILL_NODE:-node}"
+
+nearest_project_runtime() {
+  local directory="$PWD"
+  while :; do
+    if [[ -e "$directory/package.json" || -e "$directory/package-lock.json" || -e "$directory/pnpm-lock.yaml" || -e "$directory/yarn.lock" ]]; then
+      printf 'node|%s' "$directory"
+      return
+    fi
+    if [[ -e "$directory/pyproject.toml" || -e "$directory/uv.lock" || -e "$directory/requirements.txt" || -e "$directory/.python-version" ]]; then
+      printf 'python|%s' "$directory"
+      return
+    fi
+    [[ "$directory" == / ]] && break
+    directory="$(dirname -- "$directory")"
+  done
+}
+
+marker_info="$(nearest_project_runtime)"
+marker="${marker_info%%|*}"
+marker_root="${marker_info#*|}"
+if [[ "$marker_info" != *"|"* ]]; then
+  marker=""
+  marker_root=""
+fi
+if [[ "$marker" == node && -z "${SPREADSHEET_SKILL_NODE_ROOT:-}" ]]; then
+  export SPREADSHEET_SKILL_NODE_ROOT="$marker_root"
+fi
+
+runtime_executable() {
+  case "$1" in
+    python) [[ -n "$PYTHON_BIN" && -x "$PYTHON_BIN" ]] ;;
+    node) command -v "$NODE_BIN" >/dev/null 2>&1 ;;
+    *) return 1 ;;
+  esac
+}
+
+runtime_covers() {
+  local runtime="$1"
+  runtime_executable "$runtime" || return 1
+  case "$command_name" in
+    help|doctor|check) return 0 ;;
+  esac
+  case "$runtime" in
+    python) "$PYTHON_BIN" -c 'import re, openpyxl; p=tuple(int(x) for x in re.findall(r"\d+", openpyxl.__version__)[:3]); p=p+(0,)*(3-len(p)); raise SystemExit(0 if (3,1,5) <= p < (4,0,0) else 1)' >/dev/null 2>&1 ;;
+    node) "$NODE_BIN" "$NODE_BACKEND" doctor --json 2>/dev/null | grep -Eq '"exceljs"[[:space:]]*:[[:space:]]*true' ;;
+    *) return 1 ;;
+  esac
+}
+
+native_route_available() {
+  case "$command_name" in
+    recalculate|render) command -v soffice >/dev/null 2>&1 || command -v libreoffice >/dev/null 2>&1 ;;
+    *) return 0 ;;
+  esac
+}
+
+append_candidate() {
+  local candidate="$1"
+  [[ -n "$candidate" ]] || return 0
+  local existing
+  for existing in "${candidates[@]:-}"; do
+    [[ "$existing" == "$candidate" ]] && return 0
+  done
+  candidates+=("$candidate")
+}
+
+explicit="${runtime_override:-${SPREADSHEET_SKILL_RUNTIME:-}}"
+selected=""
+if [[ -n "$explicit" ]]; then
+  selected="$(normalize_runtime "$explicit")" || { echo "Error: invalid runtime '$explicit'" >&2; exit 2; }
+  [[ "$selected" != auto ]] || selected=""
+  if [[ -n "$selected" ]]; then
+    runtime_covers "$selected" || { echo "Error: runtime '$selected' lacks the required local package capabilities" >&2; exit 4; }
+    native_route_available || { echo "Error: LibreOffice is required for '$command_name'" >&2; exit 4; }
+  fi
+fi
+
+if [[ -z "$selected" ]]; then
+  preference="$(normalize_runtime "${SPREADSHEET_SKILL_PREFER:-}")" || { echo "Error: invalid SPREADSHEET_SKILL_PREFER" >&2; exit 2; }
+  order="${SPREADSHEET_SKILL_RUNTIME_ORDER:-python,node}"
+  IFS=',' read -r -a ordered <<< "$order"
+  candidates=()
+  append_candidate "$marker"
+  [[ "$preference" != auto ]] && append_candidate "$preference"
+  for item in "${ordered[@]}"; do
+    normalized="$(normalize_runtime "${item//[[:space:]]/}")" || { echo "Error: invalid runtime in SPREADSHEET_SKILL_RUNTIME_ORDER" >&2; exit 2; }
+    [[ "$normalized" != auto ]] && append_candidate "$normalized"
+  done
+  for candidate in "${candidates[@]}"; do
+    if runtime_covers "$candidate" && native_route_available; then
+      selected="$candidate"
+      break
+    fi
+    if [[ -n "$marker" && "$candidate" == "$marker" && "${SPREADSHEET_SKILL_NO_FALLBACK:-0}" == 1 ]]; then
+      echo "Error: marked runtime '$marker' is unavailable and fallback is disabled" >&2
+      exit 4
+    fi
+  done
+fi
+
+[[ -n "$selected" ]] || { echo "Error: no healthy Python or Node backend covers '$command_name'" >&2; exit 4; }
+[[ $quiet -eq 1 ]] || echo "q-tool-spreadsheet selected runtime: $selected" >&2
+
+case "$selected" in
+  python) exec "$PYTHON_BIN" "$PYTHON_BACKEND" "${args[@]}" ;;
+  node) exec "$NODE_BIN" "$NODE_BACKEND" "${args[@]}" ;;
+esac

@@ -23,24 +23,24 @@ Derive chart colors from navy and mint only when a chart is justified and contra
 
 ## 3. Typography
 
-- Use Supera Gothic ExtraBold for cover and brand titles.
-- Use Supera Gothic Regular for short cover labels.
-- Use Arial for body, tables, notes, headers, and footers.
-- Use no more than two font families.
+- Prefer Liberation Sans for the full document, including cover, brand titles, body, tables, notes, headers, and footers.
+- Fall back to DejaVu Sans only when Liberation Sans is unavailable.
+- Use the generic `sans-serif` family only in formats that support an explicit fallback chain; DOCX and raster generation must resolve an installed free font before generation.
+- Do not embed or silently substitute a proprietary font. Record the resolved family and file paths in generation provenance; if neither free family is available, block render QA with the exact capability gap.
+- Use one font family per generated package.
 - Do not condense or stretch type.
-- Verify redistribution rights before sharing bundled fonts outside the authorized environment.
 
 | Role | Font | Size | Color |
 |---|---|---:|---|
-| Cover title | Supera Gothic ExtraBold | 24–28 pt equivalent | navy |
-| Cover client | Supera Gothic ExtraBold | 26–30 pt equivalent | mint |
-| Part title | Arial bold | 21 pt | navy |
-| Heading 1 | Arial bold | 15.5 pt | navy |
-| Heading 2 | Arial bold | 11.5 pt | navy |
-| Heading 3 | Arial bold | 10 pt | text |
-| Body | Arial | 9.5 pt | text |
-| Table | Arial | 8.5 pt | text |
-| Note/footer | Arial | 7–8 pt | muted |
+| Cover title | resolved free family, bold | 24–28 pt equivalent | navy |
+| Cover client | resolved free family, bold | 26–30 pt equivalent | mint |
+| Part title | resolved free family, bold | 21 pt | navy |
+| Heading 1 | resolved free family, bold | 15.5 pt | navy |
+| Heading 2 | resolved free family, bold | 11.5 pt | navy |
+| Heading 3 | resolved free family, bold | 10 pt | text |
+| Body | resolved free family | 9.5 pt | text |
+| Table | resolved free family | 8.5 pt | text |
+| Note/footer | resolved free family | 7–8 pt | muted |
 
 ## 4. Page system
 

@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "artifact": {
+    "artifact_id": "proposal-source",
+    "creation_mode": "authored",
+    "semantic_authority": "canonical",
+    "version": "1.0",
+    "lifecycle": "Working",
+    "source_refs": ["DISC-001@1.0"]
+  },
+  "proposal": {
+    "proposal_id": "PROP-001",
+    "version": "1.0",
+    "commercial_status": "Proposal in preparation",
+    "documentation_language": "spanish",
+    "validity": null,
+    "accepted_at": null,
+    "superseded_by": null
+  },
+  "objects": {
+    "findings": [],
+    "evidence": [],
+    "problems": [],
+    "needs": [],
+    "objectives": [],
+    "actors": [],
+    "processes": [],
+    "journeys": [],
+    "capabilities": [],
+    "functional_requirements": [],
+    "business_rules": [],
+    "scope_items": [],
+    "exclusions": [],
+    "deliverables": [],
+    "technical_requirements": [],
+    "non_functional_requirements": [],
+    "constraints": [],
+    "integrations": [],
+    "data_categories": [],
+    "assumptions": [],
+    "inferences": [],
+    "decisions": [],
+    "risks": []
+  },
+  "commercial": {},
+  "delivery": {},
+  "downstream_interfaces": {
+    "web": {"object_refs": []},
+    "document": {"object_refs": []},
+    "development": {
+      "applicable": false,
+      "reason": null,
+      "proposal_version": "1.0",
+      "skill_1_input_refs": [],
+      "skill_2_input_refs": [],
+      "unresolved_refs": [],
+      "readiness": "Not applicable"
+    }
+  },
+  "traceability": []
+}

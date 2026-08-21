@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quasar-pdf-tool-python"
+version = "0.2.0"
+description = "Python backend for the q-tool-pdf agent skill"
+requires-python = ">=3.10"
+dependencies = [
+  "pypdf[crypto]>=5.9.0,<7",
+  "pdfplumber>=0.11.9,<0.12",
+  "pypdfium2>=5.8.0,<6",
+  "Pillow>=12,<13",
+  "reportlab>=4.4,<5",
+]
+
+[project.scripts]
+q-tool-pdf-python = "pdf_tool:main"
+
+[tool.setuptools]
+py-modules = ["pdf_tool"]

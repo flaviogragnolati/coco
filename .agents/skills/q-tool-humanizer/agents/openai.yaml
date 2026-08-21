@@ -1,0 +1,4 @@
+interface:
+  display_name: "Humanizer"
+  short_description: "Detect, humanize, and clarify text in English or Spanish"
+  default_prompt: "Use $q-tool-humanizer to detect AI-writing patterns in this text, rewrite it so it reads naturally in its original language, or edit it for clarity and concision without changing meaning or facts."

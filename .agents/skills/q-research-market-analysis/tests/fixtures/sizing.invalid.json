@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "known_finding_ids": ["F-001"],
+  "known_assumption_ids": ["ASM-001"],
+  "measurement": {"unit": "ARS", "denominator_id": "annual-vendor-revenue"},
+  "top_down": {"components": [
+    {"component_id": "TD-001", "coverage_key": "DUP", "denominator_id": "annual-vendor-revenue", "value": 1000, "finding_refs": ["F-001"], "assumption_refs": []},
+    {"component_id": "TD-002", "coverage_key": "DUP", "denominator_id": "annual-vendor-revenue", "value": 500, "finding_refs": ["F-001"], "assumption_refs": []}
+  ]},
+  "bottom_up": {"components": [
+    {"component_id": "BU-001", "coverage_key": "DUP", "denominator_id": "annual-vendor-revenue", "customer_count": 100, "addressable_fraction": 0.5, "annual_quantity_per_customer": 1, "price_per_unit": 18, "finding_refs": ["F-001"], "assumption_refs": ["ASM-001"]}
+  ]},
+  "scenarios": [
+    {"scenario_id": "SCN-A", "label": "a", "serviceable_fraction": 0.5, "obtainable_share": 0.1, "assumption_refs": ["ASM-001"], "invalidation_conditions": ["A"]},
+    {"scenario_id": "SCN-B", "label": "b", "serviceable_fraction": 0.7, "obtainable_share": 0.2, "assumption_refs": ["ASM-001"], "invalidation_conditions": ["B"]}
+  ]
+}

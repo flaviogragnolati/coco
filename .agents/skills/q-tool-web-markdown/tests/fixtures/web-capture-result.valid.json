@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "request_id": "WMC-001",
+  "owner": "q-tool-web-markdown",
+  "generator_skill": "q-tool-web-markdown",
+  "outcome": "captured",
+  "category": "success",
+  "source": {
+    "requested_url": "https://example.com/article?[query-redacted]",
+    "requested_url_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "final_url": "https://example.com/article?[query-redacted]",
+    "final_url_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "accessed_at": "2026-08-15T12:00:00.000Z"
+  },
+  "runtime": {
+    "adapter": "@quasar/q-tool-web-markdown-runtime@1.0.0",
+    "node": "v24.15.0",
+    "browser": {"kind": "chromium", "version": "Chromium 140", "product": "Chrome/140.0.0.0", "protocol_version": "1.3", "sandbox": "verified"},
+    "sandbox": "verified"
+  },
+  "policy": {"network": "public-http-read-only", "methods": ["GET", "HEAD"], "connection_pinning": "proxy-resolved-ip", "direct_fallback": false, "environment_proxy": false, "limits": {}},
+  "capture": {
+    "extraction": "dom-main-article-body-v1",
+    "markdown": "# Example article\n\nThis fixture contains enough inert rendered content to represent a valid transient web capture without assigning semantic authority.",
+    "output_path": null,
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "bytes": 145,
+    "characters": 145,
+    "metrics": {"requests": 3, "redirects": 0}
+  },
+  "validation": {"status": "passed", "checks": {"utf8_nonempty": "passed"}},
+  "warnings": [],
+  "blockers": [],
+  "required_user_actions": [],
+  "next_recommended_action": "Use the original URL for citation."
+}

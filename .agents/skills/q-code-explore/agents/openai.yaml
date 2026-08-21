@@ -1,4 +1,4 @@
 interface:
   display_name: "Explore"
-  short_description: "Explore codebases and documents for orientation"
+  short_description: "Explore codebases and documents, including one level up"
   default_prompt: "Use $q-code-explore to inspect this codebase or document and give me a high-level summary focused on my question."

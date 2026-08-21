@@ -1,0 +1,4 @@
+interface:
+  display_name: "Current-State Assessment"
+  short_description: "Map as-is processes and diagnose with evidence"
+  default_prompt: "Use $q-consult-current-state to map how this process works today and state the diagnosis with cited evidence."

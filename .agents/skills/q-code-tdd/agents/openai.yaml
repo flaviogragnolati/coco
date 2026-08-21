@@ -1,4 +1,4 @@
 interface:
   display_name: "Test-Driven Development"
-  short_description: "Use the opt-in red-green-refactor testing loop"
-  default_prompt: "Use $q-code-tdd to implement this behavior with the opt-in red-green-refactor loop."
+  short_description: "Use the opt-in red-green behavioral testing loop"
+  default_prompt: "Use $q-code-tdd to implement this new behavior through the opt-in red-green loop, one agreed seam and vertical slice at a time."

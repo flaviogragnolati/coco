@@ -1,0 +1,281 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PY_SCRIPT="$SCRIPT_DIR/python/pdf_tool.py"
+NODE_SCRIPT="$SCRIPT_DIR/node/pdf-tool.mjs"
+NODE_DIR="$SCRIPT_DIR/node"
+
+runtime_override=""
+quiet=0
+args=()
+
+while (($#)); do
+  case "$1" in
+    --runtime)
+      [[ $# -ge 2 ]] || { echo "Error: --runtime requires python or node" >&2; exit 2; }
+      runtime_override="$2"
+      shift 2
+      ;;
+    --runtime=*)
+      runtime_override="${1#*=}"
+      shift
+      ;;
+    --quiet)
+      quiet=1
+      args+=("$1")
+      shift
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if ((${#args[@]} == 0)); then
+  args+=(--help)
+fi
+
+command_name=""
+for token in "${args[@]}"; do
+  case "$token" in
+    --json|--quiet) ;;
+    -*) ;;
+    *) command_name="$token"; break ;;
+  esac
+done
+
+if [[ -z "$command_name" ]]; then
+  command_name="help"
+  help_present=0
+  for token in "${args[@]}"; do
+    [[ "$token" == --help || "$token" == -h ]] && help_present=1
+  done
+  [[ $help_present -eq 1 ]] || args+=(--help)
+fi
+
+normalize_runtime() {
+  case "${1,,}" in
+    py|python|python3) printf '%s' python ;;
+    node|nodejs) printf '%s' node ;;
+    auto|'') printf '%s' auto ;;
+    *) return 1 ;;
+  esac
+}
+
+has_option() {
+  local sought="$1"
+  local token
+  for token in "${args[@]}"; do
+    [[ "$token" == "$sought" || "$token" == "$sought="* ]] && return 0
+  done
+  return 1
+}
+
+required_family="any"
+case "$command_name" in
+  extract-tables) required_family="python" ;;
+  watermark)
+    has_option --underlay && required_family="python"
+    ;;
+  form-fill)
+    has_option --font && required_family="node"
+    ;;
+esac
+
+PYTHON_BIN="${PDF_SKILL_PYTHON:-}"
+if [[ -z "$PYTHON_BIN" ]]; then
+  if [[ -x "$SCRIPT_DIR/python/.venv/bin/python" ]]; then
+    PYTHON_BIN="$SCRIPT_DIR/python/.venv/bin/python"
+  elif command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="$(command -v python3)"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="$(command -v python)"
+  fi
+fi
+
+runtime_executable_available() {
+  case "$1" in
+    python) [[ -n "$PYTHON_BIN" && -x "$PYTHON_BIN" ]] ;;
+    node) command -v "${PDF_SKILL_NODE:-node}" >/dev/null 2>&1 ;;
+    *) return 1 ;;
+  esac
+}
+
+python_module_available() {
+  local module="$1"
+  runtime_executable_available python \
+    && "$PYTHON_BIN" -c 'import importlib.util,sys; raise SystemExit(0 if importlib.util.find_spec(sys.argv[1]) else 1)' "$module" >/dev/null 2>&1
+}
+
+node_package_available() {
+  local package="$1"
+  local dir="$NODE_DIR"
+  while :; do
+    [[ -e "$dir/node_modules/$package" ]] && return 0
+    [[ "$dir" == / ]] && break
+    dir="$(dirname -- "$dir")"
+  done
+  return 1
+}
+
+runtime_dependencies_available() {
+  local runtime="$1"
+  runtime_executable_available "$runtime" || return 1
+  if [[ "$command_name" == doctor || "$command_name" == help ]]; then
+    return 0
+  fi
+
+  case "$runtime" in
+    python)
+      case "$command_name" in
+        extract-tables) python_module_available pdfplumber ;;
+        extract-images) command -v pdfimages >/dev/null 2>&1 && python_module_available pypdf ;;
+        check) command -v qpdf >/dev/null 2>&1 || python_module_available pypdf ;;
+        repair|linearize|decrypt|encrypt)
+          command -v qpdf >/dev/null 2>&1 && python_module_available pypdf
+          ;;
+        ocr) command -v ocrmypdf >/dev/null 2>&1 && python_module_available pypdf ;;
+        render)
+          python_module_available pypdf \
+            && { python_module_available pypdfium2 || command -v pdftoppm >/dev/null 2>&1; }
+          ;;
+        *) python_module_available pypdf ;;
+      esac
+      ;;
+    node)
+      case "$command_name" in
+        inspect) node_package_available pdf-lib && node_package_available pdfjs-dist ;;
+        extract-text) node_package_available pdfjs-dist ;;
+        merge|select|split|rotate|crop|watermark|form-list)
+          node_package_available pdf-lib
+          ;;
+        form-fill)
+          node_package_available pdf-lib \
+            && { ! has_option --font || node_package_available @pdf-lib/fontkit; }
+          ;;
+        render) node_package_available pdfjs-dist && command -v pdftoppm >/dev/null 2>&1 ;;
+        extract-images) command -v pdfimages >/dev/null 2>&1 ;;
+        check)
+          command -v qpdf >/dev/null 2>&1 \
+            || { node_package_available pdf-lib && node_package_available pdfjs-dist; }
+          ;;
+        repair|linearize|decrypt|encrypt) command -v qpdf >/dev/null 2>&1 ;;
+        ocr) command -v ocrmypdf >/dev/null 2>&1 ;;
+        extract-tables) return 1 ;;
+        *) node_package_available pdf-lib && node_package_available pdfjs-dist ;;
+      esac
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+runtime_supports_operation() {
+  local runtime="$1"
+  case "$required_family" in
+    any) return 0 ;;
+    python) [[ "$runtime" == python ]] ;;
+    node) [[ "$runtime" == node ]] ;;
+    *) return 1 ;;
+  esac
+}
+
+nearest_project_runtime() {
+  local dir="$PWD"
+  while :; do
+    if [[ -e "$dir/package.json" || -e "$dir/package-lock.json" || -e "$dir/pnpm-lock.yaml" || -e "$dir/yarn.lock" ]]; then printf '%s' node; return; fi
+    if [[ -e "$dir/pyproject.toml" || -e "$dir/uv.lock" || -e "$dir/requirements.txt" || -e "$dir/.python-version" ]]; then printf '%s' python; return; fi
+    [[ "$dir" == / ]] && break
+    dir="$(dirname -- "$dir")"
+  done
+  printf '%s' ""
+}
+
+append_candidate() {
+  local value="$1"
+  [[ -n "$value" ]] || return 0
+  local existing
+  for existing in "${candidates[@]:-}"; do
+    [[ "$existing" == "$value" ]] && return 0
+  done
+  candidates+=("$value")
+}
+
+explicit="${runtime_override:-${PDF_SKILL_RUNTIME:-}}"
+selected=""
+
+if [[ -n "$explicit" ]]; then
+  selected="$(normalize_runtime "$explicit")" || { echo "Error: invalid runtime '$explicit'" >&2; exit 2; }
+  [[ "$selected" != auto ]] || selected=""
+  if [[ -n "$selected" ]]; then
+    runtime_supports_operation "$selected" || {
+      echo "Error: runtime '$selected' does not cover command '$command_name'" >&2
+      exit 5
+    }
+    runtime_dependencies_available "$selected" || {
+      echo "Error: runtime '$selected' or its PDF dependencies are unavailable; run its doctor/setup instructions" >&2
+      exit 4
+    }
+  fi
+fi
+
+if [[ -z "$selected" ]]; then
+  candidates=()
+  marker="$(nearest_project_runtime)"
+  append_candidate "$marker"
+
+  case "${PDF_SKILL_PREFER:-}" in
+    python) append_candidate python ;;
+    node)
+      append_candidate node
+      ;;
+  esac
+
+  IFS=',' read -r -a configured_order <<< "${PDF_SKILL_RUNTIME_ORDER:-python,node}"
+  for item in "${configured_order[@]}"; do
+    normalized="$(normalize_runtime "${item//[[:space:]]/}")" || continue
+    [[ "$normalized" == auto ]] || append_candidate "$normalized"
+  done
+
+  for candidate in "${candidates[@]}"; do
+    if ! runtime_supports_operation "$candidate"; then
+      if [[ "${PDF_SKILL_NO_FALLBACK:-0}" == 1 && "$candidate" == "$marker" ]]; then
+        echo "Error: preferred project runtime '$candidate' does not cover '$command_name' and fallback is disabled" >&2
+        exit 5
+      fi
+      continue
+    fi
+    if runtime_dependencies_available "$candidate"; then
+      selected="$candidate"
+      break
+    fi
+    if [[ "${PDF_SKILL_NO_FALLBACK:-0}" == 1 && "$candidate" == "$marker" ]]; then
+      echo "Error: preferred project runtime '$candidate' is unavailable and fallback is disabled" >&2
+      exit 4
+    fi
+  done
+fi
+
+if [[ -z "$selected" ]]; then
+  echo "Error: no healthy PDF backend covers '$command_name'. Install the declared Python or Node dependencies, or select an available runtime explicitly." >&2
+  exit 4
+fi
+
+export PDF_SKILL_SELECTED_RUNTIME="$selected"
+if [[ $quiet -eq 0 ]]; then
+  echo "q-tool-pdf runtime: $selected" >&2
+fi
+
+case "$selected" in
+  python)
+    exec "$PYTHON_BIN" "$PY_SCRIPT" "${args[@]}"
+    ;;
+  node)
+    exec "${PDF_SKILL_NODE:-node}" "$NODE_SCRIPT" "${args[@]}"
+    ;;
+  *)
+    echo "Error: internal routing failure: $selected" >&2
+    exit 6
+    ;;
+esac

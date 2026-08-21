@@ -1,0 +1,119 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar Marp request
+type: object
+additionalProperties: false
+required: [schema_version, request_id, operation, caller, owner_skill, sources, deck, roots, output, forbidden_semantic_changes, policy, runtime, validation]
+properties:
+  schema_version:
+    const: "1.0"
+  request_id:
+    type: string
+    minLength: 1
+  operation:
+    type: string
+    enum: [create, revise, validate, render]
+  caller:
+    type: object
+    additionalProperties: false
+    required: [skill_id, workflow, mode]
+    properties:
+      skill_id: {type: string, minLength: 1}
+      workflow: {type: [string, "null"]}
+      mode: {type: string, enum: [orchestrated, standalone]}
+  owner_skill:
+    type: string
+    minLength: 1
+  sources:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [ref, path]
+      properties:
+        ref: {type: string, minLength: 1}
+        artifact_id: {type: [string, "null"]}
+        version: {type: [string, "null"]}
+        path: {type: string, minLength: 1}
+        sha256: {type: [string, "null"], pattern: "^[a-f0-9]{64}$"}
+  deck:
+    type: object
+    additionalProperties: false
+    required: [source_path, approved_plan_ref, formats, theme, asset_roots]
+    properties:
+      source_path: {type: [string, "null"]}
+      approved_plan_ref: {type: string, minLength: 1}
+      formats:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {enum: [source, html, pdf, pptx, png-title, png-set]}
+      theme:
+        type: object
+        additionalProperties: false
+        required: [path, sha256]
+        properties:
+          path: {type: string, minLength: 1}
+          sha256: {type: string, pattern: "^[a-f0-9]{64}$"}
+      asset_roots:
+        type: array
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+  roots:
+    type: object
+    additionalProperties: false
+    required: [input, output]
+    properties:
+      input:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+      output:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items: {type: string, minLength: 1}
+  output:
+    type: object
+    additionalProperties: false
+    required: [source_path, render_dir, basename, overwrite, approval_ref, persist_sidecar, sidecar_path]
+    properties:
+      source_path: {type: [string, "null"]}
+      render_dir: {type: [string, "null"]}
+      basename: {type: string, minLength: 1}
+      overwrite: {type: boolean}
+      approval_ref: {type: [string, "null"]}
+      persist_sidecar: {type: boolean}
+      sidecar_path: {type: [string, "null"]}
+  forbidden_semantic_changes:
+    type: array
+    items: {type: string, minLength: 1}
+  policy:
+    type: object
+    additionalProperties: false
+    required: [network_allowed, raw_html, allow_local_files, config_allowed, custom_engine_allowed, plugins_allowed]
+    properties:
+      network_allowed: {const: false}
+      raw_html: {enum: [disabled, safe]}
+      allow_local_files: {type: boolean}
+      config_allowed: {const: false}
+      custom_engine_allowed: {const: false}
+      plugins_allowed: {const: false}
+  runtime:
+    type: object
+    additionalProperties: false
+    required: [browser, browser_path]
+    properties:
+      browser: {enum: [auto, chrome, edge, firefox]}
+      browser_path: {type: [string, "null"]}
+  validation:
+    type: object
+    additionalProperties: false
+    required: [structural, assets, notes, rendered, visual]
+    properties:
+      structural: {type: boolean}
+      assets: {type: boolean}
+      notes: {type: boolean}
+      rendered: {type: boolean}
+      visual: {type: boolean}

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quasar-pptx-tool-python"
+version = "0.1.0"
+description = "Python backend for the q-tool-pptx agent skill"
+requires-python = ">=3.10"
+dependencies = [
+  "python-pptx>=1.0.2,<2",
+  "Pillow>=12,<13",
+  "defusedxml>=0.7,<0.8",
+]
+
+[project.scripts]
+q-tool-pptx-python = "pptx_tool:main"
+
+[tool.setuptools]
+py-modules = ["pptx_tool"]

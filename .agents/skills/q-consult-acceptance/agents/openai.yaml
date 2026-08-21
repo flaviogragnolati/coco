@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deliverable Acceptance"
+  short_description: "Record client acceptance per deliverable"
+  default_prompt: "Use $q-consult-acceptance to record the client's disposition for each presented deliverable version."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Structured Ideation Session"
+  short_description: "Facilitate a traceable ideation session"
+  default_prompt: "Use $q-ideation-session to explore options for this decision, or to discover improvement opportunities in an existing product or service, with independent generation, explicit assumptions, predeclared criteria, gates, and an approved snapshot."

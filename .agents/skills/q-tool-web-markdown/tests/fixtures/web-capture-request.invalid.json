@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "request_id": "",
+  "owner": "",
+  "operation": "capture",
+  "url": "http://127.0.0.1:8080/private",
+  "persistence": "working",
+  "output": {
+    "authorized_root": null,
+    "path": "/tmp/capture.md",
+    "overwrite": true,
+    "approval_ref": null
+  },
+  "limits": {
+    "timeout_ms": 100000,
+    "max_redirects": 50,
+    "max_requests": 0,
+    "max_bytes": 1,
+    "max_dom_bytes": 1,
+    "max_markdown_bytes": 1
+  },
+  "sensitivity": {
+    "contains_secret_query": "unknown",
+    "contains_sensitive_content": false
+  },
+  "headers": {"Authorization": "secret"}
+}

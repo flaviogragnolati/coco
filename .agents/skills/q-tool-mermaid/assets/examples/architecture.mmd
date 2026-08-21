@@ -1,0 +1,6 @@
+flowchart LR
+    accTitle: Example service topology
+    accDescr: A client reaches an application through a gateway and the application stores data.
+    client[Client] -->|HTTPS| gateway[Gateway]
+    gateway -->|request| app[Application]
+    app -->|read and write| db[(Database)]

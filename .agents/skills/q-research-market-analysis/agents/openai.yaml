@@ -1,0 +1,4 @@
+interface:
+  display_name: "Market Analysis"
+  short_description: "Analyze registered market evidence with audited methods"
+  default_prompt: "Use $q-research-market-analysis to analyze this authorized market brief and Findings Register with local, traceable calculations and approved scenarios."

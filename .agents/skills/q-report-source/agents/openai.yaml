@@ -1,4 +1,4 @@
 interface:
   display_name: "Reporting Source Design"
-  short_description: "Define the canonical source for Quasar reports"
-  default_prompt: "Use $q-report-source to create a structured and traceable report source from approved project artifacts."
+  short_description: "Define a typed, traceable source for Quasar reports"
+  default_prompt: "Use $q-report-source to create a structured general or market-research report source from approved artifact versions and typed evidence refs."

@@ -1,0 +1,89 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar Mermaid diagram request
+type: object
+required: [schema_version, diagram_request]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  diagram_request:
+    type: object
+    required: [request_id, operation, caller, ownership, sources, diagram, output, policy]
+    additionalProperties: false
+    properties:
+      request_id: {type: string}
+      operation: {enum: [create, revise, validate, render]}
+      caller:
+        type: object
+        required: [skill_id, workflow, mode]
+        additionalProperties: false
+        properties:
+          skill_id: {type: string}
+          workflow: {type: string}
+          mode: {enum: [orchestrated, standalone]}
+      ownership:
+        type: object
+        required: [owner_skill, owner_workflow, creation_mode, semantic_authority, authority_scope]
+        additionalProperties: false
+        properties:
+          owner_skill: {type: string}
+          owner_workflow: {type: string}
+          creation_mode: {const: authored}
+          semantic_authority: {const: supporting}
+          authority_scope: {const: visual-representation}
+      sources:
+        type: array
+        items:
+          type: object
+          required: [artifact_id, version]
+          additionalProperties: false
+          properties:
+            artifact_id: {type: string}
+            version: {type: string}
+      source:
+        type: object
+        additionalProperties: false
+        properties:
+          path: {type: string}
+          code: {type: string}
+      diagram:
+        type: object
+        required: [purpose, audience, type, required_elements, required_relationships, forbidden_inferences]
+        additionalProperties: false
+        properties:
+          purpose: {type: string}
+          audience: {type: string}
+          type: {type: string}
+          required_elements:
+            type: array
+            items: {type: string}
+          required_relationships:
+            type: array
+            items:
+              type: object
+              required: [from, to, label]
+              additionalProperties: false
+              properties:
+                from: {type: string}
+                to: {type: string}
+                label: {type: string}
+          forbidden_inferences:
+            type: array
+            items: {type: string}
+      output:
+        type: object
+        required: [source_path, formats, profile, overwrite]
+        additionalProperties: false
+        properties:
+          source_path: {type: string}
+          formats:
+            type: array
+            items: {enum: [svg, png, pdf, ascii, unicode]}
+          profile: {enum: [portable, github, static-light, static-dark, presentation]}
+          overwrite: {type: boolean}
+      policy:
+        type: object
+        required: [network, max_repair_attempts]
+        additionalProperties: false
+        properties:
+          network: {const: false}
+          max_repair_attempts: {type: integer, minimum: 0, maximum: 2}

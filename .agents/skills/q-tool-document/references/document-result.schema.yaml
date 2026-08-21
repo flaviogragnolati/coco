@@ -1,0 +1,92 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar document result
+type: object
+additionalProperties: false
+required: [schema_version, request_id, outcome, owner_skill, generator_skill, runtime, operation, inputs, outputs, validation, preserved_semantics, intentional_changes, capability_gaps, warnings, blockers, provenance]
+properties:
+  schema_version:
+    const: "1.0"
+  request_id:
+    type: string
+  outcome:
+    type: string
+    enum: [completed, completed_with_warnings, blocked]
+  owner_skill:
+    type: string
+  generator_skill:
+    const: q-tool-document
+  runtime:
+    type: [string, "null"]
+    enum: [python, node, null]
+  operation:
+    type: string
+    enum: [inspect, extract-text, create, replace-text, comment, redline, accept-changes, convert, render, check]
+  inputs:
+    type: array
+    items:
+      type: string
+  outputs:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [path, creation_mode, semantic_authority]
+      properties:
+        path:
+          type: string
+        sha256:
+          type: [string, "null"]
+        creation_mode:
+          const: derived
+        semantic_authority:
+          const: none
+  validation:
+    type: object
+    additionalProperties: false
+    required: [structural, rendered]
+    properties:
+      structural:
+        type: string
+        enum: [passed, failed, unavailable, not-required]
+      rendered:
+        type: string
+        enum: [passed, failed, unavailable, not-required]
+      inspected_pages:
+        type: array
+        items:
+          type: integer
+  preserved_semantics:
+    type: array
+    items:
+      type: string
+  intentional_changes:
+    type: array
+    items:
+      type: string
+  capability_gaps:
+    type: array
+    items:
+      type: string
+  warnings:
+    type: array
+    items:
+      type: string
+  blockers:
+    type: array
+    items:
+      type: string
+  provenance:
+    type: object
+    additionalProperties: false
+    required: [source_refs, command]
+    properties:
+      source_refs:
+        type: array
+        items:
+          type: string
+      command:
+        type: string
+      tools:
+        type: array
+        items:
+          type: string

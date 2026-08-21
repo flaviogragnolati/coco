@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engagement Plan"
+  short_description: "Plan an accepted engagement's execution structure"
+  default_prompt: "Use $q-consult-engagement-plan to turn the accepted proposal into the engagement plan and deliverable register."

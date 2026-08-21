@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PY_SCRIPT="$SCRIPT_DIR/python/pptx_tool.py"
+NODE_SCRIPT="$SCRIPT_DIR/node/pptx-tool.mjs"
+NODE_DIR="$SCRIPT_DIR/node"
+
+runtime_override=""
+quiet=0
+args=()
+
+while (($#)); do
+  case "$1" in
+    --runtime)
+      [[ $# -ge 2 ]] || { echo "Error: --runtime requires python or node" >&2; exit 2; }
+      runtime_override="$2"
+      shift 2
+      ;;
+    --runtime=*)
+      runtime_override="${1#*=}"
+      shift
+      ;;
+    --quiet)
+      quiet=1
+      args+=("$1")
+      shift
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if ((${#args[@]} == 0)); then
+  args+=(--help)
+fi
+
+command_name=""
+for token in "${args[@]}"; do
+  case "$token" in
+    --json|--quiet) ;;
+    -*) ;;
+    *) command_name="$token"; break ;;
+  esac
+done
+
+if [[ -z "$command_name" ]]; then
+  command_name="help"
+  help_present=0
+  for token in "${args[@]}"; do
+    [[ "$token" == --help || "$token" == -h ]] && help_present=1
+  done
+  [[ $help_present -eq 1 ]] || args+=(--help)
+fi
+
+# normalize_runtime maps user input to python | node | auto.
+normalize_runtime() {
+  case "${1,,}" in
+    py|python|python3) printf '%s' python ;;
+    node|nodejs) printf '%s' node ;;
+    auto|'') printf '%s' auto ;;
+    *) return 1 ;;
+  esac
+}
+
+family_of() {
+  case "$1" in
+    python) printf '%s' python ;;
+    node) printf '%s' node ;;
+    *) return 1 ;;
+  esac
+}
+
+required_family="any"
+case "$command_name" in
+  select|replace-text|contact-sheet) required_family="python" ;;
+esac
+
+PYTHON_BIN="${PPTX_SKILL_PYTHON:-}"
+if [[ -z "$PYTHON_BIN" ]]; then
+  if [[ -x "$SCRIPT_DIR/python/.venv/bin/python" ]]; then
+    PYTHON_BIN="$SCRIPT_DIR/python/.venv/bin/python"
+  elif command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="$(command -v python3)"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="$(command -v python)"
+  fi
+fi
+
+NODE_BIN="${PPTX_SKILL_NODE:-}"
+if [[ -z "$NODE_BIN" ]] && command -v node >/dev/null 2>&1; then
+  NODE_BIN="$(command -v node)"
+fi
+
+runtime_executable_available() {
+  case "$1" in
+    python) [[ -n "$PYTHON_BIN" && -x "$PYTHON_BIN" ]] ;;
+    node) [[ -n "$NODE_BIN" && -x "$NODE_BIN" ]] ;;
+    *) return 1 ;;
+  esac
+}
+
+python_module_available() {
+  local module="$1"
+  [[ -n "$PYTHON_BIN" && -x "$PYTHON_BIN" ]] \
+    && "$PYTHON_BIN" -c 'import importlib.util,sys; raise SystemExit(0 if importlib.util.find_spec(sys.argv[1]) else 1)' "$module" >/dev/null 2>&1
+}
+
+node_package_available() {
+  local package="$1"
+  local dir="$NODE_DIR"
+  while :; do
+    [[ -e "$dir/node_modules/$package" ]] && return 0
+    [[ "$dir" == / ]] && break
+    dir="$(dirname -- "$dir")"
+  done
+  return 1
+}
+
+runtime_dependencies_available() {
+  local runtime="$1"
+  runtime_executable_available "$runtime" || return 1
+  if [[ "$command_name" == doctor || "$command_name" == help ]]; then
+    return 0
+  fi
+
+  case "$(family_of "$runtime")" in
+    python)
+      case "$command_name" in
+        render) command -v soffice >/dev/null 2>&1 && command -v pdftoppm >/dev/null 2>&1 ;;
+        contact-sheet)
+          command -v soffice >/dev/null 2>&1 && command -v pdftoppm >/dev/null 2>&1 \
+            && python_module_available PIL
+          ;;
+        check|extract-media) return 0 ;;
+        *) python_module_available pptx ;;
+      esac
+      ;;
+    node)
+      case "$command_name" in
+        render) command -v soffice >/dev/null 2>&1 && command -v pdftoppm >/dev/null 2>&1 ;;
+        extract-media) node_package_available jszip ;;
+        select|replace-text|contact-sheet) return 1 ;;
+        *) node_package_available jszip && node_package_available fast-xml-parser ;;
+      esac
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+runtime_supports_operation() {
+  local runtime="$1"
+  case "$required_family" in
+    any) return 0 ;;
+    python) [[ "$(family_of "$runtime")" == python ]] ;;
+    *) return 1 ;;
+  esac
+}
+
+nearest_project_runtime() {
+  local dir="$PWD"
+  while :; do
+    if [[ -e "$dir/package.json" || -e "$dir/package-lock.json" || -e "$dir/pnpm-lock.yaml" || -e "$dir/yarn.lock" ]]; then printf '%s' node; return; fi
+    if [[ -e "$dir/pyproject.toml" || -e "$dir/uv.lock" || -e "$dir/requirements.txt" || -e "$dir/.python-version" ]]; then printf '%s' python; return; fi
+    [[ "$dir" == / ]] && break
+    dir="$(dirname -- "$dir")"
+  done
+  printf '%s' ""
+}
+
+append_candidate() {
+  local value="$1"
+  [[ -n "$value" ]] || return 0
+  local existing
+  for existing in "${candidates[@]:-}"; do
+    [[ "$existing" == "$value" ]] && return 0
+  done
+  candidates+=("$value")
+}
+
+explicit="${runtime_override:-${PPTX_SKILL_RUNTIME:-}}"
+selected=""
+
+if [[ -n "$explicit" ]]; then
+  selected="$(normalize_runtime "$explicit")" || { echo "Error: invalid runtime '$explicit'" >&2; exit 2; }
+  [[ "$selected" != auto ]] || selected=""
+  if [[ -n "$selected" ]]; then
+    runtime_supports_operation "$selected" || {
+      echo "Error: runtime '$selected' does not cover command '$command_name'" >&2
+      exit 5
+    }
+    runtime_dependencies_available "$selected" || {
+      echo "Error: runtime '$selected' or its PPTX dependencies are unavailable; run its doctor/setup instructions" >&2
+      exit 4
+    }
+  fi
+fi
+
+if [[ -z "$selected" ]]; then
+  candidates=()
+  marker="$(nearest_project_runtime)"
+  append_candidate "$marker"
+
+  case "${PPTX_SKILL_PREFER:-}" in
+    python) append_candidate python ;;
+    node) append_candidate node ;;
+  esac
+
+  IFS=',' read -r -a configured_order <<< "${PPTX_SKILL_RUNTIME_ORDER:-python,node}"
+  for item in "${configured_order[@]}"; do
+    normalized="$(normalize_runtime "${item//[[:space:]]/}")" || continue
+    [[ "$normalized" == auto ]] || append_candidate "$normalized"
+  done
+
+  for candidate in "${candidates[@]}"; do
+    if ! runtime_supports_operation "$candidate"; then
+      if [[ "${PPTX_SKILL_NO_FALLBACK:-0}" == 1 && "$candidate" == "$marker" ]]; then
+        echo "Error: preferred project runtime '$candidate' does not cover '$command_name' and fallback is disabled" >&2
+        exit 5
+      fi
+      continue
+    fi
+    if runtime_dependencies_available "$candidate"; then
+      selected="$candidate"
+      break
+    fi
+    if [[ "${PPTX_SKILL_NO_FALLBACK:-0}" == 1 && "$candidate" == "$marker" ]]; then
+      echo "Error: preferred project runtime '$candidate' is unavailable and fallback is disabled" >&2
+      exit 4
+    fi
+  done
+fi
+
+if [[ -z "$selected" ]]; then
+  echo "Error: no healthy PPTX backend covers '$command_name'. Install the declared Python or Node dependencies, or select an available runtime explicitly." >&2
+  exit 4
+fi
+
+case "$(family_of "$selected")" in
+  python)
+    export PPTX_SKILL_SELECTED_RUNTIME="python"
+    if [[ $quiet -eq 0 ]]; then
+      echo "q-tool-pptx runtime: python" >&2
+    fi
+    exec "$PYTHON_BIN" "$PY_SCRIPT" "${args[@]}"
+    ;;
+  node)
+    export PPTX_SKILL_SELECTED_RUNTIME="node"
+    if [[ $quiet -eq 0 ]]; then
+      echo "q-tool-pptx runtime: node" >&2
+    fi
+    exec "$NODE_BIN" "$NODE_SCRIPT" "${args[@]}"
+    ;;
+  *)
+    echo "Error: internal routing failure: $selected" >&2
+    exit 6
+    ;;
+esac

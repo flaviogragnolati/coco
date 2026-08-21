@@ -1,0 +1,4 @@
+interface:
+  display_name: "C4 Architecture Diagrams"
+  short_description: "Model and render evidence-grounded C4 views"
+  default_prompt: "Use $q-tool-c4 to create, revise, validate, or render an evidence-grounded C4 architecture view."

@@ -1,0 +1,189 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar research brief
+type: object
+required: [schema_version, brief, decision_refs, questions, scope, budget, search_plan, assumptions]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  research_profile: {enum: [general, market]}
+  intended_consumers:
+    type: array
+    items: {enum: [decision-support, proposal, reporting]}
+  engagement_ref: {type: [string, "null"]}
+  analysis_modules:
+    type: array
+    items:
+      enum: [market-sizing, tam-sam-som, forecast, sensitivity, unit-normalization, top-down-bottom-up-reconciliation, competitive-landscape, concentration, demand-segmentation, scenario-analysis, custom-method]
+  measurement_contract:
+    type: object
+    required: [contract_id, product_or_service, inclusions, exclusions, buyer, user, payer, transaction, value_chain_level, geography, import_export_treatment, channels, historical_period, forecast_period, as_of, measure, currency, taxonomy]
+    additionalProperties: false
+    properties:
+      contract_id: {type: string}
+      product_or_service: {type: string}
+      inclusions:
+        type: array
+        minItems: 1
+        items: {type: string}
+      exclusions:
+        type: array
+        items: {type: string}
+      buyer:
+        type: array
+        minItems: 1
+        items: {type: string}
+      user:
+        type: array
+        minItems: 1
+        items: {type: string}
+      payer:
+        type: array
+        minItems: 1
+        items: {type: string}
+      transaction: {type: string}
+      value_chain_level: {type: string}
+      geography:
+        type: array
+        minItems: 1
+        items: {type: string}
+      import_export_treatment: {type: string}
+      channels:
+        type: array
+        minItems: 1
+        items: {type: string}
+      historical_period:
+        type: object
+        required: [from, to]
+        additionalProperties: false
+        properties:
+          from: {type: string}
+          to: {type: string}
+      forecast_period:
+        type: object
+        required: [from, to]
+        additionalProperties: false
+        properties:
+          from: {type: [string, "null"]}
+          to: {type: [string, "null"]}
+      as_of: {type: string}
+      measure:
+        type: object
+        required: [measure_type, unit, denominator_id, stock_or_flow, gross_or_net, tax_treatment]
+        additionalProperties: false
+        properties:
+          measure_type: {type: string}
+          unit: {type: string}
+          denominator_id: {type: string}
+          stock_or_flow: {enum: [stock, flow, not-applicable]}
+          gross_or_net: {enum: [gross, net, not-applicable]}
+          tax_treatment: {type: string}
+      currency:
+        type: object
+        required: [code, base_year, price_basis]
+        additionalProperties: false
+        properties:
+          code: {type: [string, "null"]}
+          base_year: {type: [integer, "null"]}
+          price_basis: {enum: [nominal, real, current, constant, not-applicable]}
+      taxonomy:
+        type: object
+        required: [name, version]
+        additionalProperties: false
+        properties:
+          name: {type: string}
+          version: {type: string}
+  brief:
+    type: object
+    required: [brief_id, version, lifecycle, status, approval_ref]
+    additionalProperties: false
+    properties:
+      brief_id: {type: string}
+      version: {type: string}
+      lifecycle: {const: Working}
+      status: {enum: [draft, authorized]}
+      approval_ref: {type: [string, "null"]}
+  decision_refs:
+    type: array
+    minItems: 1
+    items: {type: string}
+  questions:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [question_id, question, question_type, decision_refs, parent_question_ref, boundaries, radar]
+      additionalProperties: false
+      properties:
+        question_id: {type: string}
+        question: {type: string}
+        question_type: {enum: [factual, comparative, market, regulatory, technology, feasibility]}
+        decision_refs:
+          type: array
+          minItems: 1
+          items: {type: string}
+        parent_question_ref: {type: [string, "null"]}
+        boundaries:
+          type: array
+          minItems: 1
+          items: {type: string}
+        radar:
+          type: object
+          required: [researchable, anchored, decision_linked, adds_evidence, relevant, average, passes]
+          additionalProperties: false
+          properties:
+            researchable: {enum: [1, 2, 3, 4, 5]}
+            anchored: {enum: [1, 2, 3, 4, 5]}
+            decision_linked: {enum: [1, 2, 3, 4, 5]}
+            adds_evidence: {enum: [1, 2, 3, 4, 5]}
+            relevant: {enum: [1, 2, 3, 4, 5]}
+            average: {type: number}
+            passes: {type: boolean}
+  scope:
+    type: object
+    required: [in_scope, out_of_scope, privacy_constraints]
+    additionalProperties: false
+    properties:
+      in_scope:
+        type: array
+        minItems: 1
+        items: {type: string}
+      out_of_scope:
+        type: array
+        items: {type: string}
+      privacy_constraints:
+        type: array
+        items: {type: string}
+  budget:
+    type: object
+    required: [time_limit, cost_limit, stopping_conditions]
+    additionalProperties: false
+    properties:
+      time_limit: {type: string}
+      cost_limit: {type: string}
+      max_sources_inspected:
+        type: [integer, "null"]
+        minimum: 1
+      stopping_conditions:
+        type: array
+        minItems: 1
+        items: {type: string}
+  search_plan:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [question_ref, strategies, source_classes]
+      additionalProperties: false
+      properties:
+        question_ref: {type: string}
+        strategies:
+          type: array
+          minItems: 1
+          items: {type: string}
+        source_classes:
+          type: array
+          minItems: 1
+          items: {type: string}
+  assumptions:
+    type: array
+    items: {type: string}

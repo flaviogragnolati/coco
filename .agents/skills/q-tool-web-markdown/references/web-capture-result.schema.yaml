@@ -1,0 +1,85 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar web capture result
+type: object
+additionalProperties: false
+required: [schema_version, request_id, owner, generator_skill, outcome, category, source, runtime, policy, capture, validation, warnings, blockers, required_user_actions, next_recommended_action]
+properties:
+  schema_version: {const: "1.0"}
+  request_id: {type: string, minLength: 1}
+  owner: {type: string, minLength: 1}
+  generator_skill: {const: q-tool-web-markdown}
+  outcome: {enum: [captured, blocked, failed]}
+  category: {enum: [success, capability, authorization, network-policy, limit, navigation, extraction, content-quality, filesystem, internal]}
+  source:
+    type: object
+    additionalProperties: false
+    required: [requested_url, requested_url_sha256, final_url, final_url_sha256, accessed_at]
+    properties:
+      requested_url: {type: string, minLength: 1}
+      requested_url_sha256: {type: string, pattern: "^[a-f0-9]{64}$"}
+      final_url: {type: [string, "null"], minLength: 1}
+      final_url_sha256: {type: [string, "null"], pattern: "^[a-f0-9]{64}$"}
+      accessed_at: {type: string, minLength: 1}
+  runtime:
+    type: object
+    additionalProperties: false
+    required: [adapter, node, browser, sandbox]
+    properties:
+      adapter: {const: "@quasar/q-tool-web-markdown-runtime@1.0.0"}
+      node: {type: string, minLength: 1}
+      browser:
+        type: [object, "null"]
+        additionalProperties: false
+        required: [kind, version, product, protocol_version, sandbox]
+        properties:
+          kind: {enum: [chrome, chromium, edge]}
+          version: {type: string, minLength: 1}
+          product: {type: string, minLength: 1}
+          protocol_version: {type: [string, "null"]}
+          sandbox: {const: verified}
+      sandbox: {enum: [verified, unavailable]}
+  policy:
+    type: object
+    additionalProperties: false
+    required: [network, connection_pinning, direct_fallback]
+    properties:
+      network: {const: public-http-read-only}
+      methods: {type: array, items: {enum: [GET, HEAD]}}
+      connection_pinning: {const: proxy-resolved-ip}
+      direct_fallback: {const: false}
+      environment_proxy: {const: false}
+      limits: {type: object}
+  capture:
+    type: object
+    additionalProperties: false
+    required: [extraction, markdown, output_path, sha256, bytes, characters, metrics]
+    properties:
+      extraction: {enum: [dom-main-article-body-v1, null]}
+      markdown: {type: [string, "null"]}
+      output_path: {type: [string, "null"], minLength: 1}
+      sha256: {type: [string, "null"], pattern: "^[a-f0-9]{64}$"}
+      bytes: {type: integer, minimum: 0}
+      characters: {type: integer, minimum: 0}
+      metrics: {type: object}
+  validation:
+    type: object
+    additionalProperties: false
+    required: [status, checks]
+    properties:
+      status: {enum: [passed, failed]}
+      checks: {type: object}
+  warnings: {type: array, items: {type: string, minLength: 1}}
+  blockers: {type: array, items: {type: string, minLength: 1}}
+  required_user_actions: {type: array, items: {type: string, minLength: 1}}
+  next_recommended_action: {type: [string, "null"], minLength: 1}
+  stage_result:
+    type: object
+    required: [skill_id, mode, outcome, authored_outputs, derived_outputs, blockers, warnings, required_user_actions]
+  orchestration:
+    type: object
+    additionalProperties: false
+    required: [mode, global_state_updated, reconciliation_required]
+    properties:
+      mode: {const: standalone}
+      global_state_updated: {const: false}
+      reconciliation_required: {const: true}

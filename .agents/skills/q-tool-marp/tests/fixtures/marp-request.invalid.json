@@ -1,0 +1,12 @@
+{
+  "schema_version": "2.0",
+  "request_id": "",
+  "operation": "publish",
+  "caller": {"skill_id": "", "workflow": null, "mode": "orchestrated"},
+  "owner_skill": "",
+  "sources": [],
+  "deck": {"source_path": null, "approved_plan_ref": "", "formats": ["server"], "theme": {"path": "", "sha256": "bad"}, "asset_roots": []},
+  "roots": {"input": [], "output": []},
+  "output": {"source_path": null, "render_dir": null, "basename": "", "overwrite": true, "approval_ref": null, "persist_sidecar": true, "sidecar_path": null},
+  "policy": {"network_allowed": true, "raw_html": "safe", "allow_local_files": true, "config_allowed": true, "custom_engine_allowed": true, "plugins_allowed": true}
+}

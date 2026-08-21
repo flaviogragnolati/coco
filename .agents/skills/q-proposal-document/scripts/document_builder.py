@@ -16,6 +16,8 @@ from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
 from PIL import Image, ImageDraw, ImageFont
 
+from font_resolution import resolve_free_font_family
+
 
 COLORS = {
     "mint": "69BC9B",
@@ -40,6 +42,9 @@ CONTENT_WIDTH_MM = A4_WIDTH_MM - BODY_LEFT_MM - BODY_RIGHT_MM
 CONTACT_EMAIL = "info@quasartech.xyz"
 WEBSITE = "quasartech.xyz"
 LEGAL_ENTITY = "Ingeniería Quasar SRL"
+ACTIVE_FONT_NAME = "Liberation Sans"
+ACTIVE_FONT_REGULAR: Path | None = None
+ACTIVE_FONT_BOLD: Path | None = None
 
 
 def tr(data: dict[str, Any], key: str, default: str) -> str:
@@ -53,12 +58,13 @@ def rgb(hex_value: str) -> RGBColor:
 
 def set_run_font(
     run,
-    name: str = "Arial",
+    name: str | None = None,
     size: float | None = None,
     color: str | None = None,
     bold: bool | None = None,
     italic: bool | None = None,
 ):
+    name = name or ACTIVE_FONT_NAME
     run.font.name = name
     rpr = run._element.get_or_add_rPr()
     rfonts = rpr.rFonts
@@ -257,9 +263,9 @@ def add_text_content_control(
     run = OxmlElement("w:r")
     run_properties = OxmlElement("w:rPr")
     fonts = OxmlElement("w:rFonts")
-    fonts.set(qn("w:ascii"), "Arial")
-    fonts.set(qn("w:hAnsi"), "Arial")
-    fonts.set(qn("w:cs"), "Arial")
+    fonts.set(qn("w:ascii"), ACTIVE_FONT_NAME)
+    fonts.set(qn("w:hAnsi"), ACTIVE_FONT_NAME)
+    fonts.set(qn("w:cs"), ACTIVE_FONT_NAME)
     run_properties.append(fonts)
     color = OxmlElement("w:color")
     color.set(qn("w:val"), COLORS["muted"])
@@ -288,27 +294,27 @@ def set_update_fields(document: Document):
 
 def configure_styles(document: Document):
     normal = document.styles["Normal"]
-    set_style_font(normal, "Arial")
+    set_style_font(normal, ACTIVE_FONT_NAME)
     normal.font.size = Pt(9.5)
     normal.font.color.rgb = rgb(COLORS["text"])
     normal.paragraph_format.space_after = Pt(4.5)
     normal.paragraph_format.line_spacing = 1.08
 
     title = document.styles["Title"]
-    set_style_font(title, "Arial")
+    set_style_font(title, ACTIVE_FONT_NAME)
     title.font.size = Pt(21)
     title.font.bold = True
     title.font.color.rgb = rgb(COLORS["navy"])
     title.paragraph_format.space_after = Pt(8)
 
     subtitle = document.styles["Subtitle"]
-    set_style_font(subtitle, "Arial")
+    set_style_font(subtitle, ACTIVE_FONT_NAME)
     subtitle.font.size = Pt(11)
     subtitle.font.color.rgb = rgb(COLORS["muted"])
     subtitle.paragraph_format.space_after = Pt(8)
 
     h1 = document.styles["Heading 1"]
-    set_style_font(h1, "Arial")
+    set_style_font(h1, ACTIVE_FONT_NAME)
     h1.font.size = Pt(15.5)
     h1.font.bold = True
     h1.font.color.rgb = rgb(COLORS["navy"])
@@ -317,7 +323,7 @@ def configure_styles(document: Document):
     h1.paragraph_format.keep_with_next = True
 
     h2 = document.styles["Heading 2"]
-    set_style_font(h2, "Arial")
+    set_style_font(h2, ACTIVE_FONT_NAME)
     h2.font.size = Pt(11.5)
     h2.font.bold = True
     h2.font.color.rgb = rgb(COLORS["navy"])
@@ -326,7 +332,7 @@ def configure_styles(document: Document):
     h2.paragraph_format.keep_with_next = True
 
     h3 = document.styles["Heading 3"]
-    set_style_font(h3, "Arial")
+    set_style_font(h3, ACTIVE_FONT_NAME)
     h3.font.size = Pt(10)
     h3.font.bold = True
     h3.font.color.rgb = rgb(COLORS["text"])
@@ -336,7 +342,7 @@ def configure_styles(document: Document):
 
     for list_name in ("List Bullet", "List Number"):
         style = document.styles[list_name]
-        set_style_font(style, "Arial")
+        set_style_font(style, ACTIVE_FONT_NAME)
         style.font.size = Pt(9.25)
         style.font.color.rgb = rgb(COLORS["text"])
         style.paragraph_format.space_after = Pt(2.5)
@@ -351,7 +357,7 @@ def configure_styles(document: Document):
             style = document.styles[name]
         except KeyError:
             style = document.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
-        set_style_font(style, "Arial")
+        set_style_font(style, ACTIVE_FONT_NAME)
         style.font.size = Pt(size)
         style.font.color.rgb = rgb(color)
         style.font.bold = bold
@@ -363,8 +369,8 @@ def configure_styles(document: Document):
 def load_font(path: Path, size: int):
     try:
         return ImageFont.truetype(str(path), size=size)
-    except Exception:
-        return ImageFont.truetype("arial.ttf", size=size)
+    except Exception as exc:
+        raise RuntimeError(f"Unable to load the resolved free font {path}: {exc}") from exc
 
 
 def wrap_text(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[str]:
@@ -417,13 +423,13 @@ def build_cover_image(data: dict[str, Any], assets: Path, output: Path):
     draw = ImageDraw.Draw(canvas)
     draw.rectangle((0, pattern_height - 5, width, pattern_height + 4), fill="#69BC9B")
 
-    extra = assets / "SuperaGothic-ExtraBold.otf"
-    regular = assets / "SuperaGothic-Regular.otf"
-    font_label = load_font(extra, 24)
-    font_client = load_font(extra, 39)
-    font_project = load_font(extra, 34)
-    font_meta = load_font(regular, 20)
-    font_contact = load_font(regular, 21)
+    if ACTIVE_FONT_REGULAR is None or ACTIVE_FONT_BOLD is None:
+        raise RuntimeError("Free font resolution was not initialized")
+    font_label = load_font(ACTIVE_FONT_BOLD, 24)
+    font_client = load_font(ACTIVE_FONT_BOLD, 39)
+    font_project = load_font(ACTIVE_FONT_BOLD, 34)
+    font_meta = load_font(ACTIVE_FONT_REGULAR, 20)
+    font_contact = load_font(ACTIVE_FONT_REGULAR, 21)
 
     x = 110
     y = pattern_height + 105
@@ -478,7 +484,9 @@ def build_footer_band(data: dict[str, Any], assets: Path, output: Path):
     overlay = Image.new("RGBA", band.size, (20, 27, 66, 65))
     band = Image.alpha_composite(band.convert("RGBA"), overlay)
     draw = ImageDraw.Draw(band)
-    font = load_font(assets / "SuperaGothic-Regular.otf", 18)
+    if ACTIVE_FONT_REGULAR is None:
+        raise RuntimeError("Free font resolution was not initialized")
+    font = load_font(ACTIVE_FONT_REGULAR, 18)
     contact = f"{CONTACT_EMAIL}  |  {WEBSITE}"
     bbox = draw.textbbox((0, 0), contact, font=font)
     x = (width - (bbox[2] - bbox[0])) // 2
@@ -1404,6 +1412,12 @@ def contents_for(data: dict[str, Any]) -> list[str]:
 
 
 def build_document(data: dict[str, Any], output: Path, assets: Path, keep_cover=False):
+    global ACTIVE_FONT_NAME, ACTIVE_FONT_REGULAR, ACTIVE_FONT_BOLD
+    font_resolution = resolve_free_font_family()
+    ACTIVE_FONT_NAME = font_resolution["family"]
+    ACTIVE_FONT_REGULAR = Path(font_resolution["regular_path"])
+    ACTIVE_FONT_BOLD = Path(font_resolution["bold_path"])
+    data.setdefault("_provenance", {})["font_resolution"] = font_resolution
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="quasar-proposal-") as tmp:
         tmp_path = Path(tmp)
@@ -1431,6 +1445,7 @@ def build_document(data: dict[str, Any], output: Path, assets: Path, keep_cover=
             f"source_version={source_version}; source_sha256={source_hash}; "
             f"generated_by=q-proposal-document; "
             f"generated_at={metadata.get('generated_at', '')}; do_not_edit=true"
+            f"; font_family={ACTIVE_FONT_NAME}"
         )
 
         cover_section = document.sections[0]
@@ -1477,3 +1492,4 @@ def build_document(data: dict[str, Any], output: Path, assets: Path, keep_cover=
         if keep_cover:
             cover_copy = output.with_name(output.stem + "-cover.png")
             cover_copy.write_bytes(cover_path.read_bytes())
+    return font_resolution

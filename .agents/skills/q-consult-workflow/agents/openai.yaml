@@ -1,0 +1,4 @@
+interface:
+  display_name: "Consulting Execution Workflow"
+  short_description: "Coordinate a consulting engagement to accepted results"
+  default_prompt: "Use $q-consult-workflow to start the engagement from the accepted proposal and route its stages."

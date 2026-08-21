@@ -36,7 +36,7 @@ Run `scripts/validate_document.py` and require:
 
 ## 4. Visual review
 
-Use the Documents skill to render and inspect every page. Correct and rerender until there are no clipped elements, overlaps, missing glyphs, orphan headings, unreadable table splits, compressed rows, avoidable blank areas, misaligned brand elements, inconsistent hierarchy, or legacy logos.
+Use a verified local document runtime to render and inspect every page. `q-tool-document` may perform bounded DOCX mechanics and validation, and `q-tool-pdf` may perform PDF mechanics and inspection, only when each tool's `doctor` output proves a viable local route for the required operation. Correct and rerender until there are no clipped elements, overlaps, missing glyphs, orphan headings, unreadable table splits, compressed rows, avoidable blank areas, misaligned brand elements, inconsistent hierarchy, or legacy logos. Block an issued format when rendering or inspection is unavailable.
 
 ## 5. PDF and cross-format consistency
 
@@ -50,7 +50,8 @@ Use the Documents skill to render and inspect every page. Correct and rerender u
 
 - Classify mapping as authored/supporting and outputs as derived/none.
 - Record sources, hashes, generator, date, and `do_not_edit`.
-- Synchronize artifact index, traceability, workflow state, decisions, and risks.
+- Return `authored_outputs`, `derived_outputs`, `updated_outputs`, `traceability_delta`, `decisions_added_or_updated`, and `risks_added_or_updated` with `global_state_updated: false` and `reconciliation_required: true`.
+- Let only the root orchestrator reconcile those deltas into the artifact index, workflow state, traceability, decisions, and risks.
 - Mark stale outputs when the source changes.
 - Preserve immutable releases.
 

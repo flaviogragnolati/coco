@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quasar-tool-document-python"
+version = "1.0.0"
+description = "Local Python backend for Quasar q-tool-document"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+q-tool-document-python = "document_tool:main"
+
+[tool.setuptools]
+py-modules = ["document_tool"]

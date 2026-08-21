@@ -1,4 +1,4 @@
 interface:
   display_name: "Resolve Merge Conflicts"
-  short_description: "Resolve Git conflicts while preserving intended behavior"
-  default_prompt: "Use $q-code-merge-conflicts to resolve the current Git conflicts while preserving intended behavior."
+  short_description: "Resolve compatible Git conflicts without implicit commits"
+  default_prompt: "Use $q-code-merge-conflicts to resolve compatible conflicts in the current merge or rebase, stop on incompatible intent, and leave every Git mutation approval explicit."

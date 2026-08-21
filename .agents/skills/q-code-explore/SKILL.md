@@ -1,6 +1,6 @@
 ---
 name: q-code-explore
-description: "Explore a codebase, targeted module or feature, or document and return a transient high-level summary grounded in inspected evidence. Use for orientation in unfamiliar material, to answer a question by tracing relevant code or text, or to build context before planning, implementation, review, or explanation. Part of the Quasar AI delivery skills; requires the q-code-grill-design companion for architecture vocabulary."
+description: "Explore a codebase, targeted module or feature, or document and return a transient high-level summary grounded in inspected evidence. Use for orientation in unfamiliar material, to answer a question by tracing relevant code or text, to zoom out one abstraction level above a named code location (its modules, callers, dependencies, and responsibilities), or to build context before planning, implementation, review, or explanation. Part of the Quasar AI delivery skills; requires the q-code-grill-design companion for architecture vocabulary."
 ---
 
 # Explore
@@ -14,6 +14,7 @@ Build a useful mental model without changing the source material. Treat the user
 3. For a document, preserve its terminology and consult any nearby glossary, context file, index, or companion document needed to interpret it.
 4. Accept a whole codebase or document, or a user-named module, feature, section, or concept. Start with the named target and widen only enough to explain its role and relationships.
 5. Treat an optional user question as the exploration lens and starting point. Test its assumptions against the evidence and foreground the answer, while including adjacent context needed to avoid a misleading summary.
+6. Treat "one abstraction level up" as a lens: when the user asks for the modules, callers, dependencies, ownership, and main data or control flow exactly one level above a named code location, keep the target to that ring, name the level you are describing, and return the map without widening to the whole codebase.
 
 Complete this step when the target, exploration lens, governing instructions, and applicable vocabulary are explicit or any material ambiguity is reported.
 
@@ -40,6 +41,8 @@ Do not force a fixed template. Shape the response around the user's prompt and t
 
 Complete this step when the user has a concise mental model, lightweight evidence pointers, explicit limitations, and no durable or source mutation from the exploration itself.
 
+When `user-requests-a-transient-code-structure-diagram` and `q-tool-mermaid` is installed, pass the evidence-grounded map to it and return the diagram as transient context. Do not let the diagram add unobserved modules or calls. If the tool is absent, `return-the-evidence-grounded-textual-map-and-state-the-visual-capability-gap`.
+
 ## Boundaries
 
-Use `q-code-zoom-out` when the request is specifically for the modules, callers, and dependencies one abstraction level above current code. Use `q-code-research` for external primary-source investigation and a durable cited report, `q-review-codebase` for a formal quality audit, and `q-code-explain` to re-pitch technical content already presented.
+Use `q-code-research` for external primary-source investigation and a durable cited report, `q-review-codebase` for a formal quality audit, and `q-code-explain` to re-pitch technical content already presented.

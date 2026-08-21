@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design System Definition"
+  short_description: "Define reusable design contracts and tokens"
+  default_prompt: "Use $q-plan-design-system to define, adopt, or evolve the product's reusable design contracts and design token set."

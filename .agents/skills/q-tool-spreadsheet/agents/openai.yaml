@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spreadsheet Toolkit"
+  short_description: "Create, inspect, recalculate, and validate XLSX files"
+  default_prompt: "Use $q-tool-spreadsheet to perform the requested spreadsheet operation with a capability-checked Python or Node backend while preserving caller-owned data, formulas, and meaning."

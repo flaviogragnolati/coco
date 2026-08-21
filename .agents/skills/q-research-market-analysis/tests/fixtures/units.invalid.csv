@@ -1,0 +1,3 @@
+record_id,comparison_group,value,unit,currency,base_year,price_basis,measure_type,stock_or_flow,gross_or_net,geography,period,taxonomy,taxonomy_version,denominator_id,finding_ref
+REC-001,GRP-001,1000,ARS,ARS,2026,nominal,revenue,flow,net,Argentina,2026,Quasar,1.0,annual-vendor-revenue,F-001
+REC-002,GRP-001,900,USD,USD,2025,real,revenue,flow,gross,Argentina,2025,Other,2.0,end-customer-spend,F-404

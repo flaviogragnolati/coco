@@ -1,0 +1,98 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar C4 result
+type: object
+required: [schema_version, c4_result]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  c4_result:
+    type: object
+    required: [request_id, outcome, owner_skill, generator_skill, selected_backend, model_summary, sources, renders, validation, warnings, blockers, provenance]
+    additionalProperties: false
+    properties:
+      request_id: {type: string}
+      outcome: {enum: [completed, completed_with_warnings, blocked]}
+      owner_skill: {type: string}
+      generator_skill: {const: q-tool-c4}
+      selected_backend:
+        type: [object, "null"]
+        required: [name, capability_status, validation_command, version]
+        additionalProperties: false
+        properties:
+          name: {enum: [mermaid, structurizr, c4-plantuml]}
+          capability_status: {enum: [verified, unverified, unavailable]}
+          validation_command: {type: [string, "null"]}
+          version: {type: [string, "null"]}
+      model_summary:
+        type: object
+        required: [element_ids, relationship_ids, view_ids]
+        additionalProperties: false
+        properties:
+          element_ids:
+            type: array
+            items: {type: string}
+          relationship_ids:
+            type: array
+            items: {type: string}
+          view_ids:
+            type: array
+            items: {type: string}
+      sources:
+        type: array
+        items:
+          type: object
+          required: [path, format, view_ids, sha256, creation_mode, semantic_authority, authority_scope]
+          additionalProperties: false
+          properties:
+            path: {type: string}
+            format: {enum: [mmd, dsl, puml, json]}
+            view_ids:
+              type: array
+              minItems: 1
+              items: {type: string}
+            sha256: {type: string}
+            creation_mode: {const: authored}
+            semantic_authority: {const: supporting}
+            authority_scope: {enum: [visual-representation, visual-model, visual-layout]}
+      renders:
+        type: array
+        items:
+          type: object
+          required: [path, format, source_sha256, renderer, renderer_version, sha256, creation_mode, semantic_authority]
+          additionalProperties: false
+          properties:
+            path: {type: string}
+            format: {enum: [svg, png, pdf]}
+            source_sha256: {type: string}
+            renderer: {type: string}
+            renderer_version: {type: string}
+            sha256: {type: string}
+            creation_mode: {const: derived}
+            semantic_authority: {const: none}
+      validation:
+        type: object
+        required: [request_contract, model_consistency, backend_capability, syntax, visual_render, semantic_alignment]
+        additionalProperties: false
+        properties:
+          request_contract: {enum: [passed, failed]}
+          model_consistency: {enum: [passed, failed]}
+          backend_capability: {enum: [passed, failed, unavailable]}
+          syntax: {enum: [passed, failed, unavailable]}
+          visual_render: {enum: [passed, failed, unavailable, not-requested]}
+          semantic_alignment: {enum: [caller-review-required, accepted, failed]}
+      warnings:
+        type: array
+        items: {type: string}
+      blockers:
+        type: array
+        items: {type: string}
+      provenance:
+        type: object
+        required: [generator_skill, source_refs, backend]
+        additionalProperties: false
+        properties:
+          generator_skill: {const: q-tool-c4}
+          source_refs:
+            type: array
+            items: {type: string}
+          backend: {enum: [mermaid, structurizr, c4-plantuml, null]}

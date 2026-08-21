@@ -1,0 +1,83 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar PPTX result
+type: object
+additionalProperties: false
+required: [schema_version, request_id, outcome, owner_skill, generator_skill, runtime, operation, inputs, outputs, validation, preserved_semantics, intentional_changes, accepted_losses, capability_gaps, warnings, blockers, provenance]
+properties:
+  schema_version:
+    const: "1.0"
+  request_id:
+    type: string
+    minLength: 1
+  outcome:
+    type: string
+    enum: [completed, completed_with_warnings, blocked]
+  owner_skill:
+    type: string
+    minLength: 1
+  generator_skill:
+    const: q-tool-pptx
+  runtime:
+    type: [string, "null"]
+    enum: [python, node, null]
+  operation:
+    type: string
+    enum: [inspect, extract-text, extract-notes, extract-media, select, replace-text, create, render, contact-sheet, check]
+  slide_scope:
+    type: [string, "null"]
+  inputs:
+    type: array
+    minItems: 1
+    items: {type: string}
+  outputs:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [path, media_type, creation_mode, semantic_authority]
+      properties:
+        path: {type: string, minLength: 1}
+        sha256: {type: [string, "null"], pattern: "^[a-f0-9]{64}$"}
+        media_type: {type: string, minLength: 1}
+        creation_mode: {const: derived}
+        semantic_authority: {const: none}
+  validation:
+    type: object
+    additionalProperties: false
+    required: [structural, rendered, inspected_slides]
+    properties:
+      structural: {type: string, enum: [passed, failed, unavailable, not-required]}
+      rendered: {type: string, enum: [passed, failed, unavailable, not-required]}
+      inspected_slides:
+        type: array
+        items: {type: integer, minimum: 1}
+  preserved_semantics:
+    type: array
+    items: {type: string}
+  intentional_changes:
+    type: array
+    items: {type: string}
+  accepted_losses:
+    type: array
+    items: {type: string}
+  capability_gaps:
+    type: array
+    items: {type: string}
+  warnings:
+    type: array
+    items: {type: string}
+  blockers:
+    type: array
+    items: {type: string}
+  provenance:
+    type: object
+    additionalProperties: false
+    required: [source_refs, command, tools]
+    properties:
+      source_refs:
+        type: array
+        items: {type: string}
+      command: {type: string}
+      tools:
+        type: array
+        items: {type: string}

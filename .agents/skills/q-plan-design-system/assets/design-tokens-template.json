@@ -1,0 +1,57 @@
+{
+  "$description": "Template for docs/development-workflow/experience/05b-design-tokens.json. Canonical for token values, aliases, groups, themes, and modes. Replace every placeholder with a confirmed value, delete every tier or group the product does not need, and carry no narrative rationale, inventory, or accessibility requirement here.",
+  "$extensions": {
+    "com.quasar.design-system": {
+      "artifact_id": "ART-DESIGN-TOKENS-000",
+      "version": "0.0",
+      "specification_ref": "ART-DESIGN-SYSTEM-000@0.0",
+      "format_target": "REPLACE with the adopted DTCG specification version or draft date",
+      "validation": {
+        "command": "REPLACE with the project command confirmed by q-plan-tech-foundation",
+        "tool": "REPLACE with the validator package",
+        "tool_version": "REPLACE with the exact pinned version",
+        "result": "validated | unverified",
+        "reason": "Required when result is unverified"
+      }
+    }
+  },
+  "primitive": {
+    "$description": "Raw values named by what they are. No component or feature references a primitive directly.",
+    "color": {
+      "$type": "color",
+      "neutral": {
+        "0": { "$value": "#ffffff", "$description": "REPLACE with a confirmed ramp step" },
+        "900": { "$value": "#000000", "$description": "REPLACE with a confirmed ramp step" }
+      }
+    },
+    "space": {
+      "$type": "dimension",
+      "2": { "$value": { "value": 8, "unit": "px" } },
+      "3": { "$value": { "value": 12, "unit": "px" } }
+    }
+  },
+  "semantic": {
+    "$description": "Roles that features and components consume. Themes and modes vary this tier only.",
+    "color": {
+      "$type": "color",
+      "surface": {
+        "default": { "$value": "{primitive.color.neutral.0}" }
+      },
+      "text": {
+        "default": { "$value": "{primitive.color.neutral.900}" }
+      }
+    },
+    "space": {
+      "$type": "dimension",
+      "inset": {
+        "default": { "$value": "{primitive.space.3}" }
+      }
+    }
+  },
+  "component": {
+    "$description": "Add an entry only when a component needs a value the semantic tier cannot express. Alias the semantic tier; never a primitive or a raw value.",
+    "button": {
+      "padding-inline": { "$type": "dimension", "$value": "{semantic.space.inset.default}" }
+    }
+  }
+}

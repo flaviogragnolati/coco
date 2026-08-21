@@ -1,0 +1,19 @@
+{
+  "name": "quasar-pdf-tool-node",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Node backend for the q-tool-pdf agent skill",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "doctor": "node pdf-tool.mjs doctor",
+    "pdf": "node pdf-tool.mjs"
+  },
+  "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "6.2.108"
+  }
+}

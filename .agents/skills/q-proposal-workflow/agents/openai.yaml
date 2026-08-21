@@ -1,4 +1,4 @@
 interface:
   display_name: "Discovery and Proposal Workflow"
-  short_description: "Coordinate discovery, proposal channels, and commercial close"
-  default_prompt: "Use $q-proposal-workflow to coordinate discovery, proposal channels, client disposition, and close."
+  short_description: "Coordinate discovery, research, proposal, and close"
+  default_prompt: "Use $q-proposal-workflow to coordinate discovery, optional engagement research, proposal channels, client disposition, and close."

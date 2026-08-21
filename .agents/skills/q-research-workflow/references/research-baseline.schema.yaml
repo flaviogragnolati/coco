@@ -1,0 +1,48 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar research baseline
+type: object
+required: [schema_version, baseline]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  baseline:
+    type: object
+    required: [baseline_id, version, lifecycle, brief_ref, findings_ref, synthesis_ref, as_of, approval_ref]
+    additionalProperties: false
+    properties:
+      baseline_id: {type: string}
+      version: {type: string}
+      lifecycle: {const: Baselined}
+      brief_ref:
+        type: object
+        required: [artifact_id, version]
+        additionalProperties: false
+        properties:
+          artifact_id: {type: string}
+          version: {type: string}
+      findings_ref:
+        type: object
+        required: [artifact_id, version]
+        additionalProperties: false
+        properties:
+          artifact_id: {type: string}
+          version: {type: string}
+      synthesis_ref:
+        type: object
+        required: [artifact_id, version]
+        additionalProperties: false
+        properties:
+          artifact_id: {type: string}
+          version: {type: string}
+      analysis_refs:
+        type: array
+        items:
+          type: object
+          required: [artifact_id, version, profile]
+          additionalProperties: false
+          properties:
+            artifact_id: {type: string}
+            version: {type: string}
+            profile: {const: market}
+      as_of: {type: string}
+      approval_ref: {type: string}

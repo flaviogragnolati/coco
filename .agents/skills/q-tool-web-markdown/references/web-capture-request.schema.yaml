@@ -1,0 +1,39 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar web capture request
+type: object
+additionalProperties: false
+required: [schema_version, request_id, owner, operation, url, persistence, output, limits, sensitivity]
+properties:
+  schema_version: {const: "1.0"}
+  request_id: {type: string, minLength: 1}
+  owner: {type: string, minLength: 1}
+  operation: {const: capture}
+  url: {type: string, pattern: "^https?://"}
+  persistence: {enum: [transient, working]}
+  output:
+    type: object
+    additionalProperties: false
+    required: [authorized_root, path, overwrite, approval_ref]
+    properties:
+      authorized_root: {type: [string, "null"], minLength: 1}
+      path: {type: [string, "null"], minLength: 1}
+      overwrite: {type: boolean}
+      approval_ref: {type: [string, "null"], minLength: 1}
+  limits:
+    type: object
+    additionalProperties: false
+    required: [timeout_ms, max_redirects, max_requests, max_bytes, max_dom_bytes, max_markdown_bytes]
+    properties:
+      timeout_ms: {type: integer, minimum: 1000, maximum: 60000}
+      max_redirects: {type: integer, minimum: 0, maximum: 10}
+      max_requests: {type: integer, minimum: 1, maximum: 200}
+      max_bytes: {type: integer, minimum: 1024, maximum: 52428800}
+      max_dom_bytes: {type: integer, minimum: 1024, maximum: 10485760}
+      max_markdown_bytes: {type: integer, minimum: 256, maximum: 5242880}
+  sensitivity:
+    type: object
+    additionalProperties: false
+    required: [contains_secret_query, contains_sensitive_content]
+    properties:
+      contains_secret_query: {type: boolean}
+      contains_sensitive_content: {type: boolean}

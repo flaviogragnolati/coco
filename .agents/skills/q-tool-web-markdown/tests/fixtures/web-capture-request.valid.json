@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "request_id": "WMC-001",
+  "owner": "q-tool-web-markdown",
+  "operation": "capture",
+  "url": "https://example.com/article",
+  "persistence": "transient",
+  "output": {
+    "authorized_root": null,
+    "path": null,
+    "overwrite": false,
+    "approval_ref": null
+  },
+  "limits": {
+    "timeout_ms": 30000,
+    "max_redirects": 5,
+    "max_requests": 80,
+    "max_bytes": 20971520,
+    "max_dom_bytes": 5242880,
+    "max_markdown_bytes": 2097152
+  },
+  "sensitivity": {
+    "contains_secret_query": false,
+    "contains_sensitive_content": false
+  }
+}

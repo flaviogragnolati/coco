@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Engineering"
+  short_description: "Form, execute, and close a release candidate"
+  default_prompt: "Use $q-delivery-release to form the release candidate for this delivery from its exact base commit and included execution records."

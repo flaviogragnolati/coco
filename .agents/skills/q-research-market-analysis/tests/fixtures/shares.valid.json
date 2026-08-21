@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "share_unit": "percent",
+  "known_finding_ids": ["F-001", "F-002"],
+  "shares": [
+    {"competitor_id": "COMP-A", "share": 50, "finding_refs": ["F-001"]},
+    {"competitor_id": "COMP-B", "share": 30, "finding_refs": ["F-002"]},
+    {"competitor_id": "COMP-C", "share": 20, "finding_refs": ["F-002"]}
+  ],
+  "crn": [1, 2, 3]
+}

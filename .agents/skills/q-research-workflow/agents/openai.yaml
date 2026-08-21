@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engagement Research Workflow"
+  short_description: "Coordinate general or market research into a baseline"
+  default_prompt: "Use $q-research-workflow to investigate this engagement uncertainty through scope, evidence, conditional market analysis, synthesis, and an approved baseline."

@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "request_id": "WMC-002",
+  "owner": "q-tool-web-markdown",
+  "generator_skill": "q-tool-web-markdown",
+  "outcome": "captured",
+  "category": "success",
+  "source": {
+    "requested_url": "https://example.com/?token=secret",
+    "requested_url_sha256": "short",
+    "final_url": null,
+    "final_url_sha256": null,
+    "accessed_at": ""
+  },
+  "runtime": {
+    "adapter": "wrong-runtime",
+    "node": "",
+    "browser": null,
+    "sandbox": "unavailable"
+  },
+  "policy": {},
+  "capture": {
+    "extraction": null,
+    "markdown": null,
+    "output_path": "/outside/capture.md",
+    "sha256": null,
+    "bytes": 0,
+    "characters": 0,
+    "metrics": {}
+  },
+  "validation": {},
+  "warnings": [],
+  "blockers": ["contradictory blocker"],
+  "required_user_actions": [],
+  "next_recommended_action": null,
+  "unexpected": true
+}

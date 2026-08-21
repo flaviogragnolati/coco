@@ -1,0 +1,4 @@
+interface:
+  display_name: "Marp Presentation Toolkit"
+  short_description: "Create and render offline Marp presentations"
+  default_prompt: "Use $q-tool-marp to create, revise, validate, or render an offline Marp presentation while preserving caller-owned meaning."

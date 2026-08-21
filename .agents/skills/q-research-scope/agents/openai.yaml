@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Scope"
+  short_description: "Define an authorized general or market research brief"
+  default_prompt: "Use $q-research-scope to turn this uncertainty into bounded questions, a general or market profile, strategies, measurement when needed, and an approved budget."

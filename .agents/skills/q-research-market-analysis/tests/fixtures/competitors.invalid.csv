@@ -1,0 +1,3 @@
+competitor_id,competitor_name,feature_id,feature_name,status,finding_refs,as_of,geography,product_scope,notes
+COMP-A,Competitor A,FEAT-1,Feature 1,yes,F-404,2026-08-13,Argentina,SMB software,
+COMP-B,Competitor B,FEAT-2,Feature 2,no,,2026-08-14,Chile,Other scope,

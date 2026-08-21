@@ -44,6 +44,8 @@ Apply every relevant lens across the declared scope:
 
 Run repository-provided parsers, schema checks, link checks, or documentation linters when they apply. Inspect rendered deliverables only for source fidelity and provenance; route layout and visual-quality defects to the renderer that owns that format.
 
+When `durable-scope-contains-mermaid-that-needs-read-only-validation` and `q-tool-mermaid` is installed, invoke only its read-only validation path and turn diagnostics into findings; never pass repair or overwrite flags. If the tool is absent, `inspect-source-structure-manually-and-report-render-validation-as-unavailable`.
+
 Complete this step when every applicable lens has either inspected evidence or an explicit coverage gap, and no claim relies only on absence, intuition, or a stale summary.
 
 ## 4. Qualify findings
@@ -79,6 +81,15 @@ Do not create or register an audit artifact, update source documentation, change
 Route each approved remediation as a separate task to the artifact owner. Record any later implemented documentation change through the owning workflow's existing changelog or change-control record; when none exists, use the authoritative artifact's version history rather than creating an audit-owned log.
 
 Complete the audit when the declared scope is exhausted, remaining uncertainty is explicit, each actionable finding has one owner, and the user has one truthful next action.
+
+## Anti-patterns
+
+| # | Anti-pattern | How it shows up | Correct behavior |
+|---|---|---|---|
+| 1 | Creating an audit-owned truth source | Findings are saved as a parallel durable report or changelog. | Return transient findings and route approved remediation to each artifact owner. |
+| 2 | Letting implementation redefine intent | Current code silently replaces canonical product or commercial meaning. | Use implementation as observable evidence and report the divergence to the owning workflow. |
+| 3 | Auditing only known broken links | A parser pass is presented as complete documentation QA. | Apply every relevant authority, lifecycle, semantic, freshness, coverage, and usability lens. |
+| 4 | Editing while diagnosing | The reviewer fixes documents to make the audit pass. | Keep the audit read-only and authorize remediation as a separate owner-routed task. |
 
 ## Boundaries
 

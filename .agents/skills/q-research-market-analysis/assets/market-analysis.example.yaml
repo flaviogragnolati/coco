@@ -1,0 +1,121 @@
+schema_version: "1.0"
+analysis:
+  analysis_id: MA-EXAMPLE-001
+  version: "1.0"
+  lifecycle: Working
+  profile: market
+  brief_ref:
+    artifact_id: RB-EXAMPLE-001
+    version: "1.0"
+  findings_ref:
+    artifact_id: FR-EXAMPLE-001
+    version: "1.0"
+  as_of: "2026-08-13"
+measurement_contract_ref: measurement-contract
+modules:
+  - market-sizing
+  - tam-sam-som
+  - top-down-bottom-up-reconciliation
+  - scenario-analysis
+assumptions:
+  - assumption_id: ASM-001
+    description: "Serviceable share"
+    value_or_range:
+      value: 0.55
+      minimum: 0.45
+      maximum: 0.65
+    unit: fraction
+    finding_refs:
+      - F-001
+    rationale: "Conditional on the registered adoption finding."
+    sensitivity_range:
+      minimum: 0.45
+      maximum: 0.65
+  - assumption_id: ASM-002
+    description: "Obtainable share"
+    value_or_range:
+      value: 0.08
+      minimum: 0.04
+      maximum: 0.12
+    unit: fraction
+    finding_refs:
+      - F-001
+      - F-002
+    rationale: "Planning assumption, not a guaranteed forecast."
+    sensitivity_range:
+      minimum: 0.04
+      maximum: 0.12
+calculations:
+  - calculation_id: CALC-001
+    method: top-down
+    formula: "sum(disjoint in-scope component values)"
+    input_refs:
+      - ref_type: finding
+        ref_id: F-001
+    assumption_refs:
+      - ASM-001
+    script:
+      path: scripts/calculate_market_sizing.py
+      version: "1.0"
+      command: "python3 scripts/calculate_market_sizing.py sizing-input.json"
+      hash: sha256:replace-with-executed-script-hash
+    rounding_policy: "Round published currency results to whole units."
+  - calculation_id: CALC-002
+    method: bottom-up
+    formula: "customers * addressable_fraction * quantity * price"
+    input_refs:
+      - ref_type: finding
+        ref_id: F-001
+    assumption_refs:
+      - ASM-001
+      - ASM-002
+    script:
+      path: scripts/calculate_market_sizing.py
+      version: "1.0"
+      command: "python3 scripts/calculate_market_sizing.py sizing-input.json"
+      hash: sha256:replace-with-executed-script-hash
+    rounding_policy: "Round published currency results to whole units."
+scenarios:
+  - scenario_id: SCN-BASE
+    label: base
+    assumption_refs:
+      - ASM-001
+      - ASM-002
+    invalidation_conditions:
+      - "The registered denominator changes materially."
+  - scenario_id: SCN-UPSIDE
+    label: upside
+    assumption_refs:
+      - ASM-001
+    invalidation_conditions:
+      - "Serviceable share falls below the approved range."
+published_results:
+  - result_id: RES-001
+    calculation_ref: CALC-001
+    scenario_ref: SCN-BASE
+    value: 1000000
+    range:
+      minimum: 850000
+      maximum: 1150000
+    unit: ARS
+    denominator_id: annual-vendor-revenue
+    base_year: 2026
+    finding_refs:
+      - F-001
+    assumption_refs:
+      - ASM-001
+      - ASM-002
+    qualifiers:
+      - "Conditional scenario result"
+      - "Not a guaranteed revenue forecast"
+    export_locator: null
+exports: []
+limitations:
+  - "Published evidence does not establish primary-demand intent."
+unresolved_reconciliation: []
+validation_summary:
+  valid: true
+  validated_at: "2026-08-13"
+  script_version: "1.0"
+  errors: []
+  warnings: []

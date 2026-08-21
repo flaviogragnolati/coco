@@ -1,0 +1,88 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar database analysis
+type: object
+required: [schema_version, database_analysis]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  database_analysis:
+    type: object
+    required: [request_id, task, outcome, scope, caller_context, database_profile, source_refs, observed_facts, assumptions, coverage_gaps, findings, candidate_design, semantic_feedback, stack_contradictions, architecture_decisions_required, verification_handoff, next_recommended_action]
+    additionalProperties: false
+    properties:
+      request_id: {type: string}
+      task: {enum: [physical-design, schema-review, document-model-review, migration-design, performance-review]}
+      outcome: {enum: [completed, completed_with_warnings, blocked]}
+      scope: {type: string}
+      caller_context:
+        type: object
+        required: [caller_skill, workflow, requested_scope]
+        additionalProperties: false
+        properties:
+          caller_skill: {type: [string, "null"]}
+          workflow: {type: [string, "null"]}
+          requested_scope: {type: string}
+      database_profile:
+        type: object
+        required: [model_family, engine, version, orm_or_driver, deployment_model, coverage]
+        additionalProperties: false
+        properties:
+          model_family: {enum: [relational, document, null]}
+          engine: {type: [string, "null"]}
+          version: {type: [string, "null"]}
+          orm_or_driver: {type: [string, "null"]}
+          deployment_model: {type: [string, "null"]}
+          coverage: {enum: [verified-profile, portable, unverified]}
+      source_refs:
+        type: array
+        items:
+          type: object
+          required: [source_id, location, version, authority]
+          additionalProperties: false
+          properties:
+            source_id: {type: string}
+            location: {type: string}
+            version: {type: [string, "null"]}
+            authority: {enum: [canonical, supporting, observed, user-supplied]}
+      observed_facts: {type: array, items: {type: string}}
+      assumptions: {type: array, items: {type: string}}
+      coverage_gaps: {type: array, items: {type: string}}
+      findings:
+        type: array
+        items:
+          type: object
+          required: [id, category, severity, confidence, coverage, evidence, impact, recommendation, owner_route]
+          additionalProperties: false
+          properties:
+            id: {type: string}
+            category: {type: string}
+            severity: {enum: [blocker, high, medium, low]}
+            confidence: {enum: [high, medium, low]}
+            coverage: {enum: [verified-profile, portable, unverified]}
+            evidence: {type: array, minItems: 1, items: {type: string}}
+            impact: {type: string}
+            recommendation: {type: string}
+            owner_route: {type: string}
+      candidate_design:
+        type: object
+        required: [relations, documents, constraints, indexes, migration_steps, performance_hypotheses]
+        additionalProperties: false
+        properties:
+          relations: {type: array}
+          documents: {type: array}
+          constraints: {type: array}
+          indexes: {type: array}
+          migration_steps: {type: array}
+          performance_hypotheses: {type: array}
+      semantic_feedback: {type: array, items: {type: string}}
+      stack_contradictions: {type: array, items: {type: string}}
+      architecture_decisions_required: {type: array, items: {type: string}}
+      verification_handoff:
+        type: object
+        required: [recommended_commands, required_evidence, execution_owner]
+        additionalProperties: false
+        properties:
+          recommended_commands: {type: array, items: {type: string}}
+          required_evidence: {type: array, items: {type: string}}
+          execution_owner: {type: [string, "null"]}
+      next_recommended_action: {type: string}

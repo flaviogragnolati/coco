@@ -11,7 +11,7 @@ Include:
 
 1. purpose of the next session;
 2. concise conversation and project context;
-3. current state and completed work;
+3. current state and completed work, including any parked branch or isolated worktree path;
 4. decisions already made and their evidence;
 5. requirements, constraints, and non-goals;
 6. unresolved questions, risks, and blockers;

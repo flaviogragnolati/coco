@@ -1,0 +1,124 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar research synthesis
+type: object
+required: [schema_version, synthesis, brief_ref, findings_ref, answers, themes, debates, gaps, counter_evidence_check]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  synthesis:
+    type: object
+    required: [synthesis_id, version, lifecycle]
+    additionalProperties: false
+    properties:
+      synthesis_id: {type: string}
+      version: {type: string}
+      lifecycle: {const: Working}
+  brief_ref:
+    type: object
+    required: [artifact_id, version]
+    additionalProperties: false
+    properties:
+      artifact_id: {type: string}
+      version: {type: string}
+  findings_ref:
+    type: object
+    required: [artifact_id, version]
+    additionalProperties: false
+    properties:
+      artifact_id: {type: string}
+      version: {type: string}
+  analysis_refs:
+    type: array
+    items:
+      type: object
+      required: [artifact_id, version]
+      additionalProperties: false
+      properties:
+        artifact_id: {type: string}
+        version: {type: string}
+  answers:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [question_ref, answer, confidence, supporting_finding_refs, contradicting_finding_refs, coverage_status, decision_implication]
+      additionalProperties: false
+      properties:
+        question_ref: {type: string}
+        answer: {type: string}
+        confidence: {enum: [low, medium, high]}
+        supporting_finding_refs:
+          type: array
+          items: {type: string}
+        contradicting_finding_refs:
+          type: array
+          items: {type: string}
+        coverage_status: {enum: [planned-search-complete, partial, budget-exhausted, access-blocked, no-evidence-found]}
+        decision_implication: {type: string}
+        analysis_result_refs:
+          type: array
+          items:
+            type: object
+            required: [artifact_id, version, result_id]
+            additionalProperties: false
+            properties:
+              artifact_id: {type: string}
+              version: {type: string}
+              result_id: {type: string}
+  themes:
+    type: array
+    items:
+      type: object
+      required: [theme_id, synthesis, strength, supporting_finding_refs, contradicting_finding_refs]
+      additionalProperties: false
+      properties:
+        theme_id: {type: string}
+        synthesis: {type: string}
+        strength: {enum: [strong, moderate, emerging]}
+        supporting_finding_refs:
+          type: array
+          minItems: 1
+          items: {type: string}
+        contradicting_finding_refs:
+          type: array
+          items: {type: string}
+  debates:
+    type: array
+    items:
+      type: object
+      required: [debate_id, position_a, position_b, finding_refs, balance]
+      additionalProperties: false
+      properties:
+        debate_id: {type: string}
+        position_a: {type: string}
+        position_b: {type: string}
+        finding_refs:
+          type: array
+          minItems: 2
+          items: {type: string}
+        balance: {type: string}
+  gaps:
+    type: array
+    items:
+      type: object
+      required: [gap_id, question_ref, description, decision_ref]
+      additionalProperties: false
+      properties:
+        gap_id: {type: string}
+        question_ref: {type: string}
+        description: {type: string}
+        decision_ref: {type: string}
+  counter_evidence_check:
+    type: object
+    required: [adverse_finding_refs, strongest_counterargument, strongest_source_dependency, circularity_notes, limitations]
+    additionalProperties: false
+    properties:
+      adverse_finding_refs:
+        type: array
+        items: {type: string}
+      strongest_counterargument: {type: string}
+      strongest_source_dependency: {type: string}
+      circularity_notes: {type: string}
+      limitations:
+        type: array
+        items: {type: string}

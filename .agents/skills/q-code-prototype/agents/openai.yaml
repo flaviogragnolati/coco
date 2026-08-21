@@ -1,4 +1,4 @@
 interface:
   display_name: "Prototype"
-  short_description: "Build a throwaway prototype to answer a design question"
-  default_prompt: "Use $q-code-prototype to build a disposable prototype that answers this design question."
+  short_description: "Build an isolated prototype in a new Git worktree"
+  default_prompt: "Use $q-code-prototype to build a disposable prototype on an authorized prototype branch and isolated worktree without touching current work or data."

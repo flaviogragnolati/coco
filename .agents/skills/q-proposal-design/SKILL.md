@@ -25,13 +25,15 @@ Support software, consulting, assessment, training, managed service, mixed, and 
 
 ## Canonical outputs
 
-Create:
+Create under `docs/proposal-workflow/working/proposal/`:
 
 - `02-proposal-source.yaml`: authored and canonical for commercial meaning;
 - a human-readable proposal view derived from the source;
 - stable traceability from discovery IDs to proposal objects.
 
 Treat web, DOCX, PDF, and decks as channels or derivatives. They cannot introduce new commitments.
+
+An adopted ideation snapshot supplies candidate solution, engagement, and workstream options with their unresolved assumptions and dissent. Evaluate them here against discovery evidence; an advanced candidate is never scope, methodology, price, schedule, or a commitment until this stage decides it.
 
 ## Procedure
 
@@ -44,6 +46,8 @@ Treat web, DOCX, PDF, and decks as channels or derivatives. They cannot introduc
 7. Define the software handoff only when applicable; otherwise mark development `not_applicable`.
 8. Validate financial, schedule, scope, and traceability coherence.
 9. Obtain internal approval before marking a client-ready release.
+
+When `client-facing-prose-is-drafted-and-the-user-requests-a-clarity-or-ai-pattern-pass-before-the-gate` and `q-tool-humanizer` is installed, pass the exact prose sections, their language, and a meaning lock — every claim, number, name, price, date, citation, and commitment that must not change — for `detect` and, if requested, `rewrite` or `improve`; adopt a revision into this owned artifact only after checking the lock, and keep the pass out of any derived render. If it is absent, `keep-the-prose-as-authored-and-record-that-no-humanization-pass-ran`.
 
 ## Error routing
 

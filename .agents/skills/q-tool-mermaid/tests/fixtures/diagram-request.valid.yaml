@@ -1,0 +1,41 @@
+schema_version: "1.0"
+diagram_request:
+  request_id: diagram-test-001
+  operation: create
+  caller:
+    skill_id: q-plan-architecture
+    workflow: ai-coding
+    mode: orchestrated
+  ownership:
+    owner_skill: q-plan-architecture
+    owner_workflow: ai-coding
+    creation_mode: authored
+    semantic_authority: supporting
+    authority_scope: visual-representation
+  sources:
+    - artifact_id: architecture-narrative
+      version: "1.0"
+  source:
+    code: |
+      flowchart LR
+          accTitle: Test architecture
+          accDescr: A client reaches an application.
+          client[Client] --> app[Application]
+  diagram:
+    purpose: Show the approved context
+    audience: Engineering
+    type: flowchart
+    required_elements: [client, app]
+    required_relationships:
+      - from: client
+        to: app
+        label: uses
+    forbidden_inferences: [do-not-add-services]
+  output:
+    source_path: diagram.mmd
+    formats: [svg]
+    profile: portable
+    overwrite: false
+  policy:
+    network: false
+    max_repair_attempts: 2

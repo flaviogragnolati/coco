@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "known_finding_ids": ["F-001"],
+  "known_assumption_ids": ["ASM-001", "ASM-002"],
+  "base_finding_ref": "F-001",
+  "start_year": 2026,
+  "start_value": 1000,
+  "horizon_years": 2,
+  "scenarios": [
+    {"scenario_id": "SCN-BASE", "label": "base", "annual_growth_rates": [0.1, 0.1], "assumption_refs": ["ASM-001"], "invalidation_conditions": ["Growth driver changes"]},
+    {"scenario_id": "SCN-DOWN", "label": "downside", "annual_growth_rates": [0.0, -0.05], "assumption_refs": ["ASM-002"], "invalidation_conditions": ["Constraint resolves"]}
+  ],
+  "sensitivity": {"base_scenario_id": "SCN-BASE", "growth_rate_shifts": [-0.02, 0.02]}
+}

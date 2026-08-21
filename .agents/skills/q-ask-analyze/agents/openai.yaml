@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analyze a Proposal"
+  short_description: "Evaluate proposal fit, risks, and compatibility"
+  default_prompt: "Use $q-ask-analyze to evaluate this proposal against the real project and explain its fit, benefits, risks, downsides, and compatibility."

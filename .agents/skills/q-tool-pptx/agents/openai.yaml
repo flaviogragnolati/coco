@@ -1,0 +1,4 @@
+interface:
+  display_name: "PPTX Mechanics Toolkit"
+  short_description: "Inspect, edit, render, and validate PPTX files"
+  default_prompt: "Use $q-tool-pptx for caller-authorized PPTX mechanics through a capability-verified local Python or Node backend, preserve caller-owned meaning and the source file, write only distinct derived outputs when needed, and validate structure plus required rendered slides."

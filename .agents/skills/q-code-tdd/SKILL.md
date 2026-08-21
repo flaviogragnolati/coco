@@ -1,6 +1,6 @@
 ---
 name: q-code-tdd
-description: Test-driven development — the red → green loop and the rules that make it produce tests worth keeping. Use when building behavior test-first, when the user asks for red-green-refactor or integration tests, and as the opt-in testing mode inside `q-code-implement`. Covers what a good test is, the seams tests live at, the anti-patterns that make tests break on refactors, and the rules of the loop. Part of the Quasar AI delivery skills.
+description: Test-driven development through a red → green loop and the rules that make it produce tests worth keeping. Use when building new behavior test-first, when the user asks for red-green or integration tests, and as the opt-in testing mode inside `q-code-implement`. Covers good behavioral tests, agreed seams, test anti-patterns, and one vertical slice at a time. Do not use it for a later refactoring pass or as the defect owner. Part of the Quasar AI delivery skills.
 ---
 
 # Test-Driven Development
@@ -38,7 +38,7 @@ A **seam** is the public interface you test at: the interface where you observe 
 - **Red before green.** Write the failing test first, then only enough code to pass it. Don't anticipate future tests or add speculative features.
 - **One slice at a time.** One seam, one test, one minimal implementation per cycle.
 - **A green test that asserts old behavior is debt.** When a cycle's change makes an existing test wrong, update its expectation knowingly and say so — never delete it to get green, and never mechanically re-record a snapshot.
-- **Refactoring is not part of the loop.** It belongs to the review stage (see the `q-review-code` skill), not the red → green implementation cycle.
+- **Refactoring is not part of the loop.** A later refactoring is separate `q-code-implement` work with its own authorized scope and proportional verification; `q-review-code` may identify the need but remains read-only.
 
 ## Inside `q-code-implement`
 

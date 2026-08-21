@@ -1,0 +1,21 @@
+schema_version: "1.0"
+diagram_request:
+  request_id: diagram-test-invalid
+  operation: create
+  caller: {}
+  ownership:
+    owner_skill: q-plan-architecture
+    owner_workflow: ai-coding
+    creation_mode: derived
+    semantic_authority: canonical
+    authority_scope: architecture
+  sources: []
+  diagram: {}
+  output:
+    source_path: diagram.mmd
+    formats: [bmp]
+    profile: unknown
+    overwrite: false
+  policy:
+    network: true
+    max_repair_attempts: 2

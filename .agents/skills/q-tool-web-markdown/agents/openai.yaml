@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web Markdown Capture"
+  short_description: "Capture one public rendered web page as Markdown"
+  default_prompt: "Use $q-tool-web-markdown only for this explicitly named public URL, preserve the page as the source of record, enforce the sandboxed browser and pinned public-network boundary, and return derived Markdown with honest provenance."

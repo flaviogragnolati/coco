@@ -1,0 +1,6 @@
+flowchart LR
+    accTitle: Example approval flow
+    accDescr: A draft is reviewed and either approved or returned for revision.
+    draft[Draft] --> review{Review}
+    review -->|approve| released[Released]
+    review -->|revise| draft

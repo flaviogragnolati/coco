@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mermaid Diagrams"
+  short_description: "Create, validate, and export Mermaid diagrams"
+  default_prompt: "Use $q-tool-mermaid to create, revise, validate, render, or compile the requested Mermaid diagram."

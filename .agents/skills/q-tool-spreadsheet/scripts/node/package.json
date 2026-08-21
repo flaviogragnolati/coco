@@ -1,0 +1,19 @@
+{
+  "name": "@quasar/q-tool-spreadsheet-node",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local Node backend for Quasar q-tool-spreadsheet",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "q-tool-spreadsheet-node": "./spreadsheet-tool.mjs"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

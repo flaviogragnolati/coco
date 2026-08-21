@@ -1,6 +1,6 @@
 ---
 name: q-plan-product-core
-description: "Define the canonical product core from a product idea or a versioned proposal contract. Use for stage 1 of the AI coding workflow when product intent, actors, journeys, requirements, business rules, scope, exclusions, assumptions, or pending decisions need a validated baseline. Requires the q-core-contract companion. Part of the Quasar AI delivery skills."
+description: "Define the canonical product core from a product idea or the accepted proposal version. Use for stage 1 of the AI coding workflow when product intent, actors, journeys, requirements, business rules, scope, exclusions, assumptions, or pending decisions need a validated baseline. Requires the q-core-contract companion. Part of the Quasar AI delivery skills."
 ---
 
 # Product core definition
@@ -12,9 +12,11 @@ Read the `q-core-contract` companion for shared governance; if it is missing, st
 Accept either:
 
 - a product idea plus available research and project context; or
-- a versioned proposal contract and its referenced discovery evidence.
+- the accepted proposal version (its commercial release) and its referenced discovery evidence.
 
 Preserve source IDs and versions. Separate confirmed facts, supported inferences, assumptions, and unresolved questions. Never turn a proposal assumption into a product confirmation.
+
+An adopted ideation snapshot may contribute one selected option, an outcome hypothesis, and its unresolved assumptions as supporting input. Revalidate problem, outcome, actors, journeys, scope, and business rules here; never copy a candidate into a requirement, and keep an unevidenced opportunity an assumption.
 
 ## Canonical output
 

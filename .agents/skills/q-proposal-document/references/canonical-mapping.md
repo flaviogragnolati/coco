@@ -11,7 +11,7 @@
 
 ## 1. Authority
 
-Use `02-proposal-source.yaml` as the only semantic source. Use `02-proposal-core.md` only to aid human review. Treat the mapping, render model, DOCX, PDF, and validation report as non-canonical.
+Use `02-proposal-source.yaml` as the only semantic source. A narrative or review view may be consulted only through its exact artifact ID and version and never supplies a fact missing from the source. Treat the mapping, render model, DOCX, PDF, and validation report as non-canonical.
 
 Do not map from a prior DOCX, PDF, email, or the bundled visual reference.
 
@@ -24,7 +24,7 @@ Do not map from a prior DOCX, PDF, email, or the bundled visual reference.
 - Preserve amounts, currencies, percentages, dates, durations, limits, and acceptance criteria verbatim.
 - Omit an optional module when the source contains no applicable content.
 - Record section inclusion and layout choices in `04-document-mapping.md`.
-- Return semantic gaps or contradictions to Skill 2.
+- Return semantic gaps or contradictions to `q-proposal-design`.
 
 ## 3. Supported canonical fields
 
@@ -39,7 +39,7 @@ The renderer accepts the schema required by Skill 2 and tolerates additional fie
 | Methodology, stages, team, milestones, quality, acceptance | `delivery` |
 | Document object selection | `downstream_interfaces.document.object_refs` |
 
-The scripts recognize common aliases inside open `proposal`, `commercial`, and `delivery` objects, but aliases do not create authority. When an issued document cannot map a required field unambiguously, normalize the canonical source in Skill 2.
+The scripts recognize common aliases inside open `proposal`, `commercial`, and `delivery` objects, but aliases do not create authority. When an issued document cannot map a required field unambiguously, normalize the canonical source through `q-proposal-design`.
 
 ## 4. Presentation decisions
 

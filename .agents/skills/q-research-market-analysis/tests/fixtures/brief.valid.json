@@ -1,0 +1,5 @@
+{
+  "schema_version": "1.0",
+  "brief": {"brief_id": "RB-EXAMPLE-001", "version": "1.0"},
+  "measurement_contract": {"contract_id": "measurement-contract"}
+}

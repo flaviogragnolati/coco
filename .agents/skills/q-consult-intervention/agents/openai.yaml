@@ -1,0 +1,4 @@
+interface:
+  display_name: "Intervention Design"
+  short_description: "Design the target state and its deliverables"
+  default_prompt: "Use $q-consult-intervention to design the target state and author the deliverables from the confirmed assessment."

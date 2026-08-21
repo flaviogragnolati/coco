@@ -1,0 +1,21 @@
+{
+  "positive": [
+    "Create an XLSX workbook from these approved rows and formulas, then validate the result.",
+    "Inspect budget.xlsm without changing it and report formula and external-link risks.",
+    "Convert this TSV into an XLSX deliverable while preserving leading-zero identifiers."
+  ],
+  "negative": [
+    {
+      "prompt": "Turn these metrics into a branded PowerPoint presentation.",
+      "owner": "q-report-deck"
+    },
+    {
+      "prompt": "Write a Python ETL job that stores these rows in PostgreSQL.",
+      "owner": "q-code-implement"
+    },
+    {
+      "prompt": "Edit this DOCX table and return a Word document.",
+      "owner": "q-tool-document"
+    }
+  ]
+}

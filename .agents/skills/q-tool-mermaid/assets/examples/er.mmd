@@ -1,0 +1,9 @@
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    CUSTOMER {
+        string customer_id PK
+    }
+    ORDER {
+        string order_id PK
+        string customer_id FK
+    }

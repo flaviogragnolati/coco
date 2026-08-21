@@ -12,7 +12,6 @@ from document_model import (
     parse_mapping,
     validate_source_and_mapping,
 )
-from document_builder import build_document
 
 
 def main() -> None:
@@ -60,14 +59,36 @@ def main() -> None:
     generated_at = datetime.now(timezone.utc).isoformat()
     model['_provenance']['generated_at'] = generated_at
     model['metadata']['generated_at'] = generated_at
-    build_document(
-        model, args.output.resolve(), skill_root / 'assets', args.keep_cover_png
-    )
+    try:
+        from document_builder import build_document
+    except ModuleNotFoundError as exc:
+        dependency = {'docx': 'python-docx', 'PIL': 'Pillow'}.get(
+            exc.name or '', exc.name or 'document runtime'
+        )
+        print(json.dumps({
+            'ok': False,
+            'errors': [
+                f'Missing dependency: {dependency} is required for DOCX generation'
+            ],
+            'warnings': warnings,
+        }, ensure_ascii=False, indent=2))
+        raise SystemExit(1) from exc
+
+    try:
+        font_resolution = build_document(
+            model, args.output.resolve(), skill_root / 'assets', args.keep_cover_png
+        )
+    except RuntimeError as exc:
+        print(json.dumps({
+            'ok': False, 'errors': [str(exc)], 'warnings': warnings,
+        }, ensure_ascii=False, indent=2))
+        raise SystemExit(1) from exc
     print(json.dumps({
         'ok': True,
         'output': str(args.output.resolve()),
         'source_version': model['metadata']['source_version'],
         'source_sha256': model['metadata']['source_hash'],
+        'font_resolution': font_resolution,
         'warnings': warnings,
     }, ensure_ascii=False, indent=2))
 

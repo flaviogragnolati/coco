@@ -1,0 +1,4 @@
+interface:
+  display_name: "PDF Toolkit"
+  short_description: "Manipulate and validate PDFs with Python or Node"
+  default_prompt: "Use $q-tool-pdf to inspect the document, select the available Python or Node backend, preserve caller-owned meaning and the source file, perform the requested PDF operation, and validate structure and rendering."

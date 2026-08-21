@@ -1,0 +1,124 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar ideation baseline
+type: object
+required: [schema_version, baseline, decision_context, source_register, evaluation_ref, criteria_applied, gates_applied, candidate_dispositions, evidence_requests, dissent, limitations, approval]
+additionalProperties: false
+properties:
+  schema_version: {const: "1.0"}
+  baseline:
+    type: object
+    required: [baseline_id, version, lifecycle, profile, intent, participation_mode, as_of]
+    additionalProperties: false
+    properties:
+      baseline_id: {type: string}
+      version: {type: string}
+      lifecycle: {const: Working}
+      profile: {enum: [scientific, product, consulting, general]}
+      intent: {enum: [frame-problem, generate-options, stress-test-options, reopen-after-evidence]}
+      participation_mode: {enum: [facilitated-human, solo-assisted, asynchronous, agent-only]}
+      as_of: {type: string}
+  decision_context:
+    type: object
+    required: [decision_ref, owner_ref, decision_statement, time_horizon]
+    additionalProperties: false
+    properties:
+      decision_ref: {type: string}
+      owner_ref: {type: string}
+      decision_statement: {type: string}
+      time_horizon: {type: string}
+  source_register:
+    type: object
+    required: [artifact_id, version]
+    additionalProperties: false
+    properties:
+      artifact_id: {type: string}
+      version: {type: string}
+  evaluation_ref:
+    type: [object, "null"]
+    required: [artifact_id, version]
+    additionalProperties: false
+    properties:
+      artifact_id: {type: string}
+      version: {type: string}
+  criteria_applied:
+    type: array
+    items:
+      type: object
+      required: [criterion_id, name, direction, weight]
+      additionalProperties: false
+      properties:
+        criterion_id: {type: string}
+        name: {type: string}
+        direction: {enum: [higher, lower]}
+        weight: {type: number}
+  gates_applied:
+    type: array
+    items:
+      type: object
+      required: [gate_id, name, result, owner_ref]
+      additionalProperties: false
+      properties:
+        gate_id: {type: string}
+        name: {type: string}
+        result: {enum: [not-assessed, not-applicable, passed, review-required, redesign-required, failed]}
+        owner_ref: {type: [string, "null"]}
+  candidate_dispositions:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      required: [candidate_ref, kind, disposition, rationale, unresolved_assumption_refs, gate_refs, recommended_route]
+      additionalProperties: false
+      properties:
+        candidate_ref: {type: string}
+        kind: {type: string}
+        disposition: {enum: [advance, evidence-needed, prototype-needed, retain, defer, stop]}
+        rationale: {type: string}
+        unresolved_assumption_refs:
+          type: array
+          items: {type: string}
+        gate_refs:
+          type: array
+          items: {type: string}
+        recommended_route:
+          type: [object, "null"]
+          required: [skill, intended_use]
+          additionalProperties: false
+          properties:
+            skill: {type: string}
+            intended_use: {type: string}
+  evidence_requests:
+    type: array
+    items:
+      type: object
+      required: [request_id, candidate_refs, uncertainty, decision_impact, recommended_route]
+      additionalProperties: false
+      properties:
+        request_id: {type: string}
+        candidate_refs:
+          type: array
+          minItems: 1
+          items: {type: string}
+        uncertainty: {type: string}
+        decision_impact: {type: string}
+        recommended_route: {type: string}
+  dissent:
+    type: array
+    items:
+      type: object
+      required: [participant_ref, statement]
+      additionalProperties: false
+      properties:
+        participant_ref: {type: string}
+        statement: {type: string}
+  limitations:
+    type: array
+    items: {type: string}
+  approval:
+    type: object
+    required: [approved_by, approval_ref, approved_at]
+    additionalProperties: false
+    properties:
+      approved_by: {type: string}
+      approval_ref: {type: string}
+      approved_at: {type: string}

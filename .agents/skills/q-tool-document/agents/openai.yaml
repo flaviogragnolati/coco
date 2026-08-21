@@ -1,0 +1,4 @@
+interface:
+  display_name: "Word Document Toolkit"
+  short_description: "Create, edit, inspect, and validate DOCX files"
+  default_prompt: "Use $q-tool-document to perform the requested DOCX operation with a verified Python or Node backend while preserving caller-owned meaning and validating the result."

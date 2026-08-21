@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "register": {"register_id": "FR-EXAMPLE-001", "version": "1.0"},
+  "findings": [
+    {"finding_id": "F-001"},
+    {"finding_id": "F-002"}
+  ]
+}

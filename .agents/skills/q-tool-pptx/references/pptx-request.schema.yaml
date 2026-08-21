@@ -1,0 +1,104 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar PPTX request
+type: object
+additionalProperties: false
+required: [schema_version, request_id, operation, caller, owner_skill, sources, presentation_type, work_classification, intended_result, output, preservation_requirements, forbidden_semantic_changes, runtime, validation, security]
+properties:
+  schema_version:
+    const: "1.0"
+  request_id:
+    type: string
+    minLength: 1
+  operation:
+    type: string
+    enum: [inspect, extract-text, extract-notes, extract-media, select, replace-text, create, render, contact-sheet, check]
+  caller:
+    type: object
+    additionalProperties: false
+    required: [skill_id, mode]
+    properties:
+      skill_id: {type: string, minLength: 1}
+      workflow: {type: [string, "null"]}
+      mode: {type: string, enum: [orchestrated, standalone]}
+  owner_skill:
+    type: string
+    minLength: 1
+  sources:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [ref, path]
+      properties:
+        ref: {type: string, minLength: 1}
+        artifact_id: {type: [string, "null"]}
+        version: {type: [string, "null"]}
+        path: {type: string, minLength: 1}
+        sha256: {type: [string, "null"], pattern: "^[a-f0-9]{64}$"}
+  presentation_type:
+    type: string
+    enum: [pptx, potx, ppsx]
+  work_classification:
+    type: string
+    enum: [create, template-fill, restructure, read-extract, validate-render, derived-deliverable]
+  intended_result:
+    type: string
+    minLength: 1
+  slide_scope:
+    type: [string, "null"]
+  design_constraints:
+    type: object
+    additionalProperties: false
+    properties:
+      template_ref: {type: [string, "null"]}
+      palette:
+        type: array
+        items: {type: string}
+      typography:
+        type: array
+        items: {type: string}
+      slide_size: {type: [string, "null"]}
+      layout_mandates:
+        type: array
+        items: {type: string}
+  output:
+    type: object
+    additionalProperties: false
+    required: [path, overwrite]
+    properties:
+      path: {type: [string, "null"]}
+      validation_dir: {type: [string, "null"]}
+      overwrite: {type: boolean}
+      approval_ref: {type: [string, "null"]}
+  preservation_requirements:
+    type: array
+    items: {type: string}
+  forbidden_semantic_changes:
+    type: array
+    items: {type: string}
+  runtime:
+    type: string
+    enum: [auto, python, node]
+  validation:
+    type: object
+    additionalProperties: false
+    required: [structural, rendered]
+    properties:
+      structural: {type: boolean}
+      rendered: {type: boolean}
+      inspect_slides:
+        type: array
+        items: {type: integer, minimum: 1}
+  security:
+    type: object
+    additionalProperties: false
+    required: [macros, external_relationships, embedded_objects, signatures, protection, sensitive_content, retention_policy]
+    properties:
+      macros: {type: boolean}
+      external_relationships: {type: boolean}
+      embedded_objects: {type: boolean}
+      signatures: {type: boolean}
+      protection: {type: boolean}
+      sensitive_content: {type: boolean}
+      retention_policy: {type: [string, "null"]}

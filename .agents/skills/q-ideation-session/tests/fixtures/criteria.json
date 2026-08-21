@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "criteria": [
+    {
+      "name": "time_to_learning",
+      "description": "Time until the riskiest assumption is tested",
+      "weight": 3,
+      "direction": "lower",
+      "minimum": 1,
+      "maximum": 5
+    },
+    {
+      "name": "user_value",
+      "description": "Value to the affected user",
+      "weight": 2,
+      "direction": "higher",
+      "minimum": 1,
+      "maximum": 5
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Agent Skill"
+  short_description: "Audit an Agent Skill with evidence"
+  default_prompt: "Use $q-review-skill to audit this Agent Skill without changing it."

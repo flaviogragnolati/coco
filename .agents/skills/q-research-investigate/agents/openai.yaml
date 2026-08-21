@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Investigation"
+  short_description: "Build a claim-linked, measurement-aware findings register"
+  default_prompt: "Use $q-research-investigate to execute this approved brief and produce a cited Findings Register with measurement context and honest coverage."

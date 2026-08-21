@@ -1,0 +1,4 @@
+schema_version: "1.0"
+brief: {brief_id: RB-FLOW-001, version: "1.0", lifecycle: Approved}
+analysis_modules: [market-sizing, tam-sam-som, scenario-analysis]
+measurement_contract: {contract_id: measurement-contract, as_of: "2026-08-13", active: true}

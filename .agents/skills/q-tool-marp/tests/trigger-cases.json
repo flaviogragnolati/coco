@@ -1,0 +1,21 @@
+{
+  "positive": [
+    {"prompt": "Crea una presentación Marp desde este contenido y conserva el Markdown editable.", "expected": "q-tool-marp"},
+    {"prompt": "Valida este deck Markdown de Marp y renderízalo a HTML sin red.", "expected": "q-tool-marp"},
+    {"prompt": "Exporta este archivo Marp a PDF y a un set completo de PNG con el runtime local.", "expected": "q-tool-marp"},
+    {"prompt": "Review these approved Markdown slides for Marp syntax and speaker-note issues without changing the narrative.", "expected": "q-tool-marp"},
+    {"prompt": "Render this approved Marp deck to a first-slide image using the offline local runtime.", "expected": "q-tool-marp"}
+  ],
+  "negative": [
+    {"prompt": "Genera el deck de este reporte con marca Quasar y entrégame el .md Marp y PDF.", "expected": "q-report-deck"},
+    {"prompt": "Necesito editar formas y textos dentro del PPTX.", "expected": "q-tool-pptx"},
+    {"prompt": "Cambia las conclusiones del reporte para que sean más convincentes.", "expected": "upstream-content-owner"},
+    {"prompt": "Turn this quarterly report into a compelling branded executive deck; decide the storyline for me.", "expected": "q-report-deck"},
+    {"prompt": "Inspect and edit the speaker notes inside this existing native PPTX.", "expected": "q-tool-pptx"},
+    {"prompt": "Write a project status report from the current workflow artifacts.", "expected": "q-report-workflow"}
+  ],
+  "fallback": [
+    {"condition": "browser-unavailable", "expected": "validated-editable-source-plus-explicit-render-gap"},
+    {"condition": "marp-runtime-unavailable", "expected": "editable-source-plus-explicit-validation-and-render-gap"}
+  ]
+}

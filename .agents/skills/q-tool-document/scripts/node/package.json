@@ -1,0 +1,13 @@
+{
+  "name": "@quasar/q-tool-document-node",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local dependency-free Node backend for Quasar q-tool-document",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "q-tool-document-node": "./document-tool.mjs"
+  }
+}

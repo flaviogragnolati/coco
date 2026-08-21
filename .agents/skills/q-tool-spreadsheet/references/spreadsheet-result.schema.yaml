@@ -1,0 +1,85 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Quasar spreadsheet result
+type: object
+additionalProperties: false
+required: [schema_version, request_id, outcome, owner_skill, generator_skill, runtime, operation, inputs, outputs, validation, preserved_semantics, intentional_changes, capability_gaps, warnings, blockers, provenance]
+properties:
+  schema_version:
+    const: "1.0"
+  request_id:
+    type: string
+    minLength: 1
+  outcome:
+    type: string
+    enum: [completed, completed_with_warnings, blocked]
+  owner_skill:
+    type: string
+    minLength: 1
+  generator_skill:
+    const: q-tool-spreadsheet
+  runtime:
+    type: [string, "null"]
+    enum: [python, node, null]
+  operation:
+    type: string
+    enum: [inspect, extract, create, edit, convert, recalculate, render, check]
+  inputs:
+    type: array
+    minItems: 1
+    items: {type: string}
+  outputs:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [path, media_type, creation_mode, semantic_authority]
+      properties:
+        path: {type: string}
+        sha256: {type: [string, "null"], pattern: "^[a-f0-9]{64}$"}
+        media_type: {type: string}
+        creation_mode: {const: derived}
+        semantic_authority: {const: none}
+  validation:
+    type: object
+    additionalProperties: false
+    required: [structural, formulas, rendered, calculation_engine, formula_count, formula_sha256, formula_error_count, missing_cached_values, external_formula_count, inspected_sheets]
+    properties:
+      structural: {type: string, enum: [passed, failed, unavailable, not-required]}
+      formulas: {type: string, enum: [passed, failed, unavailable, not-required]}
+      rendered: {type: string, enum: [passed, failed, unavailable, not-required]}
+      calculation_engine: {type: [string, "null"]}
+      formula_count: {type: integer, minimum: 0}
+      formula_sha256: {type: [string, "null"], pattern: "^[a-f0-9]{64}$"}
+      formula_error_count: {type: integer, minimum: 0}
+      missing_cached_values: {type: integer, minimum: 0}
+      external_formula_count: {type: integer, minimum: 0}
+      inspected_sheets:
+        type: array
+        items: {type: string}
+  preserved_semantics:
+    type: array
+    items: {type: string}
+  intentional_changes:
+    type: array
+    items: {type: string}
+  capability_gaps:
+    type: array
+    items: {type: string}
+  warnings:
+    type: array
+    items: {type: string}
+  blockers:
+    type: array
+    items: {type: string}
+  provenance:
+    type: object
+    additionalProperties: false
+    required: [source_refs, command, tools]
+    properties:
+      source_refs:
+        type: array
+        items: {type: string}
+      command: {type: string}
+      tools:
+        type: array
+        items: {type: string}

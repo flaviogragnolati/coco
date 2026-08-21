@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "request_id": "marp-test-001",
+  "operation": "render",
+  "caller": {"skill_id": "q-report-deck", "workflow": "reporting", "mode": "orchestrated"},
+  "owner_skill": "q-report-deck",
+  "sources": [{"ref": "report-source-v1", "path": "/work/report-source.yaml"}],
+  "deck": {
+    "source_path": "/work/deck.md",
+    "approved_plan_ref": "deck-plan-v1",
+    "formats": ["source", "html"],
+    "theme": {"path": "/work/theme.css", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    "asset_roots": ["/work/assets"]
+  },
+  "roots": {"input": ["/work"], "output": ["/work/output"]},
+  "output": {"source_path": "/work/output/deck.md", "render_dir": "/work/output", "basename": "deck", "overwrite": false, "approval_ref": null, "persist_sidecar": false, "sidecar_path": null},
+  "forbidden_semantic_changes": ["new claims"],
+  "policy": {"network_allowed": false, "raw_html": "disabled", "allow_local_files": true, "config_allowed": false, "custom_engine_allowed": false, "plugins_allowed": false},
+  "runtime": {"browser": "auto", "browser_path": null},
+  "validation": {"structural": true, "assets": true, "notes": true, "rendered": true, "visual": true}
+}

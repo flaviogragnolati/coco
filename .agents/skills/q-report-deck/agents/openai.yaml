@@ -1,4 +1,4 @@
 interface:
   display_name: "Generate Quasar Deck"
-  short_description: "Plan and generate traceable branded Quasar presentations"
-  default_prompt: "Use $q-report-deck to plan and generate a branded, traceable Quasar presentation."
+  short_description: "Plan traceable Quasar Marp or PowerPoint decks"
+  default_prompt: "Use $q-report-deck to plan and generate a branded, traceable Quasar presentation in the requested Marp or PowerPoint channel."
