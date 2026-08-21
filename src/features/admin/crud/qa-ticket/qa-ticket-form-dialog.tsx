@@ -205,20 +205,17 @@ export function QaTicketFormDialog({
 							/>
 							<FieldError errors={[errors.expectedResult]} />
 						</Field>
-						<Field data-invalid={Boolean(errors.notes)}>
-							<FieldLabel htmlFor="qa-ticket-notes">Notas</FieldLabel>
-							<Textarea
-								aria-invalid={Boolean(errors.notes)}
-								disabled={isSubmitting}
-								id="qa-ticket-notes"
-								rows={3}
-								{...form.register("notes")}
-							/>
-							<FieldError errors={[errors.notes]} />
-						</Field>
 					</FieldGroup>
 
 					<FieldGroup className="grid gap-4 md:grid-cols-2">
+						<FieldContent className="md:col-span-2">
+							<p className="font-medium text-sm">Tracking administrativo</p>
+							<FieldDescription>
+								Usá estos controles para una corrección o reasignación
+								explícita. La ejecutora registra hallazgos desde el detalle del
+								ticket.
+							</FieldDescription>
+						</FieldContent>
 						<Field data-invalid={Boolean(errors.status)}>
 							<FieldLabel htmlFor="qa-ticket-status">Estado</FieldLabel>
 							<Select

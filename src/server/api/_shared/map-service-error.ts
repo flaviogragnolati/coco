@@ -7,6 +7,7 @@ import { AdminCrudError } from "~/server/services/admin/_base/admin-crud.errors"
 // rather than silently collapsing into CONFLICT.
 const TRPC_CODE_BY_SERVICE_CODE: Record<AdminCrudErrorCode, TRPCError["code"]> =
 	{
+		BAD_REQUEST: "BAD_REQUEST",
 		NOT_FOUND: "NOT_FOUND",
 		CONFLICT: "CONFLICT",
 		RELATION_BLOCKED: "PRECONDITION_FAILED",

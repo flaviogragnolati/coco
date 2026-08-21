@@ -1207,11 +1207,31 @@ model QaTicket {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @default(now()) @updatedAt
 
-  assignee User? @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  assignee User?              @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  evidence QaTicketEvidence[]
 
   @@index([status])
   @@index([assigneeId])
   @@map("qa_ticket")
+}
+
+model QaTicketEvidence {
+  id         Int                  @id @default(autoincrement())
+  qaTicketId Int
+  kind       QaTicketEvidenceKind
+  slot       Int                  @default(0)
+  content    String               @db.Text
+  fileName   String?              @db.Text
+  mimeType   String?              @db.Text
+  byteSize   Int
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @default(now()) @updatedAt
+
+  qaTicket QaTicket @relation(fields: [qaTicketId], references: [id], onDelete: Cascade)
+
+  @@unique([qaTicketId, kind, slot])
+  @@index([qaTicketId, kind])
+  @@map("qa_ticket_evidence")
 }
 
 enum QaTicketStatus {
@@ -1221,6 +1241,12 @@ enum QaTicketStatus {
   failed
   blocked
   skipped
+}
+
+enum QaTicketEvidenceKind {
+  image
+  consoleLog
+  networkLog
 }
 
 /// A change request against one glossary entry. The entries themselves stay hand-authored in

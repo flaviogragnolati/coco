@@ -5,9 +5,12 @@ import type {
 	qaTicketCreateInputSchema,
 	qaTicketDeleteInputSchema,
 	qaTicketDetailSchema,
+	qaTicketEvidenceMetadataSchema,
 	qaTicketListInputSchema,
 	qaTicketListItemSchema,
-	qaTicketSetStatusInputSchema,
+	qaTicketLogInputSchema,
+	qaTicketLogSchema,
+	qaTicketSaveResultInputSchema,
 	qaTicketStatsSchema,
 	qaTicketStatusSchema,
 	qaTicketUpdateInputSchema,
@@ -21,8 +24,13 @@ export type QaTicketStats = z.output<typeof qaTicketStatsSchema>;
 export type QaTicketCreateInput = z.output<typeof qaTicketCreateInputSchema>;
 export type QaTicketUpdateInput = z.output<typeof qaTicketUpdateInputSchema>;
 export type QaTicketDeleteInput = z.output<typeof qaTicketDeleteInputSchema>;
-export type QaTicketSetStatusInput = z.output<
-	typeof qaTicketSetStatusInputSchema
+export type QaTicketSaveResultInput = z.output<
+	typeof qaTicketSaveResultInputSchema
+>;
+export type QaTicketLogInput = z.output<typeof qaTicketLogInputSchema>;
+export type QaTicketLog = z.output<typeof qaTicketLogSchema>;
+export type QaTicketEvidenceMetadata = z.output<
+	typeof qaTicketEvidenceMetadataSchema
 >;
 export type QaTicketClaimInput = z.output<typeof qaTicketClaimInputSchema>;
 export type QaTicketDeleteResult = Pick<QaTicketDeleteInput, "id">;

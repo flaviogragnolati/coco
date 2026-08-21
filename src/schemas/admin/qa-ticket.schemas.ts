@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+	QA_TICKET_IMAGE_MAX_BYTES,
+	QA_TICKET_IMAGE_MAX_COUNT,
+	QA_TICKET_LOG_MAX_BYTES,
+} from "~/shared/common/admin-crud/qa-ticket-evidence.constants";
 import { nullishText, requiredText } from "./_crud-schema-helpers";
 
 const optionalAssigneeId = z
@@ -43,10 +48,47 @@ export const qaTicketDeleteInputSchema = z.object({
 	id: qaTicketIdSchema,
 });
 
-export const qaTicketSetStatusInputSchema = z.object({
+const evidenceFileNameSchema = z.string().trim().max(255).nullable();
+const evidenceMimeTypeSchema = z.string().trim().max(100).nullable();
+
+export const qaTicketEvidenceKindSchema = z.enum([
+	"image",
+	"consoleLog",
+	"networkLog",
+]);
+
+export const qaTicketEvidenceMetadataSchema = z.object({
+	id: z.number().int().positive(),
+	kind: qaTicketEvidenceKindSchema,
+	slot: z
+		.number()
+		.int()
+		.min(0)
+		.max(QA_TICKET_IMAGE_MAX_COUNT - 1),
+	fileName: evidenceFileNameSchema,
+	mimeType: evidenceMimeTypeSchema,
+	byteSize: z.number().int().min(0).max(QA_TICKET_IMAGE_MAX_BYTES),
+	createdAt: z.date(),
+	updatedAt: z.date(),
+});
+
+export const qaTicketLogSchema = qaTicketEvidenceMetadataSchema.extend({
+	kind: z.enum(["consoleLog", "networkLog"]),
+	content: z.string(),
+});
+
+export const qaTicketLogInputSchema = z.object({
+	content: z.string().max(QA_TICKET_LOG_MAX_BYTES),
+	fileName: evidenceFileNameSchema.optional().default(null),
+	mimeType: evidenceMimeTypeSchema.optional().default(null),
+});
+
+export const qaTicketSaveResultInputSchema = z.object({
 	id: qaTicketIdSchema,
 	status: qaTicketStatusSchema,
 	notes: nullishText,
+	consoleLog: qaTicketLogInputSchema,
+	networkLog: qaTicketLogInputSchema,
 });
 
 export const qaTicketClaimInputSchema = z.object({
@@ -73,7 +115,6 @@ export const qaTicketListItemSchema = z.object({
 	feature: z.string(),
 	status: qaTicketStatusSchema,
 	isRegressionPath: z.boolean(),
-	notes: z.string().nullable(),
 	assignee: qaTicketAssigneeSchema,
 	deleted: z.boolean(),
 	updatedAt: z.date(),
@@ -82,6 +123,12 @@ export const qaTicketListItemSchema = z.object({
 export const qaTicketDetailSchema = qaTicketListItemSchema.extend({
 	steps: z.string(),
 	expectedResult: z.string(),
+	notes: z.string().nullable(),
+	consoleLog: qaTicketLogSchema.nullable(),
+	networkLog: qaTicketLogSchema.nullable(),
+	images: z
+		.array(qaTicketEvidenceMetadataSchema)
+		.max(QA_TICKET_IMAGE_MAX_COUNT),
 });
 
 export const qaTicketStatsSchema = z.object({

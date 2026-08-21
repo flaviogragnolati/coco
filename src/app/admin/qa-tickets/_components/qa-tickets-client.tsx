@@ -1,16 +1,10 @@
 "use client";
 
-import {
-	CheckCircle2Icon,
-	CircleDashedIcon,
-	ListChecksIcon,
-	PlusIcon,
-	SearchIcon,
-	XCircleIcon,
-} from "lucide-react";
+import { PlusIcon, SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import type { ComboboxOption } from "~/components/ui/combobox";
 import {
@@ -22,6 +16,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { CrudDeleteDialog } from "~/features/admin/crud/_components/crud-delete-dialog";
 import { CrudFilterPanel } from "~/features/admin/crud/_components/crud-filter-panel";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
@@ -30,7 +25,6 @@ import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
-import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-cards";
 import {
 	applyCrudListSort,
 	type CrudListSort,
@@ -39,7 +33,10 @@ import {
 	matchesSearch,
 	normalizeSearch,
 } from "~/features/admin/crud/_lib/filter-helpers";
-import { qaTicketStatusOptions } from "~/features/admin/crud/qa-ticket/qa-ticket.mappers";
+import {
+	qaTicketStatusLabelMap,
+	qaTicketStatusOptions,
+} from "~/features/admin/crud/qa-ticket/qa-ticket.mappers";
 import { QaTicketDetailDialog } from "~/features/admin/crud/qa-ticket/qa-ticket-detail-dialog";
 import { QaTicketFormDialog } from "~/features/admin/crud/qa-ticket/qa-ticket-form-dialog";
 import { QaTicketTable } from "~/features/admin/crud/qa-ticket/qa-ticket-table";
@@ -48,8 +45,10 @@ import type {
 	CrudModalState,
 } from "~/shared/common/admin-crud/crud.types";
 import type {
+	QaTicketDetail,
 	QaTicketFormValues,
 	QaTicketListItem,
+	QaTicketSaveResultInput,
 	QaTicketStatus,
 } from "~/shared/common/admin-crud/qa-ticket.types";
 import { api } from "~/trpc/react";
@@ -57,7 +56,8 @@ import { api } from "~/trpc/react";
 const allValue = "all";
 const unassignedValue = "unassigned";
 
-/** Same three modes as `crudListSortOptions`, but the default order is by code. */
+type QuickFilter = "all" | "mine" | "unassigned" | "regression";
+
 const qaTicketSortOptions: Array<{ value: CrudListSort; label: string }> = [
 	{ value: "default", label: "Por número" },
 	{ value: "newest", label: "Más recientes" },
@@ -70,19 +70,20 @@ const closedForm: CrudModalState<number> = {
 	entityId: null,
 };
 
-export function QaTicketsClient() {
+export function QaTicketsClient({ currentUserId }: { currentUserId: string }) {
 	const utils = api.useUtils();
 
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState<QaTicketStatus | "all">(
 		allValue,
 	);
+	const [quickFilter, setQuickFilter] = useState<QuickFilter>(allValue);
 	const [sectionFilter, setSectionFilter] = useState<string>(allValue);
 	const [assigneeFilter, setAssigneeFilter] = useState<string>(allValue);
-	const [regressionOnly, setRegressionOnly] = useState(false);
 	const [includeDeleted, setIncludeDeleted] = useState(false);
 	const [listSort, setListSort] = useState<CrudListSort>("default");
 	const [openTicketId, setOpenTicketId] = useState<number | null>(null);
+	const [claimingTicketId, setClaimingTicketId] = useState<number | null>(null);
 	const [formState, setFormState] =
 		useState<CrudModalState<number>>(closedForm);
 	const [softDeleteTarget, setSoftDeleteTarget] =
@@ -110,6 +111,13 @@ export function QaTicketsClient() {
 		]);
 	};
 
+	const invalidateQueue = async () => {
+		await Promise.all([
+			utils.admin.qaTicket.list.invalidate(),
+			utils.admin.qaTicket.getStats.invalidate(),
+		]);
+	};
+
 	const closeForm = () => setFormState(closedForm);
 
 	const createMutation = api.admin.qaTicket.create.useMutation({
@@ -125,7 +133,7 @@ export function QaTicketsClient() {
 
 	const updateMutation = api.admin.qaTicket.update.useMutation({
 		onSuccess: async () => {
-			toast.success("Ticket de QA actualizado");
+			toast.success("Definición del ticket actualizada");
 			closeForm();
 			await invalidateQaTicketQueries();
 		},
@@ -134,10 +142,11 @@ export function QaTicketsClient() {
 		},
 	});
 
-	const setStatusMutation = api.admin.qaTicket.setStatus.useMutation({
-		onSuccess: async () => {
-			toast.success("Resultado guardado");
-			await invalidateQaTicketQueries();
+	const saveResultMutation = api.admin.qaTicket.saveResult.useMutation({
+		onSuccess: async (ticket) => {
+			utils.admin.qaTicket.getById.setData({ id: ticket.id }, ticket);
+			toast.success("Resultado y logs guardados");
+			await invalidateQueue();
 		},
 		onError: (error) => {
 			toast.error(error.message || "No se pudo guardar el resultado");
@@ -146,8 +155,9 @@ export function QaTicketsClient() {
 
 	const claimMutation = api.admin.qaTicket.claim.useMutation({
 		onSuccess: async (ticket) => {
+			utils.admin.qaTicket.getById.setData({ id: ticket.id }, ticket);
 			toast.success(`Tomaste el caso #${ticket.code}`);
-			await invalidateQaTicketQueries();
+			await invalidateQueue();
 		},
 		onError: (error) => {
 			toast.error(error.message || "No se pudo tomar el caso");
@@ -200,21 +210,33 @@ export function QaTicketsClient() {
 		[userOptionsQuery.data],
 	);
 
+	const queueCounts = useMemo(() => {
+		const active = tickets.filter((ticket) => !ticket.deleted);
+		return {
+			mine: active.filter((ticket) => ticket.assignee?.id === currentUserId)
+				.length,
+			unassigned: active.filter((ticket) => !ticket.assignee).length,
+			regression: active.filter((ticket) => ticket.isRegressionPath).length,
+		};
+	}, [currentUserId, tickets]);
+
 	const filteredTickets = useMemo(() => {
 		const search = normalizeSearch(searchTerm);
-
 		const matched = tickets.filter((ticket) => {
-			if (statusFilter !== allValue && ticket.status !== statusFilter) {
+			if (statusFilter !== allValue && ticket.status !== statusFilter)
 				return false;
-			}
-			if (sectionFilter !== allValue && ticket.section !== sectionFilter) {
+			if (sectionFilter !== allValue && ticket.section !== sectionFilter)
 				return false;
-			}
 			if (assigneeFilter !== allValue) {
 				const assigneeId = ticket.assignee?.id ?? unassignedValue;
 				if (assigneeId !== assigneeFilter) return false;
 			}
-			if (regressionOnly && !ticket.isRegressionPath) return false;
+			if (quickFilter === "mine" && ticket.assignee?.id !== currentUserId) {
+				return false;
+			}
+			if (quickFilter === "unassigned" && ticket.assignee) return false;
+			if (quickFilter === "regression" && !ticket.isRegressionPath)
+				return false;
 
 			return matchesSearch(search, [
 				ticket.code,
@@ -228,8 +250,9 @@ export function QaTicketsClient() {
 		return applyCrudListSort(matched, listSort);
 	}, [
 		assigneeFilter,
+		currentUserId,
 		listSort,
-		regressionOnly,
+		quickFilter,
 		searchTerm,
 		sectionFilter,
 		statusFilter,
@@ -237,19 +260,29 @@ export function QaTicketsClient() {
 	]);
 
 	const activeAdvancedCount = [
+		sectionFilter !== allValue,
 		assigneeFilter !== allValue,
-		regressionOnly,
 		includeDeleted,
+		listSort !== "default",
 	].filter(Boolean).length;
 
 	const clearFilters = () => {
 		setSearchTerm("");
 		setStatusFilter(allValue);
+		setQuickFilter(allValue);
 		setSectionFilter(allValue);
 		setAssigneeFilter(allValue);
-		setRegressionOnly(false);
 		setIncludeDeleted(false);
 		setListSort("default");
+	};
+
+	const claimTicket = async (id: number) => {
+		setClaimingTicketId(id);
+		try {
+			return await claimMutation.mutateAsync({ id });
+		} finally {
+			setClaimingTicketId(null);
+		}
 	};
 
 	const handleSubmit = (values: QaTicketFormValues) => {
@@ -257,11 +290,8 @@ export function QaTicketsClient() {
 			updateMutation.mutate({ id: formState.entityId, ...values });
 			return;
 		}
-
 		createMutation.mutate(values);
 	};
-
-	const formMode: CrudModalMode = formState.mode ?? "create";
 
 	const renderTable = () => {
 		if (listQuery.isLoading) return <CrudLoadingState />;
@@ -279,7 +309,13 @@ export function QaTicketsClient() {
 
 		return (
 			<QaTicketTable
-				onClaim={(ticket) => claimMutation.mutate({ id: ticket.id })}
+				claimingTicketId={claimingTicketId}
+				currentUserId={currentUserId}
+				onClaim={(ticket) => {
+					void claimTicket(ticket.id)
+						.then((claimed) => setOpenTicketId(claimed.id))
+						.catch(() => undefined);
+				}}
 				onEdit={(ticket) =>
 					setFormState({ open: true, mode: "edit", entityId: ticket.id })
 				}
@@ -290,6 +326,8 @@ export function QaTicketsClient() {
 			/>
 		);
 	};
+
+	const formMode: CrudModalMode = formState.mode ?? "create";
 
 	return (
 		<CrudPageShell
@@ -304,49 +342,90 @@ export function QaTicketsClient() {
 					Agregar ticket
 				</Button>
 			}
-			description="Tracking interno de la pasada de QA: quién corre qué caso y cómo salió."
+			description="Cola de ejecución de QA con responsable, resultado y evidencia vigente."
 			title="Tickets de QA"
 		>
-			{statsQuery.isLoading ? (
-				<CrudLoadingState rows={2} />
-			) : statsQuery.isError ? (
-				<CrudErrorState message={statsQuery.error.message} />
-			) : statsQuery.data ? (
-				<CrudStatsCards
-					stats={[
-						{
-							label: "Total",
-							value: statsQuery.data.total,
-							icon: ListChecksIcon,
-							description: "Incluye eliminados",
-						},
-						{
-							label: "Pendientes",
-							value: statsQuery.data.pending,
-							icon: CircleDashedIcon,
-							description: "Todavía sin correr",
-						},
-						{
-							label: "Completos OK",
-							value: statsQuery.data.passed,
-							icon: CheckCircle2Icon,
-							accent: "success",
-						},
-						{
-							label: "Fallidos",
-							value: statsQuery.data.failed,
-							icon: XCircleIcon,
-							accent: "destructive",
-						},
-					]}
-				/>
-			) : null}
+			<section className="flex flex-col gap-3 rounded-2xl border p-3">
+				<p className="font-medium text-sm">Estado de la pasada</p>
+				{statsQuery.isLoading ? (
+					<CrudLoadingState rows={1} />
+				) : statsQuery.isError ? (
+					<CrudErrorState message={statsQuery.error.message} />
+				) : statsQuery.data ? (
+					<ToggleGroup
+						aria-label="Filtrar por estado"
+						className="flex w-full flex-wrap justify-start"
+						onValueChange={(value) =>
+							setStatusFilter((value || allValue) as QaTicketStatus | "all")
+						}
+						type="single"
+						value={statusFilter}
+						variant="outline"
+					>
+						<ToggleGroupItem value={allValue}>
+							Todos
+							<Badge variant="outline">
+								{statsQuery.data.total - statsQuery.data.deleted}
+							</Badge>
+						</ToggleGroupItem>
+						{qaTicketStatusOptions.map((option) => (
+							<ToggleGroupItem key={option.value} value={option.value}>
+								{option.label}
+								<Badge variant="outline">{statsQuery.data[option.value]}</Badge>
+							</ToggleGroupItem>
+						))}
+					</ToggleGroup>
+				) : null}
+			</section>
 
 			<section className="flex flex-col gap-3">
+				<div className="flex flex-col gap-2 rounded-2xl border p-3">
+					<p className="font-medium text-sm">Accesos rápidos</p>
+					<ToggleGroup
+						aria-label="Filtrar cola de trabajo"
+						className="flex w-full flex-wrap justify-start"
+						onValueChange={(value) =>
+							setQuickFilter((value || allValue) as QuickFilter)
+						}
+						type="single"
+						value={quickFilter === allValue ? "" : quickFilter}
+						variant="outline"
+					>
+						<ToggleGroupItem value="mine">
+							Mis casos <Badge variant="outline">{queueCounts.mine}</Badge>
+						</ToggleGroupItem>
+						<ToggleGroupItem value="unassigned">
+							Sin asignar{" "}
+							<Badge variant="outline">{queueCounts.unassigned}</Badge>
+						</ToggleGroupItem>
+						<ToggleGroupItem value="regression">
+							Regresión{" "}
+							<Badge variant="outline">{queueCounts.regression}</Badge>
+						</ToggleGroupItem>
+					</ToggleGroup>
+				</div>
+
 				<CrudFilterPanel
 					activeAdvancedCount={activeAdvancedCount}
 					advanced={
 						<>
+							<Field>
+								<FieldLabel htmlFor="qa-ticket-filter-section">
+									Sección
+								</FieldLabel>
+								<Select
+									id="qa-ticket-filter-section"
+									onChange={(event) => setSectionFilter(event.target.value)}
+									value={sectionFilter}
+								>
+									<option value={allValue}>Todas</option>
+									{sectionOptions.map((section) => (
+										<option key={section} value={section}>
+											{section}
+										</option>
+									))}
+								</Select>
+							</Field>
 							<Field>
 								<FieldLabel htmlFor="qa-ticket-filter-assignee">
 									Asignado
@@ -365,20 +444,21 @@ export function QaTicketsClient() {
 									))}
 								</Select>
 							</Field>
-							<Field orientation="horizontal">
-								<Switch
-									checked={regressionOnly}
-									id="qa-ticket-filter-regression"
-									onCheckedChange={setRegressionOnly}
-								/>
-								<FieldContent>
-									<FieldLabel htmlFor="qa-ticket-filter-regression">
-										Solo regresión
-									</FieldLabel>
-									<FieldDescription>
-										Pasada corta de punta a punta
-									</FieldDescription>
-								</FieldContent>
+							<Field>
+								<FieldLabel htmlFor="qa-ticket-sort">Orden</FieldLabel>
+								<Select
+									id="qa-ticket-sort"
+									onChange={(event) =>
+										setListSort(event.target.value as CrudListSort)
+									}
+									value={listSort}
+								>
+									{qaTicketSortOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</Select>
 							</Field>
 							<Field orientation="horizontal">
 								<Switch
@@ -425,69 +505,47 @@ export function QaTicketsClient() {
 									value={statusFilter}
 								>
 									<option value={allValue}>Todos</option>
-									{qaTicketStatusOptions.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</Select>
-							</Field>
-							<Field>
-								<FieldLabel htmlFor="qa-ticket-filter-section">
-									Sección
-								</FieldLabel>
-								<Select
-									id="qa-ticket-filter-section"
-									onChange={(event) => setSectionFilter(event.target.value)}
-									value={sectionFilter}
-								>
-									<option value={allValue}>Todas</option>
-									{sectionOptions.map((section) => (
-										<option key={section} value={section}>
-											{section}
-										</option>
-									))}
-								</Select>
-							</Field>
-							<Field>
-								<FieldLabel htmlFor="qa-ticket-sort">Orden</FieldLabel>
-								<Select
-									id="qa-ticket-sort"
-									onChange={(event) =>
-										setListSort(event.target.value as CrudListSort)
-									}
-									value={listSort}
-								>
-									{qaTicketSortOptions.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
+									{Object.entries(qaTicketStatusLabelMap).map(
+										([value, label]) => (
+											<option key={value} value={value}>
+												{label}
+											</option>
+										),
+									)}
 								</Select>
 							</Field>
 						</>
 					}
 				/>
 
+				<p className="text-muted-foreground text-sm">
+					{filteredTickets.length} de {tickets.length} tickets visibles
+				</p>
 				{renderTable()}
 			</section>
 
 			<QaTicketDetailDialog
+				currentUserId={currentUserId}
 				errorMessage={detailQuery.error?.message}
 				isClaiming={claimMutation.isPending}
 				isError={detailQuery.isError}
 				isLoading={detailQuery.isLoading && openTicketId !== null}
-				isSettingStatus={setStatusMutation.isPending}
-				onClaim={() => {
-					if (openTicketId === null) return;
-					claimMutation.mutate({ id: openTicketId });
+				isSaving={saveResultMutation.isPending}
+				onClaim={async () => {
+					if (openTicketId === null) throw new Error("Ticket no seleccionado");
+					return claimTicket(openTicketId);
 				}}
-				onOpenChange={(open) => {
-					if (!open) setOpenTicketId(null);
+				onEvidenceChanged={async () => {
+					await detailQuery.refetch();
 				}}
-				onSetStatus={(input) => {
-					if (openTicketId === null) return;
-					setStatusMutation.mutate({ id: openTicketId, ...input });
+				onOpenChange={(nextOpen) => {
+					if (!nextOpen) setOpenTicketId(null);
+				}}
+				onSaveResult={async (
+					input: Omit<QaTicketSaveResultInput, "id">,
+				): Promise<QaTicketDetail> => {
+					if (openTicketId === null) throw new Error("Ticket no seleccionado");
+					return saveResultMutation.mutateAsync({ id: openTicketId, ...input });
 				}}
 				open={openTicketId !== null}
 				ticket={detailQuery.data}
@@ -498,8 +556,8 @@ export function QaTicketsClient() {
 				isLoadingTicket={formTicketQuery.isLoading}
 				isSubmitting={createMutation.isPending || updateMutation.isPending}
 				mode={formMode}
-				onOpenChange={(open) => {
-					if (!open) closeForm();
+				onOpenChange={(nextOpen) => {
+					if (!nextOpen) closeForm();
 				}}
 				onSubmit={handleSubmit}
 				open={formState.open}
@@ -510,7 +568,7 @@ export function QaTicketsClient() {
 				confirmLabel="Enviar a papelera"
 				description={
 					softDeleteTarget
-						? `El ticket #${softDeleteTarget.code} "${softDeleteTarget.title}" queda eliminado lógicamente.`
+						? `El ticket #${softDeleteTarget.code} "${softDeleteTarget.title}" queda eliminado lógicamente y conserva su evidencia.`
 						: ""
 				}
 				isPending={softDeleteMutation.isPending}
@@ -519,8 +577,8 @@ export function QaTicketsClient() {
 						softDeleteMutation.mutate({ id: softDeleteTarget.id });
 					}
 				}}
-				onOpenChange={(open) => {
-					if (!open) setSoftDeleteTarget(null);
+				onOpenChange={(nextOpen) => {
+					if (!nextOpen) setSoftDeleteTarget(null);
 				}}
 				open={Boolean(softDeleteTarget)}
 				title="Confirmar baja lógica"
@@ -538,7 +596,7 @@ export function QaTicketsClient() {
 				confirmLabel="Eliminar definitivamente"
 				description={
 					hardDeleteTarget
-						? `El ticket #${hardDeleteTarget.code} "${hardDeleteTarget.title}" se borra de la base de datos. Volver a correr "pnpm qa:seed" lo recrea desde el documento, pero sin su estado ni sus notas.`
+						? `El ticket #${hardDeleteTarget.code} "${hardDeleteTarget.title}" y toda su evidencia se borran de la base de datos.`
 						: ""
 				}
 				isPending={hardDeleteMutation.isPending}
@@ -547,8 +605,8 @@ export function QaTicketsClient() {
 						hardDeleteMutation.mutate({ id: hardDeleteTarget.id });
 					}
 				}}
-				onOpenChange={(open) => {
-					if (!open) setHardDeleteTarget(null);
+				onOpenChange={(nextOpen) => {
+					if (!nextOpen) setHardDeleteTarget(null);
 				}}
 				open={Boolean(hardDeleteTarget)}
 				title="Eliminación definitiva"

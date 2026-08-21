@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { qaTicketStatusSchema } from "~/schemas/admin/qa-ticket.schemas";
 import {
+	getQaTicketWorkAction,
 	qaTicketStatusConfig,
 	qaTicketStatusLabelMap,
 	qaTicketStatusOptions,
@@ -28,5 +29,28 @@ describe("qaTicketStatusConfig", () => {
 		expect(qaTicketStatusOptions.map((option) => option.value)).toEqual([
 			...qaTicketStatusSchema.options,
 		]);
+	});
+});
+
+describe("getQaTicketWorkAction", () => {
+	const ticket = { assignee: null, deleted: false };
+
+	it("maps unassigned, own, foreign and deleted tickets to contextual actions", () => {
+		expect(getQaTicketWorkAction(ticket, "me")).toBe("claim");
+		expect(
+			getQaTicketWorkAction(
+				{ ...ticket, assignee: { id: "me", name: "Yo" } },
+				"me",
+			),
+		).toBe("continue");
+		expect(
+			getQaTicketWorkAction(
+				{ ...ticket, assignee: { id: "other", name: "Otra" } },
+				"me",
+			),
+		).toBe("assigned");
+		expect(getQaTicketWorkAction({ ...ticket, deleted: true }, "me")).toBe(
+			"none",
+		);
 	});
 });

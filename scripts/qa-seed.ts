@@ -3,8 +3,8 @@
  *
  * The upsert rewrites only the transcribed text (section, title, actor, feature,
  * steps, expectedResult, isRegressionPath) and never touches `status`, `notes`,
- * `assigneeId` or `deleted`: those columns ARE the QA tracking, so re-running
- * this after a wording fix must not wipe a pass that is already underway.
+ * `assigneeId`, `deleted` or `evidence`: those fields ARE the QA tracking, so
+ * re-running this after a wording fix must not wipe a pass that is underway.
  *
  * For the same reason `qa_ticket` is deliberately absent from
  * `resetDemoTransactionalData` and `requiredTables` in `prisma/seed.ts`. The QA

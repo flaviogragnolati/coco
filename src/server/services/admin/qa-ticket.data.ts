@@ -3,12 +3,13 @@ import { qaTicketStatusSchema } from "~/schemas/admin/qa-ticket.schemas";
 import type {
 	QaTicketCreateInput,
 	QaTicketListInput,
-	QaTicketSetStatusInput,
+	QaTicketLogInput,
 	QaTicketStatus,
 	QaTicketUpdateInput,
 } from "~/shared/common/admin-crud/qa-ticket.types";
 
 type AdminDbClient = Prisma.TransactionClient;
+type QaTicketLogKind = "consoleLog" | "networkLog";
 
 const assigneeSelect = {
 	select: { id: true, name: true },
@@ -23,25 +24,65 @@ export const qaTicketListSelect = {
 	feature: true,
 	status: true,
 	isRegressionPath: true,
-	notes: true,
 	assignee: assigneeSelect,
 	deleted: true,
 	updatedAt: true,
 } satisfies Prisma.QaTicketSelect;
 
-export const qaTicketDetailSelect = {
+const qaTicketCoreDetailSelect = {
 	...qaTicketListSelect,
 	steps: true,
 	expectedResult: true,
+	notes: true,
 } satisfies Prisma.QaTicketSelect;
+
+export const qaTicketEvidenceMetadataSelect = {
+	id: true,
+	kind: true,
+	slot: true,
+	fileName: true,
+	mimeType: true,
+	byteSize: true,
+	createdAt: true,
+	updatedAt: true,
+} satisfies Prisma.QaTicketEvidenceSelect;
+
+const qaTicketLogSelect = {
+	...qaTicketEvidenceMetadataSelect,
+	content: true,
+} satisfies Prisma.QaTicketEvidenceSelect;
+
+const qaTicketImageContentSelect = {
+	...qaTicketEvidenceMetadataSelect,
+	content: true,
+	qaTicket: { select: { deleted: true, assignee: assigneeSelect } },
+} satisfies Prisma.QaTicketEvidenceSelect;
 
 export type QaTicketListRecord = Prisma.QaTicketGetPayload<{
 	select: typeof qaTicketListSelect;
 }>;
 
-export type QaTicketDetailRecord = Prisma.QaTicketGetPayload<{
-	select: typeof qaTicketDetailSelect;
+type QaTicketCoreDetailRecord = Prisma.QaTicketGetPayload<{
+	select: typeof qaTicketCoreDetailSelect;
 }>;
+
+type QaTicketLogRecord = Prisma.QaTicketEvidenceGetPayload<{
+	select: typeof qaTicketLogSelect;
+}>;
+
+export type QaTicketEvidenceMetadataRecord = Prisma.QaTicketEvidenceGetPayload<{
+	select: typeof qaTicketEvidenceMetadataSelect;
+}>;
+
+export type QaTicketImageContentRecord = Prisma.QaTicketEvidenceGetPayload<{
+	select: typeof qaTicketImageContentSelect;
+}>;
+
+export type QaTicketDetailRecord = QaTicketCoreDetailRecord & {
+	consoleLog: QaTicketLogRecord | null;
+	networkLog: QaTicketLogRecord | null;
+	images: QaTicketEvidenceMetadataRecord[];
+};
 
 export async function listQaTickets(
 	db: AdminDbClient,
@@ -54,11 +95,32 @@ export async function listQaTickets(
 	});
 }
 
-export async function findQaTicketById(db: AdminDbClient, id: number) {
-	return db.qaTicket.findUnique({
+export async function findQaTicketById(
+	db: AdminDbClient,
+	id: number,
+): Promise<QaTicketDetailRecord | null> {
+	const ticket = await db.qaTicket.findUnique({
 		where: { id },
-		select: qaTicketDetailSelect,
+		select: qaTicketCoreDetailSelect,
 	});
+	if (!ticket) return null;
+
+	const logs = await db.qaTicketEvidence.findMany({
+		where: { qaTicketId: id, kind: { in: ["consoleLog", "networkLog"] } },
+		select: qaTicketLogSelect,
+	});
+	const images = await db.qaTicketEvidence.findMany({
+		where: { qaTicketId: id, kind: "image" },
+		select: qaTicketEvidenceMetadataSelect,
+		orderBy: { slot: "asc" },
+	});
+
+	return {
+		...ticket,
+		consoleLog: logs.find((evidence) => evidence.kind === "consoleLog") ?? null,
+		networkLog: logs.find((evidence) => evidence.kind === "networkLog") ?? null,
+		images,
+	};
 }
 
 export async function getQaTicketStats(db: AdminDbClient) {
@@ -72,8 +134,7 @@ export async function getQaTicketStats(db: AdminDbClient) {
 		}),
 	]);
 
-	// groupBy emits no row for a status nobody is in, so the six keys start at
-	// zero: the stats contract has one non-optional counter per enum value.
+	// Prisma omits statuses with no rows; initialize every contract key first.
 	const counters = Object.fromEntries(
 		qaTicketStatusSchema.options.map((status) => [status, 0]),
 	) as Record<QaTicketStatus, number>;
@@ -108,7 +169,7 @@ export async function createQaTicket(
 			assigneeId: input.assigneeId ?? null,
 			deleted: false,
 		},
-		select: qaTicketDetailSelect,
+		select: { id: true },
 	});
 }
 
@@ -130,21 +191,54 @@ export async function updateQaTicket(
 			notes: input.notes ?? null,
 			assigneeId: input.assigneeId ?? null,
 		},
-		select: qaTicketDetailSelect,
+		select: { id: true },
 	});
 }
 
-export async function setQaTicketStatus(
+export async function saveQaTicketResult(
 	db: AdminDbClient,
-	input: QaTicketSetStatusInput,
+	id: number,
+	assigneeId: string,
+	status: QaTicketStatus,
+	notes: string | null,
 ) {
-	return db.qaTicket.update({
-		where: { id: input.id },
-		data: {
-			status: input.status,
-			notes: input.notes ?? null,
+	return db.qaTicket.updateMany({
+		where: { id, assigneeId, deleted: false },
+		data: { status, notes },
+	});
+}
+
+export async function replaceQaTicketLog(
+	db: AdminDbClient,
+	qaTicketId: number,
+	kind: QaTicketLogKind,
+	input: QaTicketLogInput & { byteSize: number },
+) {
+	if (input.content.length === 0) {
+		await db.qaTicketEvidence.deleteMany({
+			where: { qaTicketId, kind, slot: 0 },
+		});
+		return;
+	}
+
+	await db.qaTicketEvidence.upsert({
+		where: { qaTicketId_kind_slot: { qaTicketId, kind, slot: 0 } },
+		create: {
+			qaTicketId,
+			kind,
+			slot: 0,
+			content: input.content,
+			fileName: input.fileName,
+			mimeType: input.mimeType,
+			byteSize: input.byteSize,
 		},
-		select: qaTicketDetailSelect,
+		update: {
+			content: input.content,
+			fileName: input.fileName,
+			mimeType: input.mimeType,
+			byteSize: input.byteSize,
+		},
+		select: { id: true },
 	});
 }
 
@@ -153,13 +247,57 @@ export async function claimQaTicket(
 	id: number,
 	assigneeId: string,
 ) {
-	return db.qaTicket.update({
-		where: { id },
-		data: {
-			assigneeId,
-			status: "inProgress",
+	const result = await db.qaTicket.updateMany({
+		where: {
+			id,
+			deleted: false,
+			OR: [{ assigneeId: null }, { assigneeId }],
 		},
-		select: qaTicketDetailSelect,
+		data: { assigneeId, status: "inProgress" },
+	});
+
+	return result.count === 1 ? findQaTicketById(db, id) : null;
+}
+
+export async function listQaTicketImageSlots(
+	db: AdminDbClient,
+	qaTicketId: number,
+) {
+	return db.qaTicketEvidence.findMany({
+		where: { qaTicketId, kind: "image" },
+		select: { slot: true },
+		orderBy: { slot: "asc" },
+	});
+}
+
+export async function createQaTicketImage(
+	db: AdminDbClient,
+	input: {
+		qaTicketId: number;
+		slot: number;
+		content: string;
+		fileName: string;
+		mimeType: string;
+		byteSize: number;
+	},
+) {
+	return db.qaTicketEvidence.create({
+		data: { ...input, kind: "image" },
+		select: qaTicketEvidenceMetadataSelect,
+	});
+}
+
+export async function findQaTicketImageById(db: AdminDbClient, id: number) {
+	return db.qaTicketEvidence.findUnique({
+		where: { id },
+		select: qaTicketImageContentSelect,
+	});
+}
+
+export async function deleteQaTicketImage(db: AdminDbClient, id: number) {
+	return db.qaTicketEvidence.delete({
+		where: { id },
+		select: qaTicketEvidenceMetadataSelect,
 	});
 }
 
@@ -167,7 +305,7 @@ export async function softDeleteQaTicket(db: AdminDbClient, id: number) {
 	return db.qaTicket.update({
 		where: { id },
 		data: { deleted: true },
-		select: qaTicketDetailSelect,
+		select: { id: true },
 	});
 }
 

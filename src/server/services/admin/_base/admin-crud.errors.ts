@@ -1,4 +1,8 @@
-export type AdminCrudErrorCode = "NOT_FOUND" | "CONFLICT" | "RELATION_BLOCKED";
+export type AdminCrudErrorCode =
+	| "BAD_REQUEST"
+	| "NOT_FOUND"
+	| "CONFLICT"
+	| "RELATION_BLOCKED";
 
 export class AdminCrudError extends Error {
 	readonly code: AdminCrudErrorCode;

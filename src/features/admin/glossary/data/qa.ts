@@ -25,6 +25,17 @@ export const qaGlossaryEntries: GlossaryEntry[] = [
 		aliases: ["Smoke suite", "Suite de camino feliz"],
 		href: "/admin/qa-tickets",
 	},
+	{
+		slug: "concepto-evidencia-de-qa",
+		kind: "concept",
+		section: "qa",
+		label: "Evidencia de QA",
+		term: "QA evidence",
+		definition:
+			"El material vigente que respalda el resultado observado de un ticket: hasta cinco imágenes, un log de consola y un log de network. No forma un historial de pasadas; se reemplaza o elimina explícitamente y solo es accesible para admins.",
+		aliases: ["Adjunto", "Captura", "Log de QA"],
+		href: "/admin/qa-tickets",
+	},
 
 	// --- Entidades -----------------------------------------------------------
 	{
@@ -39,8 +50,61 @@ export const qaGlossaryEntries: GlossaryEntry[] = [
 		occurrences: [{ code: "QaTicket", db: "qa_ticket" }],
 		href: "/admin/qa-tickets",
 	},
+	{
+		slug: "entidad-evidencia-de-qa",
+		kind: "entity",
+		section: "qa",
+		label: "Evidencia de QA",
+		term: "QA evidence",
+		definition:
+			"La fila privada que aísla una imagen o uno de los dos logs vigentes de un ticket de QA, con su tipo, slot, nombre, MIME y tamaño. Su contenido nunca forma parte de listados ni auditorías.",
+		occurrences: [{ code: "QaTicketEvidence", db: "qa_ticket_evidence" }],
+		href: "/admin/qa-tickets",
+	},
 
 	// --- Estados -------------------------------------------------------------
+	{
+		slug: "tipo-evidencia-qa-imagen",
+		kind: "status",
+		section: "qa",
+		label: "Imagen",
+		definition: "Evidencia visual JPEG, PNG o WebP del ticket.",
+		occurrences: [
+			{
+				code: "QaTicketEvidenceKind.image",
+				db: "qa_ticket_evidence.kind",
+			},
+		],
+		href: "/admin/qa-tickets",
+	},
+	{
+		slug: "tipo-evidencia-qa-consola",
+		kind: "status",
+		section: "qa",
+		label: "Log de consola",
+		definition: "Texto vigente de consola asociado al resultado del ticket.",
+		occurrences: [
+			{
+				code: "QaTicketEvidenceKind.consoleLog",
+				db: "qa_ticket_evidence.kind",
+			},
+		],
+		href: "/admin/qa-tickets",
+	},
+	{
+		slug: "tipo-evidencia-qa-network",
+		kind: "status",
+		section: "qa",
+		label: "Log de network",
+		definition: "Texto vigente de requests y responses asociado al ticket.",
+		occurrences: [
+			{
+				code: "QaTicketEvidenceKind.networkLog",
+				db: "qa_ticket_evidence.kind",
+			},
+		],
+		href: "/admin/qa-tickets",
+	},
 	{
 		slug: "estado-qa-pendiente",
 		kind: "status",

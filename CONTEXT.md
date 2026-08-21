@@ -272,6 +272,10 @@ _Avoid_: Caso de prueba, test, bug, issue
 One sweep of the QA tickets by a tester. It is deliberately not a record: a ticket carries a single live state that the next pass overwrites, and the history of who changed what lives in the audit log. Spanish-facing UI labels it "Pasada de QA".
 _Avoid_: Run, execution, ciclo
 
+**QA evidence**:
+The current material supporting a QA ticket's observed result: up to five JPEG, PNG, or WebP images of 2 MiB each, one console log, and one network log of 1 MiB UTF-8 each. Images persist immediately when uploaded; the result and both logs persist together. Evidence is private to active admins, never appears in list or audit payloads, and belongs to the ticket's single live pass rather than an execution history. Image content is stored temporarily as base64 in the isolated `qa_ticket_evidence` table; increasing limits or broadening access requires a storage decision first. Spanish-facing UI labels it "Evidencia de QA".
+_Avoid_: Attachment history, public upload, QA run artifact
+
 **Regression path**:
 The subset of QA tickets that form the end-to-end happy path, marked on the ticket so a tester can run the short sweep instead of all of them. It is a property of the ticket, not a separate suite.
 _Avoid_: Smoke suite, happy path suite

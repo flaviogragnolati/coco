@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { qaTicketSeedEntries } from "./qa-tickets.data";
@@ -48,6 +49,38 @@ describe("qaTicketSeedEntries", () => {
 	it("keeps markdown table syntax out of the transcribed text", () => {
 		for (const entry of qaTicketSeedEntries) {
 			expect(`${entry.steps}${entry.expectedResult}`).not.toContain("|");
+		}
+	});
+
+	it("keeps the seed update restricted to canonical specification fields", () => {
+		const source = readFileSync(
+			new URL("./qa-seed.ts", import.meta.url),
+			"utf8",
+		);
+		const updateBlock = source.match(
+			/\n\s*update: \{([\s\S]*?)\n\s*\},\n\s*\}\);/,
+		)?.[1];
+
+		expect(updateBlock).toBeDefined();
+		for (const field of [
+			"section",
+			"title",
+			"actor",
+			"feature",
+			"steps",
+			"expectedResult",
+			"isRegressionPath",
+		]) {
+			expect(updateBlock).toContain(field);
+		}
+		for (const trackingField of [
+			"status",
+			"notes",
+			"assigneeId",
+			"deleted",
+			"evidence",
+		]) {
+			expect(updateBlock).not.toContain(trackingField);
 		}
 	});
 });

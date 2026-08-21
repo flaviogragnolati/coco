@@ -63,6 +63,17 @@ export const qaTicketStatusOptions = Object.entries(qaTicketStatusLabelMap).map(
 	([value, label]) => ({ value: value as QaTicketStatus, label }),
 );
 
+export type QaTicketWorkAction = "claim" | "continue" | "assigned" | "none";
+
+export function getQaTicketWorkAction(
+	ticket: Pick<QaTicketDetail, "assignee" | "deleted">,
+	currentUserId: string,
+): QaTicketWorkAction {
+	if (ticket.deleted) return "none";
+	if (!ticket.assignee) return "claim";
+	return ticket.assignee.id === currentUserId ? "continue" : "assigned";
+}
+
 export const defaultQaTicketFormValues: QaTicketFormInput = {
 	section: "",
 	title: "",

@@ -7,7 +7,7 @@ import {
 	qaTicketDetailSchema,
 	qaTicketListInputSchema,
 	qaTicketListOutputSchema,
-	qaTicketSetStatusInputSchema,
+	qaTicketSaveResultInputSchema,
 	qaTicketStatsSchema,
 	qaTicketUpdateInputSchema,
 } from "~/schemas/admin/qa-ticket.schemas";
@@ -71,12 +71,12 @@ export const qaTicketRouter = createTRPCRouter({
 			}
 		}),
 
-	setStatus: adminProcedure
-		.input(qaTicketSetStatusInputSchema)
+	saveResult: adminProcedure
+		.input(qaTicketSaveResultInputSchema)
 		.output(qaTicketDetailSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				return await qaTicketService.setStatus(
+				return await qaTicketService.saveResult(
 					input,
 					toAdminActor(ctx.session.user),
 					ctx.db,
