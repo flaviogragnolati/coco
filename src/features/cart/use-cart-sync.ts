@@ -35,6 +35,7 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 	const replaceCart = useCartStore((state) => state.replaceCart);
 	const detachServerCart = useCartStore((state) => state.detachServerCart);
 	const resetForNewSession = useCartStore((state) => state.resetForNewSession);
+	const setBootstrapState = useCartStore((state) => state.setBootstrapState);
 	const bootstrapCompleted = useRef(false);
 	const utils = api.useUtils();
 
@@ -45,6 +46,11 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 	const syncMutation = api.cart.syncLocal.useMutation({
 		onError(error) {
 			toast.error(error.message || "No se pudo sincronizar el carrito");
+		},
+		// On settle, not on success: a merge that failed already told the user, and
+		// leaving the bootstrap unfinished would hang every screen gated on it.
+		onSettled() {
+			setBootstrapState("done");
 		},
 		onSuccess(output) {
 			replaceCart(output.cart, userId ?? null);
@@ -57,6 +63,7 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 
 		if (!isAuthenticated || !userId) {
 			bootstrapCompleted.current = false;
+			setBootstrapState("idle");
 
 			// Fires however the session ended - expiry, cleared cookie, sign-out in
 			// another tab - so an attributed cart cannot outlive its owner here.
@@ -70,6 +77,7 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 
 		if (bootstrapCompleted.current) return;
 		bootstrapCompleted.current = true;
+		setBootstrapState("running");
 
 		const decision = decideCartBootstrap({
 			itemCount: Object.keys(items).length,
@@ -92,9 +100,13 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 			resetForNewSession();
 		}
 
-		void currentCartQuery.refetch().then((result) => {
-			if (result.data) replaceCart(result.data, userId);
-		});
+		void currentCartQuery
+			.refetch()
+			.then((result) => {
+				if (result.data) replaceCart(result.data, userId);
+			})
+			// Same reason as the merge path: settled, not successful.
+			.finally(() => setBootstrapState("done"));
 	}, [
 		currentCartQuery,
 		detachServerCart,
@@ -104,6 +116,7 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 		replaceCart,
 		resetForNewSession,
 		serverCartId,
+		setBootstrapState,
 		syncMutation,
 		syncedUserId,
 		userId,

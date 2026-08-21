@@ -31,6 +31,7 @@ import {
 	SheetTitle,
 } from "~/components/ui/sheet";
 import { Skeleton } from "~/components/ui/skeleton";
+import { canStartCheckout } from "~/features/cart/checkout-start-gate.decision";
 import type {
 	CheckoutAddress,
 	CheckoutPaymentResult,
@@ -69,6 +70,7 @@ function CheckoutLoadingState() {
 
 export function CheckoutClient() {
 	const hasHydrated = useCartStore((state) => state.hasHydrated);
+	const bootstrapState = useCartStore((state) => state.bootstrapState);
 	const items = useCartStore((state) => state.items);
 	const serverCartCode = useCartStore((state) => state.serverCartCode);
 	const serverCartId = useCartStore((state) => state.serverCartId);
@@ -130,13 +132,17 @@ export function CheckoutClient() {
 		onSuccess: applyCheckoutState,
 	});
 
+	// Waits for the navbar bootstrap to land the guest cart on the server: a
+	// start fired on hydration alone races it and gets "No encontramos un carrito
+	// activo para iniciar checkout." (finding #2). CheckoutLoadingState covers the
+	// screen meanwhile, since `checkout` is still null.
 	useEffect(() => {
 		if (startRequested.current) return;
-		if (!hasHydrated) return;
+		if (!canStartCheckout({ bootstrapState, hasHydrated })) return;
 
 		startRequested.current = true;
 		startCheckout.mutate();
-	}, [hasHydrated, startCheckout]);
+	}, [bootstrapState, hasHydrated, startCheckout]);
 
 	const createAddress = api.checkout.createAddress.useMutation({
 		onError(error) {

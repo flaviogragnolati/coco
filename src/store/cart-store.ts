@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import type { CartBootstrapState } from "~/features/cart/checkout-start-gate.decision";
 import type {
 	CartItem,
 	CartSnapshot,
@@ -31,12 +32,19 @@ export type CartSnapshotSource = {
 };
 
 type CartStoreState = PersistedCartState & {
+	/**
+	 * How far the login-time cart bootstrap got. Session state, deliberately
+	 * outside `partialize`: persisting it would let a reload start at `"done"`
+	 * while the server still has no cart, which is the race it exists to close.
+	 */
+	bootstrapState: CartBootstrapState;
 	hasHydrated: boolean;
 	clear: () => void;
 	detachServerCart: () => void;
 	removeItem: (productClientTermsId: number) => void;
 	replaceCart: (cart: CartSnapshot, userId?: string | null) => void;
 	resetForNewSession: () => void;
+	setBootstrapState: (bootstrapState: CartBootstrapState) => void;
 	setHasHydrated: (hasHydrated: boolean) => void;
 	setItemQuantity: (productClientTermsId: number, quantity: string) => void;
 	upsertItem: (item: CartItem) => void;
@@ -69,6 +77,7 @@ export const useCartStore = create<CartStoreState>()(
 	persist(
 		(set) => ({
 			...emptyPersistedState,
+			bootstrapState: "idle",
 			hasHydrated: false,
 			// Keeps syncedUserId: the post-checkout cart empties but the user stays
 			// bound. resetForNewSession() is the one that drops the attribution.
@@ -104,6 +113,7 @@ export const useCartStore = create<CartStoreState>()(
 					syncedUserId: userId,
 				}),
 			resetForNewSession: () => set({ ...emptyPersistedState }),
+			setBootstrapState: (bootstrapState) => set({ bootstrapState }),
 			setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 			setItemQuantity: (productClientTermsId, quantity) =>
 				set((state) => {
