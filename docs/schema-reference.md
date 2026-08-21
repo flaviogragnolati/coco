@@ -395,6 +395,7 @@ Records: `Cart`, `CartItem` (`src/server/services/cart/`).
 Records: `Cart`, `UserOrder`, `UserOrderItem`, `UserTransaction` (`src/server/services/checkout/`).
 
 - `Cart.status` moves `pending → atCheckout`
+- `Cart.status` moves back `atCheckout → pending` on `checkout.leave` **and** automatically, when the customer mutates a cart whose checkout was abandoned — both go through `releaseCheckoutCart`, which cancels the live order and its cancellable attempt. A payment the provider still holds, or one with a declared receipt (ADR 0010), keeps the cart at `atCheckout`
 - checkout start creates `UserOrder(pending)` with billing/shipping/terms snapshots, `UserOrderItem` rows frozen from cart items, and the payment attempt
 - `confirmAndPay` creates the Mercado Pago Checkout Pro preference and redirects (ADR 0001)
 - with the external payment option, `confirmAndPay` instead leaves the attempt `pending` with `provider = "external"` and an `expiresAt`, and returns the transfer instructions — no redirect, no gateway call (ADR 0010)

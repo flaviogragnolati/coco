@@ -50,7 +50,6 @@ import {
 	type CheckoutCartRecord,
 	type CheckoutDbClient,
 	type CheckoutPaymentMethodRecord,
-	cancelTransaction,
 	createCheckoutAddress,
 	createPendingTransaction,
 	createUserOrder,
@@ -72,13 +71,11 @@ import {
 	type OrderListRecord,
 	updateCartStatus,
 	updateCheckoutAddress,
-	updateOrderStatus,
 	updateTransactionWithMercadoPagoPreference,
 } from "./checkout.data";
-import {
-	isCancellablePaymentAttempt,
-	isSpentPaymentAttempt,
-} from "./payment-attempt.decision";
+import { releaseCheckoutCart } from "./checkout-release";
+import { checkoutReleaseBlockedMessage } from "./checkout-release.decision";
+import { isSpentPaymentAttempt } from "./payment-attempt.decision";
 
 const TERMS_TEXT = "lorem ipsum";
 const HOUR_IN_MS = 60 * 60 * 1000;
@@ -484,44 +481,28 @@ export async function getState(userId: string): Promise<CheckoutState> {
 
 /**
  * Releases a cart from checkout so it becomes editable again, cancelling the
- * live order and its pending attempt.
+ * live order and its pending attempt. The mechanics live in
+ * `releaseCheckoutCart`, shared with the automatic release a cart mutation
+ * performs; `leave` is the explicit request, so it surfaces a refusal as an
+ * error instead of swallowing it.
  *
- * The attempt is cancelled, not erased, because the provider window may still
- * be open: if the user pays the old Mercado Pago preference afterwards,
- * reconciliation recovers it — `shouldApplyMercadoPagoPaymentStatus` lets
- * `cancelled` advance to `completed`, and submission is driven by the order
- * snapshot, so the payment settles against the order it was created for
- * (ADR-0001).
+ * A settled payment should already have moved the cart out of `atCheckout`;
+ * refusing on a blocked decision keeps `leave` from ever cancelling an order
+ * that was paid, or one whose transfer the user already reported (ADR 0010).
  */
 export async function leave(userId: string): Promise<CartSnapshot> {
 	const cart = await db.$transaction(async (tx) => {
 		const checkoutCart = await findCheckoutCartByUserId(tx, userId);
 		if (!checkoutCart) return null;
-		if (checkoutCart.status !== "atCheckout") return checkoutCart;
 
-		const liveOrder = await findLiveOrderByCartId(tx, checkoutCart.id);
-		const latestAttempt = liveOrder?.transactions[0] ?? null;
+		const outcome = await releaseCheckoutCart(tx, checkoutCart);
+		if (outcome.decision === "notAtCheckout") return checkoutCart;
+		if (outcome.decision === "release") return outcome.cart;
 
-		// A settled payment should already have moved the cart out of `atCheckout`;
-		// refusing here keeps `leave` from ever cancelling an order that was paid,
-		// or one whose transfer the user already reported (ADR 0010).
-		if (latestAttempt && !isCancellablePaymentAttempt(latestAttempt)) {
-			throw new TRPCError({
-				code: "PRECONDITION_FAILED",
-				message: latestAttempt.declaredReceiptReference
-					? "Ya informaste una transferencia para este pedido. Esperá a que la confirmemos antes de volver al carrito."
-					: "Hay un pago en curso para este carrito. Esperá a que el proveedor lo resuelva.",
-			});
-		}
-
-		if (liveOrder) {
-			if (latestAttempt?.status === "pending") {
-				await cancelTransaction(tx, latestAttempt.id);
-			}
-			await updateOrderStatus(tx, liveOrder.id, "cancelled");
-		}
-
-		return updateCartStatus(tx, checkoutCart.id, "pending");
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message: checkoutReleaseBlockedMessage(outcome.decision),
+		});
 	});
 
 	return cartSnapshotSchema.parse(

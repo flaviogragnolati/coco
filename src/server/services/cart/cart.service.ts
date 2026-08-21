@@ -7,6 +7,8 @@ import {
 } from "~/schemas/cart.schemas";
 import { db } from "~/server/db";
 import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
+import { releaseCheckoutCart } from "~/server/services/checkout/checkout-release";
+import { checkoutReleaseBlockedMessage } from "~/server/services/checkout/checkout-release.decision";
 import type {
 	CartItem,
 	CartLocalItemInput,
@@ -104,20 +106,40 @@ function mapCart(record: CartRecord | null): CartSnapshot {
 }
 
 /**
- * A cart being paid for is a snapshot the order already references, so it must
- * not move under the payment. `checkout.leave` is the only way back to an
- * editable cart.
+ * Makes a cart editable, or explains why it cannot be.
+ *
+ * Editing the cart expresses the intent to abandon the checkout it is stuck in,
+ * so an abandoned checkout is released here rather than blocking the mutation:
+ * without this, a customer who closed the checkout tab keeps a permanently
+ * frozen cart. Only a checkout that is genuinely in flight — a payment the
+ * provider is holding, or a transfer the customer already reported (ADR 0010) —
+ * still refuses, because that cart is a snapshot the order references and must
+ * not move under the payment.
+ *
+ * Runs inside the caller's transaction; every mutation entry point must go
+ * through it before touching cart items.
  */
-function assertCartMutable(cart: CartMutationRecord) {
-	if (cart.status === "atCheckout") {
-		throw new TRPCError({
-			code: "PRECONDITION_FAILED",
-			message:
-				"Hay un checkout en curso para este carrito. Volvé al carrito desde el checkout para editarlo.",
-		});
-	}
+async function ensureCartMutable(
+	database: Parameters<CartDb["$transaction"]>[0] extends (
+		tx: infer T,
+	) => unknown
+		? T
+		: never,
+	cart: CartMutationRecord,
+): Promise<CartMutationRecord> {
+	if (cart.status !== "atCheckout") return cart;
 
-	return cart;
+	const outcome = await releaseCheckoutCart(database, cart);
+	if (outcome.decision === "notAtCheckout") return cart;
+
+	// The release only moves the status; the rest of the mutation record still
+	// describes the same cart, so there is nothing to re-read.
+	if (outcome.decision === "release") return { ...cart, status: "pending" };
+
+	throw new TRPCError({
+		code: "PRECONDITION_FAILED",
+		message: checkoutReleaseBlockedMessage(outcome.decision),
+	});
 }
 
 async function getOrCreateCurrentCart(
@@ -129,7 +151,7 @@ async function getOrCreateCurrentCart(
 	userId: string,
 ) {
 	const existing = await findCurrentCartForMutationByUserId(database, userId);
-	if (existing) return assertCartMutable(existing);
+	if (existing) return ensureCartMutable(database, existing);
 
 	return createCurrentCart(database, userId);
 }
@@ -226,7 +248,7 @@ export async function syncLocal(
 		}
 
 		const cart = existingCart
-			? assertCartMutable(existingCart)
+			? await ensureCartMutable(tx, existingCart)
 			: await createCurrentCart(tx, userId);
 		const warnings: CartWarning[] = [];
 		const localQuantityByTerms = new Map<number, number>();
@@ -337,7 +359,7 @@ export async function removeItem(
 	const mutation = await db.$transaction(async (tx) => {
 		const cart = await findCurrentCartForMutationByUserId(tx, userId);
 		if (!cart) return { cartId: null };
-		assertCartMutable(cart);
+		await ensureCartMutable(tx, cart);
 
 		const item = await findActiveCartItemByTerms(
 			tx,
@@ -363,7 +385,7 @@ export async function clear(userId: string): Promise<CartMutationOutput> {
 	const mutation = await db.$transaction(async (tx) => {
 		const cart = await findCurrentCartForMutationByUserId(tx, userId);
 		if (!cart) return { cartId: null };
-		assertCartMutable(cart);
+		await ensureCartMutable(tx, cart);
 
 		await softDeleteCartItemsByCartId(tx, cart.id);
 
