@@ -79,7 +79,7 @@ For each backlog item the user selects — or confirms from the backlog's next r
 8. Require verification proportional to acceptance criteria. Enable `q-code-tdd` only when requested or explicitly selected.
 9. Run the mini review — required; an executor whose reviewer is not installed returns a blocker naming it, and the item stays open until the review runs:
    - `q-review-code` for technical and specification conformance;
-   - `q-review-comments` for affected comments and docstrings.
+   - `q-review-comments` for affected comments and docstrings; its remove and rewrite findings are applied before the item closes.
 10. Correct failures and update the original durable record: ticket when present, otherwise the selected backlog item, issue, or explicit plan. Route any newly required technology selection back to `q-plan-tech-foundation`.
 11. Integrate or continue. Do not create a parallel durable implementation diary.
 12. Validate every `stage_result` the loop returns — from each grill, implementation plan, ticket set, implementation close, and fix or debug close — and apply its delta before selecting the next step or item: register authored plans, tickets, and feature architecture documents in the artifact index as `Working` with their declared authority; record decisions and ADRs; route each `stale_artifacts` entry to its owning stage; update the durable record reference and the active front; carry `next_recommended_action` into the next routing decision.

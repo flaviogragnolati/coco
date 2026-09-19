@@ -316,6 +316,177 @@ async function assertSchemaReady() {
 	}
 }
 
+/**
+ * Lineage built by hand on seeded demand (a manual operation over `CITEM-SEED-*`)
+ * carries no seed prefix, so the prefix queries miss it. Deleting the demand's
+ * allocations would leave it conserving nothing and fail `db:seed-verify`, so
+ * everything reachable **only** through those allocations is added to the
+ * deletion set. Lineage that still serves other demand is kept untouched; a
+ * lot item kept that way loses its seeded allocations like any other, so that
+ * mixed case can still fail the verifier.
+ * Must run before any delete: reachability is read from the rows being removed.
+ */
+async function collectLineageOnlyReachableFromSeed(
+	tx: Tx,
+	ids: {
+		cartItemIds: number[];
+		cartItemLotItemIds: number[];
+		lotItemIds: number[];
+		lotIds: number[];
+		operationIds: number[];
+		supplierOrderIds: number[];
+	},
+) {
+	const deletedAllocationIds = new Set(ids.cartItemLotItemIds);
+	const knownLotItemIds = new Set(ids.lotItemIds);
+
+	const touchedLotItems = await tx.lotItem.findMany({
+		where: {
+			id: { notIn: ids.lotItemIds },
+			cartItemLotItems: { some: { id: { in: ids.cartItemLotItemIds } } },
+		},
+		select: {
+			id: true,
+			lotId: true,
+			cartItemLotItems: { select: { id: true } },
+		},
+	});
+	const lotItemIds = touchedLotItems
+		.filter((lotItem) =>
+			lotItem.cartItemLotItems.every((allocation) =>
+				deletedAllocationIds.has(allocation.id),
+			),
+		)
+		.map((lotItem) => lotItem.id);
+	for (const id of lotItemIds) knownLotItemIds.add(id);
+
+	const knownLotIds = new Set(ids.lotIds);
+	const touchedLots = await tx.lot.findMany({
+		where: {
+			id: { notIn: ids.lotIds },
+			lotItems: { some: { id: { in: lotItemIds } } },
+		},
+		select: {
+			id: true,
+			operationId: true,
+			supplierOrderId: true,
+			lotItems: { select: { id: true } },
+		},
+	});
+	const lots = touchedLots.filter((lot) =>
+		lot.lotItems.every((lotItem) => knownLotItemIds.has(lotItem.id)),
+	);
+	for (const lot of lots) knownLotIds.add(lot.id);
+
+	const seededCartItemIds = new Set(ids.cartItemIds);
+	const candidateOperations = await tx.operation.findMany({
+		where: {
+			id: {
+				in: Array.from(new Set(lots.map((lot) => lot.operationId))),
+				notIn: ids.operationIds,
+			},
+		},
+		select: {
+			id: true,
+			lots: { select: { id: true } },
+			rollOvers: { select: { cartItemId: true } },
+		},
+	});
+	// A roll over of other demand pins its operation (`onDelete: Restrict`).
+	const operationIds = candidateOperations
+		.filter(
+			(operation) =>
+				operation.lots.every((lot) => knownLotIds.has(lot.id)) &&
+				operation.rollOvers.every((rollOver) =>
+					seededCartItemIds.has(rollOver.cartItemId),
+				),
+		)
+		.map((operation) => operation.id);
+	const deletableOperationIds = new Set([...ids.operationIds, ...operationIds]);
+	// A lot is deleted only with its operation, which `Restrict` requires anyway.
+	const lotIds = lots
+		.filter((lot) => deletableOperationIds.has(lot.operationId))
+		.map((lot) => lot.id);
+
+	const candidateSupplierOrders = await tx.supplierOrder.findMany({
+		where: {
+			id: {
+				in: Array.from(
+					new Set(
+						lots.flatMap((lot) =>
+							lot.supplierOrderId === null ? [] : [lot.supplierOrderId],
+						),
+					),
+				),
+				notIn: ids.supplierOrderIds,
+			},
+		},
+		select: { id: true, lots: { select: { id: true } } },
+	});
+	const deletedLotIds = new Set([...ids.lotIds, ...lotIds]);
+	const supplierOrderIds = candidateSupplierOrders
+		.filter((order) => order.lots.every((lot) => deletedLotIds.has(lot.id)))
+		.map((order) => order.id);
+
+	// Lot items of a kept lot stay too: a lot item cannot outlive its lot.
+	const keptLotItemIds = new Set(
+		touchedLotItems
+			.filter((lotItem) => !deletedLotIds.has(lotItem.lotId))
+			.map((lotItem) => lotItem.id),
+	);
+
+	return {
+		lotItemIds: lotItemIds.filter((id) => !keptLotItemIds.has(id)),
+		lotIds,
+		operationIds,
+		supplierOrderIds,
+	};
+}
+
+/** Packages whose every line is being deleted, and the shipments they empty. */
+async function collectPackagingLeftEmpty(
+	tx: Tx,
+	ids: {
+		packageLotItemIds: number[];
+		packageIds: number[];
+		shipmentIds: number[];
+	},
+) {
+	const deletedLineIds = new Set(ids.packageLotItemIds);
+	const touchedPackages = await tx.package.findMany({
+		where: {
+			id: { notIn: ids.packageIds },
+			packageLotItems: { some: { id: { in: ids.packageLotItemIds } } },
+		},
+		select: {
+			id: true,
+			shipmentId: true,
+			packageLotItems: { select: { id: true } },
+		},
+	});
+	const packageIds = touchedPackages
+		.filter((pkg) =>
+			pkg.packageLotItems.every((line) => deletedLineIds.has(line.id)),
+		)
+		.map((pkg) => pkg.id);
+
+	const deletedPackageIds = new Set([...ids.packageIds, ...packageIds]);
+	const touchedShipments = await tx.shipment.findMany({
+		where: {
+			id: { notIn: ids.shipmentIds },
+			packages: { some: { id: { in: packageIds } } },
+		},
+		select: { id: true, packages: { select: { id: true } } },
+	});
+	const shipmentIds = touchedShipments
+		.filter((shipment) =>
+			shipment.packages.every((pkg) => deletedPackageIds.has(pkg.id)),
+		)
+		.map((shipment) => shipment.id);
+
+	return { packageIds, shipmentIds };
+}
+
 async function resetDemoTransactionalData(tx: Tx) {
 	const carts = await tx.cart.findMany({
 		where: { code: { startsWith: "CART-SEED-" } },
@@ -406,6 +577,20 @@ async function resetDemoTransactionalData(tx: Tx) {
 		select: { id: true },
 	});
 	const cartItemLotItemIds = cartItemLotItems.map((item) => item.id);
+
+	const handMade = await collectLineageOnlyReachableFromSeed(tx, {
+		cartItemIds,
+		cartItemLotItemIds,
+		lotItemIds,
+		lotIds,
+		operationIds,
+		supplierOrderIds,
+	});
+	lotItemIds.push(...handMade.lotItemIds);
+	lotIds.push(...handMade.lotIds);
+	operationIds.push(...handMade.operationIds);
+	supplierOrderIds.push(...handMade.supplierOrderIds);
+
 	const packageLotItems = await tx.packageLotItem.findMany({
 		where: {
 			OR: [
@@ -416,6 +601,14 @@ async function resetDemoTransactionalData(tx: Tx) {
 		select: { id: true },
 	});
 	const packageLotItemIds = packageLotItems.map((item) => item.id);
+
+	const emptied = await collectPackagingLeftEmpty(tx, {
+		packageLotItemIds,
+		packageIds,
+		shipmentIds,
+	});
+	packageIds.push(...emptied.packageIds);
+	shipmentIds.push(...emptied.shipmentIds);
 
 	await tx.auditLog.deleteMany({
 		where: { actorReference: SEED_ACTOR_REFERENCE },
@@ -658,6 +851,23 @@ async function upsertPaymentMethod(
 	}
 
 	return tx.paymentMethod.create({ data });
+}
+
+/**
+ * The mock card methods earlier seeds created. Seeded transactions pointing at
+ * them are deleted by the reset, but a method may still back a hand-made order
+ * (`UserTransaction.paymentMethod` is `onDelete: Restrict`), so it is retired,
+ * not deleted.
+ */
+async function retireLegacyMockCardMethods(tx: Tx) {
+	await tx.paymentMethod.updateMany({
+		where: {
+			externalPaymentMethodId: {
+				in: ["pm-seed-buyer-card-ok", "pm-seed-buyer-card-fail"],
+			},
+		},
+		data: { active: false, deleted: true },
+	});
 }
 
 async function upsertBrand(
@@ -1043,14 +1253,16 @@ async function seedMasterData(tx: Tx) {
 		}),
 	};
 
+	// Checkout offers only Mercado Pago and external payment (ADR 0010), so no
+	// card method is seeded.
 	const paymentMethods = {
-		buyerCard: await upsertPaymentMethod(tx, {
+		buyerTransfer: await upsertPaymentMethod(tx, {
 			userId: users.buyer.id,
-			type: "credit_card",
-			label: "Visa corporativa terminada en 4242",
-			details: "Tarjeta corporativa aprobada para compras demo",
-			externalPaymentMethodId: "pm-seed-buyer-card-ok",
-			metadata: json({ seed: true, expectedStatus: "completed" }),
+			type: "bank_transfer",
+			label: "Transferencia bancaria empresa",
+			details: "Cuenta bancaria demo para pagos externos",
+			externalPaymentMethodId: "pm-seed-buyer-bank",
+			metadata: json({ seed: true }),
 		}),
 		buyerMercadoPago: await upsertPaymentMethod(tx, {
 			userId: users.buyer.id,
@@ -1058,15 +1270,7 @@ async function seedMasterData(tx: Tx) {
 			label: "Mercado Pago empresa",
 			details: "Cuenta empresa para pagos pendientes demo",
 			externalPaymentMethodId: "pm-seed-buyer-mp-pending",
-			metadata: json({ seed: true, expectedStatus: "pending" }),
-		}),
-		buyerRejected: await upsertPaymentMethod(tx, {
-			userId: users.buyer.id,
-			type: "credit_card",
-			label: "Tarjeta rechazo demo",
-			details: "Metodo mock para simular rechazo de pago",
-			externalPaymentMethodId: "pm-seed-buyer-card-fail",
-			metadata: json({ seed: true, expectedStatus: "failed" }),
+			metadata: json({ seed: true }),
 		}),
 		adminTransfer: await upsertPaymentMethod(tx, {
 			userId: users.admin.id,
@@ -1074,9 +1278,10 @@ async function seedMasterData(tx: Tx) {
 			label: "Transferencia bancaria admin",
 			details: "Cuenta bancaria demo para compras internas",
 			externalPaymentMethodId: "pm-seed-admin-bank",
-			metadata: json({ seed: true, expectedStatus: "completed" }),
+			metadata: json({ seed: true }),
 		}),
 	};
+	await retireLegacyMockCardMethods(tx);
 
 	const brands = {
 		andes: await upsertBrand(tx, {
@@ -2261,11 +2466,11 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 				amount: processingTotal.toFixed(2),
 				currency: "ARS",
 				status: "failed",
-				paymentMethodId: data.paymentMethods.buyerRejected.id,
+				paymentMethodId: data.paymentMethods.buyerTransfer.id,
 				idempotencyKey: "seed-processing-failed-attempt",
 				providerStatus: "rejected",
-				failureCode: "mock_rejected",
-				failureMessage: "Pago rechazado en intento demo previo.",
+				failureCode: "external_rejected",
+				failureMessage: "Pago externo rechazado por el administrador.",
 			},
 			{
 				amount: processingTotal.toFixed(2),
@@ -2335,7 +2540,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 				amount: exceptionTotal.toFixed(2),
 				currency: "ARS",
 				status: "refunded",
-				paymentMethodId: data.paymentMethods.buyerCard.id,
+				paymentMethodId: data.paymentMethods.buyerTransfer.id,
 				idempotencyKey: "seed-exception-refunded",
 				providerStatus: "refunded",
 			},
@@ -2385,7 +2590,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		orderCode: "ORD-SEED-AGGREGABLE-D",
 		userId: data.users.buyer.id,
 		shippingAddress: data.addresses.buyerShipping,
-		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paymentMethodId: data.paymentMethods.buyerTransfer.id,
 		paidAt: AGGREGABLE_PAID_AT,
 		items: [
 			{
@@ -2433,7 +2638,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		orderCode: "ORD-SEED-AGGREGABLE",
 		userId: data.users.buyer.id,
 		shippingAddress: data.addresses.buyerShipping,
-		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paymentMethodId: data.paymentMethods.buyerTransfer.id,
 		paidAt: AGGREGABLE_PAID_AT,
 		items: [
 			{
@@ -2465,7 +2670,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		orderCode: "ORD-SEED-REVIEW-A",
 		userId: data.users.buyer.id,
 		shippingAddress: data.addresses.buyerShipping,
-		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paymentMethodId: data.paymentMethods.buyerTransfer.id,
 		paidAt: DRAFT_PAID_AT,
 		items: [
 			{
@@ -2542,7 +2747,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		orderCode: "ORD-SEED-SUPPLY",
 		userId: data.users.buyer.id,
 		shippingAddress: data.addresses.buyerShipping,
-		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paymentMethodId: data.paymentMethods.buyerTransfer.id,
 		paidAt: SUPPLY_PAID_AT,
 		items: [
 			{
@@ -2574,7 +2779,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		orderCode: "ORD-SEED-INBOUND",
 		userId: data.users.buyer.id,
 		shippingAddress: data.addresses.buyerShipping,
-		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paymentMethodId: data.paymentMethods.buyerTransfer.id,
 		paidAt: INBOUND_PAID_AT,
 		items: [
 			{
@@ -2606,7 +2811,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		orderCode: "ORD-SEED-OUTBOUND",
 		userId: data.users.buyer.id,
 		shippingAddress: data.addresses.buyerShipping,
-		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paymentMethodId: data.paymentMethods.buyerTransfer.id,
 		paidAt: OUTBOUND_PAID_AT,
 		items: [
 			{
@@ -2651,7 +2856,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		orderCode: "ORD-SEED-DISRUPTED",
 		userId: data.users.buyer.id,
 		shippingAddress: data.addresses.buyerShipping,
-		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paymentMethodId: data.paymentMethods.buyerTransfer.id,
 		paidAt: DISRUPTED_PAID_AT,
 		items: [
 			{
@@ -2701,7 +2906,7 @@ async function seedTransactionalData(tx: Tx, data: SeedMasterData) {
 		orderCode: "ORD-SEED-ROLLOVER",
 		userId: data.users.buyer.id,
 		shippingAddress: data.addresses.buyerShipping,
-		paymentMethodId: data.paymentMethods.buyerCard.id,
+		paymentMethodId: data.paymentMethods.buyerTransfer.id,
 		paidAt: COMPENSATED_PAID_AT,
 		items: [
 			{

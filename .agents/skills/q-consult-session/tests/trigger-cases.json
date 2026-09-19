@@ -1,0 +1,12 @@
+{
+  "positive": [
+    {"prompt": "Registrar la minuta del taller de ayer", "expected": "q-consult-session"},
+    {"prompt": "Prepare the agenda and minutes for our engagement kickoff", "expected": "q-consult-session"},
+    {"prompt": "Capture the decisions, actions, and evidence from the acceptance committee", "expected": "q-consult-session"}
+  ],
+  "negative": [
+    {"prompt": "Mapear el proceso de facturación con las entrevistas", "expected": "q-consult-current-state"},
+    {"prompt": "Design the target operating model from confirmed findings", "expected": "q-consult-intervention"},
+    {"prompt": "Record the client's disposition for each baselined deliverable", "expected": "q-consult-acceptance"}
+  ]
+}

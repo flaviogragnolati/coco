@@ -220,3 +220,46 @@ test("zero-quantity candidates and requests drop out entirely", () => {
 test("an empty candidate list plans nothing", () => {
 	expect(planFractionation({ candidates: [] })).toEqual([]);
 });
+
+test("each planned allocation records the package it was taken from", () => {
+	const groups = planFractionation({ candidates: [cartAlpha] });
+
+	expect(groups[0]?.lines[0]?.allocations[0]?.sourcePackageId).toBe(1);
+});
+
+// One outbound line holds one row per demand allocation, so two sources of the
+// same demand cannot each keep their own row.
+test("one demand taken from two sources merges into a row with no single source", () => {
+	const fromSecondSource = candidate({
+		sourcePackageId: 2,
+		sourcePackageLotItemId: 21,
+		packagedAllocationId: 201,
+		availableQuantity: decimal("4"),
+	});
+
+	const groups = planFractionation({
+		candidates: [cartAlpha, fromSecondSource],
+	});
+
+	const allocations = groups[0]?.lines[0]?.allocations ?? [];
+	expect(allocations).toHaveLength(1);
+	expect(allocations[0]?.allocationId).toBe(1001);
+	expect(allocations[0]?.quantity.toString()).toBe("9");
+	expect(allocations[0]?.sourcePackageId).toBeNull();
+});
+
+test("one demand taken twice from the same source keeps that source", () => {
+	const sameSourceOtherLine = candidate({
+		sourcePackageLotItemId: 12,
+		packagedAllocationId: 105,
+		availableQuantity: decimal("1"),
+	});
+
+	const groups = planFractionation({
+		candidates: [cartAlpha, sameSourceOtherLine],
+	});
+
+	const allocations = groups[0]?.lines[0]?.allocations ?? [];
+	expect(allocations).toHaveLength(1);
+	expect(allocations[0]?.sourcePackageId).toBe(1);
+});

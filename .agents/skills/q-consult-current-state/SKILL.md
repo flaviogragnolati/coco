@@ -12,20 +12,10 @@ Read the `q-core-contract` companion for shared governance, especially its Consu
 Create under `docs/consulting-workflow/`:
 
 - `02-current-state-assessment.md`: authored, canonical for the assessed current state — scope, textual as-is maps, roles and hand-offs, systems and data, controls, metrics where evidenced, pain points, diagnostic findings, hypothesis status, gaps, next questions;
-- `02-evidence-register.yaml`: authored, supporting — one entry per evidence item a finding cites;
+- `02-evidence.yaml`: authored, supporting — one entry per evidence item a finding cites, conforming to `q-core-contract/references/evidence-entry.schema.yaml`;
 - `02-process-maps/<process>.mmd`: Mermaid source, authored, supporting for visual representation, only for confirmed maps.
 
-Evidence register entry:
-
-```yaml
-- evidence_id: EVD-001
-  kind: interview | document | data-extract | system-observation | client-statement | external-research
-  source: "who or what, date, locator (path, page, sheet, URL, meeting)"
-  classification: public | internal | confidential | restricted
-  extraction: {tool: q-tool-pdf | q-tool-document | q-tool-spreadsheet | manual | none, provenance: "..."}
-  supports: [FND-001]
-  limitations: "..."
-```
+Use the `evidence-entry.schema.yaml` bundled by the required `q-core-contract` companion as the single entry shape. Keep `EVD-nnn` unique across the consulting run. Do not copy or index a client-owned document: register its exact locator and classification as evidence, and index only an authorized extraction as a derived artifact with provenance.
 
 Keep interview notes and extraction scratch transient.
 
@@ -48,6 +38,7 @@ Complete when every finding cites registered evidence or is a marked hypothesis,
 - When `confirmed-process-or-stakeholder-map-needs-a-diagram` and `q-tool-mermaid` is installed, delegate authoring, validation, and rendering of the confirmed map; keep the textual map canonical and the diagram supporting. If it is absent, `continue-with-the-canonical-textual-map-and-record-the-visual-capability-gap`.
 - When `an-assessed-process-is-embodied-in-software-the-user-can-open` and `q-code-explore` is installed, route one bounded orientation question with the process as lens and register its summary as a `system-observation` evidence entry. If it is absent, `continue-with-interviews-and-documents-and-record-the-system-orientation-gap`.
 - When `a-diagnostic-conclusion-rests-on-a-supported-inference-or-quantitative-or-causal-claim-that-could-mislead-a-recommendation` and `q-review-evidence` is installed, send only that bounded claim, its evidence IDs, and the recommendation it could affect; reconcile the transient diagnostic into the finding's confidence and gaps. If it is absent, `keep-the-conclusion-as-a-hypothesis-with-its-evidence-gap-and-report-expanded-evidence-review-unavailable`.
+- When `client-facing-prose-is-drafted-and-the-user-requests-a-clarity-or-ai-pattern-pass-before-the-gate` and `q-tool-humanizer` is installed, pass the exact client-facing assessment sections, their language, and a meaning lock over every finding, evidence ID, metric, name, date, and confidence label; adopt only a revision that preserves the lock. If it is absent, `keep-the-prose-as-authored-and-record-that-no-humanization-pass-ran`.
 
 Every extraction, diagram, or diagnostic is derived or transient; this stage keeps meaning, confidence, and the artifact-index delta.
 
@@ -57,4 +48,4 @@ Never invent a metric, treat one interview as a fact, promote a hypothesis witho
 
 ## Stage result
 
-Return a valid `stage_result`: the assessment, evidence register, and process-map sources in `authored_outputs` with type, path, `Working` lifecycle, and the engagement plan version as source ref; each finding's confidence change or evidence gap in `risks_added_or_updated` when it threatens a recommendation; interviews, observations, and data pulls in `required_user_actions`; a missing evidence access or unconfirmed finding in `blockers`; `q-consult-intervention` or a targeted evidence request as `next_recommended_action`. In standalone mode set `global_state_updated: false` and `reconciliation_required: true` and persist the result beside the assessment as the contract's standalone-persistence rule requires; never write workflow state or the artifact index.
+Return a valid `stage_result`: the assessment, `02-evidence.yaml`, and process-map sources in `authored_outputs` with type, path, `Working` lifecycle, and the engagement plan version as source ref; each finding's confidence change or evidence gap in `risks_added_or_updated` when it threatens a recommendation; interviews, observations, and data pulls in `required_user_actions`; a missing evidence access or unconfirmed finding in `blockers`; `q-consult-intervention` or a targeted evidence request as `next_recommended_action`. In standalone mode set `global_state_updated: false` and `reconciliation_required: true` and persist the result beside the assessment as the contract's standalone-persistence rule requires; never write workflow state or the artifact index.

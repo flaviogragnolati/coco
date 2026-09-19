@@ -1,0 +1,12 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Consulting working document frontmatter
+type: object
+additionalProperties: false
+required: [kind, for_deliverable, version, status]
+properties:
+  kind:
+    type: string
+    enum: [minutes, procedure, standard, playbook, assessment-report, outline, service-report, training-material, data-request]
+  for_deliverable: {type: string}
+  version: {type: string}
+  status: {type: string, enum: [Working, Archived]}

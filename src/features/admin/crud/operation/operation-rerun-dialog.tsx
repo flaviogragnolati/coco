@@ -60,7 +60,10 @@ export function OperationRerunDialog({
 		resolver: zodResolver(operationCreateInputSchema),
 	});
 	const errors = form.formState.errors;
-	const includeRollOver = Boolean(form.watch("includeRollOver"));
+	// Mirrors the server, which forces it on for this path (`rerunParameters`).
+	const rollOverForced = operation?.status === "completed";
+	const includeRollOver =
+		rollOverForced || Boolean(form.watch("includeRollOver"));
 
 	useEffect(() => {
 		if (!open || !operation) return;
@@ -172,7 +175,7 @@ export function OperationRerunDialog({
 				<Field orientation="horizontal">
 					<Switch
 						checked={includeRollOver}
-						disabled={isSubmitting}
+						disabled={isSubmitting || rollOverForced}
 						id="operation-rerun-include-rollover"
 						onCheckedChange={(checked) =>
 							form.setValue("includeRollOver", checked, {
@@ -186,7 +189,9 @@ export function OperationRerunDialog({
 							Incluir rollovers abiertos
 						</FieldLabel>
 						<FieldDescription>
-							Sin esto la demanda que libera la compensación queda parada
+							{rollOverForced
+								? "Obligatorio al reejecutar una operación completada: la compensación libera demanda que debe volver a entrar."
+								: "Sin esto la demanda que libera la compensación queda parada"}
 						</FieldDescription>
 					</FieldContent>
 				</Field>

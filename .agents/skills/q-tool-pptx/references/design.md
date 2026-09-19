@@ -20,6 +20,8 @@ Load this reference before authoring a new deck or restyling slides, and again w
 
 Rendered QA in this skill uses LibreOffice, which substitutes any font it does not have; a substituted font with different metrics makes overflow checks unreliable. Therefore:
 
+A Quasar caller supplies its declared chain from `q-core-identity`; this guide never selects a brand face.
+
 - Prefer widely-installed, metric-stable fonts for body text (Arial, Calibri, Times New Roman, Courier New and similar Office-shipped families). They render true in QA and open correctly on the audience's machine.
 - Decorative or client-brand fonts are fine for titles when the caller requires them, but size those containers with visible slack and treat the rendered fit as approximate; note that limitation in validation results.
 - Never rely on a font the audience's Office installation is unlikely to have unless embedding is explicitly licensed and approved.

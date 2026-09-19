@@ -30,6 +30,7 @@ import {
 	type SupplierOrderConfirmDraft,
 	supplierOrderDisclosures,
 } from "./supplier-order.effects";
+import { isConfirmBlocked } from "./supplier-order-confirm.decision";
 import {
 	fromScaled,
 	previewLifoAbsorption,
@@ -167,6 +168,14 @@ function LineRow({
 	const confirmed = toScaled(confirmedQuantity);
 	const cut = confirmed === null ? null : requested - confirmed;
 	const overridesEnabled = overrides !== undefined;
+
+	// At 0 the whole line cancels, so a split left from an earlier partial cut
+	// would be sent to the server, which rejects it for not matching the cut.
+	useEffect(() => {
+		if (confirmed === 0n && overridesEnabled) {
+			form.setValue(`lines.${index}.overrides`, undefined);
+		}
+	}, [confirmed, overridesEnabled, form, index]);
 
 	const preview = useMemo(() => {
 		if (cut === null || cut <= 0n) return [];
@@ -347,24 +356,7 @@ export function SupplierOrderConfirmDialog({
 
 	const watchedLines = useWatch({ control: form.control, name: "lines" });
 
-	const blocked = lines.some((lotItem, index) => {
-		const line = watchedLines?.[index];
-		if (!line) return true;
-
-		const requested = toScaled(lotItem.quantity) ?? 0n;
-		const confirmed = toScaled(line.confirmedQuantity ?? "");
-		if (confirmed === null || confirmed > requested) return true;
-
-		if (line.overrides === undefined) return false;
-		return (
-			sumScaled(
-				line.overrides.map(
-					(override) => toScaled(override.removedQuantity) ?? 0n,
-				),
-			) !==
-			requested - confirmed
-		);
-	});
+	const blocked = isConfirmBlocked(lines, watchedLines);
 
 	return (
 		<CrudFormDialogShell

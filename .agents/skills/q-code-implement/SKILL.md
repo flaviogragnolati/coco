@@ -21,8 +21,9 @@ Read the `q-core-contract` companion for shared governance and its stage-result 
 1. Keep internal plans, scratchpads, and delegation messages transient.
 2. Implement in the required order and keep the diff inside scope.
 3. Add or update tests and documentation that the change requires.
-4. Run focused checks after each meaningful step and broader proportional checks before close.
-5. Stop on an architecture, product, stack, priority, or commercial contradiction; route an unsettled technology decision to `q-plan-tech-foundation` and a needed change to a reusable design contract to `q-plan-design-system`, and do not widen the change silently.
+4. Comment only what the code cannot say — intent, invariant, constraint, trade-off, hazard — in the fewest words, to the `q-review-comments` rubric and the repository's convention. Leave no narration, step markers, ticket or task references, or planning residue in the source; the durable record carries the change story.
+5. Run focused checks after each meaningful step and broader proportional checks before close.
+6. Stop on an architecture, product, stack, priority, or commercial contradiction; route an unsettled technology decision to `q-plan-tech-foundation` and a needed change to a reusable design contract to `q-plan-design-system`, and do not widen the change silently.
 
 Use parallel executors only for independent work with clear ownership. Their coordination is not a persistent project artifact.
 
@@ -31,8 +32,8 @@ Use parallel executors only for independent work with clear ownership. Their coo
 When `code-change-and-its-verification-are-complete-and-the-mini-review-is-due` — always, after implementation and verification:
 
 1. Run `q-review-code` for standards and specification conformance. If it is not installed, `close-with-a-blocker-naming-q-review-code-and-its-install-command-and-never-report-the-change-as-reviewed` (`npx skills add flaviogragnolati/ai-workflow --skill q-review-code`).
-2. Run `q-review-comments` for affected comments and docstrings. If it is not installed, `close-with-a-blocker-naming-q-review-comments-and-its-install-command-and-never-report-the-comment-review-as-done` (`npx skills add flaviogragnolati/ai-workflow --skill q-review-comments`).
-3. Correct blockers and rerun relevant checks.
+2. Run `q-review-comments` for affected comments and docstrings. If it is not installed, `close-with-a-blocker-naming-q-review-comments-and-its-install-command-and-never-report-the-comment-review-as-done` (`npx skills add flaviogragnolati/ai-workflow --skill q-review-comments`). Its remove and rewrite findings change no behavior; apply them before close.
+3. Correct blockers, apply the comment findings, and rerun relevant checks.
 4. Keep both review results distinct. A missing reviewer is a blocker in the stage result and in the durable record, never a skipped step.
 
 ## Durable close

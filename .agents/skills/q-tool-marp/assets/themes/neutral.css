@@ -14,7 +14,7 @@ section {
   padding: 56px 72px;
   background: #ffffff;
   color: var(--neutral-ink);
-  font-family: Aptos, Arial, sans-serif;
+  font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 30px;
   line-height: 1.25;
 }
@@ -23,7 +23,7 @@ h1, h2 { color: var(--neutral-ink); line-height: 1.08; }
 h1 { font-size: 54px; }
 h2 { font-size: 40px; }
 a { color: var(--neutral-accent); }
-code { font-family: Consolas, monospace; }
+code { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; }
 footer { color: var(--neutral-muted); font-size: 16px; }
 
 section.lead {

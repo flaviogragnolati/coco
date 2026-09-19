@@ -129,7 +129,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/code/q-code-debug/SKILL.md",
-      "computedHash": "2ee9e1a582723436d0f9fdf563f135ad175f3c4dc47071987a7d3b7639d0257f"
+      "computedHash": "ff60467cdbb9e902101139ae6c3670c20ba07d345b1de7c6b8944e6287c6393a"
     },
     "q-code-explain": {
       "source": "flaviogragnolati/ai-workflow",
@@ -147,7 +147,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/code/q-code-fix/SKILL.md",
-      "computedHash": "e2c5881ac7326f063c7425fa5747998c127377b05e608d246a2c830be9c32cee"
+      "computedHash": "f20e325358d2b3b3b9bdcbb9bb1bc3cca2a4e3cf8c2462eb2f64eadc9f26898d"
     },
     "q-code-grill-design": {
       "source": "flaviogragnolati/ai-workflow",
@@ -177,7 +177,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/code/q-code-implement/SKILL.md",
-      "computedHash": "570960b247f4a0bceee1d9f506dea088cca1e51a90f1df1e10d84740942066cd"
+      "computedHash": "bed670bc8052f1472f019d061f40b423ee343deb7d0ab9623b0ec3f107e1a60f"
     },
     "q-code-implementation-plan": {
       "source": "flaviogragnolati/ai-workflow",
@@ -225,37 +225,49 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/consult/q-consult-acceptance/SKILL.md",
-      "computedHash": "1116ea27027a48ef983a31e912982178b63ab3bd7f7f00888fc01f643fd600b1"
+      "computedHash": "595241d6e1d2b5bfd77f3b20fe99012e00edcfbe803565fb55a3b6f4ab1bcc76"
     },
     "q-consult-current-state": {
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/consult/q-consult-current-state/SKILL.md",
-      "computedHash": "f8601a326a0f5dbe3bcd95ff1dad55976481c7adc951d4a6703f643a596657d3"
+      "computedHash": "042d844cda6cf82f987a81666a9cfa374cdd65ed9a8b3ad3bb8a196f1acf9123"
     },
     "q-consult-engagement-plan": {
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/consult/q-consult-engagement-plan/SKILL.md",
-      "computedHash": "22d63d2a847f808bb2dd5c6b6e2cb9ee2cf922300ab2a829083c83aedf8069c7"
+      "computedHash": "11fe7138edb6566de1dc5423f7a12bbcd5df69f16043100dfaaf22b7e64bae56"
     },
     "q-consult-intervention": {
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/consult/q-consult-intervention/SKILL.md",
-      "computedHash": "44d85e4320b7fb5d6c8b7781a6bc5ca93c3fc14ef9316016beecbb699cc9f335"
+      "computedHash": "cccc5611f7ac7ec5467fc525a5068a6f6f61d69dba703db0cd97ed89bab577c3"
+    },
+    "q-consult-session": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/consult/q-consult-session/SKILL.md",
+      "computedHash": "a7d68090f971004d91460034086483f809bb6fda249383d08c439c3bc764848f"
     },
     "q-consult-workflow": {
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/consult/q-consult-workflow/SKILL.md",
-      "computedHash": "6e1bbd4effa0be30cc3d3f10a070b37caab943ab705159a619fe4b7127fbc5f0"
+      "computedHash": "e6faca9302f460b7470e4cb5999fc1831fb93fe633c1584d893ab37059d07dd6"
     },
     "q-core-contract": {
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/core/q-core-contract/SKILL.md",
-      "computedHash": "eb2710704a94da13d29713cdf25b6cf04a1470bb8483ae670ca9641d5c7f481c"
+      "computedHash": "6cb2da20c74ef5f682f8627982cb5e0318a2f83fb69a4c0d52495e4937779354"
+    },
+    "q-core-identity": {
+      "source": "flaviogragnolati/ai-workflow",
+      "sourceType": "github",
+      "skillPath": "skills/core/q-core-identity/SKILL.md",
+      "computedHash": "4049345203f6b3076cd200d6a112ec848a69d0925d8add77aab2e2659ae7563f"
     },
     "q-delivery-release": {
       "source": "flaviogragnolati/ai-workflow",
@@ -267,7 +279,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/delivery/q-delivery-workflow/SKILL.md",
-      "computedHash": "293d0ac2b22000430434e790a28858135a6269b8c7a6df9c979419d54681a1ba"
+      "computedHash": "b2f2553c8689b0d2727b5cbf73ec1d29ed6bb1b33b3d2e5cad00d1dec089d3f3"
     },
     "q-ideation-session": {
       "source": "flaviogragnolati/ai-workflow",
@@ -291,7 +303,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/plan/q-plan-design-system/SKILL.md",
-      "computedHash": "75124161fa11c207a04ff38d5e3c14f29605aa3b89c59b1c353c06a98333f9c6"
+      "computedHash": "892e8ef94be8b1c8dd9bf3c9909b6f837e828498e4dcdfae671b6f577a867e22"
     },
     "q-plan-domain-model": {
       "source": "flaviogragnolati/ai-workflow",
@@ -321,7 +333,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/proposal/q-proposal-design/SKILL.md",
-      "computedHash": "95740fa5827fcab0217702c6b4a7e6d7da28230d19e12a3b1e400ea8631309d9"
+      "computedHash": "c43175d646c4fd27bedb19e8d2148cba48f589f6c639cc497afa064572e502bb"
     },
     "q-proposal-discovery": {
       "source": "flaviogragnolati/ai-workflow",
@@ -333,13 +345,13 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/proposal/q-proposal-document/SKILL.md",
-      "computedHash": "e35c9b1e36c3043c08ce4e42a38da780cd747063abeab43129f83376851f7435"
+      "computedHash": "d43f8895d5a3df71e5576fd334d65cc8e8ca6e46f8ec5ddbe869942580e24bcb"
     },
     "q-proposal-web": {
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/proposal/q-proposal-web/SKILL.md",
-      "computedHash": "5fecfb646a71dc97b4effedffe65c0e812f9dedea001b45cf0b3b1c6d24e0277"
+      "computedHash": "6bd679ec915fe78ff90c0a26a4fff224990a47fa12bc6f02e595285ea647833c"
     },
     "q-proposal-workflow": {
       "source": "flaviogragnolati/ai-workflow",
@@ -351,13 +363,13 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/report/q-report-deck/SKILL.md",
-      "computedHash": "cc48dd7c3f58e10b1f8eb4e699a68225f26d3d62b844712a0416c3cdadcb3d1b"
+      "computedHash": "d0edb7dad37203540be8693d366791bae9ab76577e33defb41345448c9359ddb"
     },
     "q-report-document": {
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/report/q-report-document/SKILL.md",
-      "computedHash": "75d65af74ab8320bd1df7a472bd4cd4ba7bfaa59b7dd4e7ec527702df7db3cba"
+      "computedHash": "25ee2277c59fc9bce17c61a58065ce5bc3221927a07af95d0ce98df71546eb53"
     },
     "q-report-source": {
       "source": "flaviogragnolati/ai-workflow",
@@ -381,7 +393,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/research/q-research-market-analysis/SKILL.md",
-      "computedHash": "da7c5e27de21ed42b1aea398499065cb76a0740723fbcefdf96bfd9339acd6da"
+      "computedHash": "fc1bac3cef2074e0ad32b4c808740030f289afe9f642d28edb38e1d641d2a621"
     },
     "q-research-scope": {
       "source": "flaviogragnolati/ai-workflow",
@@ -417,7 +429,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/review/q-review-comments/SKILL.md",
-      "computedHash": "489db255b1187adaa7a156e0dbbb31402506f62d603974fb188790725b617810"
+      "computedHash": "accc923f9dda2cf0664af59d9efc8005255ffaa0564d4dd154ca14af19d5117a"
     },
     "q-review-docs": {
       "source": "flaviogragnolati/ai-workflow",
@@ -471,13 +483,13 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/tool/q-tool-humanizer/SKILL.md",
-      "computedHash": "798ff4ca8f039a7f4e9a1d6cd382e73e096f5666f367a5572626c2f5052a68bc"
+      "computedHash": "2c72db3de4095abf642f8a634f98d490f5e46336ed74cf620fe96a627eb21b95"
     },
     "q-tool-marp": {
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/tool/q-tool-marp/SKILL.md",
-      "computedHash": "5c819c26ad3b583128c6282290913ebd56975410300577b1681587b32a6a6c82"
+      "computedHash": "1762de5401bdb0d3a9f48365fbf7d7a832ad26e69c4045dfb851820d61927102"
     },
     "q-tool-mermaid": {
       "source": "flaviogragnolati/ai-workflow",
@@ -495,7 +507,7 @@
       "source": "flaviogragnolati/ai-workflow",
       "sourceType": "github",
       "skillPath": "skills/tool/q-tool-pptx/SKILL.md",
-      "computedHash": "462f501b9ed52d9a5146461aee5ed8c4ca2ad1d066f145b8cb239d40db0cf8a5"
+      "computedHash": "fcb3ae985b5b356cf45b0b3f5d33d82b871cebb6af453b92d5f673503952bbe8"
     },
     "q-tool-spreadsheet": {
       "source": "flaviogragnolati/ai-workflow",

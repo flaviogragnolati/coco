@@ -279,7 +279,7 @@ test("an item with events and one without unfold (no events = nothing reached)",
 	).toBe(true);
 });
 
-test("items whose timelines have no events at all unify as fully pending", () => {
+test("timelines with every stage pending and no notices yield the empty mode", () => {
 	const view = buildCustomerOrderJourneyView([
 		makeItem({
 			cartItemId: 1,
@@ -291,10 +291,63 @@ test("items whose timelines have no events at all unify as fully pending", () =>
 		}),
 	]);
 
+	expect(view).toStrictEqual({ mode: "empty" });
+});
+
+test("one item on the first stage leaves the empty mode", () => {
+	const view = buildCustomerOrderJourneyView([
+		makeItem({
+			cartItemId: 1,
+			timeline: makeTimeline({ cartItemId: 1, currentStage: "submitted" }),
+		}),
+	]);
+
+	expect(view.mode).toBe("unified");
+});
+
+test("a notice before any stage still renders the journey", () => {
+	const view = buildCustomerOrderJourneyView([
+		makeItem({
+			cartItemId: 1,
+			timeline: makeTimeline({
+				cartItemId: 1,
+				currentStage: null,
+				notices: [
+					{
+						eventType: "rolledOverPreAllocation",
+						kind: "rollover",
+						label: "Reprogramado antes de asignacion",
+						createdAt: "2026-03-02T10:00:00.000Z",
+					},
+				],
+			}),
+		}),
+	]);
+
+	expect(view.mode).toBe("unified");
+});
+
+test("notice views carry the reason", () => {
+	const view = buildCustomerOrderJourneyView([
+		makeItem({
+			cartItemId: 1,
+			timeline: makeTimeline({
+				cartItemId: 1,
+				currentStage: "shipping",
+				notices: [
+					{
+						eventType: "fulfillmentException",
+						kind: "exception",
+						label: "Incidencia de fulfillment",
+						reason: "Demora del transporte",
+						createdAt: "2026-03-02T10:00:00.000Z",
+					},
+				],
+			}),
+		}),
+	]);
+
 	expect(view.mode).toBe("unified");
 	if (view.mode !== "unified") return;
-	expect(view.stages.every((stage) => stage.status === "pending")).toBe(true);
-	expect(view.stages.every((stage) => stage.timestamp === undefined)).toBe(
-		true,
-	);
+	expect(view.notices[0]?.reason).toBe("Demora del transporte");
 });

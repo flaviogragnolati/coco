@@ -24,7 +24,7 @@ h1, h2 { color: var(--quasar-blue); line-height: 1.06; }
 h1 { font-size: 54px; }
 h2 { font-size: 40px; }
 strong { color: var(--quasar-blue); }
-code { font-family: Consolas, monospace; }
+code { font-family: "Aptos Mono", Consolas, monospace; }
 footer { color: var(--quasar-gray); font-size: 16px; }
 
 section.lead,

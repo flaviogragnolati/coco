@@ -137,9 +137,9 @@ quantity without double-counting.
 
 | Command (`admin.package`) | Isolation | What it does |
 | --- | --- | --- |
-| `fractionate` | serializable | turns a selection of **received inbound** packages into one outbound package per customer (`readyForShipment`), partial and incremental. Sources are never mutated — they stay `received` as arrival history. The budget is per **demand allocation** across the whole selection, so two sources covering the same demand cannot each claim the remainder. `fractionationCandidates` computes the editable rows server-side with the same budget loop, so the dialog cannot offer what the command would refuse |
-| `promote` | serializable | mono-customer inbound package flips leg and resets `received → readyForShipment`, preserving physical identity — its `received` recorded the inbound arrival, not an outbound one. Publishes no event (its deterministic key was consumed at dispatch registration) |
-| `split` | serializable | re-groups quantity into sibling packages so records match the real physical bundles; moves quantity, never loses it. Siblings inherit leg, status and shipment |
+| `fractionate` | serializable | turns a selection of **received inbound** packages into one outbound package per customer (`readyForShipment`), partial and incremental. Sources are never mutated — they stay `received` as arrival history. The budget is per **demand allocation** across the whole selection, so two sources covering the same demand cannot each claim the remainder. Each source is also bounded by its own share: an outbound allocation records the inbound package it was taken from (`PackageAllocation.sourcePackageId`), so a fully fractionated package offers nothing even while another package of the same demand still holds quantity. Rows written before that column, or merging two sources, are null and charged only through the per-demand budget. `fractionationCandidates` computes the editable rows server-side with the same budget loop, so the dialog cannot offer what the command would refuse |
+| `promote` | serializable | mono-customer inbound package flips leg and resets `received → readyForShipment`, preserving physical identity — its `received` recorded the inbound arrival, not an outbound one. Its rows record itself as `sourcePackageId`, which keeps them counting as received evidence for the demand's budget (otherwise the quantity would be charged twice and sibling inbound packages could not be fractionated). Publishes no event (its deterministic key was consumed at dispatch registration) |
+| `split` | serializable | re-groups quantity into sibling packages so records match the real physical bundles; moves quantity, never loses it. Siblings inherit leg, status and shipment, and each moved row keeps its `sourcePackageId` |
 | `markDelayed` / `markFailed` | default | package-level disruption, with or without a shipment; mandatory reason (§7) |
 
 Conservation invariant, sharper than the demand-level one: Σ live outbound
@@ -200,11 +200,20 @@ Remediation is first-class commands, never manual SQL:
 - `package.writeOff` — terminal follow-up: the same four reductions as a
   receipt discrepancy plus a post-allocation roll over, mandatory reason; a
   fully written-off package becomes `cancelled`.
+- `shipment.recover` — a delayed shipment returns to where the delay caught
+  it, with its delayed packages: `inTransit` (packages `inTransit`), or
+  `readyForDispatch` (packages `readyForShipment`) when the latest
+  `shipment.markDelayed` audit entry shows it had not departed. No audit
+  trail resolves to `inTransit`. Publishes `fulfillment.exception.resolved`,
+  and both it and `markDelayed` suffix their event keys with the occurrence
+  after the first, so a repeated delay → recover cycle is not deduplicated away;
+  the detail's `recoveryTarget` states the target before the operator runs it.
 - `package.recover` — a delayed package returns to where it was; the target is
   **derived from the record**, not asked (no shipment or not departed →
   `readyForShipment`; already travelling → `inTransit`). Refused while the
   shipment itself is disrupted — recovering only the package would leave the
-  item deriving `exception`, a command that appears to do nothing.
+  item deriving `exception`, a command that appears to do nothing. Recover the
+  shipment first; its packages then need no separate recovery.
 
 "Failed requires follow-up" is enforced as a worklist signal
 (`shipment.failedWithoutFollowUp`), not a hard block — diagnostics never
@@ -243,8 +252,9 @@ real world is managed through supplier-loop actions.
   aggregation exactly — the conservation property compensation rests on.
 - `operation.rerun` — one command, three paths by status, atomic: `failed`
   re-executes in place; `completed` compensates then creates and executes a new
-  operation (same window rule; `includeRollOver` forced `true` so the re-run
-  cannot strand what the compensation just released); `cancelled` creates and
+  operation (same window rule; `includeRollOver` forced `true` server-side, and
+  shown locked in the dialog, so the re-run cannot strand what the compensation
+  just released); `cancelled` creates and
   executes only. If execution throws, the compensation rolls back with it.
 - `operation.remove` — hard delete, only for `failed` or `draft` operations
   with no children.
@@ -326,7 +336,7 @@ always a command.
 | `admin.supplierOrder` | list, getById, getStats, request, confirm, cancel, cancelLine, registerDispatch |
 | `admin.lot` | list, getById, getStats (read-only — ADR 0003; actions delegate to the supplier order) |
 | `admin.package` | list, getById, getStats, fractionationCandidates, fractionate, promote, split, writeOff, markDelayed, markFailed, confirmDelivery, recover |
-| `admin.shipment` | list, getById, getStats, dispatch, receive, deliver, createEndUser, addPackages, retry, markDelayed, markFailed |
+| `admin.shipment` | list, getById, getStats, dispatch, receive, deliver, createEndUser, addPackages, retry, markDelayed, markFailed, recover |
 | `admin.carrierOrder` | list, getById, getStats, create, update, softDelete, hardDelete, request, confirm, markInTransit, complete, cancel, markFailed, addShipments, removeShipment |
 | `admin.rollOver` | list, getStats, resolve |
 | `admin.tracking` | listEvents, getCartTimeline, getCartItemTimeline, getCartItemTimelineDetail |

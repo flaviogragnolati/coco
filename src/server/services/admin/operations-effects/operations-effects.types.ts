@@ -111,6 +111,8 @@ export type AdminShipmentChangeSet = {
 	exceptionStatus?: "delayed" | "failed";
 	/** True when the shipment was `delayed` before being received, so the exception resolves. */
 	resolvesException?: boolean;
+	/** 1-based count of this repeatable command on the shipment (delay, failure, recover). */
+	occurrence?: number;
 };
 
 export type AdminShipmentEffectHandler = {
@@ -131,6 +133,10 @@ export type AdminShipmentEffectHandler = {
 		changeSet: AdminShipmentChangeSet,
 	) => Promise<AdminOperationsEffectSummary[]>;
 	onShipmentRetried: (
+		ctx: AdminOperationsEffectContext,
+		changeSet: AdminShipmentChangeSet,
+	) => Promise<AdminOperationsEffectSummary[]>;
+	onShipmentRecovered: (
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminShipmentChangeSet,
 	) => Promise<AdminOperationsEffectSummary[]>;

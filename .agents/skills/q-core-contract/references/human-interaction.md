@@ -12,6 +12,8 @@ restate or expand those permissions.
 ```yaml
 q-core-contract:
   internal: none
+q-core-identity:
+  internal: none
 q-tool-mermaid:
   orchestrated: on-demand
   standalone: on-demand
@@ -172,6 +174,9 @@ q-proposal-discovery:
   standalone: decision-gated
 q-consult-workflow:
   orchestrated: decision-gated
+q-consult-session:
+  orchestrated: on-demand
+  standalone: dialogue-led
 q-consult-engagement-plan:
   orchestrated: decision-gated
   standalone: decision-gated

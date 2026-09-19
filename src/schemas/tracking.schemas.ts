@@ -62,6 +62,7 @@ export const userTrackingTimelineNoticeSchema = z.object({
 	kind: z.enum(userTrackingNoticeKinds),
 	label: z.string(),
 	quantity: decimalStringSchema.optional(),
+	reason: z.string().optional(),
 	createdAt: z.string(),
 });
 

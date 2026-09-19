@@ -28,6 +28,8 @@ export type CustomerOrderJourneyItemInput = {
 export type CustomerJourneyNoticeView = {
 	label: string;
 	kind: UserTrackingNoticeKind;
+	/** Admin-entered explanation; only exceptions and roll over creations carry one. */
+	reason?: string;
 	createdAt: string;
 };
 
@@ -87,6 +89,7 @@ function toNoticeViews(
 			? `${notice.label} (${notice.quantity})`
 			: notice.label,
 		kind: notice.kind,
+		reason: notice.reason,
 		createdAt: notice.createdAt,
 	}));
 }
@@ -158,12 +161,26 @@ function byCreatedAtAsc(
 	return left.createdAt.localeCompare(right.createdAt);
 }
 
+/**
+ * The server returns a timeline for every item, even one with no events, so the
+ * presence of a timeline says nothing. A notice counts: a rollover can precede
+ * any stage and must still render.
+ */
+function hasReachedAnyStage(timeline: UserOrderItemTimeline | undefined) {
+	if (!timeline) return false;
+
+	return (
+		timeline.notices.length > 0 ||
+		timeline.stages.some((stage) => stage.status !== "pending")
+	);
+}
+
 export function buildCustomerOrderJourneyView(
 	items: CustomerOrderJourneyItemInput[],
 ): CustomerOrderJourneyView {
-	// No item has a timeline yet (typically: payment not credited) — the caller
-	// shows a hint instead of six empty circles.
-	if (items.length === 0 || items.every((item) => !item.timeline)) {
+	// Nothing happened yet (typically: payment not credited) — the caller shows a
+	// hint instead of six empty circles.
+	if (!items.some((item) => hasReachedAnyStage(item.timeline))) {
 		return { mode: "empty" };
 	}
 

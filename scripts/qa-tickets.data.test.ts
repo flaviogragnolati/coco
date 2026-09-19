@@ -9,7 +9,7 @@ import { qaTicketSeedEntries, retiredQaTicketCodes } from "./qa-tickets.data";
  * Mercado Pago (21 + 23) only.
  */
 const regressionChain = [
-	1, 6, 12, 14, 15, 21, 23, 31, 40, 41, 42, 46, 47, 50, 51, 52, 54, 57, 58, 67,
+	1, 6, 12, 14, 21, 23, 31, 40, 41, 42, 46, 47, 50, 51, 52, 54, 57, 58, 67,
 ];
 
 /**
@@ -63,13 +63,13 @@ function seedSource() {
 }
 
 describe("qaTicketSeedEntries", () => {
-	it("transcribes 66 active tests with codes 1-67 except the retired 17", () => {
+	it("transcribes 65 active tests with codes 1-67 except the retired 15 and 17", () => {
 		const codes = qaTicketSeedEntries.map((entry) => entry.code);
 		const expected = Array.from({ length: 67 }, (_, index) => index + 1).filter(
-			(code) => code !== 17,
+			(code) => code !== 15 && code !== 17,
 		);
 
-		expect(qaTicketSeedEntries).toHaveLength(66);
+		expect(qaTicketSeedEntries).toHaveLength(65);
 		expect(codes).toEqual(expected);
 		expect(new Set(codes).size).toBe(codes.length);
 	});
@@ -156,7 +156,9 @@ describe("rewritten definitions", () => {
 });
 
 describe("retiredQaTicketCodes", () => {
-	it("lists #17 without duplicates", () => {
+	// #15 tested the user-managed payment methods ADR 0010 removed.
+	it("lists #15 and #17 without duplicates", () => {
+		expect(retiredQaTicketCodes).toContain(15);
 		expect(retiredQaTicketCodes).toContain(17);
 		expect(new Set(retiredQaTicketCodes).size).toBe(
 			retiredQaTicketCodes.length,

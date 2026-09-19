@@ -32,6 +32,7 @@ import {
 } from "~/components/ui/sheet";
 import { Skeleton } from "~/components/ui/skeleton";
 import { canStartCheckout } from "~/features/cart/checkout-start-gate.decision";
+import { discardPendingGuestItems } from "~/features/cart/discard-pending-guest-items";
 import type {
 	CheckoutAddress,
 	CheckoutPaymentResult,
@@ -71,6 +72,9 @@ function CheckoutLoadingState() {
 export function CheckoutClient() {
 	const hasHydrated = useCartStore((state) => state.hasHydrated);
 	const bootstrapState = useCartStore((state) => state.bootstrapState);
+	const bootstrapBlockedMessage = useCartStore(
+		(state) => state.bootstrapBlockedMessage,
+	);
 	const items = useCartStore((state) => state.items);
 	const serverCartCode = useCartStore((state) => state.serverCartCode);
 	const serverCartId = useCartStore((state) => state.serverCartId);
@@ -234,29 +238,48 @@ export function CheckoutClient() {
 		);
 	}
 
+	// The gate never opens on a refused merge, so this must render before the
+	// loading state or the screen spins forever.
+	const startBlockedMessage =
+		bootstrapState === "blocked" && !checkout
+			? (bootstrapBlockedMessage ??
+				"No pudimos sumar a tu carrito los productos que agregaste sin sesión.")
+			: null;
+
 	if (
-		!hasHydrated ||
-		startCheckout.isPending ||
-		(!checkout && !startCheckout.error)
+		!startBlockedMessage &&
+		(!hasHydrated ||
+			startCheckout.isPending ||
+			(!checkout && !startCheckout.error))
 	) {
 		return <CheckoutLoadingState />;
 	}
 
-	if (startCheckout.error || !checkout) {
+	if (startBlockedMessage || startCheckout.error || !checkout) {
 		return (
 			<main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-6">
 				<Alert variant="destructive">
 					<AlertCircleIcon />
 					<AlertTitle>No se pudo iniciar checkout</AlertTitle>
 					<AlertDescription>
-						{startCheckout.error?.message ??
+						{startBlockedMessage ??
+							startCheckout.error?.message ??
 							"Revisá tu carrito antes de continuar."}
 					</AlertDescription>
 				</Alert>
-				<div className="flex gap-2">
+				<div className="flex flex-wrap gap-2">
 					<Button asChild variant="outline">
 						<Link href="/cart">Volver al carrito</Link>
 					</Button>
+					{startBlockedMessage ? (
+						<Button
+							onClick={discardPendingGuestItems}
+							type="button"
+							variant="outline"
+						>
+							Descartar productos pendientes
+						</Button>
+					) : null}
 					<Button asChild>
 						<Link href="/products">Ver productos</Link>
 					</Button>

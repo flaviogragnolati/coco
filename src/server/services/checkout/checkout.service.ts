@@ -32,6 +32,7 @@ import type {
 	OrderExternalPayment,
 	OrderListOutput,
 } from "~/shared/common/checkout.types";
+import { CHECKOUT_TERMS } from "~/shared/common/checkout-terms";
 import {
 	buildCartSnapshot,
 	calculateLineTotal,
@@ -77,7 +78,6 @@ import { releaseCheckoutCart } from "./checkout-release";
 import { checkoutReleaseBlockedMessage } from "./checkout-release.decision";
 import { isSpentPaymentAttempt } from "./payment-attempt.decision";
 
-const TERMS_TEXT = "lorem ipsum";
 const HOUR_IN_MS = 60 * 60 * 1000;
 
 type CheckoutCartItemRecord = CheckoutCartRecord["cartItems"][number];
@@ -196,8 +196,8 @@ function buildAddressSnapshot(address: CheckoutAddress) {
 function buildTermsSnapshot(acceptedAt: Date) {
 	return {
 		source: "checkout",
-		version: "checkout-v1",
-		text: TERMS_TEXT,
+		version: CHECKOUT_TERMS.version,
+		text: CHECKOUT_TERMS.text,
 		acceptedAt: acceptedAt.toISOString(),
 	};
 }
@@ -445,7 +445,7 @@ export async function start(userId: string): Promise<CheckoutState> {
 			cart: mapCart(checkoutCart),
 			addresses: addresses.map(toCheckoutAddress),
 			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
-			termsText: TERMS_TEXT,
+			termsText: CHECKOUT_TERMS.text,
 		});
 	});
 }
@@ -474,7 +474,7 @@ export async function getState(userId: string): Promise<CheckoutState> {
 			cart: mapCart(cart),
 			addresses: addresses.map(toCheckoutAddress),
 			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
-			termsText: TERMS_TEXT,
+			termsText: CHECKOUT_TERMS.text,
 		});
 	});
 }

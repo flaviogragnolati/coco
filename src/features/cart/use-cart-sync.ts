@@ -44,17 +44,22 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 	});
 
 	const syncMutation = api.cart.syncLocal.useMutation({
+		// Every error must settle the bootstrap: leaving it unfinished would hang
+		// every screen gated on it.
 		onError(error) {
-			toast.error(error.message || "No se pudo sincronizar el carrito");
-		},
-		// On settle, not on success: a merge that failed already told the user, and
-		// leaving the bootstrap unfinished would hang every screen gated on it.
-		onSettled() {
+			const message = error.message || "No se pudo sincronizar el carrito";
+			toast.error(message);
+
+			if (error.data?.code === "PRECONDITION_FAILED") {
+				setBootstrapState("blocked", message);
+				return;
+			}
 			setBootstrapState("done");
 		},
 		onSuccess(output) {
 			replaceCart(output.cart, userId ?? null);
 			notifyWarnings(output);
+			setBootstrapState("done");
 		},
 	});
 

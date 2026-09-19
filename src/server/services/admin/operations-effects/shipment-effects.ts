@@ -151,4 +151,15 @@ export class ShipmentEffects implements AdminShipmentEffectHandler {
 			buildExceptionResolvedEvents(ctx, changeSet, "retry"),
 		);
 	}
+
+	async onShipmentRecovered(
+		ctx: AdminOperationsEffectContext,
+		changeSet: AdminShipmentChangeSet,
+	) {
+		return publishEvents(
+			ctx,
+			"shipment.recovered",
+			buildExceptionResolvedEvents(ctx, changeSet, "recover"),
+		);
+	}
 }

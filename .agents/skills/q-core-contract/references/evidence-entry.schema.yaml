@@ -1,0 +1,26 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Consulting evidence entry
+type: object
+additionalProperties: false
+required: [evidence_id, kind, source, classification, extraction, supports, limitations]
+properties:
+  evidence_id: {type: string}
+  kind:
+    type: string
+    enum: [interview, document, data-extract, system-observation, client-statement, engagement-record, external-research]
+  source: {type: string}
+  locator: {type: [string, "null"]}
+  classification:
+    type: string
+    enum: [public, internal, confidential, restricted]
+  extraction:
+    type: object
+    additionalProperties: false
+    required: [tool, provenance]
+    properties:
+      tool: {type: string, enum: [q-tool-pdf, q-tool-document, q-tool-spreadsheet, manual, none]}
+      provenance: {type: string}
+  supports:
+    type: array
+    items: {type: string}
+  limitations: {type: string}

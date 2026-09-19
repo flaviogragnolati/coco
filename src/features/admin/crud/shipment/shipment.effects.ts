@@ -383,8 +383,8 @@ const markDelayed: CommandDisclosure<ShipmentDisclosureContext> = {
 	undo: {
 		kind: "command",
 		entity: "shipment",
-		command: "receive",
-		note: "Un envío demorado se recibe igual cuando llega, y eso resuelve la excepción.",
+		command: "recover",
+		note: "Se recupera cuando la demora se resuelve; recibirlo o entregarlo también resuelve la excepción.",
 	},
 	next: [
 		{
@@ -495,6 +495,89 @@ const retry: CommandDisclosure<ShipmentDisclosureContext> = {
 	detail: packageDetail,
 };
 
+/** The packages `recover` moves: only those the delay caught. */
+function delayedPackages(ctx: ShipmentDisclosureContext) {
+	return livePackages(ctx).filter((pkg) => pkg.status === "delayed");
+}
+
+const recoversToTransit = (ctx: ShipmentDisclosureContext) =>
+	ctx.shipment?.recoveryTarget === "inTransit";
+
+const recoversToDispatch = (ctx: ShipmentDisclosureContext) =>
+	ctx.shipment?.recoveryTarget === "readyForDispatch";
+
+const recover: CommandDisclosure<ShipmentDisclosureContext> = {
+	effects: [
+		{
+			kind: "transition",
+			record: "shipment",
+			from: "delayed",
+			to: "inTransit",
+			count: (ctx) => (recoversToTransit(ctx) ? 1 : 0),
+		},
+		{
+			kind: "transition",
+			record: "shipment",
+			from: "delayed",
+			to: "readyForDispatch",
+			count: (ctx) => (recoversToDispatch(ctx) ? 1 : 0),
+		},
+		{
+			kind: "transition",
+			record: "package",
+			from: "delayed",
+			to: "inTransit",
+			count: (ctx) =>
+				recoversToTransit(ctx) ? delayedPackages(ctx).length : 0,
+		},
+		{
+			kind: "transition",
+			record: "package",
+			from: "delayed",
+			to: "readyForShipment",
+			count: (ctx) =>
+				recoversToDispatch(ctx) ? delayedPackages(ctx).length : 0,
+		},
+		{
+			kind: "customer",
+			publishes: "fulfillment.exception.resolved",
+			count: (ctx) => affectedCartItems(ctx),
+			note: "{n} ítem(s) de demanda dejan de estar en excepción",
+		},
+	],
+	demand: {
+		moves: false,
+		note: "No mueve cantidad: el envío vuelve a donde estaba con los paquetes que ya llevaba.",
+	},
+	undo: {
+		kind: "command",
+		entity: "shipment",
+		command: "markDelayed",
+		note: "Se vuelve a marcar demorado, desde En transito, si la demora sigue.",
+	},
+	next: [
+		{
+			entity: "shipment",
+			command: "deliver",
+			label: "Entregar cuando llegue",
+			when: (ctx) => isEndUser(ctx) && recoversToTransit(ctx),
+		},
+		{
+			entity: "shipment",
+			command: "receive",
+			label: "Recibir cuando llegue",
+			when: (ctx) => !isEndUser(ctx) && recoversToTransit(ctx),
+		},
+		{
+			entity: "shipment",
+			command: "dispatch",
+			label: "Despachar cuando salga",
+			when: recoversToDispatch,
+		},
+	],
+	detail: packageDetail,
+};
+
 export const shipmentDisclosures: EntityDisclosures<
 	"shipment",
 	ShipmentDisclosureContext
@@ -507,4 +590,5 @@ export const shipmentDisclosures: EntityDisclosures<
 	markDelayed,
 	markFailed,
 	retry,
+	recover,
 };

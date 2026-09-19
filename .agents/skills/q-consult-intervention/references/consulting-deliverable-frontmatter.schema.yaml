@@ -1,0 +1,32 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Consulting deliverable frontmatter
+type: object
+additionalProperties: false
+required: [deliverable_id, deliverable_kind, version, declared_scope, criteria_ref, source_findings, status, classification]
+properties:
+  deliverable_id: {type: string}
+  deliverable_kind:
+    type: string
+    enum: [minutes, procedure, standard, playbook, assessment-report, outline, service-report, training-material, data-request]
+  version: {type: string}
+  declared_scope: {type: string}
+  criteria_ref:
+    type: array
+    minItems: 1
+    items: {type: string}
+  source_findings:
+    type: array
+    items: {type: string}
+  status: {type: string, enum: [Working, Baselined, Released, Archived]}
+  classification: {type: string, enum: [public, internal, confidential, restricted]}
+  components:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [path, role, source_ref]
+      properties:
+        path: {type: string}
+        role: {type: string, enum: [derived, supporting]}
+        source_ref: {type: string}

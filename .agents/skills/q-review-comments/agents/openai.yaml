@@ -1,4 +1,4 @@
 interface:
   display_name: "Review Code Comments"
-  short_description: "Audit comments and docstrings without behavior changes"
-  default_prompt: "Use $q-review-comments to audit the affected comments and docstrings without changing behavior."
+  short_description: "Audit comment necessity, accuracy, and brevity"
+  default_prompt: "Use $q-review-comments to audit the comments and docstrings this change added or invalidated for necessity, accuracy, and brevity, and return remove, rewrite, add, or keep findings without changing behavior."

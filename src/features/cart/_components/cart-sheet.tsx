@@ -39,6 +39,9 @@ export function CartSheet({
 	const setMiniCartOpen = useCartUiStore((state) => state.setMiniCartOpen);
 	const closeMiniCart = useCartUiStore((state) => state.closeMiniCart);
 	const hasHydrated = useCartStore((state) => state.hasHydrated);
+	const mergeBlocked = useCartStore(
+		(state) => state.bootstrapState === "blocked",
+	);
 	const cartActions = useCartActions({ isAuthenticated, userId });
 	const cart = cartActions.cart;
 	const hasItems = cart.itemCount > 0;
@@ -119,7 +122,16 @@ export function CartSheet({
 								</div>
 							))}
 						</div>
-						{isAuthenticated ? (
+						{isAuthenticated && mergeBlocked ? (
+							<Button
+								asChild
+								className="w-full"
+								onClick={closeMiniCart}
+								variant="outline"
+							>
+								<Link href="/cart">Ver productos pendientes de agregar</Link>
+							</Button>
+						) : isAuthenticated ? (
 							<Button
 								asChild
 								className="w-full"

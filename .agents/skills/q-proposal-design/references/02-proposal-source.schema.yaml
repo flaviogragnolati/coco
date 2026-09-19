@@ -93,6 +93,7 @@ properties:
       - scope_items
       - exclusions
       - deliverables
+      - acceptance_criteria
       - technical_requirements
       - non_functional_requirements
       - constraints
@@ -117,6 +118,7 @@ properties:
       scope_items: { $ref: '#/$defs/objectList' }
       exclusions: { $ref: '#/$defs/objectList' }
       deliverables: { $ref: '#/$defs/objectList' }
+      acceptance_criteria: { $ref: '#/$defs/objectList' }
       technical_requirements: { $ref: '#/$defs/objectList' }
       non_functional_requirements: { $ref: '#/$defs/objectList' }
       constraints: { $ref: '#/$defs/objectList' }
@@ -212,6 +214,7 @@ $defs:
           - scope_item
           - exclusion
           - deliverable
+          - acceptance_criterion
           - technical_requirement
           - non_functional_requirement
           - constraint
@@ -245,6 +248,15 @@ $defs:
       supersedes:
         type: array
         items: { type: string }
+    allOf:
+      - if:
+          properties:
+            type: { const: acceptance_criterion }
+        then:
+          required: [satisfies]
+          properties:
+            satisfies:
+              minItems: 1
   referenceInterface:
     type: object
     additionalProperties: false

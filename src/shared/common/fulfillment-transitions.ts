@@ -139,7 +139,13 @@ export const shipmentTransitions: Record<
 	preparing: new Set(["readyForDispatch", "cancelled"]),
 	readyForDispatch: new Set(["inTransit", "delayed", "cancelled"]),
 	inTransit: new Set(["received", "delayed", "failed"]),
-	delayed: new Set(["inTransit", "received", "failed", "cancelled"]),
+	delayed: new Set([
+		"inTransit",
+		"readyForDispatch",
+		"received",
+		"failed",
+		"cancelled",
+	]),
 	received: new Set([]),
 	failed: new Set(["cancelled"]),
 	cancelled: new Set([]),
@@ -489,7 +495,8 @@ export type ShipmentCommandKey =
 	| "addPackages"
 	| "markDelayed"
 	| "markFailed"
-	| "retry";
+	| "retry"
+	| "recover";
 
 export type PackageCommandKey =
 	| "writeOff"
@@ -666,6 +673,17 @@ export function shipmentAvailableActions(input: {
 		return { action: "retry", enabled: true };
 	}
 
+	function recoverState(): AvailableAction<ShipmentCommandKey> {
+		if (input.status !== "delayed") {
+			return {
+				action: "recover",
+				enabled: false,
+				reason: "Solo se puede recuperar un envío demorado",
+			};
+		}
+		return { action: "recover", enabled: true };
+	}
+
 	return [
 		dispatchState(),
 		receiveState(),
@@ -674,7 +692,23 @@ export function shipmentAvailableActions(input: {
 		markDelayedState(),
 		markFailedState(),
 		retryState(),
+		recoverState(),
 	];
+}
+
+/**
+ * Where `shipment.recover` returns a delayed shipment: back to where it was
+ * delayed from. `Shipment` records no departure time, so the caller passes the
+ * status the delay was recorded from; unknown (no audit trail, e.g. seeded data)
+ * resolves to `inTransit`, the only status the `markDelayed` action offers.
+ */
+export function shipmentRecoveryTarget(input: {
+	statusBeforeDelay: ShipmentStatus | null;
+}): Extract<ShipmentStatus, "readyForDispatch" | "inTransit"> {
+	return input.statusBeforeDelay !== null &&
+		dispatchableShipmentStatuses.has(input.statusBeforeDelay)
+		? "readyForDispatch"
+		: "inTransit";
 }
 
 const splittableStatuses: ReadonlySet<PackageStatus> = new Set([

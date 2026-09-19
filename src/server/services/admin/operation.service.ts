@@ -80,6 +80,7 @@ import {
 	calculateOperationDiagnostics,
 	type OperationDiagnosticsOptions,
 } from "./operation-diagnostics";
+import { rerunParameters } from "./operation-rerun.decision";
 import {
 	DIAGNOSTIC_SCAN_LIMIT,
 	resolveDiagnosticListPage,
@@ -740,12 +741,12 @@ export async function rerun(
 	actor: AdminMutationActor,
 	database: AdminDb,
 ): Promise<OperationDetail> {
-	const { id, reason, ...parameters } = input;
+	const { id, reason, ...requestedParameters } = input;
 
 	const result = await runSerializable(database, async (tx) => {
 		const destination = await findActiveDestination(
 			tx,
-			parameters.destinationId,
+			requestedParameters.destinationId,
 		);
 		if (!destination) {
 			throw new AdminCrudError(
@@ -755,6 +756,10 @@ export async function rerun(
 		}
 
 		const record = await loadForCommand(tx, id);
+		const { parameters, forcedIncludeRollOver } = rerunParameters(
+			record.status,
+			requestedParameters,
+		);
 		const before = await loadDetail(tx, record.id);
 		const compensationReason =
 			reason ?? `Reejecucion de la operacion ${record.code}`;
@@ -814,6 +819,7 @@ export async function rerun(
 				sourceStatus: record.status,
 				resultOperationId,
 				compensated,
+				...(forcedIncludeRollOver ? { forcedIncludeRollOver } : {}),
 				reason: compensationReason,
 				destinationId: destination.id,
 				destinationName: destination.name,

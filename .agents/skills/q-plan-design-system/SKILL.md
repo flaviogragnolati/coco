@@ -46,6 +46,8 @@ Do not own:
 
 Brand guidelines, design libraries, observed assets, and existing systems remain sources. Record how each is applied and which exceptions were accepted; never let this artifact silently replace their authority.
 
+`q-core-identity` governs Quasar's own documents and decks and never applies to a client product's UI. This stage never inherits Quasar's palette or typeface; an unsupported client brand remains fabrication under this stage's source rule.
+
 ## Required inputs
 
 Load the exact applicable versions of the product core, the technical foundation through `technical_foundation_ref`, the domain model, architecture and application standards, the module map and feature index with relevant feature specs, open decisions, risks, and change requests, repository evidence for an existing interface, and any authorized brand guideline, token source, design library, or component inventory.

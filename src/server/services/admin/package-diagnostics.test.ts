@@ -31,9 +31,11 @@ function allocation(input: {
 }): Allocation {
 	const own = {
 		quantity: decimal(input.quantity),
+		sourcePackageId: null,
 		packageLotItem: {
 			status: "packed",
 			package: {
+				id: 1,
 				status: input.ownPackageStatus ?? "readyForShipment",
 				leg: input.ownLeg ?? "inbound",
 			},
@@ -49,11 +51,13 @@ function allocation(input: {
 			cartItem: { cartId: input.cartId ?? 900 },
 			packageAllocations: [
 				own,
-				...(input.siblings ?? []).map((sibling) => ({
+				...(input.siblings ?? []).map((sibling, index) => ({
 					quantity: decimal(sibling.quantity),
+					sourcePackageId: null,
 					packageLotItem: {
 						status: sibling.lineStatus ?? "packed",
 						package: {
+							id: 100 + index,
 							status: sibling.packageStatus ?? "readyForShipment",
 							leg: sibling.leg,
 						},

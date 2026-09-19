@@ -56,6 +56,7 @@ import type {
 } from "./operations-effects/operations-effects.types";
 import { AdminOperationsSideEffects } from "./operations-effects/operations-side-effects.service";
 import {
+	attributePackageAllocationsToSource,
 	countPackageCandidates,
 	createOutboundPackage,
 	createPackageAllocations,
@@ -75,6 +76,7 @@ import {
 	type PackageDetailRecord,
 	type PackageSummaryRecord,
 	type PackageTrackingEventRecord,
+	packageAllocationRemaining,
 	packagedAllocationFractionableQuantity,
 	packageFractionableQuantity,
 	stalePackageThreshold,
@@ -198,7 +200,7 @@ async function toDetail(
 			),
 		),
 	);
-	const fractionable = packageFractionableQuantity(liveLines);
+	const fractionable = packageFractionableQuantity(liveLines, record.id);
 
 	return packageDetailSchema.parse({
 		...summary,
@@ -249,8 +251,10 @@ async function toDetail(
 				packageAllocations: line.packageAllocations.map((allocation) => ({
 					id: allocation.id,
 					quantity: allocation.quantity.toString(),
-					fractionableQuantity:
-						packagedAllocationFractionableQuantity(allocation).toString(),
+					fractionableQuantity: packagedAllocationFractionableQuantity(
+						allocation,
+						record.id,
+					).toString(),
 					demandAllocation: {
 						id: allocation.cartItemLotItem.id,
 						quantity: allocation.cartItemLotItem.quantity.toString(),
@@ -663,7 +667,9 @@ async function closePackagedLotItems(
  *
  * The budget is per **demand allocation**, not per packaged allocation: two
  * selected sources can cover the same demand, and charging each of them the full
- * `fractionableQuantity` would package it twice (§21.6).
+ * `fractionableQuantity` would package it twice (§21.6). Each source is also
+ * bounded by what was already taken from it, so a fully fractionated package
+ * does not offer quantity that another package of the same demand still holds.
  */
 function collectFractionationCandidates(sources: FractionationSourceRecord[]) {
 	const budgetByAllocationId = new Map<number, Prisma.Decimal>();
@@ -688,9 +694,8 @@ function collectFractionationCandidates(sources: FractionationSourceRecord[]) {
 				const demand = packaged.cartItemLotItem;
 				const budget =
 					budgetByAllocationId.get(demand.id) ?? fractionableQuantity(demand);
-				const available = budget.lessThan(packaged.quantity)
-					? budget
-					: packaged.quantity;
+				const remaining = packageAllocationRemaining(packaged, source.id);
+				const available = budget.lessThan(remaining) ? budget : remaining;
 				budgetByAllocationId.set(demand.id, budget.minus(available));
 
 				if (available.lte(zero())) continue;
@@ -842,6 +847,7 @@ export async function fractionate(
 						packageLotItemId,
 						cartItemLotItemId: allocation.allocationId,
 						quantity: allocation.quantity,
+						sourcePackageId: allocation.sourcePackageId,
 					})),
 				);
 
@@ -979,7 +985,7 @@ export async function promote(
 			throwConflict("Solo se puede promover un paquete de un unico cliente");
 		}
 
-		const fractionable = packageFractionableQuantity(liveLines);
+		const fractionable = packageFractionableQuantity(liveLines, record.id);
 		const liveLineQuantity = sumDecimals(
 			liveLines.map((line) => line.quantity),
 		);
@@ -990,6 +996,7 @@ export async function promote(
 		const before = await detailOf(tx, record.id, database);
 
 		await updatePackageLeg(tx, record.id, "outbound");
+		await attributePackageAllocationsToSource(tx, record.id);
 		await updatePackageStatuses(tx, [record.id], "readyForShipment");
 		if (input.name !== undefined) {
 			await updatePackageName(tx, record.id, input.name);
@@ -1100,6 +1107,14 @@ export async function split(
 			),
 		);
 
+		const sourcePackageIdByPackagedAllocationId = new Map(
+			lines.flatMap((line) =>
+				line.packageAllocations.map(
+					(allocation) => [allocation.id, allocation.sourcePackageId] as const,
+				),
+			),
+		);
+
 		const createdPackageIds: number[] = [];
 		const auditTargets: Array<Record<string, unknown>> = [];
 
@@ -1174,6 +1189,10 @@ export async function split(
 						packageLotItemId,
 						cartItemLotItemId: reduction.allocationId,
 						quantity: reduction.removedQuantity,
+						// A bundle of an outbound package came from the same source.
+						sourcePackageId: sourcePackageIdByPackagedAllocationId.get(
+							reduction.packagedAllocationId,
+						),
 					})),
 				);
 

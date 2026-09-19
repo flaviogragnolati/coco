@@ -34,6 +34,8 @@ export type FractionationGroup = {
 			allocationId: number;
 			cartItemId: number;
 			quantity: Prisma.Decimal;
+			/** Null when the row merges quantity taken from several sources. */
+			sourcePackageId: number | null;
 		}>;
 	}>;
 };
@@ -132,29 +134,37 @@ export function planFractionation(input: {
 	// The same customer can appear twice for one lot item — two `CartItemLotItem`
 	// rows through different operations — so the merge keys on (cart, lot item)
 	// and keeps both allocations rather than letting one overwrite the other.
-	const byCart = new Map<
-		number,
-		Map<
-			number,
-			Array<{
-				allocationId: number;
-				cartItemId: number;
-				quantity: Prisma.Decimal;
-			}>
-		>
-	>();
+	// One demand allocation taken from two sources is the opposite case: the
+	// outbound line holds one row per demand allocation, so the two merge and the
+	// row loses its single source.
+	type PlannedAllocations = FractionationGroup["lines"][number]["allocations"];
+	const byCart = new Map<number, Map<number, PlannedAllocations>>();
 
 	for (const entry of taken) {
-		const lines = byCart.get(entry.candidate.cartId) ?? new Map();
+		const lines =
+			byCart.get(entry.candidate.cartId) ??
+			new Map<number, PlannedAllocations>();
 		byCart.set(entry.candidate.cartId, lines);
 
 		const allocations = lines.get(entry.candidate.lotItemId) ?? [];
 		lines.set(entry.candidate.lotItemId, allocations);
 
+		const existing = allocations.find(
+			(allocation) => allocation.allocationId === entry.candidate.allocationId,
+		);
+		if (existing) {
+			existing.quantity = existing.quantity.plus(entry.quantity);
+			if (existing.sourcePackageId !== entry.candidate.sourcePackageId) {
+				existing.sourcePackageId = null;
+			}
+			continue;
+		}
+
 		allocations.push({
 			allocationId: entry.candidate.allocationId,
 			cartItemId: entry.candidate.cartItemId,
 			quantity: entry.quantity,
+			sourcePackageId: entry.candidate.sourcePackageId,
 		});
 	}
 

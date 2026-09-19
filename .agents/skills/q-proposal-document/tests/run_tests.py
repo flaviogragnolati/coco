@@ -15,7 +15,7 @@ sys.path.insert(0, str(SCRIPTS))
 sys.dont_write_bytecode = True
 
 from document_model import load_yaml, parse_mapping, schema_errors  # noqa: E402
-from font_resolution import resolve_free_font_family  # noqa: E402
+from font_resolution import resolve_generation_font  # noqa: E402
 
 SOURCE_SCHEMA = (
     SKILL_ROOT.parent / "q-proposal-design" / "references" /
@@ -23,9 +23,12 @@ SOURCE_SCHEMA = (
 )
 MAPPING_SCHEMA = SKILL_ROOT / "references" / "04-document-mapping.schema.yaml"
 FAILURES: list[str] = []
+CHECKS = 0
 
 
 def check(condition: bool, label: str) -> None:
+    global CHECKS
+    CHECKS += 1
     print(f"{'ok  ' if condition else 'FAIL'} {label}")
     if not condition:
         FAILURES.append(label)
@@ -57,7 +60,22 @@ def main() -> int:
 
     invalid = copy.deepcopy(source)
     invalid["proposal"]["proposal_id"] = ""
-    check(has_error(invalid, SOURCE_SCHEMA, "non-empty"), "minLength is enforced")
+    min_length_errors = "\n".join(schema_errors(invalid, SOURCE_SCHEMA))
+    check(
+        "too short" in min_length_errors or "non-empty" in min_length_errors,
+        "minLength is enforced",
+    )
+
+    valid_criterion_errors = schema_errors(source, SOURCE_SCHEMA)
+    check(
+        not valid_criterion_errors,
+        "an acceptance criterion with satisfies passes",
+    )
+    invalid_criterion = load_yaml(FIXTURES / "proposal-source-criterion.invalid.json")
+    check(
+        has_error(invalid_criterion, SOURCE_SCHEMA, "satisfies"),
+        "an acceptance criterion without satisfies fails",
+    )
 
     invalid = copy.deepcopy(source)
     invalid["downstream_interfaces"]["document"]["object_refs"] = ["OBJ-001", "OBJ-001"]
@@ -85,28 +103,31 @@ def main() -> int:
     except ValueError as exc:
         check("04-document-mapping.md" in str(exc), "a YAML mapping file is rejected")
 
-    font = resolve_free_font_family()
+    font = resolve_generation_font()
     check(
-        font["family"] in {"Liberation Sans", "DejaVu Sans"}
+        font["declared_family"] == "Aptos"
+        and font["declared_fallback"] == "Arial"
+        and font["generation_slot"] == "Arial"
+        and font["generation_resolved"] in {"Arial", "Liberation Sans", "DejaVu Sans"}
         and Path(font["regular_path"]).is_file()
         and Path(font["bold_path"]).is_file(),
-        "an installed free font family resolves with recorded paths",
+        "the Arial generation slot resolves with declared and runtime provenance",
     )
     with tempfile.TemporaryDirectory() as directory:
         missing = Path(directory) / "missing.ttf"
         try:
-            resolve_free_font_family((("Unavailable Free Sans", (missing,), (missing,)),))
-            check(False, "missing free fonts produce an honest capability gap")
+            resolve_generation_font((("Unavailable Sans", (missing,), (missing,)),))
+            check(False, "missing generation fonts produce an honest capability gap")
         except RuntimeError as exc:
             check(
-                "No supported free font" in str(exc),
-                "missing free fonts produce an honest capability gap",
+                "Arial -> Liberation Sans -> DejaVu Sans" in str(exc),
+                "missing generation fonts produce an honest capability gap",
             )
 
     if FAILURES:
         print(f"\nProposal Document tests: {len(FAILURES)} failed")
         return 1
-    print("\nProposal Document tests: 12 passed")
+    print(f"\nProposal Document tests: {CHECKS} passed")
     return 0
 
 

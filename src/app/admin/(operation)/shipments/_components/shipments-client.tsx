@@ -44,6 +44,7 @@ import { ShipmentDetailDialog } from "~/features/admin/crud/shipment/shipment-de
 import { ShipmentDispatchDialog } from "~/features/admin/crud/shipment/shipment-dispatch-dialog";
 import { ShipmentExceptionDialog } from "~/features/admin/crud/shipment/shipment-exception-dialog";
 import { ShipmentReceiveDialog } from "~/features/admin/crud/shipment/shipment-receive-dialog";
+import { ShipmentRecoverDialog } from "~/features/admin/crud/shipment/shipment-recover-dialog";
 import { ShipmentRetryDialog } from "~/features/admin/crud/shipment/shipment-retry-dialog";
 import { ShipmentTable } from "~/features/admin/crud/shipment/shipment-table";
 import type { CrudSortDirection } from "~/shared/common/admin-crud/crud.types";
@@ -226,6 +227,13 @@ export function ShipmentsClient({
 			"Envío marcado como fallido",
 			"No se pudo marcar el envío",
 			shipmentDisclosures.markFailed,
+		),
+	);
+	const recoverMutation = api.admin.shipment.recover.useMutation(
+		commandOptions(
+			"Envío recuperado",
+			"No se pudo recuperar el envío",
+			shipmentDisclosures.recover,
 		),
 	);
 	const deliverMutation = api.admin.shipment.deliver.useMutation(
@@ -593,6 +601,18 @@ export function ShipmentsClient({
 				open={openCommand === "markDelayed" || openCommand === "markFailed"}
 				shipment={detail}
 				target={openCommand === "markFailed" ? "failed" : "delayed"}
+			/>
+
+			<ShipmentRecoverDialog
+				isSubmitting={recoverMutation.isPending}
+				onOpenChange={(open) => {
+					if (!open) setOpenCommand(null);
+				}}
+				onSubmit={({ notes }) => {
+					if (detail) recoverMutation.mutate({ id: detail.id, notes });
+				}}
+				open={openCommand === "recover"}
+				shipment={detail}
 			/>
 
 			<ShipmentDeliverDialog

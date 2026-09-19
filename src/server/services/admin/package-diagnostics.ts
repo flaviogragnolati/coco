@@ -202,7 +202,7 @@ export function calculatePackageDiagnostics(
 		pkg.leg === "inbound" &&
 		pkg.status === "received" &&
 		isStale(pkg.updatedAt, options?.staleBefore) &&
-		packageFractionableQuantity(liveLines).greaterThan(0)
+		packageFractionableQuantity(liveLines, pkg.id).greaterThan(0)
 	) {
 		diagnostics.push({
 			code: "package.received.notFractionated",

@@ -1,37 +1,19 @@
-# Identidad visual para presentaciones de Ingeniería Quasar
+# Sistema de presentaciones de Ingeniería Quasar
 
-## Fuente canónica y denominación
+## Autoridad
 
-La empresa se denomina **Ingeniería Quasar**. La marca visible y los logotipos usan **Quasar**.
-
-No usar `Quasar Analytic` ni `Analytic`. El manual histórico puede consultarse para reconocer el origen del isotipo, la paleta y el patrón, pero no para reproducir la denominación anterior.
-
-Usar como recursos canónicos los logotipos actuales:
-
-- `assets/logos/horizontal-color.png`: isotipo azul y verde con palabra Quasar oscura; fondo claro.
-- `assets/logos/horizontal-bc.png`: isotipo azul y verde con palabra Quasar blanca; fondo oscuro.
-- `assets/logos/horizontal-negro.png`: versión monocromática negra.
-- `assets/logos/horizontal-blanco.png`: versión monocromática blanca.
-- `assets/logos/vertical-color.png`, `vertical-bc.png`, `vertical-negro.png` y `vertical-blanco.png`: equivalentes verticales.
+Leer [`identity.md`](identity.md) para denominación, logotipos, paleta y reglas de marca. Este archivo aplica esa identidad a decks; no redefine sus tokens ni adquiere autoridad sobre el contenido aprobado.
 
 ## Reglas no negociables
 
-- Insertar el logotipo desde el archivo oficial. No reconstruir ni reescribir la palabra Quasar.
-- No modificar proporciones, inclinación, relación entre isotipo y palabra, colores ni espaciado interno.
-- No aplicar sombras, contornos, gradientes, transparencias, biseles ni efectos.
-- No recortar el isotipo ni usar la diagonal como una letra independiente.
-- No ubicar el logotipo sobre una zona con bajo contraste o con ruido visual.
-- Mantener un área libre operacional mínima equivalente al `25 %` de la altura del logotipo alrededor de sus cuatro lados.
-- Usar el logotipo completo en portada y cierre. Usar sólo el isotipo como marca secundaria, separador, numeración o marca de agua.
-- Usar **Ingeniería Quasar** como texto institucional separado cuando sea necesario; no agregarlo dentro del logotipo.
+- Aplicar los archivos y restricciones de `identity.md` sin reconstruir, recortar ni alterar la marca.
 - En un canal Marp, entregar Markdown, theme CSS y assets locales editables y regenerables. En un canal PPTX nativo que exija edición de objetos, conservar textos, formas y gráficos editables dentro del archivo. El PPTX estándar renderizado por Marp puede usar diapositivas pre-renderizadas y no satisface un requisito de edición de objetos.
-- El logotipo permanece como imagen oficial y no se vectoriza por aproximación en ningún canal.
 
 ## Canal Marp
 
-- Usar `assets/marp/quasar.css` y `assets/marp/template-quasar.md` como punto de partida derivado de esta identidad; este documento sigue siendo la fuente de marca.
+- Usar `assets/marp/quasar.css` y `assets/marp/template-quasar.md` como punto de partida derivado; `identity.md` sigue siendo la fuente de marca.
 - Resolver el logotipo y todo asset a una ruta local dentro de los roots autorizados. No usar Google Fonts, `@import`, URLs remotas ni recursos protocol-relative.
-- Conservar relación `16:9`, azul como dominante, verde como acento y `Aptos, Arial, sans-serif` como stack portable. No agregar gradientes, sombras, glow, biseles ni scripts o HTML arbitrario.
+- Conservar relación `16:9`, los roles cromáticos de `identity.md` y la tipografía de [`document-system.md`](document-system.md). No agregar gradientes, sombras, glow, biseles ni scripts o HTML arbitrario.
 - Entregar el Markdown exacto, el CSS exacto, los assets requeridos, el comando reproducible de render y sus hashes/versiones. Una edición semántica del Markdown vuelve al owner de contenido; la editabilidad técnica no cambia su autoridad.
 - Mantener notas mediante comentarios Marpit en la fuente. Verificar y declarar su preservación por formato; no asumir que HTML, PDF, PPTX e imágenes conservan la misma superficie de notas.
 
@@ -44,33 +26,9 @@ Usar como recursos canónicos los logotipos actuales:
 - Evitar fotografías de fondo detrás de texto. Cuando se utilicen, aplicar recorte intencional y una superficie de contraste.
 - Usar el patrón repetido del isotipo sólo como textura de baja presencia en portada, separador o cierre; nunca detrás de tablas, gráficos o texto extenso.
 
-## Paleta y semántica del color
+## Semántica del color
 
-### Colores corporativos
-
-| Rol | Hex | Uso principal |
-| --- | --- | --- |
-| Azul Quasar | `27367E` | marca, títulos, fondos hero, estructura principal, serie destacada |
-| Verde Quasar | `69BC9B` | acento, progreso, conexión, segunda serie, énfasis positivo |
-| Tinta Quasar | `1D1D1B` | palabra del logotipo, títulos y texto principal sobre fondo claro |
-| Blanco | `FFFFFF` | fondo, texto sobre azul, espacio negativo |
-| Negro | `000000` | variante monocromática y reproducción técnica |
-
-### Tintas operacionales derivadas
-
-Estas tintas amplían el sistema para presentaciones; no reemplazan los colores corporativos.
-
-| Rol | Hex | Derivación y uso |
-| --- | --- | --- |
-| Azul medio | `737CAB` | azul aclarado; series secundarias o etapas intermedias |
-| Azul suave | `DFE1EC` | paneles, filas alternas y fondos de apoyo |
-| Azul mínimo | `EEEFF5` | fondo leve o separación de secciones |
-| Verde suave | `CAE8DC` | superficies de énfasis con texto oscuro |
-| Verde mínimo | `F3FAF7` | fondo de recomendación, cierre o estado positivo |
-| Gris medio | `6C6C6B` | texto secundario y series de contexto |
-| Gris claro | `DDDDDD` | divisores, bordes y grillas discretas |
-
-### Uso semántico
+Usar los tokens y alias definidos en `identity.md`.
 
 - Usar el azul como color dominante y el verde como acento.
 - Usar un único acento principal por diapositiva.
@@ -81,11 +39,7 @@ Estas tintas amplían el sistema para presentaciones; no reemplazan los colores 
 
 ## Tipografía y jerarquía
 
-- El logotipo debe conservar su arte oficial. El manual histórico identifica `Supera Gothic Extra Bold` en la marca; no reconstruir el logotipo con texto ni asumir que esa fuente está disponible.
-- Para presentaciones editables y portables usar `Aptos` como familia principal y `Arial` como fallback.
-- Usar `Aptos Display Semibold` o `Aptos Semibold` para títulos y cifras clave; `Aptos` regular para cuerpo.
-- Usar `Consolas` para código, rutas, identificadores, nombres de variables y salidas técnicas.
-- Usar `Cambria Math` exclusivamente para expresiones matemáticas.
+Aplicar el contrato tipográfico de [`document-system.md`](document-system.md); este sistema solo define la jerarquía del deck.
 - Mantener títulos afirmativos en una línea siempre que sea posible. Reescribir antes de reducir tipografía.
 - Usar como referencia: títulos `28–36 pt`, subtítulos `20–24 pt`, cuerpo `17–20 pt`, metadatos y fuentes `10–12 pt`.
 - No bajar de `15 pt` en contenido principal. Dividir o cambiar de patrón antes de comprimir.
@@ -206,7 +160,7 @@ Cada diapositiva debe mapearse al patrón más cercano. No usar todos los patron
 ## Datos, gráficos y recursos visuales
 
 - Mantener cifras, unidades, períodos, nombres, fechas y resultados exactamente como aparecen en fuentes aprobadas.
-- Identificar visiblemente datos `ESTIMADOS` o `ILUSTRATIVOS` cuando puedan confundirse con resultados reales.
+- Aplicar el marcado visible de estimaciones y material ilustrativo definido en [`editorial-standards.md`](editorial-standards.md).
 - No completar resultados por inferencia.
 - Mantener editables tablas, gráficos y diagramas cuando sea posible.
 - Preferir gráficos simples con una lectura principal; evitar 3D, dobles ejes innecesarios y leyendas que puedan reemplazarse con etiquetas directas.

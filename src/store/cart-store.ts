@@ -38,13 +38,18 @@ type CartStoreState = PersistedCartState & {
 	 * while the server still has no cart, which is the race it exists to close.
 	 */
 	bootstrapState: CartBootstrapState;
+	/** Server refusal shown while `bootstrapState` is `"blocked"`. */
+	bootstrapBlockedMessage: string | null;
 	hasHydrated: boolean;
 	clear: () => void;
 	detachServerCart: () => void;
 	removeItem: (productClientTermsId: number) => void;
 	replaceCart: (cart: CartSnapshot, userId?: string | null) => void;
 	resetForNewSession: () => void;
-	setBootstrapState: (bootstrapState: CartBootstrapState) => void;
+	setBootstrapState: (
+		bootstrapState: CartBootstrapState,
+		blockedMessage?: string,
+	) => void;
 	setHasHydrated: (hasHydrated: boolean) => void;
 	setItemQuantity: (productClientTermsId: number, quantity: string) => void;
 	upsertItem: (item: CartItem) => void;
@@ -78,6 +83,7 @@ export const useCartStore = create<CartStoreState>()(
 		(set) => ({
 			...emptyPersistedState,
 			bootstrapState: "idle",
+			bootstrapBlockedMessage: null,
 			hasHydrated: false,
 			// Keeps syncedUserId: the post-checkout cart empties but the user stays
 			// bound. resetForNewSession() is the one that drops the attribution.
@@ -113,7 +119,12 @@ export const useCartStore = create<CartStoreState>()(
 					syncedUserId: userId,
 				}),
 			resetForNewSession: () => set({ ...emptyPersistedState }),
-			setBootstrapState: (bootstrapState) => set({ bootstrapState }),
+			setBootstrapState: (bootstrapState, blockedMessage) =>
+				set({
+					bootstrapState,
+					bootstrapBlockedMessage:
+						bootstrapState === "blocked" ? (blockedMessage ?? null) : null,
+				}),
 			setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 			setItemQuantity: (productClientTermsId, quantity) =>
 				set((state) => {

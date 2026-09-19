@@ -14,6 +14,14 @@ from document_model import (
 )
 
 
+def identity_assets_dir(skill_root: Path) -> Path | None:
+    candidates = (
+        skill_root.parent / 'q-core-identity' / 'assets',
+        skill_root.parents[1] / 'core' / 'q-core-identity' / 'assets',
+    )
+    return next((path for path in candidates if path.is_dir()), None)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description='Generate a traceable Quasar commercial proposal DOCX.'
@@ -27,6 +35,17 @@ def main() -> None:
     args = parser.parse_args()
 
     skill_root = Path(__file__).resolve().parents[1]
+    identity_assets = identity_assets_dir(skill_root)
+    if identity_assets is None:
+        print(json.dumps({
+            'ok': False,
+            'errors': [
+                'q-core-identity is not installed: npx skills add '
+                'flaviogragnolati/ai-workflow --skill q-core-identity'
+            ],
+            'warnings': [],
+        }, ensure_ascii=False, indent=2))
+        raise SystemExit(1)
     source_schema = args.source_schema or (
         skill_root.parent / 'q-proposal-design' /
         'references' / '02-proposal-source.schema.yaml'
@@ -75,8 +94,12 @@ def main() -> None:
         raise SystemExit(1) from exc
 
     try:
-        font_resolution = build_document(
-            model, args.output.resolve(), skill_root / 'assets', args.keep_cover_png
+        font_profile = build_document(
+            model,
+            args.output.resolve(),
+            skill_root / 'assets',
+            identity_assets,
+            args.keep_cover_png,
         )
     except RuntimeError as exc:
         print(json.dumps({
@@ -88,7 +111,7 @@ def main() -> None:
         'output': str(args.output.resolve()),
         'source_version': model['metadata']['source_version'],
         'source_sha256': model['metadata']['source_hash'],
-        'font_resolution': font_resolution,
+        'font_profile': font_profile,
         'warnings': warnings,
     }, ensure_ascii=False, indent=2))
 

@@ -1,5 +1,14 @@
 # Implementation Plan: Checkout Step-by-Step Redesign
 
+> **Superseded in part by ADR 0010 (`docs/adr/0010-external-payments-are-admin-settled.md`).**
+> The mock payment gateway and the user-managed payment methods this plan restyles are
+> gone: `createPaymentMethod`/`updatePaymentMethod` no longer exist, the "Pago" step offers
+> only Mercado Pago and "Pago externo", and there is no mock result panel or mock
+> rejection to retry. A rejected payment is now tested with Mercado Pago sandbox or the
+> admin reject action in `/admin/payments`. The stepper, summary and step layout below
+> still describe the shipped UI; read every "mock" and payment-method CRUD reference as
+> historical.
+
 ## 1. Objective & outcome
 
 - **Done means:** `/checkout` becomes a modern, ecommerce-standard **4-step** flow —

@@ -6,7 +6,24 @@ from typing import Iterable
 
 FontCandidate = tuple[str, tuple[Path, ...], tuple[Path, ...]]
 
-FREE_FONT_CANDIDATES: tuple[FontCandidate, ...] = (
+DECLARED_FAMILY = "Aptos"
+DECLARED_FALLBACK = "Arial"
+GENERATION_SLOT = "Arial"
+
+GENERATION_CANDIDATES: tuple[FontCandidate, ...] = (
+    (
+        "Arial",
+        (
+            Path("/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"),
+            Path("/usr/share/fonts/truetype/msttcorefonts/arial.ttf"),
+            Path("C:/Windows/Fonts/arial.ttf"),
+        ),
+        (
+            Path("/usr/share/fonts/truetype/msttcorefonts/Arial_Bold.ttf"),
+            Path("/usr/share/fonts/truetype/msttcorefonts/arialbd.ttf"),
+            Path("C:/Windows/Fonts/arialbd.ttf"),
+        ),
+    ),
     (
         "Liberation Sans",
         (
@@ -34,19 +51,24 @@ FREE_FONT_CANDIDATES: tuple[FontCandidate, ...] = (
 )
 
 
-def resolve_free_font_family(
-    candidates: Iterable[FontCandidate] = FREE_FONT_CANDIDATES,
+def resolve_generation_font(
+    candidates: Iterable[FontCandidate] | None = None,
 ) -> dict[str, str]:
+    if candidates is None:
+        candidates = GENERATION_CANDIDATES
     for family, regular_candidates, bold_candidates in candidates:
         regular = next((path for path in regular_candidates if path.is_file()), None)
         bold = next((path for path in bold_candidates if path.is_file()), None)
         if regular and bold:
             return {
-                "family": family,
+                "declared_family": DECLARED_FAMILY,
+                "declared_fallback": DECLARED_FALLBACK,
+                "generation_slot": GENERATION_SLOT,
+                "generation_resolved": family,
                 "regular_path": str(regular.resolve()),
                 "bold_path": str(bold.resolve()),
             }
     raise RuntimeError(
-        "No supported free font is available for render QA; install Liberation Sans "
-        "or DejaVu Sans, then rerun without substituting a proprietary font"
+        "No generation font is available for the Arial -> Liberation Sans -> "
+        "DejaVu Sans raster chain; install one regular and bold pair, then rerun"
     )

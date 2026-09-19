@@ -68,9 +68,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Persistencia local + merge del carrito",
 		steps:
-			"1) Sin sesión, agregar 2 productos desde `/products`.\n2) Loguearse.\n3) Revisar `/cart`.",
+			"1) Sin sesión, agregar 2 productos desde `/products`.\n2) Loguearse.\n3) Revisar `/cart`.\n4) Variante: repetir con un usuario que ya tenga un pago en curso (un pedido con pago externo pendiente y comprobante declarado, o un checkout de Mercado Pago iniciado). Revisar `/cart` y después intentar `/checkout`.",
 		expectedResult:
-			'Los items del invitado se conservan y se suman al carrito del servidor del usuario. Si un producto dejó de estar disponible, aparece el toast "Quitamos un producto que ya no esta disponible."',
+			'Los items del invitado se conservan y se suman al carrito del servidor del usuario. Si un producto dejó de estar disponible, aparece el toast "Quitamos un producto que ya no esta disponible."\nVariante con pago en curso: los items del invitado NO se suman. `/cart` muestra la alerta "Productos pendientes de agregar" con el motivo del servidor, los productos siguen visibles y "Ir a pagar" queda deshabilitado con la explicación debajo. `/checkout` muestra "No se pudo iniciar checkout" con el mismo motivo. Cuando el pago se resuelve, recargar la página suma los productos.',
 		isRegressionPath: false,
 	},
 	{
@@ -175,9 +175,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "`checkout.start` + stepper",
 		steps:
-			'Precondiciones: sesión de Cliente activa y carrito editable con al menos un producto vigente.\n1) En `/cart`, anotar el código del carrito y hacer click en "Ir a pagar".\n2) Esperar la carga de `/checkout` y verificar que el paso activo inicial sea "Pedido".\n3) Sin completar dirección ni pago, intentar abrir "Envío", "Pago" y "Confirmar" desde el stepper.\n4) En otra sesión Admin, abrir `/admin/carts`, buscar el código anotado y revisar su estado.',
+			'Precondiciones: sesión de Cliente con una cuenta de Google SIN direcciones guardadas (por ejemplo, una cuenta nueva: la app no permite borrar direcciones) y carrito editable con al menos un producto vigente. Con una dirección ya guardada, el checkout la preselecciona y "Pago" aparece habilitado desde el inicio: eso es correcto y no sirve para este caso.\n1) En `/cart`, anotar el código del carrito y hacer click en "Ir a pagar".\n2) Esperar la carga de `/checkout` y verificar que el paso activo inicial sea "Pedido".\n3) Sin cargar dirección, hacer click en "Envío", "Pago" y "Confirmar" en la barra de pasos de arriba.\n4) En otra sesión Admin, abrir `/admin/carts`, buscar el código anotado y revisar su estado.',
 		expectedResult:
-			'El checkout muestra "Pedido → Envío → Pago → Confirmar" y comienza en "Pedido".\nLos pasos que todavía no cumplen sus precondiciones están deshabilitados y explican "Completá los pasos anteriores".\nEn `/admin/carts`, el mismo carrito figura "En checkout"; todavía no existe una orden ni un intento de pago.',
+			'El checkout muestra la barra "Pedido → Envío → Pago → Confirmar" y comienza en "Pedido".\n"Envío" se puede abrir (el pedido ya tiene productos). "Pago" y "Confirmar" están deshabilitados y al pasar el mouse muestran "Completá los pasos anteriores".\nEn `/admin/carts`, el mismo carrito figura "En checkout"; todavía no existe una orden ni un intento de pago.',
 		isRegressionPath: true,
 	},
 	{
@@ -204,18 +204,6 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		isRegressionPath: true,
 	},
 	{
-		code: 15,
-		section: SECTION_C,
-		title: "Alta de método de pago con validación de datos sensibles",
-		actor: "Cliente",
-		feature: "Payment methods + `safePaymentTextSchema`",
-		steps:
-			'1) En "Pago", click "Nuevo".\n2) En "Referencia visible" pegar 16 dígitos corridos y guardar.\n3) Corregir a una referencia corta ("Terminada en 1234") y guardar.',
-		expectedResult:
-			'El primer intento se rechaza con "No ingreses números completos de tarjeta ni datos sensibles"; el segundo guarda con toast "Método de pago guardado" y el método queda "Seleccionado".',
-		isRegressionPath: true,
-	},
-	{
 		code: 16,
 		section: SECTION_C,
 		title: "Términos obligatorios para confirmar",
@@ -230,13 +218,13 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 	{
 		code: 18,
 		section: SECTION_C,
-		title: "Pago mock rechazado",
+		title: "Pago externo rechazado por admin",
 		actor: "Cliente",
-		feature: "`confirmAndPay` camino de falla",
+		feature: "Rechazo administrativo de un pago externo (ADR 0010)",
 		steps:
-			'1) Crear un método de pago cuya referencia incluya "rechazo".\n2) Confirmar el pedido.',
+			'Precondiciones: "Pago externo" habilitado en `/admin/payments` → Config; sesiones Cliente y Admin abiertas.\n1) Cliente: en `/checkout` → "Pago", elegir "Pago externo", aceptar los términos y hacer click en "Confirmar y pagar". Anotar el código del pedido que se muestra.\n2) Admin: en `/admin/payments`, buscar el intento del pedido (estado "Pendiente", proveedor externo) y rechazarlo con un motivo.\n3) Cliente: abrir `/my-orders/[id]` del pedido y después `/cart`.',
 		expectedResult:
-			'Panel "No se pudo confirmar el pago" con alerta "Error del pago" ("El proveedor mock rechazó el pago."), orden en "Fallido", el carrito NO se vacía y "Intentar de nuevo" permite reintentar (nueva clave de idempotencia).',
+			'El intento pasa a "Rechazado" y el pedido a "Fallido"; no se crea demanda para fulfillment.\nEl carrito vuelve a ser editable: se pueden cambiar cantidades y volver a "Ir a pagar", que crea un intento nuevo.\nYa no existe el pago "mock" ni el alta manual de métodos de pago: un rechazo se prueba así o con Mercado Pago sandbox.',
 		isRegressionPath: false,
 	},
 	{
@@ -258,9 +246,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Admin",
 		feature: "Revalidación de términos",
 		steps:
-			'Precondiciones: dos sesiones abiertas (Cliente y Admin), un producto activo con términos vigentes en el carrito, y el Cliente detenido en "Confirmar" sin pagar.\n1) En la sesión Admin, abrir `/admin/products`, editar ese producto, desactivar "Producto activo" y guardar.\n2) Volver a la sesión Cliente sin refrescar y hacer click en "Confirmar y pagar".\n3) Después del error, usar "Volver al carrito" para salir del checkout y revisar el item inválido.',
+			'Precondiciones: dos sesiones abiertas en navegadores distintos (Cliente y Admin). El Cliente tiene en el carrito un producto activo, anotado por nombre.\n1) Cliente: ir a `/checkout` y avanzar por "Pedido", "Envío" y "Pago" hasta el paso "Confirmar". Aceptar los términos y NO hacer click en "Confirmar y pagar" todavía.\n2) Admin: abrir `/admin/products`, buscar ese producto por nombre, abrir "Editar", desactivar el switch "Producto activo" y hacer click en "Guardar". Comprobar que la fila queda como inactiva.\n3) Cliente: sin refrescar la página, hacer click en "Confirmar y pagar". Leer el mensaje que aparece.\n4) Cliente: hacer click en "Volver al carrito". En `/cart`, mirar la línea del producto desactivado.\n5) Admin: en `/admin/carts`, buscar el carrito del Cliente y abrir su detalle.',
 		expectedResult:
-			'La confirmación se rechaza con "Uno de los productos del carrito ya no está disponible. Revisá el carrito antes de continuar."\nNo se crea una orden ni un intento de pago nuevo.\nAl volver al carrito, este queda editable para quitar o resincronizar el producto inválido.',
+			'Paso 3: la confirmación se rechaza con "Uno de los productos del carrito ya no está disponible. Revisá el carrito antes de continuar."\nPaso 4: el carrito queda editable y permite quitar el producto inválido.\nPaso 5: el carrito no tiene un pedido ni un intento de pago nuevos por este intento.',
 		isRegressionPath: false,
 	},
 	{
@@ -389,9 +377,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Admin",
 		feature: "Timeline de 6 etapas del cliente",
 		steps:
-			'Precondiciones: pedido pagado con al menos un item; sesiones Cliente y Admin abiertas; conservar el id del pedido.\n1) Cliente: abrir `/my-orders/[id]` y registrar el estado inicial "Pedido confirmado".\n2) Admin: crear, revisar y ejecutar una operación en `/admin/operations`; Cliente refresca el detalle.\n3) Admin: solicitar y confirmar la orden en `/admin/supplier-orders`; Cliente refresca.\n4) Admin: registrar el despacho, despachar y recibir el envío interno desde `/admin/supplier-orders` y `/admin/shipments`.\n5) Admin: fraccionar o promover el paquete en `/admin/packages`; Cliente refresca.\n6) Admin: crear/despachar el envío al cliente y confirmar entrega desde `/admin/shipments`; Cliente refresca una última vez.',
+			'Precondiciones: un pedido con pago acreditado (estado "En procesamiento") con un solo producto, del que se conoce el código de pedido y el de carrito. Sesiones Cliente (dueño del pedido) y Admin abiertas. Después de cada paso Admin, el Cliente refresca `/my-orders/[id]` y anota qué etapa está resaltada.\n1) Cliente: abrir `/my-orders/[id]`. Mirar el bloque "Seguimiento del pedido".\n2) Admin: en `/admin/operations`, "Nueva operación" → "Revisar" → "Ejecutar", con un rango de fechas que incluya el pago del pedido.\n3) Admin: en `/admin/supplier-orders`, abrir la orden de proveedor que creó la operación, hacer click en "Solicitar" y después en "Confirmar" sin cambiar cantidades.\n4) Admin: en la misma orden, "Registrar despacho". En `/admin/shipments`, abrir el envío interno que quedó "Listo para despacho", hacer click en "Despachar" → "Confirmar salida", y después en "Recibir" con las cantidades completas.\n5) Admin: en `/admin/packages`, abrir el paquete de entrada "Recibido" y hacer click en "Fraccionar" → confirmar.\n6) Admin: en `/admin/shipments`, "Nuevo envío al cliente" (entrega a domicilio) con el paquete de salida del pedido, "Despachar" y después "Entregar".',
 		expectedResult:
-			"El seguimiento conserva seis etapas en orden: Pedido confirmado → Preparación → Proveedor → Empaque → Envío → Entrega.\nCada hito administrativo avanza la etapa correspondiente sin retrocesos; la actual queda destacada, las futuras pendientes y las completadas muestran timestamp.\nLa entrega completa la última etapa. Los cambios pueden requerir un refresco breve por la proyección asíncrona.",
+			'Paso 1: la etapa resaltada es "Pedido confirmado".\nPaso 2: "Preparación". Paso 3: "Proveedor". Paso 4: "Envío" (el traslado interno ya cuenta como envío). Paso 5: sigue "Envío", nunca retrocede a "Empaque". Paso 6: "Entrega", y todas las etapas anteriores quedan completas con fecha.\nNinguna etapa retrocede entre refrescos. Un cambio puede tardar unos segundos en verse porque la proyección es asíncrona.',
 		isRegressionPath: true,
 	},
 	{
@@ -401,9 +389,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Roll-up del recorrido",
 		steps:
-			'Precondiciones: pedido pagado con dos productos distintos y ambos items en "Pedido confirmado".\n1) Abrir `/my-orders/[id]` y revisar la presentación inicial del seguimiento.\n2) En `/admin/operations`, crear un borrador que incluya ambos items; durante "Revisar", omitir uno de ellos y ejecutar la operación solo con el otro.\n3) Volver al detalle del Cliente y refrescar.\n4) En una operación posterior, incorporar el item omitido hasta que ambos vuelvan a la misma etapa y refrescar otra vez.',
+			'Precondiciones: un pedido con pago acreditado con DOS productos distintos (por ejemplo, tomate y manzana), ninguno todavía incluido en una operación. Sesiones Cliente (dueño del pedido) y Admin abiertas.\n1) Cliente: abrir `/my-orders/[id]` y mirar el bloque "Seguimiento del pedido".\n2) Admin: en `/admin/operations`, "Nueva operación" → "Revisar". En la lista de demanda, marcar el checkbox "Omitir" de la fila de uno de los dos productos del pedido y hacer click en "Ejecutar".\n3) Cliente: refrescar `/my-orders/[id]` y mirar de nuevo el bloque.\n4) Admin: crear otra operación ("Nueva operación" → "Revisar" → "Ejecutar") que incluya el producto omitido.\n5) Cliente: refrescar `/my-orders/[id]` por última vez.',
 		expectedResult:
-			'Con ambos items en la misma etapa se muestra un único stepper y "Todos los productos avanzan juntos por este recorrido."\nCuando solo uno entra en operación, se muestran recorridos separados por producto con su etapa y badge propios.\nCuando las etapas convergen nuevamente, la vista vuelve a unificarse sin duplicar el recorrido.',
+			'Paso 1: un único recorrido con el texto "Todos los productos avanzan juntos por este recorrido."\nPaso 3: el bloque se divide en un recorrido por producto, cada uno con su nombre y el badge de su etapa ("Preparación" en uno, "Pedido confirmado" en el otro).\nPaso 5: con ambos productos en "Preparación", el bloque vuelve a ser un único recorrido, sin duplicados.',
 		isRegressionPath: false,
 	},
 	{
@@ -415,7 +403,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		steps:
 			"1) Admin genera: un recorte de proveedor (rollover), una demora de envío (incidencia) y una llegada a punto de retiro.\n2) Cliente revisa el detalle en cada caso.",
 		expectedResult:
-			'Aparecen avisos legibles: reprogramación ("Reprogramado...") con motivo, "Incidencia de fulfillment" (y su resolución), y "Disponible para retirar" — este último como aviso, sin marcar la etapa Entrega.',
+			'Aparecen avisos legibles: "Reprogramado..." con el motivo que cargó el admin debajo, "Incidencia de fulfillment" (una incidencia en preparación, transporte o entrega) también con su motivo, luego "Incidencia resuelta" sin motivo, y "Disponible para retirar": este último como aviso, sin marcar la etapa Entrega. Para comprobar esto último, usar un item que no haya tenido otra entrega antes.',
 		isRegressionPath: false,
 	},
 	{
@@ -523,7 +511,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		steps:
 			'1) En la revisión con demanda elegible, click "Ejecutar".\n2) Revisar `/admin/supplier-orders`, `/admin/lots` y `/admin/roll-overs`.',
 		expectedResult:
-			'Toast "Operación ejecutada". Se crean órdenes de proveedor "Pendiente", lotes y asignaciones; la demanda sin proveedor / bajo MOQ queda en rollover pre-asignación con motivo explícito. Los items de los clientes pasan a "En operación" y su journey a "Preparación".',
+			'Toast "Operación ejecutada". Se crean órdenes de proveedor "Pendiente", lotes y asignaciones; la demanda sin proveedor, bajo MOQ o fuera de step queda en rollover previo a la asignación con motivo explícito.\nEn `/admin/tracking`, cada item asignado termina en "Asignado a proveedor" ("En operación" es solo un paso intermedio del registro) y su journey de cliente pasa a "Preparación". Los items que fueron a rollover quedan "Reprogramado" y su journey muestra el aviso de reprogramación.',
 		isRegressionPath: true,
 	},
 	{
@@ -665,9 +653,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin",
 		feature: "`package.fractionate`",
 		steps:
-			'1) `/admin/packages`: sobre el paquete de entrada "Recibido", acción "Fraccionar".\n2) Revisar las cantidades propuestas por cliente y confirmar.\n3) Intentar fraccionar de nuevo el mismo paquete agotado.',
+			'1) `/admin/packages`: sobre el paquete de entrada "Recibido", acción "Fraccionar".\n2) Revisar las cantidades propuestas por carrito y confirmar.\n3) Reabrir el mismo paquete de entrada.',
 		expectedResult:
-			'Se crea un paquete de salida "Listo para envío" por cliente; el paquete de entrada queda "Recibido" como historia. Toast "Fraccionado en {n} paquete(s) de salida". Agotado: "No queda cantidad recibida sin fraccionar." Los items pasan a "Empaquetado" y el journey a "Empaque".',
+			'Se crea un paquete de salida "Listo para envío" por carrito (un mismo cliente con dos carritos recibe dos paquetes); el paquete de entrada queda "Recibido" como historia. Toast "Fraccionado en {n} paquete(s) de salida".\nAl reabrirlo, el detalle indica "No queda cantidad recibida sin fraccionar." y "Fraccionar" queda deshabilitado, aunque otro paquete de entrada cubra la misma demanda.\nLos items pasan a "Empaquetado". El journey del cliente muestra "Empaque", salvo que el item ya haya pasado por un envío interno: en ese caso queda en "Envío", porque el journey nunca retrocede.',
 		isRegressionPath: true,
 	},
 	{
@@ -749,9 +737,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin + Cliente",
 		feature: "`markDelayed` / `recover`",
 		steps:
-			'1) Sobre un envío "En tránsito", "Marcar demorado" con motivo.\n2) Cliente revisa el journey.\n3) Intentar "Recuperar" un paquete del envío demorado.\n4) Recuperar primero el envío y después el paquete.',
+			'1) Sobre un envío "En tránsito", "Marcar demorado" con motivo.\n2) Cliente revisa el journey.\n3) En `/admin/packages`, abrir un paquete de ese envío y mirar la acción "Recuperar".\n4) En `/admin/shipments`, abrir el envío demorado y hacer click en "Recuperar" (el diálogo indica a qué estado vuelve).\n5) Volver al paquete y al journey del cliente.',
 		expectedResult:
-			'El cliente ve "Incidencia de fulfillment" con el motivo. Recuperar el paquete con el envío demorado se rechaza ("Primero hay que recuperar el envio"). Recuperado todo, la incidencia figura resuelta y el estado vuelve al punto previo (derivado del registro, no elegido).',
+			'Paso 2: el cliente ve "Incidencia de fulfillment" (incidencia de transporte) con el motivo cargado.\nPaso 3: "Recuperar" del paquete está deshabilitado con el motivo "Primero hay que recuperar el envio".\nPaso 4: el envío vuelve a "En transito" (o a "Listo para despacho" si se había demorado antes de salir) y sus paquetes demorados lo acompañan; el destino lo decide el sistema, no el operador.\nPaso 5: el paquete ya no está demorado y no necesita recuperarse aparte; el cliente ve "Incidencia resuelta".',
 		isRegressionPath: false,
 	},
 	{
@@ -821,9 +809,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin + Cliente",
 		feature: "`UserOrderClosure` derivado",
 		steps:
-			"1) Llevar un pedido a: todos los items entregados.\n2) Otro pedido: todos los items cancelados (rollover resuelto sin entrega).\n3) Otro: un item entregado y un rollover abierto.",
+			'Caso A (fixture del seed; se consume al ejecutarlo y `pnpm db:seed` lo restaura): en `/admin/packages`, abrir "PKG-SEED-OUT-PICKUP-B" (pedido ORD-SEED-PICKUP, en punto de retiro) y hacer click en "Confirmar entrega". Después, en `/admin/carts`, abrir el carrito CART-SEED-PICKUP y mirar el estado de su pedido.\nCaso B: un pedido cuyos items quedan todos cancelados (rollover resuelto sin entrega).\nCaso C: un pedido con un item entregado y otro con un rollover abierto.',
 		expectedResult:
-			'Caso 1: la orden pasa sola a "Completado". Caso 2: pasa a "Cancelado". Caso 3: la orden sigue "En procesamiento" — un rollover abierto la mantiene abierta. El cierre nunca pisa "Reembolsado"/"Contracargo"/"Fallido" y no existe cierre manual.',
+			'Caso A: ORD-SEED-PICKUP pasa solo de "En procesamiento" a "Completado". Un pedido con items entregados y otros cancelados también termina "Completado".\nCaso B: pasa a "Cancelado".\nCaso C: sigue "En procesamiento": un rollover abierto lo mantiene abierto.\nEl cierre nunca pisa "Reembolsado", "Contracargo" ni "Fallido", no existe cierre manual y no depende de un plazo. Cancelar el pedido no cancela un pago externo pendiente (ADR 0005).',
 		isRegressionPath: true,
 	},
 ];
@@ -842,4 +830,4 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
  * `implementation-plan-qa-coverage-expansion.md` extends this list with 15 and 18
  * when it runs; it must add to the list, not reimplement the mechanism.
  */
-export const retiredQaTicketCodes: number[] = [17];
+export const retiredQaTicketCodes: number[] = [15, 17];

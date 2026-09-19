@@ -1,0 +1,99 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-grill-feature"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-open-tickets-remediation.md"
+      lifecycle: "Working"
+      source_item_id: "qa_ticket:#2,#3,#12,#15,#16,#18,#20,#21,#22,#23,#24,#25,#26,#30,#31,#32,#33,#36,#37,#38,#42,#45,#48,#54,#61,#67,#69"
+  derived_outputs: []
+  updated_outputs: []
+  references_added: []
+  traceability_delta:
+    - {item: "qa_ticket#30", refined_by: "B1 / Task 1.1"}
+    - {item: "qa_ticket#33", refined_by: "B2 / Task 1.2"}
+    - {item: "qa_ticket#16", refined_by: "B3 / Task 1.3"}
+    - {item: "qa_ticket#3", refined_by: "B9 / Task 1.4"}
+    - {item: "qa_ticket#48", refined_by: "B4 / Task 2.1, B2"}
+    - {item: "qa_ticket#45", refined_by: "B7 / Task 2.2"}
+    - {item: "qa_ticket#61", refined_by: "B6 / Task 2.3, B2"}
+    - {item: "qa_ticket#54", refined_by: "B8 / Task 2.4"}
+    - {item: "qa_ticket#69", refined_by: "B5 / Task 3.1"}
+    - {item: "qa_ticket#12,#67", refined_by: "Task 3.3"}
+    - {item: "qa_ticket#15,#18,#20,#22,#25,#31,#32,#36,#42", refined_by: "Task 4.2"}
+  decisions_added_or_updated:
+    - "Rerun of a completed operation forces includeRollOver=true (user, 2026-09-18)"
+    - "Add shipment.recover command delayed -> inTransit (user, 2026-09-18)"
+    - "Interim versioned checkout terms constant; ADR 0009 deferred (user, 2026-09-18)"
+    - "Outbound PackageAllocation records sourcePackageId (user, 2026-09-18)"
+  risks_added_or_updated:
+    - "B4 root cause unconfirmed until reproducing test"
+    - "B8 requires additive migration on package_allocation"
+  stale_artifacts:
+    - path: "docs/plans/checkout-redesign.md"
+      proposed_change: "Remove mock gateway and user-managed payment methods (ADR 0010)"
+    - path: "docs/architecture/features/fulfillment-lifecycle-actions.md"
+      proposed_change: "includeRollOver forced on completed rerun; add shipment.recover"
+    - path: "docs/qa/qa-ciclo-de-vida.md"
+      proposed_change: "Rewrite/retire tickets per Task 4.2"
+  blockers: []
+  warnings:
+    - "Tickets #21,#23,#24,#26,#37 blocked on MERCADOPAGO_ACCESS_TOKEN in QA environment"
+    - "Task 1.3 ships placeholder terms; replace before production"
+  required_user_actions:
+    - "Set MERCADOPAGO_ACCESS_TOKEN and MERCADOPAGO_WEBHOOK_SECRET in Vercel and redeploy"
+    - "Update MP provider URLs to https://coco-kappa-ashy.vercel.app and register the webhook in the MP panel"
+  next_recommended_action: "q-code-implement docs/plans/qa-open-tickets-remediation.md, Phase 1"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true
+---
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-open-tickets-remediation.md"
+      change: "§17 execution record added; §13 risk row for B8 merged-source rows"
+  references_added: []
+  traceability_delta:
+    - {item: "qa_ticket#30", implemented_by: "B1"}
+    - {item: "qa_ticket#33,#61", implemented_by: "B2, B6"}
+    - {item: "qa_ticket#3", implemented_by: "B9"}
+    - {item: "qa_ticket#48", implemented_by: "B4"}
+    - {item: "qa_ticket#45", implemented_by: "B7"}
+    - {item: "qa_ticket#54", implemented_by: "B8"}
+    - {item: "qa_ticket#69", implemented_by: "B5 (unverified against a database)"}
+    - {item: "qa_ticket#15", implemented_by: "retired"}
+  decisions_added_or_updated:
+    - "Mercado Pago part (Task 4.1, tickets #22 #25 #36) deferred by the user (2026-09-18)"
+    - "Customer notice reason is an event-type allow-list, narrower than the plan's notice-kind rule, to keep operator notes private"
+    - "shipment.recover target read from the latest shipment.markDelayed audit before.status; default inTransit"
+    - "Shipment exception/resolution event keys carry the occurrence after the first"
+    - "Promoted packages count as received evidence via sourcePackageId = own id"
+    - "#12 fixture replaced by a precondition (Google-only login); #67 case A uses ORD-SEED-PICKUP"
+  risks_added_or_updated:
+    - "B8: merged-source outbound rows (null source) keep the old over-offer display; conservation holds"
+  stale_artifacts: []
+  blockers:
+    - "DB-bound acceptance not run: migration apply, db:seed, db:seed-verify, fulfillment:e2e, qa:seed"
+  warnings:
+    - "Mini review: q-review-code findings fixed (standards fail -> resolved; spec pass with findings -> resolved); q-review-comments pass with findings, applied"
+    - "Migration must be applied before deploying the code"
+    - "Seeded transactions still use provider mock"
+  required_user_actions:
+    - "Apply migration 20260918000000_package_allocation_source_package"
+    - "Run db:seed, db:seed-verify and fulfillment:e2e on a disposable Neon branch"
+    - "Run qa:seed after deploy and reopen the affected tickets"
+  next_recommended_action: "Commit/PR the change, then the DB verification on a disposable branch"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true

@@ -2,7 +2,7 @@
 
 ## 1. Visual authority
 
-Use this guide as a closed visual system. Use only the Quasar logos in `assets/`; never use a logo or contact associated with “Quasar Analytic”. Preserve the generated cover, compact header, footer band, and visible provenance reference.
+Apply the identity and asset rules owned by `q-core-identity`; never use a logo or contact associated with “Quasar Analytic”. Preserve the generated cover, compact header, footer band, and visible provenance reference.
 
 ## 2. Palette
 
@@ -23,24 +23,19 @@ Derive chart colors from navy and mint only when a chart is justified and contra
 
 ## 3. Typography
 
-- Prefer Liberation Sans for the full document, including cover, brand titles, body, tables, notes, headers, and footers.
-- Fall back to DejaVu Sans only when Liberation Sans is unavailable.
-- Use the generic `sans-serif` family only in formats that support an explicit fallback chain; DOCX and raster generation must resolve an installed free font before generation.
-- Do not embed or silently substitute a proprietary font. Record the resolved family and file paths in generation provenance; if neither free family is available, block render QA with the exact capability gap.
-- Use one font family per generated package.
-- Do not condense or stretch type.
+Use the declaration, raster-resolution, and provenance contract in `q-core-identity` `references/document-system.md`. Do not restate or locally override its chain.
 
 | Role | Font | Size | Color |
 |---|---|---:|---|
-| Cover title | resolved free family, bold | 24–28 pt equivalent | navy |
-| Cover client | resolved free family, bold | 26–30 pt equivalent | mint |
-| Part title | resolved free family, bold | 21 pt | navy |
-| Heading 1 | resolved free family, bold | 15.5 pt | navy |
-| Heading 2 | resolved free family, bold | 11.5 pt | navy |
-| Heading 3 | resolved free family, bold | 10 pt | text |
-| Body | resolved free family | 9.5 pt | text |
-| Table | resolved free family | 8.5 pt | text |
-| Note/footer | resolved free family | 7–8 pt | muted |
+| Cover title | generation slot, bold | 24–28 pt equivalent | navy |
+| Cover client | generation slot, bold | 26–30 pt equivalent | mint |
+| Part title | declared family, bold | 21 pt | navy |
+| Heading 1 | declared family, bold | 15.5 pt | navy |
+| Heading 2 | declared family, bold | 11.5 pt | navy |
+| Heading 3 | declared family, bold | 10 pt | text |
+| Body | declared family | 9.5 pt | text |
+| Table | declared family | 8.5 pt | text |
+| Note/footer | declared family | 7–8 pt | muted |
 
 ## 4. Page system
 
@@ -76,7 +71,7 @@ Use the canonical document language:
 - Spanish: formal, direct Rioplatense business Spanish.
 - English: neutral, direct professional English.
 
-Define acronyms on first use, prioritize outcomes and verifiable boundaries, and distinguish estimates from commitments. Do not translate approved canonical content inside this skill.
+Define acronyms on first use, prioritize outcomes and verifiable boundaries, and apply the estimate and illustrative-material labels in `q-core-identity` `references/editorial-standards.md`. Do not translate approved canonical content inside this skill.
 
 ## 7. Consistency
 

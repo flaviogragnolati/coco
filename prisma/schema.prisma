@@ -867,13 +867,20 @@ model PackageAllocation {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @default(now()) @updatedAt
 
+  // Outbound rows only: the inbound package this quantity was taken from, so each
+  // inbound package's remaining budget is its own. Null on inbound rows, on rows
+  // written before it was recorded, and when one row merges several sources.
+  sourcePackageId Int?
+
   cartItemLotItem CartItemLotItem         @relation(fields: [cartItemLotItemId], references: [id], onDelete: Cascade)
   packageLotItem  PackageLotItem          @relation(fields: [packageLotItemId], references: [id], onDelete: Cascade)
+  sourcePackage   Package?                @relation("PackageAllocationSource", fields: [sourcePackageId], references: [id], onDelete: SetNull)
   trackingEvents  CartItemTrackingEvent[]
 
   @@unique([cartItemLotItemId, packageLotItemId])
   @@index([cartItemLotItemId])
   @@index([packageLotItemId])
+  @@index([sourcePackageId])
   @@map("package_allocation")
 }
 
@@ -974,17 +981,19 @@ enum SupplierTransactionStatus {
 }
 
 model Package {
-  id              Int                     @id @default(autoincrement())
-  name            String                  @db.Text
-  trackingCode    String?                 @db.Text
-  status          PackageStatus           @default(pending)
-  leg             PackageLeg              @default(inbound)
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @default(now()) @updatedAt
-  packageLotItems PackageLotItem[]
-  shipment        Shipment?               @relation(fields: [shipmentId], references: [id])
-  shipmentId      Int?
-  trackingEvents  CartItemTrackingEvent[]
+  id                 Int                     @id @default(autoincrement())
+  name               String                  @db.Text
+  trackingCode       String?                 @db.Text
+  status             PackageStatus           @default(pending)
+  leg                PackageLeg              @default(inbound)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @default(now()) @updatedAt
+  packageLotItems    PackageLotItem[]
+  shipment           Shipment?               @relation(fields: [shipmentId], references: [id])
+  shipmentId         Int?
+  trackingEvents     CartItemTrackingEvent[]
+  // Outbound allocations fractionated or promoted from this (inbound) package.
+  sourcedAllocations PackageAllocation[]     @relation("PackageAllocationSource")
 
   @@index([shipmentId])
   @@index([leg])

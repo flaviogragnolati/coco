@@ -167,7 +167,9 @@ export function CheckoutReviewStep({
 				<Alert>
 					<ReceiptTextIcon />
 					<AlertTitle>Términos y condiciones del pedido</AlertTitle>
-					<AlertDescription>{termsText}</AlertDescription>
+					<AlertDescription className="max-h-56 overflow-y-auto whitespace-pre-line">
+						{termsText}
+					</AlertDescription>
 				</Alert>
 				<div className="flex items-center gap-3 rounded-3xl bg-muted/40 p-3">
 					<Switch

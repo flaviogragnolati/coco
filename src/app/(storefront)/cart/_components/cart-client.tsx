@@ -1,9 +1,14 @@
 "use client";
 
-import { PackageSearchIcon, ShoppingCartIcon } from "lucide-react";
+import {
+	AlertTriangleIcon,
+	PackageSearchIcon,
+	ShoppingCartIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "~/components/page-header";
+import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import {
 	Empty,
@@ -15,6 +20,7 @@ import {
 } from "~/components/ui/empty";
 import { Skeleton } from "~/components/ui/skeleton";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
+import { discardPendingGuestItems } from "~/features/cart/discard-pending-guest-items";
 import { useCartActions } from "~/features/cart/use-cart-sync";
 import { useCartStore } from "~/store/cart-store";
 import { CartSummary } from "./cart-summary";
@@ -39,6 +45,12 @@ export function CartClient({
 	userId: string | null;
 }) {
 	const hasHydrated = useCartStore((state) => state.hasHydrated);
+	const mergeBlocked = useCartStore(
+		(state) => state.bootstrapState === "blocked",
+	);
+	const mergeBlockedMessage = useCartStore(
+		(state) => state.bootstrapBlockedMessage,
+	);
 	const cartActions = useCartActions({ isAuthenticated, userId });
 	const cart = cartActions.cart;
 
@@ -57,6 +69,31 @@ export function CartClient({
 				eyebrow="Carrito"
 				title="Tu pedido mayorista compartido"
 			/>
+
+			{mergeBlocked ? (
+				<Alert variant="destructive">
+					<AlertTriangleIcon />
+					<AlertTitle>Productos pendientes de agregar</AlertTitle>
+					<AlertDescription>
+						{mergeBlockedMessage ??
+							"No pudimos sumar estos productos a tu carrito."}{" "}
+						Los productos de abajo quedaron guardados en este browser y todavía
+						no forman parte de tu carrito. Cuando se resuelva el pago en curso,
+						recargá la página para agregarlos, o descartalos para retomar ese
+						pago.
+					</AlertDescription>
+					<div className="col-start-2 mt-2">
+						<Button
+							onClick={discardPendingGuestItems}
+							size="sm"
+							type="button"
+							variant="outline"
+						>
+							Descartar productos pendientes
+						</Button>
+					</div>
+				</Alert>
+			) : null}
 
 			{!hasHydrated ? (
 				<CartLoadingState />
@@ -82,7 +119,11 @@ export function CartClient({
 					<section className="flex flex-col gap-3">
 						{cart.items.map((item) => (
 							<CartLineRow
-								disabled={cartActions.isPending || cart.status === "atCheckout"}
+								disabled={
+									cartActions.isPending ||
+									cart.status === "atCheckout" ||
+									mergeBlocked
+								}
 								item={item}
 								key={item.productClientTermsId}
 								onDecrement={cartActions.decrement}
@@ -95,6 +136,7 @@ export function CartClient({
 					</section>
 					<CartSummary
 						cart={cart}
+						checkoutBlocked={mergeBlocked}
 						isAuthenticated={isAuthenticated}
 						isPending={cartActions.isPending}
 						onClear={cartActions.clear}

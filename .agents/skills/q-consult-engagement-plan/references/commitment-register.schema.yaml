@@ -1,0 +1,23 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Consulting commitment register
+type: array
+minItems: 1
+items:
+  type: object
+  additionalProperties: false
+  required: [commitment_id, kind, title, source, owner, planned_version, status]
+  properties:
+    commitment_id: {type: string}
+    kind: {type: string, enum: [deliverable, acceptance_criterion, service]}
+    title: {type: string}
+    source:
+      type: object
+      additionalProperties: false
+      required: [ref, object_id, locator]
+      properties:
+        ref: {type: string}
+        object_id: {type: [string, "null"]}
+        locator: {type: [string, "null"]}
+    owner: {type: string}
+    planned_version: {type: string}
+    status: {type: string, enum: [planned, active, completed, superseded]}

@@ -27,6 +27,7 @@ import type {
 	ShipmentListInput,
 	ShipmentListItem,
 	ShipmentReceiveInput,
+	ShipmentRecoverInput,
 	ShipmentRetryInput,
 	ShipmentStats,
 } from "~/shared/common/admin-crud/shipment.types";
@@ -34,6 +35,7 @@ import {
 	dispatchableShipmentStatuses,
 	isLegalTransition,
 	shipmentAvailableActions,
+	shipmentRecoveryTarget,
 	shipmentTransitions,
 } from "~/shared/common/fulfillment-transitions";
 import { trackingEventLabelMap } from "~/shared/common/tracking-display";
@@ -67,11 +69,13 @@ import {
 	type PostAllocationRollOverInput,
 } from "./roll-over.data";
 import {
+	countShipmentAuditEntries,
 	countShipmentCandidates,
 	createShipment,
 	findShipmentById,
 	findShipmentForCommand,
 	findShipmentForReceipt,
+	findShipmentStatusBeforeDelay,
 	getShipmentStats,
 	listLatestShipmentTrackingEvents,
 	listShipmentCandidates,
@@ -186,18 +190,30 @@ function summarizeShipment(
 	};
 }
 
+/** `reader` is the command's transaction when there is one, so it sees its own writes. */
 async function toDetail(
 	record: ShipmentDetailRecord,
 	database: AdminDb,
+	reader: Prisma.TransactionClient = database,
 ): Promise<ShipmentDetail> {
 	const trackingEvents = await listLatestShipmentTrackingEvents(
 		database,
 		record.id,
 	);
 	const summary = summarizeShipment(record, trackingEvents.length > 0);
+	const recoveryTarget =
+		record.status === "delayed"
+			? shipmentRecoveryTarget({
+					statusBeforeDelay: await findShipmentStatusBeforeDelay(
+						reader,
+						record.id,
+					),
+				})
+			: null;
 
 	return shipmentDetailSchema.parse({
 		...summary,
+		recoveryTarget,
 		availableActions: shipmentAvailableActions({
 			status: record.status,
 			type: record.type,
@@ -366,7 +382,7 @@ async function detailOf(
 ): Promise<ShipmentDetail> {
 	const record = await findShipmentById(tx, id);
 	if (!record) throwNotFound("Envio");
-	return toDetail(record, database);
+	return toDetail(record, database, tx);
 }
 
 function assertLegal(
@@ -940,6 +956,10 @@ async function markDisrupted(
 		);
 
 		const packages = liveCommandPackages(record);
+		const action =
+			target === "delayed" ? "shipment.markDelayed" : "shipment.markFailed";
+		const occurrence =
+			(await countShipmentAuditEntries(tx, record.id, action)) + 1;
 		const before = await detailOf(tx, record.id, database);
 
 		await updateShipmentState(tx, record.id, { status: target });
@@ -957,14 +977,14 @@ async function markDisrupted(
 				movedLines: toMovedLines(packages),
 				reason: input.reason,
 				exceptionStatus: target,
+				occurrence,
 			},
 		);
 
 		const after = await detailOf(tx, record.id, database);
 
 		await writeAdminAuditLog(tx, {
-			action:
-				target === "delayed" ? "shipment.markDelayed" : "shipment.markFailed",
+			action,
 			actor,
 			entityType: SHIPMENT_ENTITY,
 			entityId: String(record.id),
@@ -994,6 +1014,82 @@ export async function markFailed(
 	database: AdminDb,
 ): Promise<ShipmentDetail> {
 	return markDisrupted(input, "failed", actor, database);
+}
+
+/**
+ * `markDelayed`, inverted: the shipment and its delayed packages return to where
+ * the delay caught them, and the exception resolves for every affected item.
+ * Without it a delayed shipment could only leave through receive, deliver or a
+ * failure, and `package.recover` refuses while the shipment is disrupted.
+ */
+export async function recover(
+	input: ShipmentRecoverInput,
+	actor: AdminMutationActor,
+	database: AdminDb,
+): Promise<ShipmentDetail> {
+	const result = await database.$transaction(async (tx) => {
+		const record = await loadForCommand(tx, input.id);
+		if (record.status !== "delayed") {
+			throwConflict("Solo se puede recuperar un envio demorado");
+		}
+
+		const target = shipmentRecoveryTarget({
+			statusBeforeDelay: await findShipmentStatusBeforeDelay(tx, record.id),
+		});
+		assertLegal(record.status, target, "El envio no se puede recuperar");
+		const occurrence =
+			(await countShipmentAuditEntries(tx, record.id, "shipment.recover")) + 1;
+		const departed = target === "inTransit";
+		const packages = liveCommandPackages(record).filter(
+			(pkg) => pkg.status === "delayed",
+		);
+		const before = await detailOf(tx, record.id, database);
+
+		await updateShipmentState(tx, record.id, { status: target });
+		await updatePackageStatuses(
+			tx,
+			packages.map((pkg) => pkg.id),
+			departed ? "inTransit" : "readyForShipment",
+		);
+		await updatePackageLineStatuses(
+			tx,
+			packages.flatMap((pkg) => liveLines(pkg).map((line) => line.id)),
+			departed ? "shipped" : "packed",
+		);
+
+		const effects = await sideEffects.onShipmentRecovered(
+			{ db: tx, actor, source: "shipment" },
+			{
+				shipmentId: record.id,
+				shipmentInternalCode: record.internalCode,
+				movedLines: toMovedLines(packages),
+				reason: input.notes,
+				occurrence,
+			},
+		);
+
+		const after = await detailOf(tx, record.id, database);
+
+		await writeAdminAuditLog(tx, {
+			action: "shipment.recover",
+			actor,
+			entityType: SHIPMENT_ENTITY,
+			entityId: String(record.id),
+			before,
+			after,
+			metadata: {
+				effects,
+				recoveryTarget: target,
+				notes: input.notes,
+				packageIds: packages.map((pkg) => pkg.id),
+			},
+		});
+
+		return after;
+	});
+
+	await DomainEventDispatcher.wake();
+	return result;
 }
 
 /**

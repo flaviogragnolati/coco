@@ -101,4 +101,5 @@ export const shipmentActionLabelMap: Record<ShipmentCommandKey, string> = {
 	markDelayed: "Marcar demorado",
 	markFailed: "Marcar fallido",
 	retry: "Reintentar",
+	recover: "Recuperar",
 };

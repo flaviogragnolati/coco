@@ -59,7 +59,17 @@ function NoticeList({ notices }: { notices: CustomerJourneyNoticeView[] }) {
 						variant={config.variant}
 					>
 						<NoticeIcon data-icon="inline-start" />
-						{notice.label} · {formatDateTimeShort(new Date(notice.createdAt))}
+						<span className="flex flex-col">
+							<span>
+								{notice.label} ·{" "}
+								{formatDateTimeShort(new Date(notice.createdAt))}
+							</span>
+							{notice.reason ? (
+								<span className="font-normal text-muted-foreground">
+									{notice.reason}
+								</span>
+							) : null}
+						</span>
 					</Badge>
 				);
 			})}

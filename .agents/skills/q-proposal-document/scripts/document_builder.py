@@ -16,7 +16,7 @@ from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
 from PIL import Image, ImageDraw, ImageFont
 
-from font_resolution import resolve_free_font_family
+from font_resolution import resolve_generation_font
 
 
 COLORS = {
@@ -42,7 +42,8 @@ CONTENT_WIDTH_MM = A4_WIDTH_MM - BODY_LEFT_MM - BODY_RIGHT_MM
 CONTACT_EMAIL = "info@quasartech.xyz"
 WEBSITE = "quasartech.xyz"
 LEGAL_ENTITY = "Ingeniería Quasar SRL"
-ACTIVE_FONT_NAME = "Liberation Sans"
+DECLARED_FONT = "Aptos"
+DECLARED_MONO = "Aptos Mono"
 ACTIVE_FONT_REGULAR: Path | None = None
 ACTIVE_FONT_BOLD: Path | None = None
 
@@ -64,7 +65,7 @@ def set_run_font(
     bold: bool | None = None,
     italic: bool | None = None,
 ):
-    name = name or ACTIVE_FONT_NAME
+    name = name or DECLARED_FONT
     run.font.name = name
     rpr = run._element.get_or_add_rPr()
     rfonts = rpr.rFonts
@@ -263,9 +264,9 @@ def add_text_content_control(
     run = OxmlElement("w:r")
     run_properties = OxmlElement("w:rPr")
     fonts = OxmlElement("w:rFonts")
-    fonts.set(qn("w:ascii"), ACTIVE_FONT_NAME)
-    fonts.set(qn("w:hAnsi"), ACTIVE_FONT_NAME)
-    fonts.set(qn("w:cs"), ACTIVE_FONT_NAME)
+    fonts.set(qn("w:ascii"), DECLARED_FONT)
+    fonts.set(qn("w:hAnsi"), DECLARED_FONT)
+    fonts.set(qn("w:cs"), DECLARED_FONT)
     run_properties.append(fonts)
     color = OxmlElement("w:color")
     color.set(qn("w:val"), COLORS["muted"])
@@ -294,27 +295,27 @@ def set_update_fields(document: Document):
 
 def configure_styles(document: Document):
     normal = document.styles["Normal"]
-    set_style_font(normal, ACTIVE_FONT_NAME)
+    set_style_font(normal, DECLARED_FONT)
     normal.font.size = Pt(9.5)
     normal.font.color.rgb = rgb(COLORS["text"])
     normal.paragraph_format.space_after = Pt(4.5)
     normal.paragraph_format.line_spacing = 1.08
 
     title = document.styles["Title"]
-    set_style_font(title, ACTIVE_FONT_NAME)
+    set_style_font(title, DECLARED_FONT)
     title.font.size = Pt(21)
     title.font.bold = True
     title.font.color.rgb = rgb(COLORS["navy"])
     title.paragraph_format.space_after = Pt(8)
 
     subtitle = document.styles["Subtitle"]
-    set_style_font(subtitle, ACTIVE_FONT_NAME)
+    set_style_font(subtitle, DECLARED_FONT)
     subtitle.font.size = Pt(11)
     subtitle.font.color.rgb = rgb(COLORS["muted"])
     subtitle.paragraph_format.space_after = Pt(8)
 
     h1 = document.styles["Heading 1"]
-    set_style_font(h1, ACTIVE_FONT_NAME)
+    set_style_font(h1, DECLARED_FONT)
     h1.font.size = Pt(15.5)
     h1.font.bold = True
     h1.font.color.rgb = rgb(COLORS["navy"])
@@ -323,7 +324,7 @@ def configure_styles(document: Document):
     h1.paragraph_format.keep_with_next = True
 
     h2 = document.styles["Heading 2"]
-    set_style_font(h2, ACTIVE_FONT_NAME)
+    set_style_font(h2, DECLARED_FONT)
     h2.font.size = Pt(11.5)
     h2.font.bold = True
     h2.font.color.rgb = rgb(COLORS["navy"])
@@ -332,7 +333,7 @@ def configure_styles(document: Document):
     h2.paragraph_format.keep_with_next = True
 
     h3 = document.styles["Heading 3"]
-    set_style_font(h3, ACTIVE_FONT_NAME)
+    set_style_font(h3, DECLARED_FONT)
     h3.font.size = Pt(10)
     h3.font.bold = True
     h3.font.color.rgb = rgb(COLORS["text"])
@@ -342,7 +343,7 @@ def configure_styles(document: Document):
 
     for list_name in ("List Bullet", "List Number"):
         style = document.styles[list_name]
-        set_style_font(style, ACTIVE_FONT_NAME)
+        set_style_font(style, DECLARED_FONT)
         style.font.size = Pt(9.25)
         style.font.color.rgb = rgb(COLORS["text"])
         style.paragraph_format.space_after = Pt(2.5)
@@ -357,7 +358,7 @@ def configure_styles(document: Document):
             style = document.styles[name]
         except KeyError:
             style = document.styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
-        set_style_font(style, ACTIVE_FONT_NAME)
+        set_style_font(style, DECLARED_FONT)
         style.font.size = Pt(size)
         style.font.color.rgb = rgb(color)
         style.font.bold = bold
@@ -468,7 +469,7 @@ def build_cover_image(data: dict[str, Any], assets: Path, output: Path):
     contact = f"{CONTACT_EMAIL}  |  {WEBSITE}"
     draw.text((x, 1620), contact, font=font_contact, fill="#27367E")
 
-    logo = Image.open(assets / "logo-horizontal-color.png").convert("RGBA")
+    logo = Image.open(assets / "logos" / "horizontal-color.png").convert("RGBA")
     target_width = 470
     target_height = round(logo.height * target_width / logo.width)
     logo = logo.resize((target_width, target_height))
@@ -1411,22 +1412,27 @@ def contents_for(data: dict[str, Any]) -> list[str]:
     return items
 
 
-def build_document(data: dict[str, Any], output: Path, assets: Path, keep_cover=False):
-    global ACTIVE_FONT_NAME, ACTIVE_FONT_REGULAR, ACTIVE_FONT_BOLD
-    font_resolution = resolve_free_font_family()
-    ACTIVE_FONT_NAME = font_resolution["family"]
-    ACTIVE_FONT_REGULAR = Path(font_resolution["regular_path"])
-    ACTIVE_FONT_BOLD = Path(font_resolution["bold_path"])
-    data.setdefault("_provenance", {})["font_resolution"] = font_resolution
+def build_document(
+    data: dict[str, Any],
+    output: Path,
+    proposal_assets: Path,
+    identity_assets: Path,
+    keep_cover=False,
+):
+    global ACTIVE_FONT_REGULAR, ACTIVE_FONT_BOLD
+    font_profile = resolve_generation_font()
+    ACTIVE_FONT_REGULAR = Path(font_profile["regular_path"])
+    ACTIVE_FONT_BOLD = Path(font_profile["bold_path"])
+    data.setdefault("_provenance", {})["font_profile"] = font_profile
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="quasar-proposal-") as tmp:
         tmp_path = Path(tmp)
         cover_path = tmp_path / "cover.png"
         footer_band = tmp_path / "footer-band.png"
-        build_cover_image(data, assets, cover_path)
-        build_footer_band(data, assets, footer_band)
+        build_cover_image(data, identity_assets, cover_path)
+        build_footer_band(data, identity_assets, footer_band)
 
-        document = Document()
+        document = Document(str(identity_assets / "reference.docx"))
         configure_styles(document)
         set_update_fields(document)
         metadata = data["metadata"]
@@ -1441,11 +1447,10 @@ def build_document(data: dict[str, Any], output: Path, assets: Path, keep_cover=
             f"Quasar; derived; proposal-source-v{source_version}; sha256:{source_hash}"
         )
         document.core_properties.comments = (
-            f"creation_mode=derived; semantic_authority=none; "
             f"source_version={source_version}; source_sha256={source_hash}; "
-            f"generated_by=q-proposal-document; "
-            f"generated_at={metadata.get('generated_at', '')}; do_not_edit=true"
-            f"; font_family={ACTIVE_FONT_NAME}"
+            f"generated_by=q-proposal-document; do_not_edit=true"
+            f"; declared_font={DECLARED_FONT}"
+            f"; generation_font={font_profile['generation_resolved']}"
         )
 
         cover_section = document.sections[0]
@@ -1459,7 +1464,7 @@ def build_document(data: dict[str, Any], output: Path, assets: Path, keep_cover=
         )
 
         body_section = document.add_section(WD_SECTION.NEW_PAGE)
-        configure_body_section(body_section, assets, footer_band, data)
+        configure_body_section(body_section, identity_assets, footer_band, data)
 
         add_metadata_page(document, data, contents_for(data))
         add_part_title(document, "Parte I", "Propuesta comercial")
@@ -1481,7 +1486,7 @@ def build_document(data: dict[str, Any], output: Path, assets: Path, keep_cover=
         add_commercial(document, data)
         add_validity(document, data)
         if options.get("include_terms", True):
-            add_terms(document, data, assets)
+            add_terms(document, data, proposal_assets)
         if options.get("include_signatures", True):
             add_signatures(document, data)
         if options.get("include_change_control", True):
@@ -1492,4 +1497,4 @@ def build_document(data: dict[str, Any], output: Path, assets: Path, keep_cover=
         if keep_cover:
             cover_copy = output.with_name(output.stem + "-cover.png")
             cover_copy.write_bytes(cover_path.read_bytes())
-    return font_resolution
+    return font_profile

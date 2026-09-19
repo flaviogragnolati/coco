@@ -15,7 +15,7 @@ Own the commercial meaning of:
 - proposed solution and alternatives;
 - scope, exclusions, and change boundaries;
 - methodology, governance, work plan, and deliverables;
-- acceptance and quality criteria;
+- acceptance and quality criteria, each represented by an `acceptance_criterion` object with stable ID `AC-nnn` and `satisfies: [DEL-nnn]` links to the deliverables it governs;
 - team and responsibilities;
 - schedule, dependencies, investment, payments, validity, and terms;
 - assumptions, risks, decisions, and unresolved matters;
@@ -39,7 +39,7 @@ An adopted ideation snapshot supplies candidate solution, engagement, and workst
 
 1. Verify discovery readiness and source versions.
 2. Select and state the engagement model.
-3. Define objectives, solution, scope, exclusions, methodology, governance, stages, deliverables, and acceptance.
+3. Define objectives, solution, scope, exclusions, methodology, governance, stages, and deliverables. Author each acceptance criterion as an `acceptance_criterion` object with stable ID `AC-nnn` and at least one `satisfies: [DEL-nnn]` reference; never leave acceptance meaning embedded only in prose.
 4. Define schedule and investment without hiding dependencies or assumptions.
 5. State client and Quasar responsibilities.
 6. Identify legal or commercial review needs.

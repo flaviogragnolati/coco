@@ -10,6 +10,7 @@ import {
 	shipmentListOutputSchema,
 	shipmentReceiveInputSchema,
 	shipmentReceiveOutputSchema,
+	shipmentRecoverInputSchema,
 	shipmentRetryInputSchema,
 	shipmentStatsSchema,
 } from "~/schemas/admin/shipment.schemas";
@@ -75,6 +76,21 @@ export const shipmentRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			try {
 				return await shipmentService.markDelayed(
+					input,
+					toAdminActor(ctx.session.user),
+					ctx.db,
+				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	recover: adminProcedure
+		.input(shipmentRecoverInputSchema)
+		.output(shipmentDetailSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await shipmentService.recover(
 					input,
 					toAdminActor(ctx.session.user),
 					ctx.db,

@@ -42,12 +42,15 @@ function cartStatusLabel(status: CartSnapshot["status"]) {
 
 export function CartSummary({
 	cart,
+	checkoutBlocked = false,
 	isAuthenticated,
 	onClear,
 	onLeaveCheckout,
 	isPending,
 }: {
 	cart: CartSnapshot;
+	/** The guest items could not be merged; checkout would drop them. */
+	checkoutBlocked?: boolean;
 	isAuthenticated: boolean;
 	isPending?: boolean;
 	onClear: () => void;
@@ -55,6 +58,7 @@ export function CartSummary({
 }) {
 	const atCheckout = cart.status === "atCheckout";
 	const clearBlockedReasonId = useId();
+	const checkoutBlockedReasonId = useId();
 
 	return (
 		<Card className="lg:sticky lg:top-20">
@@ -128,7 +132,27 @@ export function CartSummary({
 				)}
 			</CardContent>
 			<CardFooter className="flex flex-col gap-2">
-				{isAuthenticated ? (
+				{isAuthenticated && checkoutBlocked ? (
+					<>
+						<Button
+							aria-describedby={checkoutBlockedReasonId}
+							className="w-full"
+							disabled
+							type="button"
+							variant="highlight"
+						>
+							<ShoppingBagIcon data-icon="inline-start" />
+							Ir a pagar
+						</Button>
+						<p
+							className="text-center text-muted-foreground text-xs"
+							id={checkoutBlockedReasonId}
+						>
+							Hay productos pendientes de agregar a tu carrito. Esperá a que se
+							resuelva el pago en curso.
+						</p>
+					</>
+				) : isAuthenticated ? (
 					<Button asChild className="w-full" variant="highlight">
 						<Link href="/checkout">
 							<ShoppingBagIcon data-icon="inline-start" />
@@ -158,7 +182,9 @@ export function CartSummary({
 				<Button
 					aria-describedby={atCheckout ? clearBlockedReasonId : undefined}
 					className="w-full"
-					disabled={isPending || atCheckout || cart.itemCount === 0}
+					disabled={
+						isPending || atCheckout || checkoutBlocked || cart.itemCount === 0
+					}
 					onClick={onClear}
 					type="button"
 					variant="outline"

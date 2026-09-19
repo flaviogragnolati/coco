@@ -37,7 +37,7 @@ assert.ok(triggers.positive.some((item) => /Marp/i.test(item.prompt) && /Markdow
 assert.equal(triggers.fallback[0].expected, "validated-editable-source-plus-explicit-render-gap");
 
 const neutralTheme = readFileSync(resolve(SKILL, "assets", "themes", "neutral.css"), "utf8");
-const quasarTheme = readFileSync(resolve(SKILL, "..", "..", "report", "q-report-deck", "assets", "marp", "quasar.css"), "utf8");
+const quasarTheme = readFileSync(resolve(SKILL, "..", "..", "core", "q-core-identity", "assets", "marp", "quasar.css"), "utf8");
 for (const content of [neutralTheme, quasarTheme]) {
   assert.equal(remoteReferences(content).length, 0);
   assert.doesNotMatch(content, /@import|gradient|box-shadow|text-shadow/i);

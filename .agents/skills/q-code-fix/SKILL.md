@@ -12,10 +12,10 @@ Load the repository's instructions, applicable technical foundation, and actual 
 1. Confirm the reported cause in the real code.
 2. Map the blast radius and must-not-break behavior.
 3. Stop if the correction crosses modules, changes a contract, or requires product or architecture decisions; see the reclassification rule below.
-4. Apply the smallest complete fix.
+4. Apply the smallest complete fix. Comment only what the code cannot say, to the `q-review-comments` rubric; leave no narration of the fix, ticket reference, or diagnosis residue in the source.
 5. Add or update regression coverage.
 6. Run focused tests and other proportional checks discovered from project configuration.
-7. Run the required mini review when `code-change-and-its-verification-are-complete-and-the-mini-review-is-due`: `q-review-code` for standards and specification conformance — if it is not installed, `close-with-a-blocker-naming-q-review-code-and-its-install-command-and-never-report-the-change-as-reviewed` (`npx skills add flaviogragnolati/ai-workflow --skill q-review-code`); `q-review-comments` for affected comments and docstrings — if it is not installed, `close-with-a-blocker-naming-q-review-comments-and-its-install-command-and-never-report-the-comment-review-as-done` (`npx skills add flaviogragnolati/ai-workflow --skill q-review-comments`). Keep both results distinct.
+7. Run the required mini review when `code-change-and-its-verification-are-complete-and-the-mini-review-is-due`: `q-review-code` for standards and specification conformance — if it is not installed, `close-with-a-blocker-naming-q-review-code-and-its-install-command-and-never-report-the-change-as-reviewed` (`npx skills add flaviogragnolati/ai-workflow --skill q-review-code`); `q-review-comments` for affected comments and docstrings — if it is not installed, `close-with-a-blocker-naming-q-review-comments-and-its-install-command-and-never-report-the-comment-review-as-done` (`npx skills add flaviogragnolati/ai-workflow --skill q-review-comments`). Keep both results distinct and apply the comment findings before close.
 8. Update the original durable execution record.
 
 Do not use this path to hide a feature or design change. Use `q-code-debug` when the cause is uncertain. Keep internal notes transient. A correction that alters product behavior, architecture, or a cross-module contract is reclassified as a change: record that in the durable execution record and escalate it to the grill level that matches its scope.

@@ -10,7 +10,7 @@ source:
   artifact_id: proposal-source
   path: proposal-source.valid.json
   version: "1.0"
-  sha256: bee5e1770e97a5897fb23e75b2cd6c4bf74394af1ed5619cf682b7f1b9c2f587
+  sha256: 4241869b244afb5798a2e23f6df535cf26b430da8b6ffb616c48268d0bdbb60b
 document:
   mode: draft
   audience: internal

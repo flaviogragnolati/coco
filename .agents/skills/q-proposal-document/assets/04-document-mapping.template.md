@@ -50,7 +50,7 @@ Record only decisions that are not already determined by the canonical source.
 
 ## Visual decisions
 
-- Reference used: `q-proposal-document/assets/reference.docx` (path relative to the skill installation, not to the project repository)
+- Reference used: `q-core-identity/assets/reference.docx` (path relative to the skill installation, not to the project repository)
 - Exceptions to the standard style:
 
 ## History

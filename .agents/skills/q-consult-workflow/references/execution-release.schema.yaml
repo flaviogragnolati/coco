@@ -1,0 +1,29 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Consulting execution release
+type: object
+additionalProperties: false
+required: [schema_version, acceptance_record_ref, accepted_deliverables, engagement_plan_ref, assessment_ref, intervention_design_ref, open_items, approval]
+properties:
+  schema_version: {type: string, const: "1.0"}
+  acceptance_record_ref: {type: string}
+  accepted_deliverables:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [deliverable_id, artifact_ref]
+      properties:
+        deliverable_id: {type: string}
+        artifact_ref: {type: string}
+  engagement_plan_ref: {type: string}
+  assessment_ref: {type: string}
+  intervention_design_ref: {type: string}
+  open_items: {type: array, items: {type: string}}
+  approval:
+    type: object
+    additionalProperties: false
+    required: [approved_by, approved_at]
+    properties:
+      approved_by: {type: string}
+      approved_at: {type: string}

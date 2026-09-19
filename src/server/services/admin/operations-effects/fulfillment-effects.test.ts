@@ -255,6 +255,8 @@ const eventsByCommand: Partial<
 		}),
 	"shipment.retry": () =>
 		buildExceptionResolvedEvents(ctx, shipmentChangeSet, "retry"),
+	"shipment.recover": () =>
+		buildExceptionResolvedEvents(ctx, shipmentChangeSet, "recover"),
 	"package.fractionate": () =>
 		buildFractionationEvents(ctx, fractionationChangeSet),
 	"package.writeOff": () => [
@@ -322,6 +324,7 @@ function allEvents(): DomainEventInput[] {
 		}),
 		...buildExceptionResolvedEvents(ctx, shipmentChangeSet, "receipt"),
 		...buildExceptionResolvedEvents(ctx, shipmentChangeSet, "retry"),
+		...buildExceptionResolvedEvents(ctx, shipmentChangeSet, "recover"),
 		...buildWriteOffRollOverEvents(ctx, packageChangeSet),
 		...buildWriteOffResolvedEvents(ctx, packageChangeSet),
 		...buildFractionationEvents(ctx, fractionationChangeSet),
@@ -503,4 +506,40 @@ test("quantities travel as decimal strings, never as Decimal instances", () => {
 		if (quantity === undefined) continue;
 		expect(typeof quantity).toBe("string");
 	}
+});
+
+// delay → recover → delay → recover on one shipment: the outbox drops a repeated
+// key, so each repeat needs its own or the customer never sees it.
+test("a repeated delay and recovery on one shipment publish distinct keys", () => {
+	const cycle = (occurrence: number) => [
+		...buildExceptionEvents(ctx, {
+			...shipmentChangeSet,
+			exceptionStatus: "delayed",
+			occurrence,
+		}),
+		...buildExceptionResolvedEvents(
+			ctx,
+			{ ...shipmentChangeSet, occurrence },
+			"recover",
+		),
+	];
+	const first = cycle(1).map((event) => event.eventKey);
+	const second = cycle(2).map((event) => event.eventKey);
+
+	expect(first.length).toBeGreaterThan(0);
+	for (const key of second) expect(first).not.toContain(key);
+});
+
+test("the first occurrence keeps the key published before recovery existed", () => {
+	const [withOccurrence] = buildExceptionEvents(ctx, {
+		...shipmentChangeSet,
+		exceptionStatus: "delayed",
+		occurrence: 1,
+	});
+	const [without] = buildExceptionEvents(ctx, {
+		...shipmentChangeSet,
+		exceptionStatus: "delayed",
+	});
+
+	expect(withOccurrence?.eventKey).toBe(without?.eventKey);
 });

@@ -221,6 +221,13 @@ export class AdminOperationsSideEffects {
 		return this.runShipmentHandlers("onShipmentRetried", ctx, changeSet);
 	}
 
+	onShipmentRecovered(
+		ctx: AdminOperationsEffectContext,
+		changeSet: AdminShipmentChangeSet,
+	) {
+		return this.runShipmentHandlers("onShipmentRecovered", ctx, changeSet);
+	}
+
 	onEndUserDispatched(
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminShipmentChangeSet,

@@ -97,20 +97,34 @@ function pickupArrivalKey(input: { shipmentId: number; cartItemId: number }) {
 	return `shipment:${input.shipmentId}:cartItem:${input.cartItemId}:arrivedAtPickupPoint`;
 }
 
+/**
+ * A delay can recur on one shipment (delay → recover → delay), and the outbox
+ * drops a repeated key. Only repeats carry the suffix, so the first occurrence
+ * keeps the key already published before recovery existed.
+ */
+function occurrenceSuffix(occurrence: number | undefined) {
+	return occurrence !== undefined && occurrence > 1 ? `:${occurrence}` : "";
+}
+
 function exceptionKey(input: {
 	shipmentId: number;
 	cartItemId: number;
 	status: "delayed" | "failed";
+	occurrence?: number;
 }) {
-	return `shipment:${input.shipmentId}:cartItem:${input.cartItemId}:exception:${input.status}`;
+	return `shipment:${input.shipmentId}:cartItem:${input.cartItemId}:exception:${input.status}${occurrenceSuffix(input.occurrence)}`;
 }
+
+/** Part of the event key, so each way of resolving a shipment exception stays distinct. */
+type ExceptionResolutionTrigger = "receipt" | "retry" | "recover";
 
 function exceptionResolvedKey(input: {
 	shipmentId: number;
 	cartItemId: number;
-	trigger: "receipt" | "retry";
+	trigger: ExceptionResolutionTrigger;
+	occurrence?: number;
 }) {
-	return `shipment:${input.shipmentId}:cartItem:${input.cartItemId}:exception:resolved:${input.trigger}`;
+	return `shipment:${input.shipmentId}:cartItem:${input.cartItemId}:exception:resolved:${input.trigger}${occurrenceSuffix(input.occurrence)}`;
 }
 
 function rollOverKey(input: {
@@ -264,6 +278,7 @@ export function buildExceptionEvents(
 			shipmentId: changeSet.shipmentId,
 			cartItemId: item.cartItemId,
 			status,
+			occurrence: changeSet.occurrence,
 		}),
 		aggregateType: "CartItem" as const,
 		aggregateId: String(item.cartItemId),
@@ -284,7 +299,7 @@ export function buildExceptionEvents(
 export function buildExceptionResolvedEvents(
 	ctx: AdminOperationsEffectContext,
 	changeSet: AdminShipmentChangeSet,
-	trigger: "receipt" | "retry",
+	trigger: ExceptionResolutionTrigger,
 ): DomainEventInput[] {
 	return affectedCartItems(changeSet.movedLines ?? []).map((item) => ({
 		type: "fulfillment.exception.resolved" as const,
@@ -292,6 +307,7 @@ export function buildExceptionResolvedEvents(
 			shipmentId: changeSet.shipmentId,
 			cartItemId: item.cartItemId,
 			trigger,
+			occurrence: changeSet.occurrence,
 		}),
 		aggregateType: "CartItem" as const,
 		aggregateId: String(item.cartItemId),

@@ -1,11 +1,11 @@
 ---
 name: q-proposal-web
-description: "Create or revise a professional interactive web proposal from the canonical commercial proposal source while preserving scope, price, schedule, terms, and traceability. Use for the optional web channel after proposal design, including narrative, diagrams, comparisons, simulations, accessibility, and visual QA. Requires the q-core-contract companion. Part of the Quasar AI delivery skills."
+description: "Create or revise a professional interactive web proposal from the canonical commercial proposal source while preserving scope, price, schedule, terms, and traceability. Use for the optional web channel after proposal design, including narrative, diagrams, comparisons, simulations, accessibility, and visual QA. Requires the q-core-contract and q-core-identity companions. Part of the Quasar AI delivery skills."
 ---
 
 # Interactive web proposal
 
-Read the `q-core-contract` companion for shared governance; if it is missing, stop and install it with `npx skills add flaviogragnolati/ai-workflow --skill q-core-contract`. The canonical commercial source owns meaning; this skill owns the web channel.
+Read the `q-core-contract` companion for shared governance and `q-core-identity` as the owner of Quasar identity, palette tokens, editorial rules, and the declared type chain for CSS; if either is missing, stop and install both with `npx skills add flaviogragnolati/ai-workflow --skill q-core-contract --skill q-core-identity`. The canonical commercial source owns meaning; this skill owns the web channel.
 
 ## Inputs
 

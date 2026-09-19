@@ -27,6 +27,7 @@ import {
 	packageTransitions,
 	type ShipmentCommandKey,
 	shipmentAvailableActions,
+	shipmentRecoveryTarget,
 	shipmentTransitions,
 	supplierOrderAvailableActions,
 	supplierOrderStatusLineCompatibility,
@@ -387,6 +388,8 @@ const legalShipmentMoves: Array<[ShipmentStatus, ShipmentStatus]> = [
 	["inTransit", "delayed"],
 	["inTransit", "failed"],
 	["delayed", "inTransit"],
+	// `shipment.recover` of a delay recorded before departure.
+	["delayed", "readyForDispatch"],
 	["delayed", "received"],
 	["delayed", "failed"],
 	["delayed", "cancelled"],
@@ -474,6 +477,7 @@ const shipmentCommandKeys: ShipmentCommandKey[] = [
 	"markDelayed",
 	"markFailed",
 	"retry",
+	"recover",
 ];
 
 test("every shipment command key is always reported, disabled ones with a reason", () => {
@@ -1454,4 +1458,59 @@ test("a lot with no order-wide facts still reports everything disabled", () => {
 		expect(entry.enabled).toBe(false);
 		expect(entry.reason).toContain("no tiene orden de proveedor");
 	}
+});
+
+test("recover is enabled only on a delayed shipment, on either leg", () => {
+	expect(
+		shipmentActionState({ ...internalInTransit, status: "delayed" }, "recover")
+			.enabled,
+	).toBe(true);
+	expect(
+		shipmentActionState(endUserInput({ status: "delayed" }), "recover").enabled,
+	).toBe(true);
+
+	for (const status of [
+		"readyForDispatch",
+		"inTransit",
+		"received",
+		"failed",
+	] as const) {
+		const state = shipmentActionState(
+			{ ...internalInTransit, status },
+			"recover",
+		);
+		expect(state.enabled).toBe(false);
+		expect(state.reason).toBe("Solo se puede recuperar un envío demorado");
+	}
+});
+
+test("a recovered shipment returns to where the delay caught it", () => {
+	expect(shipmentRecoveryTarget({ statusBeforeDelay: "inTransit" })).toBe(
+		"inTransit",
+	);
+	expect(
+		shipmentRecoveryTarget({ statusBeforeDelay: "readyForDispatch" }),
+	).toBe("readyForDispatch");
+	// No audit trail (seeded data): `markDelayed` is only offered in transit.
+	expect(shipmentRecoveryTarget({ statusBeforeDelay: null })).toBe("inTransit");
+});
+
+// Once the shipment is recovered, its packages are no longer blocked behind
+// "Primero hay que recuperar el envio".
+test("a package under a recovered shipment no longer waits on the shipment", () => {
+	const recoverUnder = (shipmentStatus: ShipmentStatus) =>
+		packageAvailableActions({
+			status: "delayed",
+			leg: "outbound",
+			shipmentStatus,
+			liveLineCount: 1,
+			liveLineQuantity: "1",
+			fractionableQuantity: "0",
+			distinctCartCount: 1,
+		}).find((entry) => entry.action === "recover");
+
+	expect(recoverUnder("delayed")?.reason).toBe(
+		"Primero hay que recuperar el envio",
+	);
+	expect(recoverUnder("inTransit")?.enabled).toBe(true);
 });

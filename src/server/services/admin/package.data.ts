@@ -32,10 +32,11 @@ const packageTrackingEventSelect = {
  */
 const packagedAllocationSelect = {
 	quantity: true,
+	sourcePackageId: true,
 	packageLotItem: {
 		select: {
 			status: true,
-			package: { select: { status: true, leg: true } },
+			package: { select: { id: true, status: true, leg: true } },
 		},
 	},
 } satisfies Prisma.PackageAllocationSelect;
@@ -87,16 +88,20 @@ export function outboundPackagedQuantity(
  * How much of a demand allocation physically arrived. `received` is required,
  * not merely inbound-and-live: without it an operator could fractionate goods
  * that are still on the truck.
+ *
+ * A promoted package left the inbound leg but its goods did arrive, and it also
+ * counts as outbound; without it here its quantity would be charged twice and
+ * the other packages of the same demand could no longer be fractionated. Only
+ * promotions recorded with their own `sourcePackageId` are recognised.
  */
 export function receivedInboundQuantity(
 	allocation: DemandAllocationPackaging,
 ): Prisma.Decimal {
-	return sumPackaged(
-		allocation,
-		(packaged) =>
-			packaged.packageLotItem.package.leg === "inbound" &&
-			packaged.packageLotItem.package.status === "received",
-	);
+	return sumPackaged(allocation, (packaged) => {
+		const pkg = packaged.packageLotItem.package;
+		if (pkg.leg === "inbound") return pkg.status === "received";
+		return packaged.sourcePackageId === pkg.id;
+	});
 }
 
 /** What has arrived and has not been packaged out yet, floored at 0. */
@@ -120,27 +125,51 @@ type FractionableLine = {
 };
 
 /**
- * What one packaged allocation can still contribute. The min() is load-bearing: a
- * demand allocation can be covered by two received packages, and without it both
- * would offer the same quantity and together package it twice.
+ * What of one inbound package's share of a demand allocation has not left yet:
+ * its own quantity minus the outbound rows recorded as taken **from it**. Rows
+ * with no recorded source are not charged here; the per-demand cap in
+ * `packagedAllocationFractionableQuantity` accounts for them.
+ */
+export function packageAllocationRemaining(
+	packaged: FractionablePackagedAllocation,
+	sourcePackageId: number,
+): Prisma.Decimal {
+	const takenFromSource = sumPackaged(
+		packaged.cartItemLotItem,
+		(outbound) =>
+			outbound.packageLotItem.package.leg === "outbound" &&
+			outbound.sourcePackageId === sourcePackageId,
+	);
+	const remaining = packaged.quantity.minus(takenFromSource);
+	return remaining.lessThan(0) ? new Prisma.Decimal(0) : remaining;
+}
+
+/**
+ * What one packaged allocation of `packageId` can still contribute. The min()
+ * against the per-demand budget is load-bearing: a demand allocation can be
+ * covered by two received packages, and without it both would offer the same
+ * quantity and together package it twice.
  */
 export function packagedAllocationFractionableQuantity(
 	packaged: FractionablePackagedAllocation,
+	packageId: number,
 ): Prisma.Decimal {
 	const available = fractionableQuantity(packaged.cartItemLotItem);
-	return available.lessThan(packaged.quantity) ? available : packaged.quantity;
+	const remaining = packageAllocationRemaining(packaged, packageId);
+	return available.lessThan(remaining) ? available : remaining;
 }
 
 /** How much of *this* package is still available to fractionate. */
 export function packageFractionableQuantity(
 	lines: FractionableLine[],
+	packageId: number,
 ): Prisma.Decimal {
 	return lines
 		.filter((line) => line.status !== "cancelled")
 		.flatMap((line) => line.packageAllocations)
 		.reduce<Prisma.Decimal>(
 			(total, packaged) =>
-				total.plus(packagedAllocationFractionableQuantity(packaged)),
+				total.plus(packagedAllocationFractionableQuantity(packaged, packageId)),
 			new Prisma.Decimal(0),
 		);
 }
@@ -452,6 +481,7 @@ const packageCommandSelect = {
 				select: {
 					id: true,
 					quantity: true,
+					sourcePackageId: true,
 					cartItemLotItem: {
 						select: {
 							id: true,
@@ -783,6 +813,8 @@ export async function createPackageAllocations(
 		packageLotItemId: number;
 		cartItemLotItemId: number;
 		quantity: Prisma.Decimal;
+		/** Outbound rows only; see `PackageAllocation.sourcePackageId`. */
+		sourcePackageId?: number | null;
 	}>,
 ) {
 	if (rows.length === 0) return [];
@@ -792,6 +824,7 @@ export async function createPackageAllocations(
 			packageLotItemId: row.packageLotItemId,
 			cartItemLotItemId: row.cartItemLotItemId,
 			quantity: row.quantity.toString(),
+			sourcePackageId: row.sourcePackageId ?? null,
 		})),
 		select: { id: true },
 	});
@@ -831,6 +864,20 @@ export async function updatePackageLineState(
 	await db.packageLotItem.update({
 		where: { id },
 		data: { status: data.status, quantity: data.quantity?.toString() },
+	});
+}
+
+/**
+ * A promoted package *is* the outbound package, so its own rows record it as
+ * their source: every allocation it carried was taken from itself.
+ */
+export async function attributePackageAllocationsToSource(
+	db: AdminDbClient,
+	packageId: number,
+) {
+	await db.packageAllocation.updateMany({
+		where: { packageLotItem: { packageId } },
+		data: { sourcePackageId: packageId },
 	});
 }
 

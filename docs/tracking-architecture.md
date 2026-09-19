@@ -818,7 +818,14 @@ Rules:
   proveedor, empaque, envio, and entrega.
 - Customer notices are separated from the main six stages for exceptions,
   rollovers, cancellations/removals, and quantity changes.
-- Does not expose internal refs or full metadata.
+- Exception notices and roll over *creation* notices carry `reason`, the
+  admin-entered `metadata.reason` of their event (`customerNoticeReason`,
+  decided by event type). Roll over resolutions, operation compensations,
+  recoveries and deliveries never carry it: their reasons are operator notes.
+- Does not expose internal refs or any other metadata.
+- The journey shows its empty state ("El seguimiento comienza cuando se
+  acredita el pago.") until some item reaches a stage or has a notice: a
+  timeline is returned for every item, so its presence says nothing.
 
 Admin endpoints:
 

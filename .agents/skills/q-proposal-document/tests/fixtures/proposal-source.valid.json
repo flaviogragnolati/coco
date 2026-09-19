@@ -31,7 +31,27 @@
     "business_rules": [],
     "scope_items": [],
     "exclusions": [],
-    "deliverables": [],
+    "deliverables": [
+      {
+        "id": "DEL-001",
+        "type": "deliverable",
+        "title": "Operating procedure",
+        "maturity": "Confirmed",
+        "authority_scope": "commercial",
+        "origin_refs": ["OBJ-001"]
+      }
+    ],
+    "acceptance_criteria": [
+      {
+        "id": "AC-001",
+        "type": "acceptance_criterion",
+        "title": "Procedure approved against the agreed scope",
+        "maturity": "Confirmed",
+        "authority_scope": "commercial",
+        "origin_refs": ["DEL-001"],
+        "satisfies": ["DEL-001"]
+      }
+    ],
     "technical_requirements": [],
     "non_functional_requirements": [],
     "constraints": [],

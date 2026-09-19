@@ -70,6 +70,8 @@ Generic filler and hedging belong to `C4`, even when the text also contains `H` 
 
 ## Lock meaning and authority
 
+When the caller produces Quasar client-facing material, preserve the voice, units, dates, visible estimate labels, and other applicable rules in `q-core-identity` `references/editorial-standards.md` without changing any locked element; this pointer does not make the tool an identity owner.
+
 1. Inventory every immutable element in scope: claims, facts, quantities, dates, proper names, quoted wording, citation targets, requirements, commitments, negation, uncertainty, and intentional terminology.
 2. Separate an empty rhetorical wrapper from the proposition it surrounds. Remove a wrapper only when the proposition keeps the same strength and source status.
 3. If concrete support is absent, do not manufacture it. Preserve the affected passage and name the evidence gap, omit the whole unsupported assertion when the caller authorizes that editorial choice, or insert an explicit gap marker only when the caller wants inline markers.

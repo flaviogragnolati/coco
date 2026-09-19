@@ -10,7 +10,7 @@ Read the `q-core-contract` companion for shared governance, especially its Consu
 ## Preconditions
 
 1. Load project state, artifact index, decisions, risks, blockers, and open change requests when they exist.
-2. Accept the exact accepted proposal version — its commercial release, the proposal object IDs of the deliverables in this workflow's scope, their acceptance criteria, commitments, assumptions, and exclusions — or an explicit engagement agreement the user supplies (statement of work, contract, charter) registered as the engagement's commercial reference. Never fabricate scope, deliverables, acceptance criteria, or commitments.
+2. Accept the exact accepted proposal version — its commercial release, the proposal object IDs of the deliverables in this workflow's scope, their acceptance criteria, commitments, assumptions, and exclusions — or an explicit engagement agreement the user supplies (statement of work, contract, charter). For the second path, register the exact supplied version in the artifact index as `engagement-agreement`, authored and canonical only for the external commercial commitment, and mark it `Released` only from the user's explicit decision; never edit it. In both paths, `01-commitment-register.yaml` is the single source of IDs for deliverables and acceptance criteria. Never fabricate scope, deliverables, acceptance criteria, or commitments.
 3. For a mixed engagement, record which proposal deliverables belong to this workflow. Software scope reaches `q-delivery-workflow` only through the proposal's development handoff, never through this workflow.
 4. Block only on an unresolved commitment, missing evidence access, or a client decision that makes the next stage unsafe; otherwise route.
 
@@ -23,18 +23,20 @@ Read the `q-core-contract` companion for shared governance, especially its Consu
 
 Route only the stage required by current state or `target_stage`. Do not duplicate its procedure. Validate each `stage_result` against the contract schema and apply its delta — register authored artifacts as `Working` with their declared authority, record decisions and risks, route each `stale_artifacts` entry to its owning stage, carry `required_user_actions` and `next_recommended_action` into the next routing decision — before selecting the next stage.
 
+`q-consult-session` is invocable from any engagement point and is not an ordered stage. Route “register the minutes,” kickoff, interview, workshop, training, committee, or acceptance-session recording to it; reconcile its engagement record and evidence delta before continuing. Validate that every `EVD-nnn` is unique across `01-evidence.yaml`, `02-evidence.yaml`, `03-evidence.yaml`, and `04-evidence.yaml`.
+
 ## Gates and returns
 
 - Engagement gate: stakeholders, decision owners, cadence, evidence access, and the deliverable register are confirmed against the accepted proposal before assessment starts.
-- Assessment gate: diagnostic findings, their evidence, and declared gaps are confirmed by the user before design starts; a hypothesis is not a finding.
-- Design gate: target state, recommendations, and each deliverable are confirmed at an exact version; a deliverable enters acceptance only at an approved version.
+- Assessment gate: diagnostic findings, their evidence, and declared gaps are confirmed by the user before design starts; a hypothesis is not a finding. Require a `client-statement` or `engagement-record` that records the client's validation of findings, or record explicitly that client validation did not occur.
+- Design gate: target state, recommendations, and each deliverable are confirmed at an exact version; mark the intervention design and each confirmed deliverable version `Baselined`, and let only those versions enter acceptance.
 - Acceptance gate: the client's disposition per deliverable and version is recorded, never inferred from internal review, a delivered file, or silence.
 
-Return a missing or contradicted finding to `q-consult-current-state`; return a `rework` disposition to `q-consult-intervention`; return a disputed acceptance criterion, scope, price, schedule, or commitment to change control. Record every return in state or a decision.
+Return a missing or contradicted finding to `q-consult-current-state`; return a `rework` disposition or documentation-QA finding discovered during acceptance to `q-consult-intervention`; return a disputed acceptance criterion, scope, price, schedule, or commitment to change control. Record every return in state or a decision.
 
 ## Execution release
 
-On recorded client acceptance, write `docs/consulting-workflow/05-execution-release.yaml` — the `execution-release`, canonical for accepted engagement results — naming the exact acceptance-record version, the exact accepted deliverable versions, the engagement plan, assessment, and design versions they trace to, open items, and the approval; mark the named versions `Released`. Partial acceptance releases only the accepted deliverables and lists rework and open items; a rejected deliverable returns to `q-consult-intervention` or opens a change request. This release is the "approved execution results" reporting consumes. Keep it immutable; a later acceptance produces a new release version.
+On recorded client acceptance, write `docs/consulting-workflow/05-execution-release.yaml` — the `execution-release`, canonical for accepted engagement results — naming the exact acceptance-record version, each exact deliverable version whose disposition permits release, the engagement plan, assessment, and design versions they trace to, open items, and the approval; mark only those named versions `Released`. Partial acceptance releases only the permitted deliverables and lists rework and open items; a rejected deliverable returns to `q-consult-intervention` or opens a change request. This release is the "approved execution results" reporting consumes. Keep it immutable; a later acceptance produces a new release version.
 
 ## Change control and recovery
 
@@ -44,11 +46,11 @@ Execution never edits the accepted proposal. When a stage reports a deviation fr
 2. Keep the accepted commercial release immutable.
 3. Mark dependent engagement artifacts stale.
 4. Block affected work until the required decision.
-5. Route the commitment change to `q-proposal-workflow` change control when the engagement came from a proposal; when it came from an external agreement, record the user's decision as the change record and version the engagement plan.
+5. Route the commitment change to `q-proposal-workflow` change control when the engagement came from a proposal; when it came from an external agreement, record the user's decision as the change record and version the commitment register with the engagement plan.
 
 Client feedback on an accepted deliverable or the execution release follows the contract's Client feedback rule: record it, then route an objection as a `rework` disposition in a new acceptance round, a scope, price, schedule, or commitment change through the change request above, a question to `q-ask-project`, and an acknowledgement into the acceptance record.
 
-On resume, rebuild context from state, index, decisions, risks, blockers, the accepted proposal or agreement version, and any persisted standalone stage results under `docs/consulting-workflow/`: validate each sidecar the contract's standalone-persistence rule defines, apply its delta, and delete it before continuing; the run's state and index live under its artifact root (`docs/consulting-workflow/`), with the project root as the legacy location — name which one you used. Do not reopen closed decisions without new evidence.
+On resume, rebuild context from state, index, decisions, risks, blockers, the accepted proposal or agreement version, the four stage evidence registers, and any persisted standalone stage results under `docs/consulting-workflow/`: validate run-wide EVD uniqueness, validate each sidecar the contract's standalone-persistence rule defines, apply its delta, and delete it before continuing; the run's state and index live under its artifact root (`docs/consulting-workflow/`), with the project root as the legacy location — name which one you used. Do not reopen closed decisions without new evidence.
 
 ## Optional structured ideation
 
@@ -68,7 +70,7 @@ Research never edits an engagement artifact and never opens another workflow by 
 
 At an explicit `consulting`, `progress`, or `completion` reporting checkpoint, delegate to `q-report-workflow`. Pass the reporting request, candidate artifact IDs and versions, `root_orchestrator: q-consult-workflow`, `global_state_writer: q-consult-workflow`, and the exact `return_to`. Remain the global state writer and reconcile the composite reporting delta. Reporting is optional and never marks a stage complete.
 
-A client-facing DOCX, PDF, or deck of an accepted deliverable is produced through this same reporting delegation — report type `consulting` or `custom` over the exact accepted deliverable version — never as a stage channel: the render is derived with no authority, does not enter the execution release, and its semantic edits return to `q-consult-intervention`.
+When `a-baselined-or-released-deliverable-record-or-assessment-must-be-presented-to-the-client-as-docx-or-pdf`, delegate the artifact channel directly to `q-report-document` at the design gate over the exact `Baselined` version for the acceptance session, and again after release only when the visible status seal must change. The render is derived with no authority, never produces a report source, does not enter the execution release, and sends semantic edits back to `q-consult-intervention` or the named artifact owner. If the renderer is absent, `present-the-markdown-artifact-at-its-exact-version-and-record-the-render-gap`. A consulting progress, committee, or completion report still delegates to `q-report-workflow` through a report source.
 
 ## Anti-patterns
 

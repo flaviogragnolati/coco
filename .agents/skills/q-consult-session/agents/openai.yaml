@@ -1,0 +1,4 @@
+interface:
+  display_name: Engagement Session
+  short_description: Record classified engagement sessions and evidence
+  default_prompt: "Use $q-consult-session to prepare or register this engagement session with attributable minutes, decisions, actions, and evidence."

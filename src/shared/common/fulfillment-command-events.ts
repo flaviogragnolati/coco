@@ -119,6 +119,7 @@ export const COMMAND_EVENT_TYPES: Record<
 	"shipment.markDelayed": ["fulfillment.exception.created"],
 	"shipment.markFailed": ["fulfillment.exception.created"],
 	"shipment.retry": ["fulfillment.exception.resolved"],
+	"shipment.recover": ["fulfillment.exception.resolved"],
 
 	"package.fractionate": ["package.cartItem.packaged"],
 	// Promotion keeps the package id, so `package.cartItem.packaged` would dedupe

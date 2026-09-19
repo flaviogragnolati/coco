@@ -54,6 +54,7 @@ export const shipmentCommandKeySchema = z.enum([
 	"markDelayed",
 	"markFailed",
 	"retry",
+	"recover",
 ]);
 
 export const shipmentAvailableActionSchema = z.object({
@@ -162,6 +163,8 @@ export const shipmentDetailSchema = shipmentListItemSchema.extend({
 	trackingEvents: z.array(trackingEventSummarySchema),
 	diagnostics: z.array(operationalDiagnosticSchema),
 	availableActions: z.array(shipmentAvailableActionSchema),
+	/** Where `recover` would return the shipment; null unless it is delayed. */
+	recoveryTarget: z.enum(["readyForDispatch", "inTransit"]).nullable(),
 });
 
 export const shipmentIdInputSchema = z.object({ id: shipmentIdSchema });
@@ -227,6 +230,12 @@ export const shipmentAddPackagesInputSchema = z.object({
 });
 
 export const shipmentDeliverInputSchema = z.object({
+	id: shipmentIdSchema,
+	notes: optionalTrimmedText,
+});
+
+/** The target is derived from the record, never chosen by the operator. */
+export const shipmentRecoverInputSchema = z.object({
 	id: shipmentIdSchema,
 	notes: optionalTrimmedText,
 });

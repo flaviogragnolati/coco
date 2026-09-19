@@ -9,7 +9,7 @@ Read the `q-core-contract` companion for shared governance, especially its Consu
 
 ## Canonical output
 
-Create `docs/consulting-workflow/04-acceptance-record.yaml`, authored and canonical for deliverable acceptance:
+Create `docs/consulting-workflow/04-acceptance-record.yaml`, authored and canonical for deliverable acceptance, plus `04-evidence.yaml`, authored and supporting for session evidence and client dispositions. Evidence IDs remain unique across all stage registers.
 
 ```yaml
 schema_version: "1.0"
@@ -34,14 +34,15 @@ Keep acceptance session notes transient.
 
 ## Procedure
 
-1. Load the deliverables at the exact versions the design gate confirmed, their criteria by reference, and the engagement plan's decision authority; block a deliverable whose version is unconfirmed or whose criteria are absent.
-2. When `deliverable-set-warrants-documentation-qa-before-client-acceptance` and `q-review-docs` is installed, route the deliverable set to it and return its findings to `q-consult-intervention` before presenting. If it is absent, `continue-with-owner-review-against-the-acceptance-criteria-and-record-the-qa-gap`.
+1. Load only deliverables at the exact `Baselined` versions the design gate confirmed, their criteria from the commitment register, and the engagement plan's decision authority; block a deliverable whose version is not `Baselined` or whose criteria are absent.
+2. Verify that the documentation-QA findings owned by `q-consult-intervention` are closed. If any remain open or documentation QA appears necessary only now, return `rework` to that owner before presenting.
 3. Prepare the acceptance session: per deliverable, the criteria, the evidence that shows each criterion, and known deviations. Run the session as a `required_user_action` when the agent is not present.
 4. Record per deliverable the client's disposition, statement, reservations, rework items, and open items with the registered evidence of the disposition. A disposition without evidence is `deferred`.
+   A periodic `service-report` may evidence a `service` commitment, but never substitutes for the client's attributable acceptance disposition when acceptance is required.
 5. Route: `rework` returns to `q-consult-intervention` with its items; a disputed criterion, scope, or commitment goes to change control through the orchestrator; `accepted` and `accepted_with_reservations` go to the orchestrator's execution release.
 
 Complete when every presented deliverable has a disposition with evidence or a `deferred` disposition with its reason, and every rework or dispute names its route.
 
 ## Stage result
 
-Return a valid `stage_result`: the acceptance record in `authored_outputs` (or `updated_outputs` for a later session) with type `acceptance-record`, path, `Working` lifecycle, and the deliverable versions as source refs; each disposition in `decisions_added_or_updated`; reservations that carry risk in `risks_added_or_updated`; the session and any client confirmation in `required_user_actions`; a disputed criterion or an unconfirmed version in `blockers`; the execution release, a rework return, or a change request as `next_recommended_action`. In standalone mode set `global_state_updated: false` and `reconciliation_required: true` and persist the result beside the record as the contract's standalone-persistence rule requires; never write workflow state or the artifact index.
+Return a valid `stage_result`: the acceptance record and `04-evidence.yaml` in `authored_outputs` (or `updated_outputs` for a later session) with their declared types, paths, `Working` lifecycle, authority, and the deliverable versions as source refs; each disposition in `decisions_added_or_updated`; reservations that carry risk in `risks_added_or_updated`; the session and any client confirmation in `required_user_actions`; a disputed criterion or an unconfirmed version in `blockers`; the execution release, a rework return, or a change request as `next_recommended_action`. In standalone mode set `global_state_updated: false` and `reconciliation_required: true` and persist the result beside the record as the contract's standalone-persistence rule requires; never write workflow state or the artifact index.

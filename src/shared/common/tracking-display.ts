@@ -162,6 +162,32 @@ export const userTrackingNoticeKindByEventType: Partial<
 };
 
 /**
+ * Events whose `metadata.reason` explains the deviation to the customer. Decided
+ * by event type, not notice kind, because the
+ * `rollover` kind also covers a roll over resolution and an operation
+ * compensation, whose reasons are internal operator notes.
+ */
+const customerFacingReasonEventTypes: ReadonlySet<TrackingEventType> = new Set([
+	"fulfillmentException",
+	"rolledOverPreAllocation",
+	"rolledOverPostAllocation",
+]);
+
+/** The admin-entered reason a customer notice may show, if any. */
+export function customerNoticeReason(
+	eventType: TrackingEventType,
+	metadata: unknown,
+): string | undefined {
+	if (!customerFacingReasonEventTypes.has(eventType)) return undefined;
+	if (typeof metadata !== "object" || metadata === null) return undefined;
+
+	const reason = (metadata as { reason?: unknown }).reason;
+	if (typeof reason !== "string") return undefined;
+
+	return reason.trim() || undefined;
+}
+
+/**
  * Admin fulfillment journey: the 10 happy-path stages, 1:1 with the happy-path
  * literals of `CartItemFulfillmentStatus`. Deviations (cancellation, rollover,
  * exception) are notices/outcomes, never stages — see `tracking-journey.ts`.

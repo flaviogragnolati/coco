@@ -41,7 +41,7 @@ Keep the commercial part readable without a technical or legal annex. Move lengt
 - Give each deliverable content, format, delivery condition, and acceptance criterion.
 - Link each payment to a verifiable commercial milestone or condition.
 - Identify who contracts, pays, and administers each third-party service.
-- Distinguish estimated dates from committed dates.
+- Apply the estimate-versus-commitment rule in `q-core-identity` `references/editorial-standards.md`.
 - Distinguish defects from changes and enhancements when the source defines them.
 - Preserve source IDs for impact analysis without displaying every internal ID to the client.
 

@@ -16,6 +16,7 @@ import type {
 	shipmentListOutputSchema,
 	shipmentReceiveInputSchema,
 	shipmentReceiveOutputSchema,
+	shipmentRecoverInputSchema,
 	shipmentRetryInputSchema,
 	shipmentStatsSchema,
 	shipmentStatusSchema,
@@ -47,6 +48,7 @@ export type ShipmentExceptionInput = z.output<
 	typeof shipmentExceptionInputSchema
 >;
 export type ShipmentRetryInput = z.output<typeof shipmentRetryInputSchema>;
+export type ShipmentRecoverInput = z.output<typeof shipmentRecoverInputSchema>;
 export type DeliveryMode = z.output<typeof deliveryModeSchema>;
 export type ShipmentCreateEndUserInput = z.output<
 	typeof shipmentCreateEndUserInputSchema

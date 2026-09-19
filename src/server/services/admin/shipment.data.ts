@@ -1,5 +1,8 @@
 import type { Prisma } from "~/prisma/client";
-import type { ShipmentListInput } from "~/shared/common/admin-crud/shipment.types";
+import type {
+	ShipmentListInput,
+	ShipmentStatus,
+} from "~/shared/common/admin-crud/shipment.types";
 import { fromDateTimeLocalValue } from "~/shared/common/date.helpers";
 import { toPrismaInputJson } from "./_base/prisma-json";
 
@@ -552,6 +555,61 @@ export async function listLatestShipmentTrackingEvents(
 	});
 
 	return records as ShipmentTrackingEventRecord[];
+}
+
+/** How many times `action` was already audited on the shipment. */
+export async function countShipmentAuditEntries(
+	db: AdminDbClient,
+	shipmentId: number,
+	action: string,
+) {
+	return db.auditLog.count({
+		where: {
+			entityType: "shipment",
+			entityId: String(shipmentId),
+			action,
+		},
+	});
+}
+
+const shipmentStatusValues: ReadonlySet<string> = new Set<ShipmentStatus>([
+	"pending",
+	"preparing",
+	"readyForDispatch",
+	"inTransit",
+	"received",
+	"delayed",
+	"failed",
+	"cancelled",
+]);
+
+/**
+ * The status the shipment was in when its latest delay was recorded, read from
+ * the `shipment.markDelayed` audit snapshot. Null when there is no such entry.
+ */
+export async function findShipmentStatusBeforeDelay(
+	db: AdminDbClient,
+	shipmentId: number,
+): Promise<ShipmentStatus | null> {
+	const entry = await db.auditLog.findFirst({
+		where: {
+			entityType: "shipment",
+			entityId: String(shipmentId),
+			action: "shipment.markDelayed",
+		},
+		select: { before: true },
+		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+	});
+
+	const before = entry?.before;
+	if (typeof before !== "object" || before === null || Array.isArray(before)) {
+		return null;
+	}
+
+	const status = (before as { status?: unknown }).status;
+	return typeof status === "string" && shipmentStatusValues.has(status)
+		? (status as ShipmentStatus)
+		: null;
 }
 
 /**
