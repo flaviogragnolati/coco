@@ -13,10 +13,10 @@ const regressionChain = [
 ];
 
 /**
- * The nine cases rewritten by `implementation-plan-qa-definition-remediation-and-rollout.md`
- * §6, with the entry points a tester cannot execute the case without. The list
- * is a spot check of the contract, not a second transcription: exact wording is
- * reviewed against the doc by hand.
+ * Cases rewritten so a tester can run them without prior context: steps open
+ * with their preconditions and name the entry points the case cannot be
+ * executed without. The list is a spot check of the contract, not a second
+ * transcription: exact wording is reviewed against the doc by hand.
  */
 const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 	{ code: 12, mustMention: ["`/cart`", "`/checkout`", "`/admin/carts`"] },
@@ -36,9 +36,24 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 			"`/checkout/mercadopago/success`",
 			"`/checkout/mercadopago/failure`",
 			"`/checkout/mercadopago/pending`",
+			"coco-kappa-ashy",
 		],
 	},
-	{ code: 23, mustMention: ["`/admin/payments`", "`/my-orders/[id]`"] },
+	{
+		code: 23,
+		mustMention: [
+			"`/admin/payments`",
+			"`/my-orders/[id]`",
+			'"Eventos"',
+			"APRO",
+		],
+	},
+	{ code: 24, mustMention: ["OTHE", "CONT"] },
+	{
+		code: 25,
+		mustMention: ["curl", "x-signature", "qa-firma-invalida", "401"],
+	},
+	{ code: 26, mustMention: ['"Reprocesar"'] },
 	{
 		code: 30,
 		mustMention: ["`/admin/payments`", '"Seguimiento del pedido"'],
@@ -54,6 +69,11 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 		],
 	},
 	{ code: 32, mustMention: ["`/my-orders/[id]`", "`/admin/operations`"] },
+	{
+		code: 36,
+		mustMention: ['"Reconciliar ahora"', "Pago (id de Mercado Pago)"],
+	},
+	{ code: 37, mustMention: ['"Ignorar"', '"Reprocesar"'] },
 ];
 
 const byCode = new Map(qaTicketSeedEntries.map((entry) => [entry.code, entry]));

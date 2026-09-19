@@ -65,7 +65,11 @@ import type {
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { api } from "~/trpc/react";
-import { resolvePaymentStatus } from "./payment.mappers";
+import {
+	formatAttemptRefs,
+	reconcileUnavailableReason,
+	resolvePaymentStatus,
+} from "./payment.mappers";
 
 const EXTERNAL_PROVIDER = "external";
 
@@ -196,6 +200,7 @@ function AttemptDetail({
 	if (!attempt) return null;
 
 	const isExternal = attempt.provider === EXTERNAL_PROVIDER;
+	const reconcileUnavailable = reconcileUnavailableReason(attempt);
 
 	return (
 		<Card>
@@ -244,7 +249,9 @@ function AttemptDetail({
 								</p>
 							</div>
 							<div className="border p-3 text-xs">
-								<span className="text-muted-foreground">Pago</span>
+								<span className="text-muted-foreground">
+									Pago (id de Mercado Pago)
+								</span>
 								<p className="break-all font-medium">
 									{attempt.providerPaymentId ?? "Sin dato"}
 								</p>
@@ -279,21 +286,33 @@ function AttemptDetail({
 						</p>
 					)
 				) : (
-					<div className="flex flex-wrap gap-2">
-						<Button
-							disabled={isReconciling || !attempt.providerPaymentId}
-							onClick={() => onReconcile(attempt.id)}
-							type="button"
-						>
-							<RefreshCcwIcon data-icon="inline-start" />
-							Reconciliar ahora
-						</Button>
-						{attempt.checkoutUrl ? (
-							<Button asChild type="button" variant="outline">
-								<a href={attempt.checkoutUrl} rel="noreferrer" target="_blank">
-									Abrir checkout
-								</a>
+					<div className="flex flex-col gap-2">
+						<div className="flex flex-wrap gap-2">
+							<Button
+								disabled={isReconciling || reconcileUnavailable !== null}
+								onClick={() => onReconcile(attempt.id)}
+								type="button"
+							>
+								<RefreshCcwIcon data-icon="inline-start" />
+								Reconciliar ahora
 							</Button>
+							{attempt.checkoutUrl ? (
+								<Button asChild type="button" variant="outline">
+									<a
+										href={attempt.checkoutUrl}
+										rel="noreferrer"
+										target="_blank"
+									>
+										Abrir checkout
+									</a>
+								</Button>
+							) : null}
+						</div>
+						{/* Visible text, not a tooltip: a disabled button emits no pointer events. */}
+						{reconcileUnavailable ? (
+							<p className="text-muted-foreground text-xs">
+								{reconcileUnavailable}
+							</p>
 						) : null}
 					</div>
 				)}
@@ -398,6 +417,15 @@ function EventDetail({
 						</Button>
 					</div>
 				</div>
+				{event.lastError ? (
+					event.status === "ignored" ? (
+						<p className="text-muted-foreground text-xs">
+							Motivo: {event.lastError}
+						</p>
+					) : (
+						<p className="text-destructive text-xs">{event.lastError}</p>
+					)
+				) : null}
 				<div className="grid gap-3 md:grid-cols-3">
 					<JsonBlock value={event.query} />
 					<JsonBlock value={event.headers} />
@@ -956,11 +984,18 @@ export function PaymentsAdminClient() {
 		{
 			key: "refs",
 			header: "Refs",
-			cell: (item) => (
-				<span className="break-all text-xs">
-					{item.providerPaymentId ?? item.providerPreferenceId ?? "Sin ref."}
-				</span>
-			),
+			cell: (item) => {
+				const refs = formatAttemptRefs(item);
+				if (refs.length === 0) {
+					return <span className="text-xs">Sin ref.</span>;
+				}
+				return refs.map((ref) => (
+					<span className="block break-all text-xs" key={ref.label}>
+						<span className="text-muted-foreground">{ref.label}:</span>{" "}
+						{ref.value}
+					</span>
+				));
+			},
 		},
 		{
 			key: "updated",

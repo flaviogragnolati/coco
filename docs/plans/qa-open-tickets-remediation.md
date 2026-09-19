@@ -292,5 +292,5 @@ Use `q-code-implement` phase by phase; start each defect with a failing test (`q
 1. Apply the migration **before** deploying this code (every package read selects `sourcePackageId`).
 2. On a disposable Neon branch: reproduce #69, then `pnpm db:seed && pnpm db:seed-verify` (exit 0) and `pnpm fulfillment:e2e`.
 3. Run `pnpm qa:seed` only after deploy (§5), then the QA lead reopens #3, #12, #16, #18, #20, #30, #31, #32, #33, #42, #45, #48, #54, #61, #67, #69.
-4. Mercado Pago part (4.1, #22, #25, #36) and MP sandbox credentials remain pending.
+4. Mercado Pago part moved to `docs/plans/qa-mercadopago-pending.md` (it supersedes Task 4.1 and the #22, #25, #36 rewrites; its §1 records the 2026-09-19 environment setup).
 5. Optional: ship as the PRs §12 describes; add a `shipment.recover` step to `scripts/fulfillment-e2e.ts`.

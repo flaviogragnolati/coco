@@ -33,3 +33,34 @@ export function resolvePaymentStatus(status: string): StatusConfig {
 		paymentStatusConfig[status] ?? { ...statusPresets.inert, label: status }
 	);
 }
+
+type AttemptRefsInput = {
+	providerPaymentId: string | null;
+	providerPreferenceId: string | null;
+};
+
+type AttemptRef = { label: "Pago" | "Preferencia"; value: string };
+
+/** One labelled line per known provider id, payment first; empty when none. */
+export function formatAttemptRefs(input: AttemptRefsInput): AttemptRef[] {
+	const refs: AttemptRef[] = [];
+	if (input.providerPaymentId) {
+		refs.push({ label: "Pago", value: input.providerPaymentId });
+	}
+	if (input.providerPreferenceId) {
+		refs.push({ label: "Preferencia", value: input.providerPreferenceId });
+	}
+	return refs;
+}
+
+/**
+ * Why "Reconciliar ahora" cannot run, or null when it can. Reconciliation
+ * queries Mercado Pago by payment id, which only exists once the buyer pays.
+ */
+export function reconcileUnavailableReason(
+	input: Pick<AttemptRefsInput, "providerPaymentId">,
+): string | null {
+	return input.providerPaymentId
+		? null
+		: "Sin id de pago de Mercado Pago: el comprador todavía no pagó esta preferencia. El id llega con el webhook del pago.";
+}

@@ -258,9 +258,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Preferencia MP + redirect",
 		steps:
-			'Precondiciones: Mercado Pago habilitado en modo "Sandbox" desde `/admin/payments` → Config, secretos de prueba configurados, URLs públicas HTTPS válidas y un Cliente con carrito/dirección listos. Sandbox es el entorno de Mercado Pago para cuentas, compradores y medios de prueba; no mueve dinero real.\n1) En "Pago", elegir "Mercado Pago" y avanzar a "Confirmar".\n2) Aceptar los términos y hacer click en "Confirmar y pagar".\n3) Sin completar todavía el pago en Checkout Pro, abrir `/admin/payments` en la sesión Admin y buscar el pedido o intento recién creado.',
+			'Precondiciones: entorno QA ya configurado (Mercado Pago en "Sandbox", URLs en `https://coco-kappa-ashy.vercel.app`) y un Cliente con carrito y dirección listos. Tener a mano el usuario comprador de prueba de MP, que el responsable de QA pasa por privado. Sandbox es el entorno de Mercado Pago para cuentas, compradores y medios de prueba; no mueve dinero real.\n1) En "Pago", elegir "Mercado Pago" y avanzar a "Confirmar".\n2) Aceptar los términos y hacer click en "Confirmar y pagar".\n3) Sin completar todavía el pago en Checkout Pro, abrir `/admin/payments` → "Intentos" en la sesión Admin y buscar el intento por el email del Cliente (el más reciente).',
 		expectedResult:
-			'La app muestra "Redirigiendo a Mercado Pago" y navega al Checkout Pro de prueba.\nEl intento aparece "Pendiente", con proveedor Mercado Pago y preferencia creada; la orden queda "Pendiente" y el carrito "En checkout".\nLa pantalla externa usa únicamente credenciales de comprador y medios de pago de prueba.',
+			'La app muestra "Redirigiendo a Mercado Pago" y navega al Checkout Pro de prueba.\nEl intento aparece "pending", con proveedor `mercadopago · sandbox` y en "Refs" solo "Preferencia: …"; la orden queda "Pendiente" y el carrito "En checkout".\nLa pantalla externa usa únicamente credenciales de comprador y medios de pago de prueba.',
 		isRegressionPath: true,
 	},
 	{
@@ -270,7 +270,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Back URLs success/failure/pending",
 		steps:
-			"Precondiciones: app accesible en la URL configurada para los retornos de Mercado Pago.\n1) Abrir `/checkout/mercadopago/success` y registrar título, badge y alerta.\n2) Abrir `/checkout/mercadopago/failure` y repetir la revisión.\n3) Abrir `/checkout/mercadopago/pending` y repetir la revisión.\n4) Confirmar que ninguna de las tres páginas ofrece o ejecuta una mutación de estado.",
+			"Precondiciones: ninguna; no hace falta pagar ni pasar por Mercado Pago. Las tres rutas se abren directo sobre `https://coco-kappa-ashy.vercel.app`.\n1) Abrir `/checkout/mercadopago/success` (https://coco-kappa-ashy.vercel.app/checkout/mercadopago/success) y registrar título, badge y alerta.\n2) Abrir `/checkout/mercadopago/failure` (https://coco-kappa-ashy.vercel.app/checkout/mercadopago/failure) y repetir la revisión.\n3) Abrir `/checkout/mercadopago/pending` (https://coco-kappa-ashy.vercel.app/checkout/mercadopago/pending) y repetir la revisión.\n4) Confirmar que ninguna de las tres páginas ofrece o ejecuta una mutación de estado.",
 		expectedResult:
 			'Success muestra "Pago enviado a confirmación"; failure, "Pago no confirmado"; pending, "Pago pendiente".\nLas tres muestran "Estado sujeto a reconciliación" y explican que esa pantalla no actualiza el pago.\nLas tres permiten ir al inicio o a "Ver mis pedidos"; la verdad del pago sigue dependiendo del webhook firmado y la consulta al proveedor.',
 		isRegressionPath: false,
@@ -282,9 +282,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Sistema",
 		feature: "Reconciliación por webhook firmado",
 		steps:
-			"Precondiciones: continuar desde un intento sandbox de #21; usar un comprador de prueba distinto del vendedor y un medio de prueba con resultado aprobado.\n1) Completar el pago en Checkout Pro y volver por la URL de éxito.\n2) En `/admin/payments` → Eventos, esperar el evento asociado y verificar su firma; luego abrir el intento relacionado.\n3) En la sesión Cliente, abrir `/my-orders/[id]` del pedido y refrescar hasta que termine la reconciliación.",
+			'Precondiciones: continuar desde el intento de #21 (Checkout Pro abierto, sin pagar). En Checkout Pro iniciar sesión con el usuario comprador de prueba, nunca con el vendedor. Pagar con la tarjeta de prueba que pasa el responsable de QA, nombre del titular `APRO` y DNI 12345678 (tabla pública de tarjetas de prueba de MP; si MP lo rechaza, usar el documento del perfil del comprador de prueba).\n1) Completar el pago en Checkout Pro y volver por la URL de éxito.\n2) En `/admin/payments` → "Intentos", abrir el intento de #21 y copiar el id del campo "Pago (id de Mercado Pago)". En "Eventos", buscar ese id: debe aparecer un evento de tipo `payment` con Firma "válida".\n3) En la sesión Cliente, abrir `/my-orders/[id]` del pedido y refrescar hasta que termine la reconciliación.',
 		expectedResult:
-			'El evento queda vinculado y con firma válida; el intento pasa a "Completado"/"Aprobado".\nLa orden pasa a "En procesamiento", el carrito a "Enviado" y sus items a submitted.\nEl detalle del cliente muestra "Pedido confirmado". La proyección puede aparecer unos segundos después porque el tracking es asíncrono.\nSi el evento no llega por configuración de entorno, el caso queda "Bloqueado", no "Fallido".',
+			'El evento queda vinculado y con firma válida; el intento pasa a "completed" y el cliente ve el pago "Aprobado".\nEl campo "Pago (id de Mercado Pago)" del intento muestra el id del pago.\nLa orden pasa a "En procesamiento", el carrito a "Enviado" y sus items a submitted.\nEl detalle del cliente muestra "Pedido confirmado". La proyección puede aparecer unos segundos después porque el tracking es asíncrono.\nSi el evento no llega o llega con Firma "no válida" y error "Firma inválida: …", es configuración de entorno: el caso queda "Bloqueado", no "Fallido".',
 		isRegressionPath: true,
 	},
 	{
@@ -294,9 +294,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Sistema",
 		feature: "Mapeo de estados MP",
 		steps:
-			"1) Pagar con tarjeta de prueba rechazada.\n2) Revisar orden, transacción y carrito.",
+			'Precondiciones: mismo comprador de prueba, tarjeta y DNI que #23. Cada caso es un checkout nuevo con "Mercado Pago" (pasos 1 y 2 de #21); si Checkout Pro ofrece reintentar, no reintentar.\n1) Pagar en Checkout Pro con nombre del titular `OTHE` (MP lo rechaza).\n2) En otro checkout nuevo, pagar con nombre del titular `CONT` (MP lo deja pendiente, `in_process`).\n3) Para cada uno, revisar el intento en `/admin/payments` → "Intentos" (buscar por email del Cliente), el pedido en `/my-orders` y el carrito en `/cart`.',
 		expectedResult:
-			'Transacción "Rechazado"; la orden sigue "Pendiente" y el carrito sigue editable. Un pago `in_process` deja la transacción "En proceso" sin acreditar nada.',
+			'`OTHE`: el intento queda "failed" y el cliente ve el pago "Rechazado"; la orden sigue "Pendiente" y el carrito sigue editable.\n`CONT`: el intento queda "inProcess" y el cliente ve el pago "En proceso" sin acreditar nada; la orden sigue "Pendiente".',
 		isRegressionPath: false,
 	},
 	{
@@ -306,9 +306,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin",
 		feature: "Validación de firma",
 		steps:
-			"1) Enviar un POST a `/api/mercadopago/webhook` con `x-signature` inválida (curl).\n2) Revisar `/admin/payments` → tab Eventos.",
+			'Precondiciones: una terminal con `curl` y la sesión Admin en `/admin/payments`. El comando usa a propósito una firma inválida; no hace falta ninguna credencial. En `/admin/payments` → Config, el switch "Webhooks unsigned dev" debe estar apagado; si está prendido, el caso queda "Bloqueado".\n1) Ejecutar: `curl -i -X POST \'https://coco-kappa-ashy.vercel.app/api/mercadopago/webhook?type=payment&data.id=123\' -H \'Content-Type: application/json\' -H \'x-request-id: qa-firma-invalida\' -H \'x-signature: ts=1,v1=invalida\' -d \'{"type":"payment","action":"payment.updated","data":{"id":"123"}}\'`\n2) En `/admin/payments` → "Eventos", buscar `qa-firma-invalida` y abrir el evento.',
 		expectedResult:
-			'Respuesta HTTP 401; el evento queda registrado como "rejected" con "firma no válida" y no se procesa ningún cambio de estado.',
+			'Paso 1: HTTP 401 con cuerpo `{"error":"invalid signature"}`.\nPaso 2: el evento aparece con estado "rejected", Firma "no válida", Intento "Sin vincular" y, en su detalle, un error que empieza con "Firma inválida".\nNo cambia ningún pago ni pedido.',
 		isRegressionPath: false,
 	},
 	{
@@ -318,9 +318,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin",
 		feature: "Idempotencia de reconciliación",
 		steps:
-			'1) Sobre un pago ya acreditado, reenviar el mismo evento (botón "Reprocesar" en tab Eventos).',
+			'Precondiciones: el pedido acreditado en #23.\n1) En `/admin/payments` → "Eventos", abrir el evento `payment` de #23 (buscar por el id del campo "Pago (id de Mercado Pago)") y hacer click en "Reprocesar" dos veces.\n2) Revisar el intento en "Intentos" y el seguimiento del pedido en `/my-orders/[id]`.',
 		expectedResult:
-			'No se duplican submissions ni eventos de tracking (el timeline del item sigue con un solo "Pedido confirmado"); la transacción no retrocede de estado.',
+			'No se duplican submissions ni eventos de tracking (el timeline del item sigue con un solo "Pedido confirmado").\nLa transacción no retrocede de estado.',
 		isRegressionPath: false,
 	},
 	{
@@ -437,9 +437,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin",
 		feature: "`reconcileAttempt`",
 		steps:
-			'1) Elegir un intento con `providerPaymentId`.\n2) Click "Reconciliar ahora".\n3) Probar sobre un intento sin payment id.',
+			'Precondiciones: al menos un intento MP pagado (#23) y uno sin pagar (un checkout de #21 que quedó sin pagar). `providerPaymentId` = campo "Pago (id de Mercado Pago)".\n1) En `/admin/payments` → "Intentos", abrir un intento MP cuya columna "Refs" muestra "Pago: …" (por ejemplo el de #23) y hacer click en "Reconciliar ahora".\n2) Abrir un intento MP cuya columna "Refs" muestra solo "Preferencia: …" y mirar el botón "Reconciliar ahora".',
 		expectedResult:
-			'Toast "Intento reconciliado" y el estado se actualiza según el recurso real de MP. Sin payment id el botón está deshabilitado.',
+			'Paso 1: toast "Intento reconciliado" y el estado coincide con el pago real en MP.\nPaso 2: el botón está deshabilitado y debajo dice "Sin id de pago de Mercado Pago: el comprador todavía no pagó esta preferencia. El id llega con el webhook del pago."',
 		isRegressionPath: false,
 	},
 	{
@@ -449,9 +449,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin",
 		feature: "Gestión de eventos de proveedor",
 		steps:
-			'1) Tab Eventos: "Reprocesar" un evento de tipo payment.\n2) Intentar "Ignorar" con motivo de 3 caracteres.\n3) Ignorar con un motivo válido.',
+			'Precondiciones: al menos un evento `payment` (después de #23) y el evento rechazado de #25.\n1) En `/admin/payments` → "Eventos", abrir el evento `payment` de #23 (buscar por el id del campo "Pago (id de Mercado Pago)") y hacer click en "Reprocesar".\n2) Abrir el evento de #25 (buscar `qa-firma-invalida`), escribir un motivo de 3 caracteres y mirar el botón "Ignorar".\n3) Escribir un motivo de 5 caracteres o más y hacer click en "Ignorar".',
 		expectedResult:
-			'Reprocesar re-ejecuta la reconciliación (toast "Evento reprocesado"). Ignorar exige motivo ≥ 5 caracteres y deja el evento "ignored" (toast "Evento ignorado").',
+			'Paso 1: toast "Evento reprocesado".\nPaso 2: con menos de 5 caracteres "Ignorar" está deshabilitado.\nPaso 3: toast "Evento ignorado" y el evento queda "ignored".',
 		isRegressionPath: false,
 	},
 	{

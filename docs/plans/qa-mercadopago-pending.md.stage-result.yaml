@@ -1,0 +1,77 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implementation-plan"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-mercadopago-pending.md"
+      lifecycle: "Working"
+      source_item_id: "qa_ticket:#21,#22,#23,#24,#25,#26,#36,#37"
+  derived_outputs: []
+  updated_outputs: []
+  references_added:
+    - "docs/plans/qa-open-tickets-remediation.md (parent; Task 4.1 and MP ticket rewrites superseded)"
+  traceability_delta:
+    - {item: "qa_ticket#36", refined_by: "Task 1.1, 1.2, 2.1"}
+    - {item: "qa_ticket#21,#22,#23,#24,#25,#26,#37", refined_by: "Task 2.1, 2.2, 2.3"}
+  decisions_added_or_updated:
+    - "Disabled-reconcile reason shown as visible text, not tooltip (disabled buttons emit no pointer events)"
+  risks_added_or_updated:
+    - "MP sandbox cardholder-name convention (APRO/OTHE/CONT) not re-verified this session"
+  stale_artifacts:
+    - path: "docs/plans/qa-open-tickets-remediation.md"
+      proposed_change: "§17 item 4 points to docs/plans/qa-mercadopago-pending.md (Task 3.1)"
+  blockers: []
+  warnings:
+    - "Assumption A2 (test-card cardholder names) must be confirmed against current MP docs"
+    - "Tester needs MP test buyer and cards via a private channel"
+  required_user_actions:
+    - "Share MP sandbox buyer/card data with the tester privately"
+    - "After deploy: pnpm qa:seed and reopen #21-#26, #36, #37"
+  next_recommended_action: "q-code-implement docs/plans/qa-mercadopago-pending.md"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true
+---
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-mercadopago-pending.md"
+      change: "§17 execution record added"
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-open-tickets-remediation.md"
+      change: "§17 item 4 points to docs/plans/qa-mercadopago-pending.md (Task 3.1)"
+  references_added: []
+  traceability_delta:
+    - {item: "qa_ticket#36", implemented_by: "Task 1.1, 1.2, 2.1"}
+    - {item: "qa_ticket#21,#22,#23,#24,#25,#26,#37", implemented_by: "Task 2.1, 2.2, 2.3"}
+  decisions_added_or_updated:
+    - "EventDetail renders lastError (ignored events as 'Motivo: …') so #25 and signature-mismatch diagnosis are visible"
+    - "#21 locates the attempt by Cliente email; checkout redirects before showing the order code"
+    - "A2 confirmed against MP docs: APRO approved, OTHE rejected, CONT pending, buyer test account, DNI 12345678"
+    - "Admin-side ticket text uses raw attempt statuses (pending/completed/failed/inProcess)"
+  risks_added_or_updated:
+    - "#25 is blocked if 'Webhooks unsigned dev' is on outside production"
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "Mini review: q-review-code standards pass with findings (applied), specification pass with findings (deviations recorded); q-review-comments pass with findings (applied)"
+    - "Manual /admin/payments check not run (Google OAuth, non-interactive session)"
+    - "Not released: qa:seed and sandbox runs wait for deploy"
+  required_user_actions:
+    - "Deploy, then pnpm qa:seed and reopen #21-#26, #36, #37"
+    - "Confirm 'Webhooks unsigned dev' is off on coco-kappa-ashy"
+    - "Share MP sandbox buyer/card data with the tester privately"
+  next_recommended_action: "Commit/PR the change, deploy, then Task 3.2"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true

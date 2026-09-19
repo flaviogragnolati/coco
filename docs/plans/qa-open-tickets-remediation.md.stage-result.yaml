@@ -40,11 +40,8 @@ stage_result:
       proposed_change: "Rewrite/retire tickets per Task 4.2"
   blockers: []
   warnings:
-    - "Tickets #21,#23,#24,#26,#37 blocked on MERCADOPAGO_ACCESS_TOKEN in QA environment"
     - "Task 1.3 ships placeholder terms; replace before production"
   required_user_actions:
-    - "Set MERCADOPAGO_ACCESS_TOKEN and MERCADOPAGO_WEBHOOK_SECRET in Vercel and redeploy"
-    - "Update MP provider URLs to https://coco-kappa-ashy.vercel.app and register the webhook in the MP panel"
   next_recommended_action: "q-code-implement docs/plans/qa-open-tickets-remediation.md, Phase 1"
 orchestration:
   mode: "standalone"
