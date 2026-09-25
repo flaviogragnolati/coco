@@ -22,7 +22,12 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		term: "Featured offer",
 		definition:
 			"Un producto vigente del catálogo que aparece en la grilla de ofertas de la home, fijado por un administrador o elegido por el ranking de ofertas. Los fijados van primero y el ranking completa el resto, así la grilla nunca queda vacía ni desactualizada.",
-		aliases: ["Promoción", "Operación", "Oferta protagonista"],
+		aliases: [
+			"Promoción",
+			"Operación",
+			"Oferta protagonista",
+			"Pedido abierto",
+		],
 		href: "/admin/home-offers",
 	},
 	{
@@ -99,7 +104,19 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		term: "Offer price",
 		definition:
 			"Lo que paga el cliente una vez aplicado el descuento de oferta a los términos de cliente. Se calcula en un solo lugar, así es idéntico en el catálogo, el carrito, el snapshot del checkout y el pago.",
-		aliases: ["Precio final", "Precio con descuento"],
+		aliases: ["Precio final", "Precio con descuento", "Total operación"],
+		href: "/admin/product-terms",
+	},
+
+	{
+		slug: "concepto-ahorro",
+		kind: "concept",
+		section: "catalog",
+		label: "Ahorro",
+		term: "Market saving",
+		definition:
+			"Lo que ahorra el cliente por unidad y por bloque MOQ frente al precio de góndola. Solo se muestra cuando el precio de góndola supera al precio unitario de oferta.",
+		aliases: ["Descuento", "Savings claim"],
 		href: "/admin/product-terms",
 	},
 

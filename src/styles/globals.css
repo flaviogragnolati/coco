@@ -88,13 +88,13 @@
 	--warning-foreground: oklch(0.27 0.05 75);
 	--info: oklch(0.55 0.13 240);
 	--info-foreground: oklch(0.985 0 0);
-	--brand-soft: oklch(0.925 0.055 185);
+	--brand-soft: oklch(0.924646 0.042597 178.0625);
 	--brand-soft-foreground: oklch(0.25 0.055 215);
-	--brand-warm: oklch(0.965 0.035 82);
+	--brand-warm: oklch(0.96118 0.026078 82.3863);
 	--brand-warm-foreground: oklch(0.27 0.045 62);
-	--brand-ink: oklch(0.235 0.045 215);
+	--brand-ink: oklch(0.26696 0.034436 214.3321);
 	--brand-ink-foreground: oklch(0.98 0.012 95);
-	--highlight: oklch(0.77 0.16 55);
+	--highlight: oklch(0.725791 0.16128 48.94);
 	--highlight-foreground: oklch(0.24 0.055 45);
 	--border: oklch(0.9 0.018 190);
 	--input: oklch(0.9 0.018 190);
@@ -200,4 +200,13 @@
 	.cn-toast-loading[data-sonner-toast] [data-icon] {
 		color: var(--toast-loading-text);
 	}
+}
+
+/* Segment-scoped variables also reach portals mounted directly in body. */
+html:has([data-storefront]) {
+	--font-sans: var(--font-storefront-sans);
+}
+
+html:has([data-storefront]) .font-heading {
+	font-family: var(--font-storefront-heading);
 }

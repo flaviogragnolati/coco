@@ -13,6 +13,11 @@ function offer(
 ): RankableHomeOffer {
 	return {
 		productId: input.productId,
+		productDescription: null,
+		step: null,
+		stepPrice: null,
+		max: null,
+		toDate: null,
 		productClientTermsId: input.productClientTermsId ?? input.productId,
 		productName: input.productName ?? `Producto ${input.productId}`,
 		unit: input.unit ?? "kg",

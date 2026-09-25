@@ -31,7 +31,7 @@ export function CartNavButton({
 			<TooltipTrigger asChild>
 				<Button
 					aria-label="Abrir carrito"
-					className="relative"
+					className="relative size-[42px] rounded-full"
 					onClick={openMiniCart}
 					size="icon"
 					type="button"

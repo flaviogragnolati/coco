@@ -1028,20 +1028,21 @@ async function upsertProductClientTerms(
 		unitPrice?: string;
 		marketPrice?: string;
 		discountPercent?: string;
-		currency?: "ARS" | "USD" | "EUR" | "BRL";
 		active?: boolean;
 		deleted?: boolean;
 		fromDate: Date;
 		toDate?: Date | null;
 	},
 ): Promise<SeedClientTerms> {
+	// ARS only: Mercado Pago charges an Argentine seller in pesos. The key ignores
+	// currency so a re-seed converts rows an older seed wrote in USD or BRL.
 	const existing = await tx.productClientTerms.findFirst({
 		where: {
 			productId: input.productId,
-			currency: input.currency ?? "ARS",
 			fromDate: input.fromDate,
 			moq: input.moq,
 		},
+		orderBy: { id: "asc" },
 	});
 	const data = {
 		productId: input.productId,
@@ -1053,7 +1054,7 @@ async function upsertProductClientTerms(
 		unitPrice: input.unitPrice ?? null,
 		marketPrice: input.marketPrice ?? null,
 		discountPercent: input.discountPercent ?? null,
-		currency: input.currency ?? "ARS",
+		currency: "ARS" as const,
 		active: input.active ?? true,
 		deleted: input.deleted ?? false,
 		fromDate: input.fromDate,
@@ -1508,12 +1509,11 @@ async function seedMasterData(tx: Tx) {
 		aceite: await upsertProductClientTerms(tx, {
 			productId: products.aceite.id,
 			moq: "2.0000",
-			moqPrice: "98.00",
+			moqPrice: "90000.00",
 			step: "1.0000",
-			stepPrice: "45.00",
+			stepPrice: "44000.00",
 			max: "30.0000",
-			unitPrice: "49.00",
-			currency: "USD",
+			unitPrice: "45000.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		arroz: await upsertProductClientTerms(tx, {
@@ -1570,12 +1570,11 @@ async function seedMasterData(tx: Tx) {
 		bandejaFuture: await upsertProductClientTerms(tx, {
 			productId: products.bandeja.id,
 			moq: "4.0000",
-			moqPrice: "320.00",
+			moqPrice: "64000.00",
 			step: "2.0000",
-			stepPrice: "150.00",
+			stepPrice: "30000.00",
 			max: "40.0000",
-			unitPrice: "80.00",
-			currency: "BRL",
+			unitPrice: "16000.00",
 			fromDate: FUTURE_FROM_DATE,
 		}),
 		// Fixed quantity: omitting step/stepPrice normalizes them to null, which is
@@ -1607,6 +1606,15 @@ async function seedMasterData(tx: Tx) {
 			toDate: EXPIRED_TO_DATE,
 		}),
 	};
+	// Earlier seeds left other rows on these products (USD/BRL prices, shifted
+	// dates) that no upsert key reaches; the rows above are the only live ones.
+	await tx.productClientTerms.updateMany({
+		where: {
+			productId: { in: Object.values(products).map((product) => product.id) },
+			id: { notIn: Object.values(clientTerms).map((terms) => terms.id) },
+		},
+		data: { active: false, deleted: true },
+	});
 
 	const supplierTerms = {
 		tomate: await upsertProductSupplierTerms(tx, {

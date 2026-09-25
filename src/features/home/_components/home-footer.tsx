@@ -1,52 +1,61 @@
 import Link from "next/link";
-
 import { Separator } from "~/components/ui/separator";
-import { homeNavLinks } from "../home-content";
+import { contactItems, footerColumns } from "../home-content";
 
 export function HomeFooter() {
-	const year = new Date().getFullYear();
-
 	return (
-		<footer className="border-t bg-brand-warm text-brand-warm-foreground">
-			<div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-8 md:px-6">
-				<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-					<div className="flex flex-col gap-1">
-						<strong className="font-heading text-sm">Coco</strong>
-						<p className="max-w-md text-xs/relaxed opacity-75">
-							Comprá al por mayor sin organizar un grupo. Coco consolida la
-							demanda pagada y te acompaña hasta la entrega.
+		<footer
+			className="scroll-mt-20 bg-brand-ink px-4 py-12 text-brand-ink-foreground md:px-6"
+			id="contacto"
+		>
+			<div className="mx-auto flex max-w-7xl flex-col gap-10">
+				<div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-8">
+					<div>
+						<Link className="font-bold font-heading text-4xl" href="/">
+							coco
+						</Link>
+						<p className="mt-3 max-w-xs text-sm/relaxed">
+							Compras comunitarias en Ushuaia. Nos juntamos para comprar mejor.
 						</p>
 					</div>
-					<nav className="flex flex-wrap gap-3 text-xs">
-						{homeNavLinks.map((link) => (
-							<Link
-								className="underline-offset-4 opacity-75 hover:underline hover:opacity-100"
-								href={link.href}
-								key={link.href}
+					{footerColumns.map((column) => (
+						<nav
+							aria-label={column.title}
+							className="flex flex-col gap-3"
+							key={column.title}
+						>
+							<h2 className="font-semibold text-sm">{column.title}</h2>
+							{column.links.map((link) => (
+								<Link
+									className="text-sm underline-offset-4 hover:underline"
+									href={link.href}
+									key={link.href}
+								>
+									{link.label}
+								</Link>
+							))}
+						</nav>
+					))}
+					<div className="flex flex-col gap-3">
+						<h2 className="font-semibold text-sm">Contacto</h2>
+						{contactItems.map(({ label, value, href, external }) => (
+							<a
+								className="text-sm underline-offset-4 hover:underline"
+								href={href}
+								key={label}
+								rel={external ? "noreferrer" : undefined}
+								target={external ? "_blank" : undefined}
 							>
-								{link.label}
-							</Link>
+								<span className="block font-medium">{label}</span>
+								{value}
+							</a>
 						))}
-					</nav>
-				</div>
-				<Separator />
-				<div className="flex flex-col gap-3 text-xs opacity-75 md:flex-row md:items-center md:justify-between">
-					<span>© {year} Coco. Todos los derechos reservados.</span>
-					<div className="flex flex-wrap gap-3">
-						<Link className="hover:opacity-100" href="/products">
-							Catálogo
-						</Link>
-						<Link className="hover:opacity-100" href="/login">
-							Ingresar
-						</Link>
-						<Link className="hover:opacity-100" href="/my-orders">
-							Mis pedidos
-						</Link>
-						<Link className="hover:opacity-100" href="/profile">
-							Perfil
-						</Link>
 					</div>
 				</div>
+				<Separator />
+				<p className="text-xs">
+					© {new Date().getFullYear()} Coco. Todos los derechos reservados.
+				</p>
 			</div>
 		</footer>
 	);

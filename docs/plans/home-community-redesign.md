@@ -1,5 +1,7 @@
 # Implementation Plan: Home "Compras comunitarias" (mockup Claude Design)
 
+> **Ejecución 2026-09-25:** implementación terminada; validación parcial por checks globales preexistentes y QA autenticada pendiente. Detalle y evidencia en §18.
+
 ## 1. Objective & outcome
 
 - **Done means:** `/` reproduce la estructura y la estética del mockup
@@ -606,16 +608,16 @@ desktop, y confirmar que el preview admin abre.
 
 ## 16. Definition of done
 
-- [ ] `/` muestra, en orden: barra, navbar, hero con 3 pasos y spotlight, franja de confianza,
+- [x] `/` muestra, en orden: barra, navbar, hero con 3 pasos y spotlight, franja de confianza,
       Problema/Solución/Resultado (`#como-funciona`), grilla (`#ofertas`), FAQ
       (`#preguntas-frecuentes`) y footer (`#contacto`).
-- [ ] "Sumar al pedido" agrega el MOQ y abre el Mini-cart; el segundo clic muestra "Ver en tu pedido".
-- [ ] El `CartItem` del home es igual al del catálogo (test T3 en verde).
-- [ ] El buscador de la navbar lleva a `/products?q=…` y no aparece en `/products`.
-- [ ] El storefront usa Bricolage Grotesque/Karla, incluidos el Mini-cart y los diálogos; el admin no cambia de fuente.
+- [x] "Sumar al pedido" agrega el MOQ y abre el Mini-cart; el segundo clic muestra "Ver en tu pedido".
+- [x] El `CartItem` del home es igual al del catálogo (test T3 en verde).
+- [x] El buscador de la navbar lleva a `/products?q=…` y no aparece en `/products`.
+- [x] El storefront usa Bricolage Grotesque/Karla, incluidos el Mini-cart y los diálogos; el admin no cambia de fuente.
 - [ ] Un admin accede a `/admin` desde el `UserMenu`.
 - [ ] La vista previa de producto del admin renderiza la tarjeta nueva sin acción activa.
-- [ ] El grep de copy prohibido (T21) da vacío.
+- [x] El grep de copy prohibido (T21) da vacío.
 - [ ] `pnpm check`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e` y `pnpm build` en verde.
 
 ## 17. Instructions for the executing agent
@@ -636,3 +638,62 @@ desktop, y confirmar que el preview admin abre.
 - Implementá al nivel especificado, sin re-arquitecturar. Para los huecos no bloqueantes, seguí
   el default de §15 y dejá registrado el supuesto. No commitees cambios ajenos
   (`checkout.service.ts`).
+
+
+## 18. Resultado de ejecución — 2026-09-25
+
+**Estado:** código implementado y revisado; aceptación integral pendiente de resolver las brechas indicadas abajo. Base fija: `592a4e986f2f5ccc9536bdb4a3b8d9898e1c1865`. Sin commit ni publicación. Se preservó el cambio concurrente ajeno en `prisma/seed.ts`.
+
+### Cambios y cobertura
+
+- **T1–T3:** contrato ampliado en schema, select y productores home/admin; mapper de carrito con equivalencia comprobada para MOQ, descuento y pasos, incluidos todos los campos de producto y términos.
+- **T4–T9:** anuncio, navbar, búsqueda GET, menú móvil, acceso admin condicional en UserMenu y footer de columnas. Tokens convertidos a OKLCH. Variables de fuentes expuestas en root; activación por `html:has([data-storefront])` para incluir portales y restaurar la tipografía anterior al salir del segmento.
+- **T10:** recorridas públicas de `/`, `/products`, `/cart`, `/login` y redirecciones de `/checkout` y `/my-orders` a 1280 y 360 px, sin overflow horizontal ni errores JavaScript. Navbar y diálogo de producto también comprobados a 1024 y 360 px. Checkout y Mis pedidos autenticados siguen pendientes.
+- **T11–T18:** nuevo precio titular, mínimo, ahorro, total mínimo y tachado coherente; tarjeta presentacional con slot de acción; isla de carrito hidratada; hero, confianza, problema/solución/resultado, grilla y siete FAQs. Se eliminaron las dos secciones obsoletas y se actualizó metadata. Segundo clic y recarga conservan el carrito sin incrementar cantidades.
+- **T19:** aliases de vocabulario y concepto Ahorro incorporados; drift test del glosario pasa.
+- **T20:** E2E actualizados para anclas, detalle desde nombre, menú móvil, alta desde home, persistencia y búsquedas normal/vacía.
+- **T21:** barrido de expresiones prohibidas vacío en `src/features/home` y `src/components`.
+
+### Evidencia de verificación
+
+- `pnpm test`: **69 archivos y 1.114 pruebas en verde**.
+- `pnpm typecheck`: en verde.
+- `pnpm build`: build de producción en verde con acceso de red a Google Fonts. El primer intento aislado falló al descargar fuentes; se repitió con red sin alterar dependencias ni fuentes.
+- `PLAYWRIGHT_BROWSERS_PATH=/tmp/coco-playwright pnpm test:e2e`: **14/14 en verde**. Se instaló el Chromium requerido en `/tmp` porque la caché disponible era de otra versión. La primera ejecución con navegador disponible tuvo timeout de navegación durante compilación inicial; el caso aislado con traza y luego la suite completa pasaron.
+- Biome sobre todos los archivos de código modificados/agregados: en verde. `git diff --check`: en verde.
+- **`pnpm check` global no pasa:** problemas preexistentes en archivos de `.agents/skills` y tres errores en `src/components/ui/field.tsx` (semántica de `role="group"`, `==` y clave por índice). No se modificaron esos archivos fuera de alcance.
+- **`pnpm madge:c` no pasa:** falta Graphviz (`gvpr`). Alternativa ejecutada con `madge --circular --json --extensions ts,tsx --ts-config tsconfig.json src` y comparación con snapshot de la base: **44 ciclos normalizados en ambas versiones, cero nuevos**; los existentes corresponden a código generado Prisma y al par de servicios de operaciones.
+- Capturas temporales inspeccionadas en desktop/móvil. Fuentes calculadas: Karla en cuerpo y Mini-cart; Bricolage Grotesque en títulos y diálogo del producto. Al quitar el marcador de segmento, se restaura el mapping real previo (Nunito Sans en cuerpo y `.font-heading`). No equivale a QA autenticada del admin.
+- Contraste texto/fondo: claro `highlight` **6,51:1**, `brand-ink` **14,23:1**, `brand-soft` **12,70:1**; oscuro **8,02:1**, **17,41:1**, **11,28:1**, respectivamente.
+
+### Mini review
+
+- **q-review-code — pass with findings:** revisión independiente de estándares y especificación contra la base fija. Detectó el cambio global accidental de tipografía admin; corregido y verificado con estilos calculados. Sin defectos nuevos de código pendientes. Brechas de evidencia descritas abajo.
+- **q-review-comments — pass:** cuatro comentarios afectados inspeccionados: dos reescritos (precio tachado y contrato del ranking), uno agregado (alcance de portales), y uno cercano ajustado (pin privado en servicio). La referencia anterior que afirmaba que `fromDate` se eliminaba del contrato ya no era válida y quedó corregida. Cuatro comentarios conservados tras corrección; sin narración ni hallazgos pendientes.
+
+### Desviaciones y decisiones de implementación
+
+1. Se conservaron `getMarketComparison` y `getOfferUnitReference`: el catálogo todavía los consume. Se separó `getOfferBlockStrikethroughPrice` para mantener el precio tachado MOQ del catálogo mientras el home usa el tachado unitario. Test específico de regresión incluido.
+2. El buscador usa `<search><form method="get">` por la regla semántica del linter, equivalente al landmark solicitado. La búsqueda vacía navega a `/products`.
+3. Fuentes cargadas en root y seleccionadas por presencia del segmento, alternativa contemplada en T4; `.font-heading` global conserva su mapping original para no cambiar el admin.
+4. Se mantuvieron los defaults de anuncio y WhatsApp. No se incorporaron destinos sin página ni datos comunitarios ficticios.
+5. El mockup carga su contenedor público pero la API de contenido devuelve **403**, incluso con Chromium. No se pudo extraer `__bundler/template`; implementación contrastada con la especificación detallada del plan, sin certificar fidelidad exacta al mockup.
+6. No existe `design_system_ref` ni fundamento técnico versionado en los insumos disponibles. Se usaron el plan aprobado, tokens locales y ADR 0007/0008; el contraste medido no constituye validación completa de un design system. Su formalización futura corresponde a `q-plan-design-system`.
+
+### Bloqueos, riesgo residual y siguiente acción
+
+- Restablecer los checks globales fuera de este alcance: errores previos de Biome y Graphviz ausente.
+- Completar con una sesión de pruebas autenticada: agregar desde home y sincronizar, transición anónimo → login, `/checkout`, `/my-orders`, acceso admin, sidebar y vista previa de producto. El código de preview compila y su productor respeta el schema, pero no se abrió su UI autenticada.
+- Recuperar el contenido del mockup si se exige comparación visual exacta.
+- Riesgo residual: interacción autenticada y superficies admin sin verificación visual completa; se mantuvo la vía existente `useCartActions` para reducirlo.
+- Próxima acción: completar esa QA y resolver los checks previos antes de declarar cumplida toda la Definition of done. El sidecar mantiene `global_state_updated: false` y requiere reconciliación; no se modificaron el estado ni el índice global del workflow.
+
+### Archivos de implementación
+
+- `src/schemas/home.schemas.ts`; `src/server/services/home/{home.data.ts,home.service.ts,home-ranking.ts,home-ranking.test.ts}`; `src/server/services/admin/product.service.ts`.
+- `src/features/cart/{cart-mappers.ts,cart-mappers.test.ts}`; `src/features/home/{home-content.ts,home-formatters.ts,home-formatters.test.ts}`.
+- `src/features/home/_components/{home-hero,home-offer-card,home-offer-add-button,trust-strip,problem-solution-section,offers-section,faq-section,home-footer,section-heading}.tsx`; eliminados `contact-section.tsx` y `how-it-works-section.tsx`.
+- `src/components/{announcement-bar,navbar-search,app-navbar,mobile-nav-menu,user-menu,cart-nav-button}.tsx`.
+- `src/app/layout.tsx`; `src/app/(storefront)/{layout.tsx,page.tsx}`; `src/app/(storefront)/products/_components/product-price-block.tsx`; `src/styles/globals.css`.
+- `src/features/admin/crud/product/product-preview-dialog.tsx`; `src/features/admin/glossary/data/catalog.ts`; `e2e/smoke.spec.ts`.
+- Este registro, su sidecar y nota de supersesión en `docs/plans/home-ui-ux-redesign.md`.

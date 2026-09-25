@@ -1,10 +1,10 @@
 "use client";
 
 import { AlertTriangleIcon, ImageIcon } from "lucide-react";
-
 import { ProductCard } from "~/app/(storefront)/products/_components/product-card";
 import { ProductPriceBlock } from "~/app/(storefront)/products/_components/product-price-block";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -235,7 +235,14 @@ export function ProductPreviewDialog({
 							<TabsContent value="home">
 								{preview.homeOffer ? (
 									<div className="max-w-md">
-										<HomeOfferCard offer={preview.homeOffer} />
+										<HomeOfferCard
+											action={
+												<Button className="w-full" disabled>
+													Sumar al pedido
+												</Button>
+											}
+											offer={preview.homeOffer}
+										/>
 									</div>
 								) : (
 									<PreviewUnavailable

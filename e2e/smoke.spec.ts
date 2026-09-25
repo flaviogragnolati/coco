@@ -9,19 +9,22 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 	await expect(
 		page.getByRole("heading", {
 			level: 1,
-			name: "Comprá al por mayor, sin organizar un grupo.",
+			name: "coco",
 		}),
 	).toBeVisible();
 	await expect(page.locator("#como-funciona")).toBeVisible();
 	await expect(page.locator("#ofertas")).toBeVisible();
 	await expect(page.locator("#preguntas-frecuentes")).toBeVisible();
-	await expect(page.locator("#contacto")).toBeVisible();
+	await expect(page.locator("footer#contacto")).toBeVisible();
 	await expect(
-		page.getByRole("link", { name: "Ver ofertas" }).first(),
-	).toHaveAttribute("href", "/products");
+		page.getByRole("link", { name: "Ver qué se puede comprar" }),
+	).toHaveAttribute(
+		"href",
+		(await page.locator("#ofertas h3").count()) > 0 ? "#ofertas" : "/products",
+	);
 	await expect(
 		page.locator("#preguntas-frecuentes").getByRole("button"),
-	).toHaveCount(6);
+	).toHaveCount(7);
 });
 
 test("a home offer opens and closes its URL-addressable product detail", async ({
@@ -29,7 +32,11 @@ test("a home offer opens and closes its URL-addressable product detail", async (
 }) => {
 	await page.goto("/");
 
-	const productLink = page.getByRole("link", { name: "Ver producto" }).first();
+	const productLink = page
+		.locator(
+			"main h2 a[href^='/products?product='], main h3 a[href^='/products?product=']",
+		)
+		.first();
 	test.skip(
 		(await productLink.count()) === 0,
 		"The current fixture has no active home offers.",
@@ -55,13 +62,72 @@ test("mobile navigation keeps purchase and public anchors accessible", async ({
 	await expect(
 		page.getByRole("heading", { name: "Explorá Coco" }),
 	).toBeVisible();
-	await expect(page.getByRole("link", { name: "Comprar" })).toHaveAttribute(
-		"href",
-		"/products",
-	);
 	await expect(
-		page.getByRole("link", { name: "Preguntas frecuentes" }),
+		page
+			.getByRole("dialog")
+			.getByRole("link", { name: "Catálogo", exact: true }),
+	).toHaveAttribute("href", "/products");
+	await expect(
+		page
+			.getByRole("dialog")
+			.getByRole("link", { name: "Preguntas frecuentes" }),
 	).toHaveAttribute("href", "/#preguntas-frecuentes");
+});
+
+test("adding a home offer opens the mini-cart without duplicating its quantity", async ({
+	page,
+}) => {
+	await page.goto("/");
+	const add = page
+		.getByRole("button", { name: "Sumar al pedido", exact: true })
+		.first();
+	test.skip(
+		(await add.count()) === 0,
+		"The current fixture has no active home offers.",
+	);
+	await add.click();
+	const dialog = page.getByRole("dialog");
+	await expect(dialog).toBeVisible();
+	const before = await page.evaluate(
+		() => JSON.parse(localStorage.getItem("coco.cart.v1") ?? "{}").state.items,
+	);
+	await page
+		.getByRole("button", { name: "Cerrar", exact: true })
+		.last()
+		.click();
+	const view = page
+		.getByRole("button", { name: "Ver en tu pedido", exact: true })
+		.first();
+	await expect(view).toBeVisible();
+	await page.reload();
+	await expect(view).toBeVisible();
+	await view.click();
+	await expect(dialog).toBeVisible();
+	const after = await page.evaluate(
+		() => JSON.parse(localStorage.getItem("coco.cart.v1") ?? "{}").state.items,
+	);
+	expect(after).toEqual(before);
+});
+
+test("navbar search navigates to the catalog query and yields to its search", async ({
+	page,
+}) => {
+	await page.goto("/");
+	const search = page.getByRole("searchbox", { name: "Buscar productos" });
+	await search.fill("yerba");
+	await search.press("Enter");
+	await expect(page).toHaveURL(/\/products\?q=yerba$/);
+	await expect(page.locator("header search")).toHaveCount(0);
+});
+
+test("empty navbar search navigates without an empty query parameter", async ({
+	page,
+}) => {
+	await page.goto("/");
+	const search = page.getByRole("searchbox", { name: "Buscar productos" });
+	await search.fill("  ");
+	await search.press("Enter");
+	await expect(page).toHaveURL(/\/products$/);
 });
 
 test("the admin area redirects anonymous visitors to the login page", async ({

@@ -4,8 +4,10 @@ import {
 	MailIcon,
 	PackageCheckIcon,
 	PhoneIcon,
-	SearchIcon,
+	ShieldCheckIcon,
 	ShoppingCartIcon,
+	TruckIcon,
+	UsersIcon,
 } from "lucide-react";
 
 export const homeNavLinks = [
@@ -15,50 +17,83 @@ export const homeNavLinks = [
 	{ href: "/#contacto", label: "Contacto" },
 ];
 
-export const howItWorksSteps: Array<{
-	title: string;
-	description: string;
-	Icon: LucideIcon;
-}> = [
+export const announcementMessage =
+	"Compras comunitarias en Ushuaia · Mirá el catálogo sin registrarte";
+
+export const heroSteps = [
+	{ title: "Sumate al pedido de otros vecinos.", Icon: UsersIcon },
+	{ title: "Entre todos acceden a tarifas mayoristas.", Icon: BoxesIcon },
+	{ title: "Coco lo entrega en tu ciudad.", Icon: TruckIcon },
+];
+
+export const trustItems = [
 	{
-		title: "Explorá y armá tu pedido",
+		title: "Pedido a la vista",
 		description:
-			"Revisá productos y condiciones vigentes. Podés sumar al carrito sin crear una cuenta.",
-		Icon: SearchIcon,
+			"Seguís cada etapa de tu compra en Mis pedidos, desde el pago hasta la entrega.",
+		Icon: PackageCheckIcon,
 	},
 	{
-		title: "Registrate, elegí la entrega y pagá",
-		description:
-			"Al iniciar el checkout completás tus datos, definís cómo recibir el pedido y confirmás el pago.",
-		Icon: ShoppingCartIcon,
+		title: "Pago seguro",
+		description: "Pagás al confirmar tu pedido, sin sorpresas después.",
+		Icon: ShieldCheckIcon,
 	},
 	{
-		title: "Seguimos la compra hasta la entrega",
-		description:
-			"Coco consolida la demanda pagada y te comunica el avance de la operación hasta que recibís tu pedido.",
+		title: "Precio mayorista",
+		description: "Compramos en volumen y con menos intermediarios.",
 		Icon: BoxesIcon,
 	},
 ];
 
-export const heroBenefits: Array<{
-	title: string;
-	Icon: LucideIcon;
-}> = [
+export const problemSolutionCards = [
 	{
-		title: "Explorá sin registrarte",
-		Icon: SearchIcon,
-	},
-	{
-		title: "Armá tu carrito a tu ritmo",
+		title: "El problema",
+		description:
+			"Comprar de a poco sale más caro. Y organizar una compra entre vecinos lleva tiempo y esfuerzo.",
 		Icon: ShoppingCartIcon,
 	},
 	{
-		title: "Seguí el pedido después del pago",
+		title: "La solución",
+		description:
+			"Nos juntamos para comprar mejor. Vos elegís lo que necesitás y Coco reúne los pedidos y coordina la compra.",
+		Icon: UsersIcon,
+	},
+	{
+		title: "El resultado",
+		description:
+			"Precio mayorista, sin coordinar nada. Pagás al confirmar y te avisamos cada avance hasta que tu compra llega a la ciudad.",
 		Icon: PackageCheckIcon,
 	},
 ];
 
+export const footerColumns = [
+	{
+		title: "Nosotros",
+		links: [{ label: "Cómo funciona", href: "/#como-funciona" }],
+	},
+	{
+		title: "Información",
+		links: [
+			{ label: "Preguntas frecuentes", href: "/#preguntas-frecuentes" },
+			{ label: "Catálogo", href: "/products" },
+		],
+	},
+	{
+		title: "Mi cuenta",
+		links: [
+			{ label: "Ingresar", href: "/login" },
+			{ label: "Mis pedidos", href: "/my-orders" },
+			{ label: "Perfil", href: "/profile" },
+		],
+	},
+];
+
 export const faqItems = [
+	{
+		question: "¿Cuánto tarda en llegar mi compra?",
+		answer:
+			"Depende del proveedor y de cuándo se consolida la demanda; vas a ver cada avance en Mis pedidos.",
+	},
 	{
 		question: "¿Necesito una cuenta para ver productos?",
 		answer:

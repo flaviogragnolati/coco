@@ -1,0 +1,50 @@
+schema_version: '1.0'
+stage_result:
+  skill_id: q-code-implement
+  mode: standalone
+  outcome: blocked
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+  - docs/plans/home-community-redesign.md
+  references_added: []
+  traceability_delta:
+  - T1-T9 y T11-T21 implementados; T10 con QA pública completa y QA autenticada pendiente.
+  decisions_added_or_updated:
+  - Conservar formatters consumidos por catálogo y separar su tachado MOQ del titular
+    unitario del home.
+  - Activar fuentes por segmento incluyendo portales y conservar mapping tipográfico
+    global previo.
+  - Usar elemento search semántico con formulario GET conforme al linter.
+  risks_added_or_updated:
+  - QA autenticada de carrito, checkout y admin pendiente; mockup interno inaccesible
+    (403).
+  stale_artifacts: []
+  blockers:
+  - pnpm check global falla por errores preexistentes en .agents/skills y src/components/ui/field.tsx;
+    archivos modificados pasan Biome.
+  - pnpm madge:c falla por Graphviz ausente. Alternativa JSON TS/TSX confirma 44 ciclos
+    normalizados previos y cero nuevos.
+  - Aceptación autenticada de sincronización/login, checkout, Mis pedidos y preview/sidebar
+    admin pendiente por falta de sesión de pruebas.
+  warnings:
+  - Código implementado; cierre integral bloqueado por verificaciones pendientes,
+    no por defectos nuevos de código.
+  - 'q-review-code: pass with findings; revisión independiente en ejes estándares
+    y especificación, corrección de fuente admin verificada, sin defectos nuevos pendientes.'
+  - 'q-review-comments: pass; cuatro comentarios revisados y conservados tras corregir
+    referencias al contrato y acortar texto.'
+  - 'Verificación: 1114 tests en 69 archivos, typecheck, build, 14 E2E, Biome del
+    diff y git diff --check en verde.'
+  - Sin design_system_ref ni fundamento técnico versionado; revisión basada en plan,
+    tokens locales y ADR 0007/0008. No se certifica fidelidad exacta al mockup (API
+    403).
+  - Prisma/seed.ts contiene cambios concurrentes ajenos preservados. Sin commit ni
+    publicación.
+  required_user_actions: []
+  next_recommended_action: Completar QA con sesión autenticada y resolver checks globales
+    previos; reconciliar este sidecar antes del cierre integral.
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

@@ -1,19 +1,26 @@
 import { expect, test } from "vitest";
-
 import type { HomeOffer } from "~/shared/common/home.types";
 import {
-	getMarketComparison,
+	getMarketSavingLabel,
 	getOfferBlockPrice,
+	getOfferBlockStrikethroughPrice,
 	getOfferDiscountLabel,
+	getOfferHeadlinePrice,
 	getOfferMinimumLabel,
+	getOfferMinimumTotal,
 	getOfferStrikethroughPrice,
-	getOfferUnitReference,
 } from "./home-formatters";
 
 const offer: HomeOffer = {
 	productId: 3,
 	productClientTermsId: 7,
 	productName: "Arroz largo fino",
+	productDescription: null,
+	step: null,
+	stepPrice: null,
+	max: null,
+	fromDate: new Date("2026-06-01"),
+	toDate: null,
 	unit: "kg",
 	brandName: "Coco",
 	imageUrl: null,
@@ -25,65 +32,70 @@ const offer: HomeOffer = {
 	currency: "ARS",
 };
 
-const discountedOffer: HomeOffer = { ...offer, discountPercent: "25" };
-const marketOffer: HomeOffer = { ...offer, marketPrice: "2000" };
-const discountedMarketOffer: HomeOffer = {
-	...offer,
-	discountPercent: "25",
-	marketPrice: "2000",
-};
-
-test("the offer headline always uses the minimum block price", () => {
-	expect(getOfferBlockPrice(offer)).toBe("$ 20.000");
+test("the headline uses the unit price when supplied and otherwise the MOQ block", () => {
+	expect(getOfferHeadlinePrice(offer)).toEqual({
+		amount: "$ 1.500",
+		unitLabel: "por kg",
+	});
+	expect(getOfferHeadlinePrice({ ...offer, unitPrice: null })).toEqual({
+		amount: "$ 20.000",
+		unitLabel: "por 10 kg",
+	});
+	expect(getOfferMinimumLabel(offer)).toBe("Mínimo: 10 kg");
+	expect(getOfferMinimumTotal(offer)).toBe("Total del mínimo: $ 20.000");
 });
 
-test("the offer exposes the minimum quantity in plain language", () => {
-	expect(getOfferMinimumLabel(offer)).toBe("Cantidad mínima: 10 kg");
-});
-
-test("the offer keeps the per-unit price as a secondary reference", () => {
-	expect(getOfferUnitReference(offer)).toBe("≈ $ 1.500 / kg");
-	expect(
-		getOfferUnitReference({ ...offer, unitPrice: null, moqPrice: "20000" }),
-	).toBe("≈ $ 2.000 / kg");
-});
-
-test("an offer without discount nor market price renders neither treatment", () => {
-	expect(getOfferStrikethroughPrice(offer)).toBeNull();
-	expect(getOfferDiscountLabel(offer)).toBeNull();
-	expect(getMarketComparison(offer)).toBeNull();
-});
-
-test("a discount lowers the headline and exposes the previous price", () => {
-	expect(getOfferBlockPrice(discountedOffer)).toBe("$ 15.000");
-	expect(getOfferStrikethroughPrice(discountedOffer)).toBe("$ 20.000");
-	expect(getOfferDiscountLabel(discountedOffer)).toBe("-25%");
-	expect(getOfferUnitReference(discountedOffer)).toBe("≈ $ 1.125 / kg");
-	expect(getMarketComparison(discountedOffer)).toBeNull();
-});
-
-test("a market price renders its own comparison and no strikethrough", () => {
-	expect(getMarketComparison(marketOffer)).toBe(
-		"En otros comercios ≈ $ 2.000 / kg · ahorrás $ 5.000",
+test("discount and strike-through apply to the same headline basis", () => {
+	const discounted = { ...offer, discountPercent: "25" };
+	expect(getOfferHeadlinePrice(discounted).amount).toBe("$ 1.125");
+	expect(getOfferStrikethroughPrice(discounted)).toBe("$ 1.500");
+	expect(getOfferBlockPrice(discounted)).toBe("$ 15.000");
+	expect(getOfferMinimumTotal(discounted)).toBe("Total del mínimo: $ 15.000");
+	expect(getOfferHeadlinePrice({ ...discounted, unitPrice: null }).amount).toBe(
+		"$ 15.000",
 	);
-	expect(getOfferStrikethroughPrice(marketOffer)).toBeNull();
-	expect(getOfferDiscountLabel(marketOffer)).toBeNull();
-	expect(getOfferBlockPrice(marketOffer)).toBe("$ 20.000");
+	expect(getOfferStrikethroughPrice({ ...discounted, unitPrice: null })).toBe(
+		"$ 20.000",
+	);
+	expect(getOfferDiscountLabel(discounted)).toBe("-25%");
 });
 
-test("a discount and a market price render side by side", () => {
-	expect(getOfferStrikethroughPrice(discountedMarketOffer)).toBe("$ 20.000");
-	expect(getOfferDiscountLabel(discountedMarketOffer)).toBe("-25%");
-	expect(getMarketComparison(discountedMarketOffer)).toBe(
-		"En otros comercios ≈ $ 2.000 / kg · ahorrás $ 8.750",
+test("market saving is per unit and never a strike-through price", () => {
+	const market = { ...offer, marketPrice: "2000" };
+	expect(getMarketSavingLabel(market)).toBe("Ahorrás $ 500 por kg vs. góndola");
+	expect(getMarketSavingLabel({ ...market, discountPercent: "25" })).toBe(
+		"Ahorrás $ 875 por kg vs. góndola",
+	);
+	expect(getOfferStrikethroughPrice(market)).toBeNull();
+	expect(getOfferDiscountLabel(market)).toBeNull();
+});
+
+test.each([
+	null,
+	"1200",
+	"1500",
+])("no savings are claimed without a better market comparison: %s", (marketPrice) => {
+	expect(getMarketSavingLabel({ ...offer, marketPrice })).toBeNull();
+});
+
+test("prices and savings retain USD currency", () => {
+	const dollars = {
+		...offer,
+		currency: "USD" as const,
+		unitPrice: "10",
+		moqPrice: "100",
+		marketPrice: "15",
+		discountPercent: "20",
+	};
+	expect(getOfferHeadlinePrice(dollars).amount).toBe("US$ 8,00");
+	expect(getOfferStrikethroughPrice(dollars)).toBe("US$ 10,00");
+	expect(getOfferMinimumTotal(dollars)).toBe("Total del mínimo: US$ 80,00");
+	expect(getMarketSavingLabel(dollars)).toBe(
+		"Ahorrás US$ 7,00 por kg vs. góndola",
 	);
 });
 
-test("a market price that does not beat ours is never advertised", () => {
-	expect(getMarketComparison({ ...offer, marketPrice: "1200" })).toBeNull();
-});
-
-test("the discount label drops the decimals a Decimal(5,2) column carries", () => {
+test("discount labels normalize decimals and hide zero discounts", () => {
 	expect(getOfferDiscountLabel({ ...offer, discountPercent: "25.00" })).toBe(
 		"-25%",
 	);
@@ -91,4 +103,29 @@ test("the discount label drops the decimals a Decimal(5,2) column carries", () =
 		"-12,5%",
 	);
 	expect(getOfferDiscountLabel({ ...offer, discountPercent: "0" })).toBeNull();
+	expect(getOfferStrikethroughPrice(offer)).toBeNull();
+});
+
+test("catalog strike-through retains its MOQ price basis", () => {
+	expect(
+		getOfferBlockStrikethroughPrice({ ...offer, discountPercent: "25" }),
+	).toBe("$ 20.000");
+	expect(getOfferBlockStrikethroughPrice(offer)).toBeNull();
+});
+
+test("minimum quantities use plural countable units", () => {
+	expect(getOfferMinimumLabel({ ...offer, moq: "3", unit: "box" })).toBe(
+		"Mínimo: 3 cajas",
+	);
+	expect(getOfferMinimumLabel({ ...offer, moq: "1", unit: "box" })).toBe(
+		"Mínimo: 1 caja",
+	);
+	expect(
+		getOfferHeadlinePrice({
+			...offer,
+			moq: "3",
+			unit: "piece",
+			unitPrice: null,
+		}).unitLabel,
+	).toBe("por 3 unidades");
 });

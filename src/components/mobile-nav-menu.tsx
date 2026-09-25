@@ -10,7 +10,7 @@ import {
 	SparklesIcon,
 } from "lucide-react";
 import Link from "next/link";
-
+import { NavbarSearch } from "~/components/navbar-search";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import {
@@ -78,6 +78,7 @@ export function MobileNavMenu({
 					</SheetDescription>
 				</SheetHeader>
 				<nav className="flex flex-col gap-1 px-6">
+					<NavbarSearch className="mb-4" />
 					{homeNavLinks.map((link, index) => {
 						const Icon = navIcons[index] ?? RouteIcon;
 						return (
@@ -93,7 +94,7 @@ export function MobileNavMenu({
 					<MobileSheetLink
 						href="/products"
 						Icon={ShoppingBagIcon}
-						label="Comprar"
+						label="Catálogo"
 						variant="default"
 					/>
 					{isActiveUser ? (

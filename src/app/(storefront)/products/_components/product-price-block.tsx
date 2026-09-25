@@ -2,8 +2,8 @@ import { Badge } from "~/components/ui/badge";
 import {
 	getMarketComparison,
 	getOfferBlockPrice,
+	getOfferBlockStrikethroughPrice,
 	getOfferDiscountLabel,
-	getOfferStrikethroughPrice,
 	getOfferUnitReference,
 } from "~/features/home/home-formatters";
 import { cn } from "~/lib/utils";
@@ -21,7 +21,7 @@ export function ProductPriceBlock({
 }) {
 	const offer = { ...product.terms, unit: product.unit };
 	const blockPrice = getOfferBlockPrice(offer);
-	const strikethroughPrice = getOfferStrikethroughPrice(offer);
+	const strikethroughPrice = getOfferBlockStrikethroughPrice(offer);
 	const discountLabel = getOfferDiscountLabel(offer);
 	const marketComparison = getMarketComparison(offer);
 	const perUnitLabel = getOfferUnitReference(offer);

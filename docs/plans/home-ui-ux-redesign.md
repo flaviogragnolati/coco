@@ -1,5 +1,8 @@
 # Implementation Plan: Rediseño UI/UX del Home y Piloto de Paleta
 
+> Superseded en parte por [home-community-redesign.md](home-community-redesign.md): cambia la composición, el CTA del hero y las acciones de tarjetas; Contacto pasa al footer.
+
+
 ## 1. Objective & outcome
 
 - **Done means:** `/` comunica con claridad qué es Coco, cómo se compra y qué ocurre

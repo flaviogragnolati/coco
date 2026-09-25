@@ -16,6 +16,11 @@ function mapHomeOffer(record: CurrentHomeOfferRecord): RankableHomeOffer {
 		productId: record.product.id,
 		productClientTermsId: record.id,
 		productName: record.product.name,
+		productDescription: record.product.description,
+		step: record.step?.toString() ?? null,
+		stepPrice: record.stepPrice?.toString() ?? null,
+		max: record.max?.toString() ?? null,
+		toDate: record.toDate,
 		unit: record.product.unit,
 		brandName: record.product.brand?.name ?? null,
 		imageUrl: selectProductImage(record.product, "catalog"),
@@ -37,8 +42,7 @@ export async function getHomeContent(): Promise<HomeContent> {
 		getHomeOfferCuration(db),
 	]);
 
-	// `homeOfferSchema` strips the ranking-only fields, so what reaches the
-	// components stays the plain offer contract.
+	// The admin pin never reaches the public offer contract.
 	return homeContentOutputSchema.parse(
 		composeHomeContent(records.map(mapHomeOffer), curation),
 	);

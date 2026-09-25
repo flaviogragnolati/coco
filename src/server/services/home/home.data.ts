@@ -14,6 +14,7 @@ const homeProductBrandSelect = {
 const homeOfferProductSelect = {
 	id: true,
 	name: true,
+	description: true,
 	unit: true,
 	cardImageUrl: true,
 	cartImageUrl: true,
@@ -26,6 +27,10 @@ const homeOfferProductSelect = {
 const currentTermsSelect = {
 	id: true,
 	fromDate: true,
+	toDate: true,
+	step: true,
+	stepPrice: true,
+	max: true,
 	moq: true,
 	moqPrice: true,
 	unitPrice: true,

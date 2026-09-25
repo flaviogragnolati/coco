@@ -1,6 +1,11 @@
 "use client";
 
-import { LogOutIcon, ShoppingBagIcon, UserIcon } from "lucide-react";
+import {
+	LogOutIcon,
+	ShieldIcon,
+	ShoppingBagIcon,
+	UserIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,6 +25,7 @@ import { authClient } from "~/server/better-auth/client";
 import { useCartStore } from "~/store/cart-store";
 
 type UserMenuProps = {
+	canAccessAdmin?: boolean;
 	user: {
 		name: string;
 		email: string;
@@ -38,7 +44,7 @@ function getInitials(name: string) {
 	return initials.toUpperCase() || "U";
 }
 
-export function UserMenu({ user }: UserMenuProps) {
+export function UserMenu({ user, canAccessAdmin = false }: UserMenuProps) {
 	const router = useRouter();
 	const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -61,7 +67,11 @@ export function UserMenu({ user }: UserMenuProps) {
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				aria-label="Abrir menu de usuario"
-				className={buttonVariants({ size: "icon", variant: "ghost" })}
+				className={buttonVariants({
+					size: "icon",
+					variant: "ghost",
+					className: "size-[42px] rounded-full",
+				})}
 				data-size="icon"
 				data-slot="button"
 				data-variant="ghost"
@@ -80,6 +90,14 @@ export function UserMenu({ user }: UserMenuProps) {
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
+					{canAccessAdmin ? (
+						<DropdownMenuItem asChild>
+							<Link href="/admin">
+								<ShieldIcon />
+								Administrador
+							</Link>
+						</DropdownMenuItem>
+					) : null}
 					<DropdownMenuItem asChild>
 						<Link href="/profile">
 							<UserIcon />

@@ -1,10 +1,10 @@
-import { LogInIcon, ShieldIcon, ShoppingBagIcon } from "lucide-react";
+import { LogInIcon, MenuIcon } from "lucide-react";
 import Link from "next/link";
 import { CartNavButton } from "~/components/cart-nav-button";
 import { MobileNavMenu } from "~/components/mobile-nav-menu";
+import { NavbarSearch } from "~/components/navbar-search";
 import { Button } from "~/components/ui/button";
 import { UserMenu } from "~/components/user-menu";
-import { homeNavLinks } from "~/features/home/home-content";
 import { isAdminRole } from "~/server/auth/auth.utils";
 import type { Session } from "~/server/better-auth";
 
@@ -18,44 +18,35 @@ export function AppNavbar({ session }: AppNavbarProps) {
 	const canAccessAdmin = isActiveUser && isAdminRole(user.role);
 
 	return (
-		<header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
+		<header className="sticky top-0 z-40 border-b bg-background">
 			<nav className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 md:px-6">
 				<Link
-					className="shrink-0 font-heading font-semibold text-xl tracking-tight"
+					className="shrink-0 font-bold font-heading text-3xl tracking-tight"
 					href="/"
 				>
-					Coco
+					coco
 				</Link>
 
-				<div className="hidden min-w-0 items-center gap-1 xl:flex">
-					{homeNavLinks.map((link) => (
-						<Button asChild key={link.href} size="sm" variant="ghost">
-							<Link href={link.href}>{link.label}</Link>
-						</Button>
-					))}
-					{canAccessAdmin ? (
-						<Button asChild size="sm" variant="ghost">
-							<Link href="/admin">
-								<ShieldIcon data-icon="inline-start" />
-								Administrador
-							</Link>
-						</Button>
-					) : null}
-					<Button asChild size="sm">
-						<Link href="/products">
-							<ShoppingBagIcon data-icon="inline-start" />
-							Comprar
-						</Link>
-					</Button>
-				</div>
+				<Button
+					asChild
+					className="hidden rounded-full sm:inline-flex"
+					variant="outline"
+				>
+					<Link href="/products">
+						<MenuIcon data-icon="inline-start" />
+						Catálogo
+					</Link>
+				</Button>
+				<NavbarSearch className="hidden max-w-[460px] flex-1 md:block" />
 
-				<div className="flex items-center gap-2">
+				<div className="ml-auto flex items-center gap-2">
 					<CartNavButton
 						isAuthenticated={Boolean(user)}
 						userId={user?.id ?? null}
 					/>
 					{user ? (
 						<UserMenu
+							canAccessAdmin={canAccessAdmin}
 							user={{
 								email: user.email,
 								image: user.image,
@@ -63,15 +54,19 @@ export function AppNavbar({ session }: AppNavbarProps) {
 							}}
 						/>
 					) : (
-						<Button asChild size="sm" variant="ghost">
+						<Button
+							asChild
+							className="size-[42px] rounded-full"
+							size="icon"
+							variant="ghost"
+						>
 							<Link href="/login">
 								<LogInIcon data-icon="inline-start" />
-								<span className="hidden sm:inline">Ingresar</span>
-								<span className="sr-only sm:hidden">Ingresar</span>
+								<span className="sr-only">Ingresar</span>
 							</Link>
 						</Button>
 					)}
-					<div className="xl:hidden">
+					<div className="md:hidden">
 						<MobileNavMenu
 							canAccessAdmin={canAccessAdmin}
 							isActiveUser={isActiveUser}

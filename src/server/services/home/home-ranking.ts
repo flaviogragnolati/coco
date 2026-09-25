@@ -2,15 +2,9 @@ import type { HomeOffersCriterion } from "~/prisma/client";
 import { getMarketSaving, toNumber } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
 
-/**
- * The curation inputs the ranking reads but the rendered card does not:
- * `homeOfferRank` is the admin pin and `fromDate` only breaks ties. Both are
- * dropped by `homeOfferSchema` on the way out of the service, so they never
- * widen the contract the home components consume.
- */
+// The admin pin is used only for ranking and stripped from the public offer.
 export type RankableHomeOffer = HomeOffer & {
 	homeOfferRank: number | null;
-	fromDate: Date;
 };
 
 export type HomeOfferCuration = {

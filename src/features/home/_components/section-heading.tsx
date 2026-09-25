@@ -10,7 +10,7 @@ export function SectionHeading({
 }: {
 	eyebrow: string;
 	title: string;
-	description: string;
+	description?: string;
 	actions?: ReactNode;
 }) {
 	return (
@@ -20,10 +20,14 @@ export function SectionHeading({
 					{eyebrow}
 				</Badge>
 				<div className="flex flex-col gap-2">
-					<h2 className="font-heading font-semibold text-2xl tracking-normal">
+					<h2 className="font-heading font-semibold text-3xl tracking-tight">
 						{title}
 					</h2>
-					<p className="text-muted-foreground text-sm/relaxed">{description}</p>
+					{description ? (
+						<p className="text-muted-foreground text-sm/relaxed">
+							{description}
+						</p>
+					) : null}
 				</div>
 			</div>
 			{actions ? <div className="flex shrink-0 gap-2">{actions}</div> : null}

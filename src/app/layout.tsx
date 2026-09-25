@@ -1,12 +1,24 @@
 import "~/styles/globals.css";
 
 import type { Metadata } from "next";
-import { Geist, JetBrains_Mono, Nunito_Sans } from "next/font/google";
+import {
+	Bricolage_Grotesque,
+	Geist,
+	JetBrains_Mono,
+	Karla,
+	Nunito_Sans,
+} from "next/font/google";
 
 import { Toaster } from "~/components/ui/sonner";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 import { TRPCReactProvider } from "~/trpc/react";
+
+const bricolage = Bricolage_Grotesque({
+	subsets: ["latin"],
+	variable: "--font-storefront-heading",
+});
+const karla = Karla({ subsets: ["latin"], variable: "--font-storefront-sans" });
 
 const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 
@@ -35,6 +47,8 @@ export default function RootLayout({
 		<html
 			className={cn(
 				geist.variable,
+				bricolage.variable,
+				karla.variable,
 				jetbrainsMono.variable,
 				"font-sans",
 				nunitoSans.variable,

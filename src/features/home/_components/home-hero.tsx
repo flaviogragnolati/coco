@@ -1,146 +1,76 @@
-import { ArrowRightIcon, BoxesIcon, SparklesIcon } from "lucide-react";
+import { ArrowRightIcon, BoxesIcon } from "lucide-react";
 import Link from "next/link";
-
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "~/components/ui/card";
-import { ProductImage } from "~/features/catalog/_components/product-image";
 import type { HomeOffer } from "~/shared/common/home.types";
-import { heroBenefits } from "../home-content";
-import {
-	getMarketComparison,
-	getOfferBlockPrice,
-	getOfferDiscountLabel,
-	getOfferMinimumLabel,
-	getOfferStrikethroughPrice,
-	getOfferUnitReference,
-} from "../home-formatters";
+import { heroSteps } from "../home-content";
+import { HomeOfferAddButton } from "./home-offer-add-button";
+import { HomeOfferCard } from "./home-offer-card";
 
-export function HomeHero({ spotlightOffer }: { spotlightOffer?: HomeOffer }) {
-	const unitReference = spotlightOffer
-		? getOfferUnitReference(spotlightOffer)
-		: null;
-	const strikethroughPrice = spotlightOffer
-		? getOfferStrikethroughPrice(spotlightOffer)
-		: null;
-	const discountLabel = spotlightOffer
-		? getOfferDiscountLabel(spotlightOffer)
-		: null;
-	const marketComparison = spotlightOffer
-		? getMarketComparison(spotlightOffer)
-		: null;
-
+export function HomeHero({
+	spotlightOffer,
+	hasOffers,
+	isAuthenticated,
+	userId,
+}: {
+	spotlightOffer?: HomeOffer;
+	hasOffers: boolean;
+	isAuthenticated: boolean;
+	userId: string | null;
+}) {
 	return (
-		<section className="relative overflow-hidden bg-brand-ink text-brand-ink-foreground">
-			<div
-				aria-hidden="true"
-				className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/30 blur-3xl"
-			/>
-			<div className="relative mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 md:px-6 md:py-24 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:items-center">
-				<div className="flex max-w-3xl flex-col gap-7">
-					<div className="flex flex-wrap items-center gap-2">
-						<Badge variant="highlight">Compra mayorista compartida</Badge>
-						<Badge variant="secondary">Simple de principio a fin</Badge>
-					</div>
-					<div className="flex flex-col gap-4">
-						<h1 className="text-balance font-heading font-semibold text-4xl tracking-tight sm:text-5xl lg:text-6xl">
-							Comprá al por mayor, sin organizar un grupo.
+		<section className="bg-brand-ink text-brand-ink-foreground">
+			<div className="mx-auto grid w-full max-w-7xl gap-12 px-4 py-12 md:px-6 md:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-center lg:gap-20">
+				<div className="flex flex-col items-start gap-7">
+					<span className="rounded-full border border-brand-soft/30 px-4 py-1.5 font-medium text-brand-soft text-xs tracking-wide">
+						Ushuaia · Tierra del Fuego
+					</span>
+					<div>
+						<h1 className="font-extrabold font-heading text-[clamp(76px,13vw,132px)] leading-none tracking-tight">
+							coco
 						</h1>
-						<p className="max-w-2xl text-base/relaxed text-brand-ink-foreground/75 md:text-lg/relaxed">
-							Explorá productos, armá tu pedido y pagá desde Coco. Nosotros
-							consolidamos la demanda pagada y te acompañamos hasta la entrega.
+						<p className="mt-2 font-heading text-2xl text-brand-soft sm:text-3xl">
+							Compras comunitarias
 						</p>
 					</div>
-					<div className="flex flex-col gap-3 sm:flex-row">
-						<Button asChild size="lg" variant="highlight">
-							<Link href="/products">
-								Ver ofertas
-								<ArrowRightIcon data-icon="inline-end" />
-							</Link>
-						</Button>
-						<Button asChild size="lg" variant="inverse">
-							<Link href="#como-funciona">
-								Cómo funciona
-								<ArrowRightIcon data-icon="inline-end" />
-							</Link>
-						</Button>
-					</div>
-					<div className="grid gap-3 sm:grid-cols-3">
-						{heroBenefits.map(({ title, Icon }) => (
-							<div className="flex items-center gap-2 text-sm" key={title}>
-								<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
-									<Icon aria-hidden="true" />
+					<ol className="flex flex-col gap-5">
+						{heroSteps.map(({ title, Icon }) => (
+							<li className="flex items-center gap-4" key={title}>
+								<span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
+									<Icon aria-hidden="true" className="size-5" />
 								</span>
-								<span>{title}</span>
-							</div>
+								<span className="text-base sm:text-lg">{title}</span>
+							</li>
 						))}
+					</ol>
+					<div className="flex flex-col gap-3">
+						<Button
+							asChild
+							className="rounded-full"
+							size="lg"
+							variant="highlight"
+						>
+							<Link href={hasOffers ? "#ofertas" : "/products"}>
+								Ver qué se puede comprar
+								<ArrowRightIcon data-icon="inline-end" />
+							</Link>
+						</Button>
+						<p className="text-center text-brand-ink-foreground/80 text-xs">
+							Mirá el catálogo sin registrarte
+						</p>
 					</div>
 				</div>
-
 				{spotlightOffer ? (
-					<Card className="gap-0 py-0 shadow-xl">
-						<ProductImage
-							className="flex aspect-4/3 w-full items-center justify-center rounded-t-4xl bg-brand-soft bg-center bg-cover text-brand-soft-foreground"
-							imageUrl={spotlightOffer.imageUrl}
-							name={spotlightOffer.productName}
-						/>
-						<CardHeader className="pt-5">
-							<div className="flex flex-wrap items-center justify-between gap-2">
-								<Badge variant="highlight">
-									<SparklesIcon data-icon="inline-start" />
-									Producto destacado
-								</Badge>
-								<span className="text-muted-foreground text-xs">
-									{spotlightOffer.brandName ?? "Producto seleccionado"}
-								</span>
-							</div>
-							<CardTitle>
-								<h2>{spotlightOffer.productName}</h2>
-							</CardTitle>
-							<CardDescription>
-								Condición comercial vigente para empezar tu compra.
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="flex flex-col gap-1 py-5">
-							<div className="flex flex-wrap items-baseline gap-2">
-								<p className="font-heading font-semibold text-3xl">
-									{getOfferBlockPrice(spotlightOffer)}
-								</p>
-								{strikethroughPrice ? (
-									<p className="text-muted-foreground text-sm line-through">
-										{strikethroughPrice}
-									</p>
-								) : null}
-								{discountLabel ? (
-									<Badge variant="highlight">{discountLabel}</Badge>
-								) : null}
-							</div>
-							<p className="text-muted-foreground text-xs">
-								{getOfferMinimumLabel(spotlightOffer)}
-							</p>
-							{unitReference ? (
-								<p className="text-muted-foreground text-xs">{unitReference}</p>
-							) : null}
-							{marketComparison ? (
-								<p className="text-success text-xs">{marketComparison}</p>
-							) : null}
-						</CardContent>
-						<CardFooter className="pb-5">
-							<Button asChild className="w-full">
-								<Link href={`/products?product=${spotlightOffer.productId}`}>
-									Ver producto
-									<ArrowRightIcon data-icon="inline-end" />
-								</Link>
-							</Button>
-						</CardFooter>
-					</Card>
+					<HomeOfferCard
+						action={
+							<HomeOfferAddButton
+								isAuthenticated={isAuthenticated}
+								offer={spotlightOffer}
+								userId={userId}
+							/>
+						}
+						offer={spotlightOffer}
+						size="hero"
+					/>
 				) : (
 					<div
 						aria-hidden="true"
