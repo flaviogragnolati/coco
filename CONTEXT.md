@@ -202,7 +202,7 @@ _Avoid_: Store, product list
 
 **Featured offer**:
 A current catalog product shown in the home offers grid, either pinned by an admin or chosen by the offers ranking. Pinned ones come first and the ranking fills the rest, so the grid is never empty and never stale. Spanish-facing UI labels it "Oferta destacada".
-_Avoid_: Promotion, operation, oferta protagonista
+_Avoid_: Promotion, operation, oferta protagonista, pedido abierto
 
 **Home spotlight**:
 The single product the home hero leads with: an admin's pick, or the top of the offers ranking when nobody picked one. It is excluded from the offers grid, so no product appears twice on the page. Spanish-facing UI labels it "Producto destacado".
@@ -228,13 +228,17 @@ _Avoid_: Reference price, refPrice, precio de referencia
 The per-unit price the same product sells for outside Coco, loaded by an admin so the catalog can state what a customer saves. It is never charged and never prices a cart. Spanish-facing UI labels it "Precio de góndola".
 _Avoid_: Reference price, list price, precio de referencia
 
+**Market saving**:
+What a customer saves per unit, and per MOQ block, by buying at the offer price instead of the market price. It exists only when the market price beats the offer unit price; otherwise nothing is claimed. Spanish-facing UI labels it "Ahorro".
+_Avoid_: Discount, descuento, savings claim
+
 **Offer discount**:
 A percentage on client terms that lowers what the customer actually pays, applied to the MOQ price and the step price alike. It has no validity of its own — it lives and dies with the terms that carry it (ADR 0008). Spanish-facing UI labels it "Descuento".
 _Avoid_: Promotion, coupon, campaign
 
 **Offer price**:
 The amount a customer pays once the offer discount is applied to the client terms. Computed in one place, so it is identical in the catalog, the cart, the checkout snapshot and the payment. Spanish-facing UI labels it "Precio oferta".
-_Avoid_: Final price, sale price, discounted price
+_Avoid_: Final price, sale price, discounted price, total operación
 
 **MOQ (minimum order quantity)**:
 The smallest purchasable quantity of a product and the unit in which demand is added; priced as a block by the client terms, with optional step increments above it.

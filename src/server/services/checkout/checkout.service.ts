@@ -425,11 +425,9 @@ export async function start(userId: string): Promise<CheckoutState> {
 			cart.status === "atCheckout"
 				? cart
 				: await updateCartStatus(tx, cart.id, "atCheckout");
-		const [addresses, mercadoPagoConfig, externalConfig] = await Promise.all([
-			listCheckoutAddresses(tx, userId),
-			getMercadoPagoConfig(tx),
-			getExternalPaymentConfig(tx),
-		]);
+		const addresses = await listCheckoutAddresses(tx, userId);
+		const mercadoPagoConfig = await getMercadoPagoConfig(tx);
+		const externalConfig = await getExternalPaymentConfig(tx);
 
 		const paymentMethods: CheckoutPaymentMethodRecord[] = [];
 		if (mercadoPagoConfig.enabled) {
@@ -453,11 +451,9 @@ export async function start(userId: string): Promise<CheckoutState> {
 export async function getState(userId: string): Promise<CheckoutState> {
 	return db.$transaction(async (tx) => {
 		const cart = await getRequiredCheckoutCart(tx, userId);
-		const [addresses, mercadoPagoConfig, externalConfig] = await Promise.all([
-			listCheckoutAddresses(tx, userId),
-			getMercadoPagoConfig(tx),
-			getExternalPaymentConfig(tx),
-		]);
+		const addresses = await listCheckoutAddresses(tx, userId);
+		const mercadoPagoConfig = await getMercadoPagoConfig(tx);
+		const externalConfig = await getExternalPaymentConfig(tx);
 
 		// Unlike `start`, reading the checkout state never mints a payment method.
 		const paymentMethods: CheckoutPaymentMethodRecord[] = [];
@@ -663,10 +659,16 @@ export async function confirmAndPay(
 		const cart = await getRequiredCheckoutCart(tx, userId);
 		const cartSnapshot = mapCart(cart);
 		const total = assertSingleCurrency(cartSnapshot);
-		const [addressRecord, paymentRecord] = await Promise.all([
-			findCheckoutAddressById(tx, userId, input.shippingAddressId),
-			findCheckoutPaymentMethodById(tx, userId, input.paymentMethodId),
-		]);
+		const addressRecord = await findCheckoutAddressById(
+			tx,
+			userId,
+			input.shippingAddressId,
+		);
+		const paymentRecord = await findCheckoutPaymentMethodById(
+			tx,
+			userId,
+			input.paymentMethodId,
+		);
 
 		if (!addressRecord) {
 			throw new TRPCError({
