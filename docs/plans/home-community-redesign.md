@@ -43,6 +43,15 @@
 | Franja menta bajo el spotlight ("14 vecinos…") | Se elimina (era social proof sin dato real). | default (deriva del alcance) |
 | Vista previa admin | `HomeOfferCard` sigue en `product-preview-dialog.tsx`. Pasa a ser presentacional con un slot de acción; en el admin la acción es inerte. | code |
 
+> **Enmienda 2026-10-08 (QA #70, #71, #75, #76, #77):** se revierten dos filas de esta tabla.
+> **Estructura:** barra → navbar → hero (ilustración del sistema y un solo CTA, sin pasos ni
+> tarjeta) → "Cómo funciona" (`#como-funciona`, una sola secuencia numerada que reemplaza la franja
+> de confianza y Problema/Solución/Resultado) → banda del Producto destacado → grilla → FAQ → footer.
+> **Plazos y garantías:** "¿Cuánto tarda en llegar mi compra?" da un rango de 7 a 10 días desde que
+> el pedido entra en preparación (ver la enmienda de T21). La FAQ ya no explica el Roll over: se
+> quitaron "¿Qué pasa si mi demanda no entra en una operación?" y "¿Qué significa cantidad mínima?",
+> y la FAQ queda en 5 preguntas.
+
 ## 3. Scope
 
 - **In scope:**
@@ -475,6 +484,8 @@ la tarjeta sin botón activo. No aparece ningún texto de la lista prohibida de 
     un máximo de 7.
 - **Depends on:** T12, T13.
 - **Acceptance:** `#ofertas` y `#preguntas-frecuentes` existen; la FAQ conserva la pregunta de Roll over.
+- **Enmienda 2026-10-08:** ya no se conserva la pregunta de Roll over ni la de cantidad mínima; la
+  FAQ queda en 5 preguntas y no usa "carrito". Ver la enmienda de §2.
 
 ### T18 — Ensamblado de `page.tsx` y borrado de piezas muertas
 
@@ -517,6 +528,9 @@ la tarjeta sin botón activo. No aparece ningún texto de la lista prohibida de 
   sobre esas rutas debe devolver vacío.
 - **Depends on:** T18.
 - **Acceptance:** grep vacío.
+- **Enmienda 2026-10-08:** "10 días" sale de la lista prohibida. La FAQ "¿Cuánto tarda en llegar
+  mi compra?" dice "entre 7 y 10 días desde que tu pedido entra en preparación"; el plazo se cuenta
+  desde ahí y no promete fecha de cierre. El resto del barrido sigue vigente.
 
 ## 9. Cross-cutting concerns
 

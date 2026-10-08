@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { FaqSection } from "~/features/home/_components/faq-section";
 import { HomeFooter } from "~/features/home/_components/home-footer";
 import { HomeHero } from "~/features/home/_components/home-hero";
+import { HomeSpotlightBand } from "~/features/home/_components/home-spotlight-band";
+import { HowItWorksSection } from "~/features/home/_components/how-it-works-section";
 import { OffersSection } from "~/features/home/_components/offers-section";
-import { ProblemSolutionSection } from "~/features/home/_components/problem-solution-section";
-import { TrustStrip } from "~/features/home/_components/trust-strip";
 import { getSession } from "~/server/better-auth/server";
 import { getHomeContent } from "~/server/services/home/home.service";
 
@@ -28,13 +28,11 @@ export default async function Home() {
 
 	return (
 		<main className="flex min-h-screen flex-col">
-			<HomeHero
-				hasOffers={offers.length > 0}
-				spotlightOffer={spotlight ?? undefined}
-				{...cartProps}
-			/>
-			<TrustStrip />
-			<ProblemSolutionSection />
+			<HomeHero hasOffers={offers.length > 0} />
+			<HowItWorksSection />
+			{spotlight ? (
+				<HomeSpotlightBand offer={spotlight} {...cartProps} />
+			) : null}
 			<OffersSection offers={offers} {...cartProps} />
 			<FaqSection />
 			<HomeFooter />
