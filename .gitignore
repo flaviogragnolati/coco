@@ -60,3 +60,6 @@ yarn-error.log*
 /.codex
 /.kilocode
 /.claude
+
+# supplier price lists (input of pnpm catalog:quintal; never committed)
+*.xlsx

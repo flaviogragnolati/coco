@@ -2,6 +2,9 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "../generated/prisma/client";
+import { assertNotProduction } from "../scripts/lib/seed-environment";
+
+assertNotProduction("db:seed:test", process.env);
 
 type Tx = Prisma.TransactionClient;
 

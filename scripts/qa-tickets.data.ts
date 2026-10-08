@@ -809,7 +809,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin + Cliente",
 		feature: "`UserOrderClosure` derivado",
 		steps:
-			'Caso A (fixture del seed; se consume al ejecutarlo y `pnpm db:seed` lo restaura): en `/admin/packages`, abrir "PKG-SEED-OUT-PICKUP-B" (pedido ORD-SEED-PICKUP, en punto de retiro) y hacer click en "Confirmar entrega". Después, en `/admin/carts`, abrir el carrito CART-SEED-PICKUP y mirar el estado de su pedido.\nCaso B: un pedido cuyos items quedan todos cancelados (rollover resuelto sin entrega).\nCaso C: un pedido con un item entregado y otro con un rollover abierto.',
+			'Caso A (fixture del seed; se consume al ejecutarlo y `pnpm db:seed:test` lo restaura): en `/admin/packages`, abrir "PKG-SEED-OUT-PICKUP-B" (pedido ORD-SEED-PICKUP, en punto de retiro) y hacer click en "Confirmar entrega". Después, en `/admin/carts`, abrir el carrito CART-SEED-PICKUP y mirar el estado de su pedido.\nCaso B: un pedido cuyos items quedan todos cancelados (rollover resuelto sin entrega).\nCaso C: un pedido con un item entregado y otro con un rollover abierto.',
 		expectedResult:
 			'Caso A: ORD-SEED-PICKUP pasa solo de "En procesamiento" a "Completado". Un pedido con items entregados y otros cancelados también termina "Completado".\nCaso B: pasa a "Cancelado".\nCaso C: sigue "En procesamiento": un rollover abierto lo mantiene abierto.\nEl cierre nunca pisa "Reembolsado", "Contracargo" ni "Fallido", no existe cierre manual y no depende de un plazo. Cancelar el pedido no cancela un pago externo pendiente (ADR 0005).',
 		isRegressionPath: true,
