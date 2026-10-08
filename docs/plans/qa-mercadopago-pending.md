@@ -231,7 +231,7 @@ Run `q-code-implement` on this plan, Phase 1 then Phase 2, in a single PR. Do no
 
 ## 17. Execution record (q-code-implement, 2026-09-19)
 
-**Status:** Phases 1–2 and Task 3.1 are implemented and unit-verified, but **not yet released**. Task 3.2 is pending: deploy, then `qa:seed`, reopen the tickets and share the test data.
+**Status:** Phases 1–2 and Task 3.1 are released: deployed on 2026-09-19, and `pnpm db:seed` ran on 2026-09-25. **Task 3.2 is still pending**: `qa:seed` has not run, the tickets are not reopened and the test data has not been shared. See "Release and re-test" below.
 
 ### Change summary
 
@@ -282,6 +282,26 @@ Run `q-code-implement` on this plan, Phase 1 then Phase 2, in a single PR. Do no
 
 ### Follow-ups / required actions
 
-1. Deploy this change. Then run `pnpm qa:seed`, and the QA lead reopens #21–#26, #36 and #37 in `/admin/qa-tickets`.
+1. Deploy this change (done on 2026-09-19). Then run `pnpm qa:seed`, and the QA lead reopens #21–#26, #36 and #37 in `/admin/qa-tickets`. This is now part of the combined procedure in "Release and re-test".
 2. Before #25, confirm "Webhooks unsigned dev" is off on `coco-kappa-ashy`.
 3. Share the MP test buyer and cards with the tester privately (A1).
+
+### Release and re-test (2026-10-08)
+
+Source: "Tickets antiguos (27): Fase 0" in `docs/plans/qa-open-tickets-2026-10-report.md`.
+
+- **Deployed** on 2026-09-19 together with `qa-open-tickets-remediation.md`. **`pnpm db:seed`** ran on 2026-09-25. **`pnpm qa:seed` is still pending**, so the QA database keeps the old text of #21–#26, #36 and #37.
+- **Text adjusted before the seed**, in tickets that touch this plan:
+  - #16: with "Pago externo" the payment stays "Pendiente" and is not credited on its own. With "Mercado Pago" the app redirects to Checkout Pro.
+  - #38: the "Administrador" step uses an account that is not superadmin, because the tester already is one. The superadmin edits "Expiración minutos" in Config and then restores it.
+- **`qa:seed` reopens nothing.** It rewrites only the text, and the only state it changes is retiring #15. Reopening is a separate step.
+
+**Re-test groups** for this plan's tickets (the full list of 26 is in `qa-open-tickets-remediation.md` §17):
+
+| Group | Tickets | Action |
+| --- | --- | --- |
+| Corrected in code | #16, #36 | Re-test. |
+| Text-only rewrite | #21, #22, #23, #24, #25, #26, #37 | `qa:seed`, then re-test. #21, #23 and #24 need the MP test buyer and test cards, handed to the tester privately (A1). |
+| Text adjusted before the seed | #16, #38 | Done in `scripts/qa-tickets.data.ts`. #38 needs an account with role "Administrador" that is not superadmin. |
+
+**Steps for the user, after the merge:** run `pnpm qa:seed`, then reopen the 26 tickets as `pending`. The admin path and the SQL are in `qa-open-tickets-remediation.md` §17, "Release and re-test". Then share the MP test buyer and cards, and check follow-up 2 before #25.

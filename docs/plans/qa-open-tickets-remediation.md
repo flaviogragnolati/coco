@@ -250,7 +250,7 @@ Use `q-code-implement` phase by phase; start each defect with a failing test (`q
 
 ## 17. Execution record (q-code-implement, 2026-09-18)
 
-**Status:** implemented and unit-verified, **not yet released**. Scope per user instruction: every task except the Mercado Pago part, which stays pending — Task 4.1 (`/admin/payments` hint, #36) and the MP-subject ticket rewrites #22, #25, #36.
+**Status:** released: deployed on 2026-09-19 and `pnpm db:seed` run on 2026-09-25. **`pnpm qa:seed` is still pending**, so the QA database keeps the old ticket text, #15 is still active and no ticket was reopened. See "Release and re-test" below. Scope per user instruction: every task except the Mercado Pago part, which stays pending — Task 4.1 (`/admin/payments` hint, #36) and the MP-subject ticket rewrites #22, #25, #36.
 
 ### Change summary
 
@@ -289,8 +289,59 @@ Use `q-code-implement` phase by phase; start each defect with a failing test (`q
 
 ### Follow-ups / required actions
 
-1. Apply the migration **before** deploying this code (every package read selects `sourcePackageId`).
-2. On a disposable Neon branch: reproduce #69, then `pnpm db:seed && pnpm db:seed-verify` (exit 0) and `pnpm fulfillment:e2e`.
-3. Run `pnpm qa:seed` only after deploy (§5), then the QA lead reopens #3, #12, #16, #18, #20, #30, #31, #32, #33, #42, #45, #48, #54, #61, #67, #69.
+1. Apply the migration **before** deploying this code (every package read selects `sourcePackageId`). Deployed on 2026-09-19.
+2. On a disposable Neon branch: reproduce #69, then `pnpm db:seed && pnpm db:seed-verify` (exit 0) and `pnpm fulfillment:e2e`. Still pending; see "Release and re-test".
+3. Superseded by "Release and re-test" below, which adds #2, #38 and the Mercado Pago tickets to the reopen list.
 4. Mercado Pago part moved to `docs/plans/qa-mercadopago-pending.md` (it supersedes Task 4.1 and the #22, #25, #36 rewrites; its §1 records the 2026-09-19 environment setup).
 5. Optional: ship as the PRs §12 describes; add a `shipment.recover` step to `scripts/fulfillment-e2e.ts`.
+
+### Release and re-test (2026-10-08)
+
+Source: "Tickets antiguos (27): Fase 0" in `docs/plans/qa-open-tickets-2026-10-report.md`.
+
+- **Deployed** on 2026-09-19 together with the Mercado Pago plan. **`pnpm db:seed`** ran on 2026-09-25. **`pnpm qa:seed` never ran.**
+- **Ticket text adjusted before the seed** in `scripts/qa-tickets.data.ts`, mirrored in `docs/qa/qa-ciclo-de-vida.md`:
+  - #38 uses an account with role "Administrador" that is not superadmin, because the tester is already superadmin. The superadmin edits "Expiración minutos" and then restores it.
+  - #54 requires an inbound package fractionated after the 19/09 deploy. Legacy allocations with no source still over-offer (§13).
+  - #16: with "Pago externo" the payment stays "Pendiente" and is not credited on its own. With "Mercado Pago" the app redirects to Checkout Pro.
+
+**What `pnpm qa:seed` does** (`scripts/qa-seed.ts`):
+- It upserts codes 1–67 except 15 and 17, and rewrites only the text fields.
+- It never changes `status`, `notes`, `assigneeId` or `evidence`, so **it does not reopen anything**.
+- It sets `deleted: true` on the codes in `retiredQaTicketCodes` (15, 17) that are still active, so **it retires #15**. That change is never undone by a later run.
+- Codes that exist only in the database (#68, #69, #70–#83) are left untouched.
+- Text that a QA lead edited in the admin for codes 1–67 is overwritten by the seed text.
+
+**Re-test groups** (26 tickets to reopen: the 27 open since the 04/09 pass, minus #15):
+
+| Group | Tickets | Action |
+| --- | --- | --- |
+| Corrected in code | #2, #3, #16, #30, #33, #36, #45, #48, #54, #61, #69 | Re-test. #69 is re-tested by a developer on a Neon branch with `pnpm db:seed && pnpm db:seed-verify` (exit 0, no `quantityMismatch`), never on the shared database. |
+| Text-only rewrite | #12, #18, #20, #21, #22, #23, #24, #25, #26, #31, #32, #37, #42, #67 | `qa:seed`, then re-test. #21, #23 and #24 need the Mercado Pago test buyer and test cards, handed to the tester privately. |
+| Text adjusted before the seed | #16, #38, #54 | Done in code (above). #16 and #54 are also in the "Corrected in code" group. |
+| Retire | #15 | `qa:seed` retires it. |
+
+**Steps for the user, after this change is merged into `main`** (run from the main checkout; the commands hit the database in `.env`):
+
+1. Run `pnpm qa:seed`. It should print `QA tickets: 0 creados, 65 actualizados, 1 retirados (tracking preservado).` If #15 was already retired, it prints `0 retirados`.
+2. Reopen the 26 tickets as `pending`, using one of the two options below:
+   - **Admin (audited, one by one):** in `/admin/qa-tickets`, open the row menu → "Editar definición", set "Estado" to "Pendiente" and click "Guardar". This keeps the notes and the assignee, and writes a `qaTicket.update` audit entry.
+   - **SQL (all at once, no audit entry):** run it in the Neon console against the QA database.
+
+     ```sql
+     -- Preflight: expect 26 rows, all failed / blocked / needsClarification.
+     SELECT code, status FROM qa_ticket
+     WHERE deleted = false
+       AND code IN (2, 3, 12, 16, 18, 20, 21, 22, 23, 24, 25, 26, 30, 31, 32, 33, 36, 37, 38, 42, 45, 48, 54, 61, 67, 69)
+     ORDER BY code;
+
+     UPDATE qa_ticket
+     SET status = 'pending', "updatedAt" = now()
+     WHERE deleted = false
+       AND status IN ('failed', 'blocked', 'needsClarification')
+       AND code IN (2, 3, 12, 16, 18, 20, 21, 22, 23, 24, 25, 26, 30, 31, 32, 33, 36, 37, 38, 42, 45, 48, 54, 61, 67, 69);
+     ```
+
+     Notes and assignees stay as they are. The 04/09 notes remain as history until the tester saves a new result.
+3. Hand the tester the Mercado Pago test buyer and test cards (#21, #23, #24), and an account with role "Administrador" that is not superadmin (#38).
+4. Assign #69 to a developer for the Neon-branch run.
