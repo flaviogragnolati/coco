@@ -210,9 +210,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Aceptación de términos",
 		steps:
-			'1) Llegar al paso "Confirmar" con pedido, dirección y pago elegidos.\n2) Intentar "Confirmar y pagar" sin activar el switch de términos.\n3) Activarlo y confirmar.',
+			'Precondiciones: "Pago externo" y "Mercado Pago" (en "Sandbox") habilitados en `/admin/payments` → Config; sesiones Cliente (con carrito y dirección listos) y Admin abiertas. No hace falta pagar en Mercado Pago.\n1) Cliente: en `/checkout`, elegir "Pago externo" y llegar al paso "Confirmar". Leer el texto de los términos.\n2) Intentar "Confirmar y pagar" sin activar el switch de términos.\n3) Activar el switch y hacer click en "Confirmar y pagar". Anotar el código del pedido y abrirlo en `/my-orders/[id]`.\n4) Admin: en `/admin/payments` → "Intentos", buscar el intento de ese pedido, revisar su estado y rechazarlo con un motivo (así se libera el carrito, como en #18).\n5) Cliente: en `/cart`, hacer click en "Ir a pagar", elegir "Mercado Pago", activar el switch y hacer click en "Confirmar y pagar". No completar el pago en Checkout Pro.',
 		expectedResult:
-			"Sin el switch el botón está deshabilitado (no se puede confirmar). Con el switch activo el pago se procesa.",
+			'Paso 1: los términos muestran condiciones legibles (texto de prueba hasta que llegue el definitivo), no "lorem ipsum".\nPaso 2: sin el switch, "Confirmar y pagar" está deshabilitado.\nPaso 3: con "Pago externo" el pedido se registra con los datos de transferencia y el cliente ve el pago "Pendiente": no se acredita solo.\nPaso 4: antes de rechazarlo, el intento figura "pending"; solo un Admin lo cobra o lo rechaza.\nPaso 5: con "Mercado Pago" la app muestra "Redirigiendo a Mercado Pago" y navega a Checkout Pro.',
 		isRegressionPath: false,
 	},
 	{
@@ -403,7 +403,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		steps:
 			"1) Admin genera: un recorte de proveedor (rollover), una demora de envío (incidencia) y una llegada a punto de retiro.\n2) Cliente revisa el detalle en cada caso.",
 		expectedResult:
-			'Aparecen avisos legibles: "Reprogramado..." con el motivo que cargó el admin debajo, "Incidencia de fulfillment" (una incidencia en preparación, transporte o entrega) también con su motivo, luego "Incidencia resuelta" sin motivo, y "Disponible para retirar": este último como aviso, sin marcar la etapa Entrega. Para comprobar esto último, usar un item que no haya tenido otra entrega antes.',
+			'Aparecen avisos legibles: "Reprogramado..." con un motivo legible debajo, sin códigos internos como LITEM-… (para el recorte de proveedor: "El proveedor no confirmó toda la cantidad pedida."), "Incidencia de fulfillment" (una incidencia en preparación, transporte o entrega) también con su motivo, luego "Incidencia resuelta" sin motivo, y "Disponible para retirar": este último como aviso, sin marcar la etapa Entrega. Para comprobar esto último, usar un item que no haya tenido otra entrega antes.',
 		isRegressionPath: false,
 	},
 	{
@@ -461,9 +461,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin + Superadmin",
 		feature: "`updateProviderConfig`",
 		steps:
-			"1) Como admin común, tab Config: intentar guardar un cambio.\n2) Como superadmin, cambiar un valor, escribir `CONFIRMAR` y guardar.\n3) Probar guardar sin escribir `CONFIRMAR`.",
+			'Precondiciones: dos cuentas. Una con rol "Administrador" que NO sea superadmin (la cuenta del tester ya es "Superadministrador", así que el responsable de QA le pasa otra o le asigna ese rol a una cuenta de prueba en `/admin/users`) y la cuenta superadmin del tester. Solo se toca "Expiración minutos" en `/admin/payments` → Config, y al final se deja como estaba.\n1) Con la cuenta "Administrador", en `/admin/payments` → Config, anotar el valor de "Expiración minutos", sumarle 1, escribir `CONFIRMAR` en "Confirmación" y hacer click en "Guardar configuración".\n2) Con la cuenta superadmin, abrir la misma pantalla y comprobar que "Expiración minutos" sigue con el valor anotado. Sumarle 1, dejar "Confirmación" vacío y hacer click en "Guardar configuración".\n3) Escribir `CONFIRMAR` en "Confirmación" y volver a guardar.\n4) Devolver "Expiración minutos" al valor anotado, escribir `CONFIRMAR` y guardar.',
 		expectedResult:
-			'El admin común recibe FORBIDDEN. El superadmin sin la palabra exacta recibe \'Escribí "CONFIRMAR" para aplicar cambios...\'. Con `CONFIRMAR` el cambio se aplica y los secretos solo se muestran como "Configurado"/"Falta".',
+			'Paso 1: toast de error "FORBIDDEN" y el valor no cambia.\nPaso 2: toast \'Escribí "CONFIRMAR" para aplicar cambios de configuración.\' y el valor no cambia.\nPaso 3: toast "Configuración actualizada" con el valor nuevo.\nPaso 4: "Expiración minutos" vuelve al valor anotado.\nEn ningún paso se ven los secretos: "Access token" y "Webhook secret" solo dicen "Configurado" o "Falta".',
 		isRegressionPath: false,
 	},
 	{
@@ -583,7 +583,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		steps:
 			'1) Acción "Confirmar" bajando la cantidad de una línea.\n2) Revisar el preview de reparto ("#{k} ... absorbe {x}").\n3) Probar "Ajustar reparto" con una suma que no cierra.\n4) Confirmar.',
 		expectedResult:
-			'El recorte se reparte LIFO (el pagador más reciente absorbe primero). El reparto manual reemplaza al LIFO y debe sumar exacto ("El reparto suma {a} y el recorte es {b}."). Se crea un rollover post-asignación por recorte con motivo; el cliente afectado ve el aviso de reprogramación. Una línea confirmada en 0 se cancela con rollover total.',
+			'El recorte se reparte LIFO (el pagador más reciente absorbe primero). El reparto manual reemplaza al LIFO y debe sumar exacto ("El reparto suma {a} y el recorte es {b}."). Se crea un rollover post-asignación por recorte con motivo; el cliente afectado ve el aviso de reprogramación con el motivo "El proveedor no confirmó toda la cantidad pedida.", sin códigos internos como LITEM-…. Una línea confirmada en 0 se cancela con rollover total.',
 		isRegressionPath: false,
 	},
 	{
@@ -653,7 +653,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin",
 		feature: "`package.fractionate`",
 		steps:
-			'1) `/admin/packages`: sobre el paquete de entrada "Recibido", acción "Fraccionar".\n2) Revisar las cantidades propuestas por carrito y confirmar.\n3) Reabrir el mismo paquete de entrada.',
+			'Precondiciones: un paquete de entrada "Recibido" que se fracciona por primera vez en este caso, después del deploy del 19/09/2026, y cuya demanda no se haya fraccionado antes de esa fecha desde otro paquete (lo más simple: uno de una operación creada después del deploy). Un paquete fraccionado antes del deploy, como el #160, puede seguir mostrando cantidad sin fraccionar: no sirve para este caso.\n1) `/admin/packages`: sobre el paquete de entrada "Recibido", acción "Fraccionar".\n2) Revisar las cantidades propuestas por carrito y confirmar.\n3) Reabrir el mismo paquete de entrada.',
 		expectedResult:
 			'Se crea un paquete de salida "Listo para envío" por carrito (un mismo cliente con dos carritos recibe dos paquetes); el paquete de entrada queda "Recibido" como historia. Toast "Fraccionado en {n} paquete(s) de salida".\nAl reabrirlo, el detalle indica "No queda cantidad recibida sin fraccionar." y "Fraccionar" queda deshabilitado, aunque otro paquete de entrada cubra la misma demanda.\nLos items pasan a "Empaquetado". El journey del cliente muestra "Empaque", salvo que el item ya haya pasado por un envío interno: en ese caso queda en "Envío", porque el journey nunca retrocede.',
 		isRegressionPath: true,
@@ -825,9 +825,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
  * active to deleted, and that is the only direction it can move it. Bringing one
  * back is a deliberate admin action, never the side effect of a seed run.
  *
+ * - 15 — user-managed payment methods, removed by ADR 0010.
  * - 17 — mock payment gateway, removed by ADR 0010.
- *
- * `implementation-plan-qa-coverage-expansion.md` extends this list with 15 and 18
- * when it runs; it must add to the list, not reimplement the mechanism.
  */
 export const retiredQaTicketCodes: number[] = [15, 17];
