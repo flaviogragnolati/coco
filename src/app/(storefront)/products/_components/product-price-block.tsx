@@ -5,6 +5,7 @@ import {
 	getOfferBlockStrikethroughPrice,
 	getOfferDiscountLabel,
 	getOfferUnitReference,
+	SHOW_MARKET_SAVING,
 } from "~/features/home/home-formatters";
 import { cn } from "~/lib/utils";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
@@ -23,7 +24,9 @@ export function ProductPriceBlock({
 	const blockPrice = getOfferBlockPrice(offer);
 	const strikethroughPrice = getOfferBlockStrikethroughPrice(offer);
 	const discountLabel = getOfferDiscountLabel(offer);
-	const marketComparison = getMarketComparison(offer);
+	const marketComparison = SHOW_MARKET_SAVING
+		? getMarketComparison(offer)
+		: null;
 	const perUnitLabel = getOfferUnitReference(offer);
 
 	if (variant === "table") {

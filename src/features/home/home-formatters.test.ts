@@ -1,14 +1,17 @@
 import { expect, test } from "vitest";
+import { homeOfferTerms } from "~/features/cart/cart-mappers";
 import type { HomeOffer } from "~/shared/common/home.types";
 import {
 	getMarketSavingLabel,
 	getOfferBlockPrice,
 	getOfferBlockStrikethroughPrice,
 	getOfferDiscountLabel,
+	getOfferFixedQuantityLabel,
 	getOfferHeadlinePrice,
-	getOfferMinimumLabel,
-	getOfferMinimumTotal,
+	getOfferInCartLabel,
+	getOfferQuantityLabel,
 	getOfferStrikethroughPrice,
+	getOfferTotalLabel,
 } from "./home-formatters";
 
 const offer: HomeOffer = {
@@ -41,8 +44,6 @@ test("the headline uses the unit price when supplied and otherwise the MOQ block
 		amount: "$ 20.000",
 		unitLabel: "por 10 kg",
 	});
-	expect(getOfferMinimumLabel(offer)).toBe("Mínimo: 10 kg");
-	expect(getOfferMinimumTotal(offer)).toBe("Total del mínimo: $ 20.000");
 });
 
 test("discount and strike-through apply to the same headline basis", () => {
@@ -50,7 +51,9 @@ test("discount and strike-through apply to the same headline basis", () => {
 	expect(getOfferHeadlinePrice(discounted).amount).toBe("$ 1.125");
 	expect(getOfferStrikethroughPrice(discounted)).toBe("$ 1.500");
 	expect(getOfferBlockPrice(discounted)).toBe("$ 15.000");
-	expect(getOfferMinimumTotal(discounted)).toBe("Total del mínimo: $ 15.000");
+	expect(getOfferTotalLabel(homeOfferTerms(discounted), "10")).toBe(
+		"Total $ 15.000",
+	);
 	expect(getOfferHeadlinePrice({ ...discounted, unitPrice: null }).amount).toBe(
 		"$ 15.000",
 	);
@@ -89,7 +92,9 @@ test("prices and savings retain USD currency", () => {
 	};
 	expect(getOfferHeadlinePrice(dollars).amount).toBe("US$ 8,00");
 	expect(getOfferStrikethroughPrice(dollars)).toBe("US$ 10,00");
-	expect(getOfferMinimumTotal(dollars)).toBe("Total del mínimo: US$ 80,00");
+	expect(getOfferTotalLabel(homeOfferTerms(dollars), "10")).toBe(
+		"Total US$ 80,00",
+	);
 	expect(getMarketSavingLabel(dollars)).toBe(
 		"Ahorrás US$ 7,00 por kg vs. góndola",
 	);
@@ -113,13 +118,11 @@ test("catalog strike-through retains its MOQ price basis", () => {
 	expect(getOfferBlockStrikethroughPrice(offer)).toBeNull();
 });
 
-test("minimum quantities use plural countable units", () => {
-	expect(getOfferMinimumLabel({ ...offer, moq: "3", unit: "box" })).toBe(
-		"Mínimo: 3 cajas",
-	);
-	expect(getOfferMinimumLabel({ ...offer, moq: "1", unit: "box" })).toBe(
-		"Mínimo: 1 caja",
-	);
+test("quantities use plural countable units", () => {
+	expect(getOfferQuantityLabel("3", "box")).toBe("3 cajas");
+	expect(getOfferQuantityLabel("1", "box")).toBe("1 caja");
+	expect(getOfferQuantityLabel("12", "piece")).toBe("12 unidades");
+	expect(getOfferQuantityLabel("2.5", "kg")).toBe("2,5 kg");
 	expect(
 		getOfferHeadlinePrice({
 			...offer,
@@ -128,4 +131,33 @@ test("minimum quantities use plural countable units", () => {
 			unitPrice: null,
 		}).unitLabel,
 	).toBe("por 3 unidades");
+});
+
+const stepped = { ...offer, step: "5", stepPrice: "9000", max: "20" };
+
+test("the total follows the chosen quantity in steps above the MOQ", () => {
+	const terms = homeOfferTerms(stepped);
+	expect(getOfferTotalLabel(terms, "10")).toBe("Total $ 20.000");
+	expect(getOfferTotalLabel(terms, "15")).toBe("Total $ 29.000");
+	expect(getOfferTotalLabel(terms, "20")).toBe("Total $ 38.000");
+	expect(
+		getOfferTotalLabel(
+			homeOfferTerms({ ...stepped, discountPercent: "10" }),
+			"15",
+		),
+	).toBe("Total $ 26.100");
+});
+
+test("a fixed quantity states the only quantity and its total", () => {
+	expect(
+		getOfferFixedQuantityLabel(
+			homeOfferTerms({ ...offer, moq: "12", unit: "piece" }),
+			"piece",
+		),
+	).toBe("12 unidades · Total $ 20.000");
+});
+
+test("the in-cart notice names the quantity already in the order", () => {
+	expect(getOfferInCartLabel("15", "kg")).toBe("Ya tenés 15 kg en tu pedido");
+	expect(getOfferInCartLabel("1", "box")).toBe("Ya tenés 1 caja en tu pedido");
 });

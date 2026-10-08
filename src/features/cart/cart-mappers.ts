@@ -33,7 +33,7 @@ export function catalogProductToCartItem(
 	};
 }
 
-function homeOfferTerms(offer: HomeOffer): CatalogClientTerms {
+export function homeOfferTerms(offer: HomeOffer): CatalogClientTerms {
 	return {
 		id: offer.productClientTermsId,
 		moq: offer.moq,

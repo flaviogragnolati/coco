@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { cn } from "~/lib/utils";
 import type {
 	CatalogClientTerms,
 	CatalogProductUnit,
@@ -17,6 +18,7 @@ import {
 } from "~/shared/common/commerce.helpers";
 
 type QuantityStepperProps = {
+	className?: string;
 	disabled?: boolean;
 	terms: CatalogClientTerms;
 	unit: CatalogProductUnit;
@@ -27,6 +29,7 @@ type QuantityStepperProps = {
 };
 
 export function QuantityStepper({
+	className,
 	disabled,
 	terms,
 	unit,
@@ -50,7 +53,7 @@ export function QuantityStepper({
 	};
 
 	return (
-		<div className="flex min-w-0 items-center gap-1">
+		<div className={cn("flex min-w-0 items-center gap-1", className)}>
 			<Button
 				aria-label="Reducir cantidad"
 				disabled={disabled || !canDecrement}

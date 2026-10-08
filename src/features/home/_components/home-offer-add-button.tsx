@@ -7,6 +7,10 @@ import { useCartActions } from "~/features/cart/use-cart-sync";
 import type { HomeOffer } from "~/shared/common/home.types";
 import { useCartStore } from "~/store/cart-store";
 import { useCartUiStore } from "~/store/cart-ui-store";
+import {
+	useHomeOfferCartQuantity,
+	useHomeOfferQuantity,
+} from "./home-offer-quantity";
 
 export function HomeOfferAddButton({
 	offer,
@@ -20,17 +24,14 @@ export function HomeOfferAddButton({
 	const { setItem, isPending } = useCartActions({ isAuthenticated, userId });
 	const openMiniCart = useCartUiStore((state) => state.openMiniCart);
 	const hasHydrated = useCartStore((state) => state.hasHydrated);
-	const inCart = useCartStore(
-		(state) =>
-			state.hasHydrated &&
-			Boolean(state.items[String(offer.productClientTermsId)]),
-	);
+	const inCart = useHomeOfferCartQuantity(offer) !== null;
+	const quantity = useHomeOfferQuantity(offer);
 	return (
 		<Button
 			className="w-full rounded-full"
 			disabled={isPending || !hasHydrated}
 			onClick={() => {
-				if (!inCart) setItem(homeOfferToCartItem(offer));
+				if (!inCart) setItem(homeOfferToCartItem(offer, quantity));
 				openMiniCart();
 			}}
 			variant="highlight"
