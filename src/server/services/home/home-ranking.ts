@@ -2,9 +2,11 @@ import type { HomeOffersCriterion } from "~/prisma/client";
 import { getMarketSaving, toNumber } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
 
-// The admin pin is used only for ranking and stripped from the public offer.
+// The admin pin and the order count are used only for ranking and stripped
+// from the public offer.
 export type RankableHomeOffer = HomeOffer & {
 	homeOfferRank: number | null;
+	paidOrderCount: number;
 };
 
 export type HomeOfferCuration = {
@@ -28,6 +30,7 @@ function getCriterionValue(
 	criterion: HomeOffersCriterion,
 ) {
 	if (criterion === "discountPercent") return toNumber(offer.discountPercent);
+	if (criterion === "orderVolume") return offer.paidOrderCount;
 	return getMarketSaving(offer)?.perBlock ?? null;
 }
 
@@ -99,6 +102,9 @@ export function dedupeHomeOffersByProduct(offers: RankableHomeOffer[]) {
 	});
 }
 
+// More than the grid shows, so the unit filter can refill it on the client.
+export const HOME_OFFERS_POOL_SIZE = 24;
+
 export function composeHomeContent(
 	offers: RankableHomeOffer[],
 	curation: HomeOfferCuration,
@@ -121,6 +127,6 @@ export function composeHomeContent(
 		spotlight,
 		offers: ranked
 			.filter((offer) => offer !== spotlight)
-			.slice(0, Math.max(curation.offersLimit, 0)),
+			.slice(0, Math.max(HOME_OFFERS_POOL_SIZE, curation.offersLimit)),
 	};
 }

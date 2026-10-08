@@ -6,12 +6,16 @@ import { selectProductImage } from "~/shared/common/commerce.helpers";
 import type { HomeContent } from "~/shared/common/home.types";
 import {
 	type CurrentHomeOfferRecord,
+	countPaidOrdersByProduct,
 	getHomeOfferCuration,
 	listCurrentHomeOffers,
 } from "./home.data";
 import { composeHomeContent, type RankableHomeOffer } from "./home-ranking";
 
-function mapHomeOffer(record: CurrentHomeOfferRecord): RankableHomeOffer {
+function mapHomeOffer(
+	record: CurrentHomeOfferRecord,
+	paidOrderCounts: ReadonlyMap<number, number>,
+): RankableHomeOffer {
 	return {
 		productId: record.product.id,
 		productClientTermsId: record.id,
@@ -31,6 +35,7 @@ function mapHomeOffer(record: CurrentHomeOfferRecord): RankableHomeOffer {
 		discountPercent: record.discountPercent?.toString() ?? null,
 		currency: record.currency,
 		homeOfferRank: record.product.homeOfferRank,
+		paidOrderCount: paidOrderCounts.get(record.product.id) ?? 0,
 		fromDate: record.fromDate,
 	};
 }
@@ -41,9 +46,18 @@ export async function getHomeContent(): Promise<HomeContent> {
 		listCurrentHomeOffers(db, now),
 		getHomeOfferCuration(db),
 	]);
+	const paidOrderCounts =
+		curation.criterion === "orderVolume"
+			? await countPaidOrdersByProduct(db, now)
+			: new Map<number, number>();
 
-	// The admin pin never reaches the public offer contract.
-	return homeContentOutputSchema.parse(
-		composeHomeContent(records.map(mapHomeOffer), curation),
-	);
+	// The admin pin and the order count never reach the public offer contract.
+	return homeContentOutputSchema.parse({
+		...composeHomeContent(
+			records.map((record) => mapHomeOffer(record, paidOrderCounts)),
+			curation,
+		),
+		offersLimit: curation.offersLimit,
+		offersCriterion: curation.criterion,
+	});
 }

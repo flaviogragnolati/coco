@@ -15,6 +15,7 @@ import {
 	getMarketSaving,
 	getPerUnitPrice,
 } from "~/shared/common/commerce.helpers";
+import { countPaidOrdersByProduct } from "../home/home.data";
 import type { AdminMutationActor } from "./_base/admin-audit";
 import { writeAdminAuditLog } from "./_base/admin-audit";
 import { throwConflict, throwNotFound } from "./_base/admin-crud.errors";
@@ -51,6 +52,7 @@ function parsePin(record: HomeOfferProductRecord) {
 
 function toCandidate(
 	record: HomeOfferCandidateTermsRecord,
+	paidOrderCount: number,
 ): HomeOfferCandidate {
 	const terms = {
 		moq: record.moq.toString(),
@@ -71,6 +73,7 @@ function toCandidate(
 		...terms,
 		offerUnitPrice: getPerUnitPrice(terms),
 		marketSaving: getMarketSaving(terms)?.perBlock ?? null,
+		paidOrderCount,
 		productClientTermsId: record.id,
 		termsFromDate: record.fromDate,
 		termsToDate: record.toDate,
@@ -95,6 +98,7 @@ function toStalePinCandidate(
 		discountPercent: null,
 		offerUnitPrice: null,
 		marketSaving: null,
+		paidOrderCount: 0,
 		productClientTermsId: null,
 		termsFromDate: null,
 		termsToDate: null,
@@ -136,9 +140,11 @@ export async function getSettings(database: AdminDb) {
 }
 
 export async function listCandidates(database: AdminDb) {
-	const [termsRecords, pinnedProducts] = await Promise.all([
-		listHomeOfferCandidateTerms(database, new Date()),
+	const now = new Date();
+	const [termsRecords, pinnedProducts, paidOrderCounts] = await Promise.all([
+		listHomeOfferCandidateTerms(database, now),
 		listPinnedProducts(database),
+		countPaidOrdersByProduct(database, now),
 	]);
 
 	// A product can carry more than one vigente terms row; the newest wins, the
@@ -146,7 +152,10 @@ export async function listCandidates(database: AdminDb) {
 	const byProduct = new Map<number, HomeOfferCandidate>();
 	for (const record of termsRecords) {
 		if (byProduct.has(record.product.id)) continue;
-		byProduct.set(record.product.id, toCandidate(record));
+		byProduct.set(
+			record.product.id,
+			toCandidate(record, paidOrderCounts.get(record.product.id) ?? 0),
+		);
 	}
 
 	for (const product of pinnedProducts) {
