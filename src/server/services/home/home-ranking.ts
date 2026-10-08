@@ -102,10 +102,7 @@ export function dedupeHomeOffersByProduct(offers: RankableHomeOffer[]) {
 	});
 }
 
-/**
- * How many ranked offers reach the client beyond the grid itself: enough for
- * the unit filter to refill the grid with offers of the chosen unit.
- */
+// More than the grid shows, so the unit filter can refill it on the client.
 export const HOME_OFFERS_POOL_SIZE = 24;
 
 export function composeHomeContent(

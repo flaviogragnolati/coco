@@ -46,7 +46,6 @@ export async function getHomeContent(): Promise<HomeContent> {
 		listCurrentHomeOffers(db, now),
 		getHomeOfferCuration(db),
 	]);
-	// Only the order-volume criterion reads the counts; the others skip the query.
 	const paidOrderCounts =
 		curation.criterion === "orderVolume"
 			? await countPaidOrdersByProduct(db, now)
