@@ -5,6 +5,7 @@ import { Trash2Icon } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { QuantityStepper } from "~/features/cart/_components/quantity-stepper";
+import { cssUrl } from "~/features/catalog/_components/product-image";
 import { cn } from "~/lib/utils";
 import type { CartItem } from "~/shared/common/cart.types";
 import {
@@ -58,7 +59,7 @@ function CartLineImage({
 				className,
 			)}
 			role="img"
-			style={{ backgroundImage: `url(${item.product.imageUrl})` }}
+			style={{ backgroundImage: cssUrl(item.product.imageUrl) }}
 		/>
 	);
 }
