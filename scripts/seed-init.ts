@@ -4,8 +4,7 @@
  *
  * Safe for production: it only ever inserts. What already exists is kept as is,
  * whatever an admin changed in it, so a rerun over a loaded database creates
- * nothing. The decisions live in `seed-init.plan.ts`; this file loads the state,
- * applies the creates in one transaction and prints what it did and skipped.
+ * nothing. The decisions live in `seed-init.plan.ts`.
  */
 
 import "dotenv/config";
