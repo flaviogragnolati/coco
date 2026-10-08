@@ -48,7 +48,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Ranking de ofertas",
 		term: "Offers ranking",
 		definition:
-			"El orden en que los productos vigentes no fijados compiten por la grilla de la home: por ahorro contra el precio de góndola o por descuento de oferta, según el criterio que eligió el administrador. Los términos sin el dato del criterio quedan últimos.",
+			"El orden en que los productos vigentes no fijados compiten por la grilla de la home: por ahorro contra el precio de góndola, por descuento de oferta o por volumen de pedidos (pedidos pagados por producto en una ventana reciente), según el criterio que eligió el administrador. Los términos sin el dato del criterio quedan últimos.",
 		aliases: ["Orden", "Top de ofertas", "Consulta"],
 		href: "/admin/home-offers",
 	},
@@ -393,6 +393,21 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		occurrences: [
 			{
 				code: "HomeOffersCriterion.discountPercent",
+				db: "home_offer_settings.criterion",
+			},
+		],
+		href: "/admin/home-offers",
+	},
+	{
+		slug: "estado-criterio-volumen-de-pedidos",
+		kind: "status",
+		section: "catalog",
+		label: "Volumen de pedidos",
+		definition:
+			"El ranking ordena por la cantidad de pedidos pagados que incluyeron el producto en los últimos 90 días, sumando todos sus términos de cliente. Un pedido cuenta si su pago se acreditó en esa ventana y no terminó cancelado, reembolsado ni en contracargo. Los productos sin pedidos pagados quedan últimos.",
+		occurrences: [
+			{
+				code: "HomeOffersCriterion.orderVolume",
 				db: "home_offer_settings.criterion",
 			},
 		],

@@ -62,6 +62,12 @@ const criterionOptions: Array<{
 		description:
 			"Ordena por el porcentaje de descuento cargado en los términos.",
 	},
+	{
+		value: "orderVolume",
+		label: "Pedidos (90 días)",
+		description:
+			"Ordena por la cantidad de pedidos pagados que incluyeron el producto en los últimos 90 días.",
+	},
 ];
 
 function describeCandidate(candidate: HomeOfferCandidate) {
@@ -179,11 +185,12 @@ export function HomeOffersClient() {
 					productClientTermsId: candidate.productClientTermsId ?? 0,
 				}))
 				.sort(
-					compareRankedOffers((candidate) =>
-						criterion === "marketSaving"
+					compareRankedOffers((candidate) => {
+						if (criterion === "orderVolume") return candidate.paidOrderCount;
+						return criterion === "marketSaving"
 							? candidate.marketSaving
-							: toNumber(candidate.discountPercent),
-					),
+							: toNumber(candidate.discountPercent);
+					}),
 				),
 		[candidates, criterion, spotlightProductId],
 	);

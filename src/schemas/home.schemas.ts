@@ -5,6 +5,12 @@ import {
 	catalogProductUnitSchema,
 } from "~/schemas/catalog.schemas";
 
+export const homeOffersCriterionSchema = z.enum([
+	"marketSaving",
+	"discountPercent",
+	"orderVolume",
+]);
+
 export const homeOfferSchema = z.object({
 	productId: z.number().int().positive(),
 	productClientTermsId: z.number().int().positive(),
@@ -28,7 +34,13 @@ export const homeOfferSchema = z.object({
 
 export const homeOffersOutputSchema = z.array(homeOfferSchema);
 
+/**
+ * `offers` is a pool larger than the grid so the unit filter can refill it on
+ * the client; `offersLimit` is how many of them the grid shows at once.
+ */
 export const homeContentOutputSchema = z.object({
 	spotlight: homeOfferSchema.nullable(),
 	offers: homeOffersOutputSchema,
+	offersLimit: z.number().int().positive(),
+	offersCriterion: homeOffersCriterionSchema,
 });

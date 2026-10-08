@@ -16,10 +16,8 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-	const [session, { spotlight, offers }] = await Promise.all([
-		getSession(),
-		getHomeContent(),
-	]);
+	const [session, { spotlight, offers, offersLimit, offersCriterion }] =
+		await Promise.all([getSession(), getHomeContent()]);
 	const user = session?.user;
 	const cartProps = {
 		isAuthenticated: Boolean(user),
@@ -35,7 +33,12 @@ export default async function Home() {
 			/>
 			<TrustStrip />
 			<ProblemSolutionSection />
-			<OffersSection offers={offers} {...cartProps} />
+			<OffersSection
+				criterion={offersCriterion}
+				offers={offers}
+				offersLimit={offersLimit}
+				{...cartProps}
+			/>
 			<FaqSection />
 			<HomeFooter />
 		</main>

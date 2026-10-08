@@ -66,6 +66,60 @@ export async function listCurrentHomeOffers(database: HomeDb, now: Date) {
 	});
 }
 
+export const ORDER_VOLUME_WINDOW_DAYS = 90;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Paid means the payment was captured inside the window and the order is still
+ * commercially alive: a refund, chargeback or cancellation takes it back out,
+ * and so does a request the customer or an admin cancelled.
+ */
+function paidOrderItemsWhere(since: Date) {
+	return {
+		userOrder: {
+			status: { in: ["processing", "completed"] },
+			transactions: {
+				some: { status: "completed", completedAt: { gte: since } },
+			},
+		},
+		sourceCartItem: { deleted: false, status: "submitted" },
+	} satisfies Prisma.UserOrderItemWhereInput;
+}
+
+/**
+ * Paid orders per product, not per client terms: terms rotate with every price
+ * change and the home ranks products. An order holding the product under two
+ * terms rows still counts once.
+ */
+export async function countPaidOrdersByProduct(
+	database: HomeDb,
+	now: Date,
+): Promise<Map<number, number>> {
+	const since = new Date(now.getTime() - ORDER_VOLUME_WINDOW_DAYS * DAY_MS);
+	const items = await database.userOrderItem.findMany({
+		where: paidOrderItemsWhere(since),
+		select: {
+			userOrderId: true,
+			sourceCartItem: {
+				select: { productClientTerms: { select: { productId: true } } },
+			},
+		},
+	});
+
+	const ordersByProduct = new Map<number, Set<number>>();
+	for (const item of items) {
+		const productId = item.sourceCartItem.productClientTerms.productId;
+		const orders = ordersByProduct.get(productId) ?? new Set<number>();
+		orders.add(item.userOrderId);
+		ordersByProduct.set(productId, orders);
+	}
+
+	return new Map(
+		[...ordersByProduct].map(([productId, orders]) => [productId, orders.size]),
+	);
+}
+
 // The admin section owns the upsert on the singleton row. Reading the home must
 // not create it, so an absent row means "not curated yet" and answers with the
 // same defaults the schema would have written.

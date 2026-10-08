@@ -244,6 +244,7 @@ model HomeOfferSettings {
 enum HomeOffersCriterion {
   marketSaving
   discountPercent
+  orderVolume // paid orders per product over the last 90 days
 }
 
 model Supplier {

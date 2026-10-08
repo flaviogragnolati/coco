@@ -286,7 +286,7 @@ Supporting relationships that shape behavior around that chain are:
 | `RollOverStatus` | Roll over | Lifecycle of the roll over record: `open \| rebatched \| resolved \| cancelled` | Detailed remediation state | Execution (`rebatched`), admin resolve, cascade cancellation (ADR 0005) |
 | `PackageLeg` | Package | Direction of physical travel: `inbound \| outbound` | Classification value | Set at creation; flipped only by promotion (ADR 0004) |
 | `DeliveryMode` | Shipment | `homeDelivery \| pickupPoint`; null on internal transfers | Classification value | Set at end-user shipment creation; depot pickup is deliberately not a value |
-| `HomeOffersCriterion` | Home offer settings | How the automatic offers ranking sorts: `marketSaving \| discountPercent` | Configuration value, not a lifecycle | Admin, through the home offers section |
+| `HomeOffersCriterion` | Home offer settings | How the automatic offers ranking sorts: `marketSaving \| discountPercent \| orderVolume`; also picks the home grid's title | Configuration value, not a lifecycle | Admin, through the home offers section |
 | `DomainEventOutboxStatus` | Outbox row | Dispatch lifecycle of a durable domain event | Infrastructure state | `DomainEventDispatcher` |
 | `QaTicketStatus` | QA ticket | Where one manual test case stands in the current pass: `pending \| inProgress \| passed \| failed \| blocked \| skipped \| needsClarification` | Detailed single-live-state | `qa-ticket.service.ts`; the tester writes results and claims, an admin corrects tracking from the form. No ladder — the next pass overwrites the value and the history lives in `AuditLog` |
 | `QaTicketEvidenceKind` | QA evidence | Which artifact a row holds: `image \| consoleLog \| networkLog` | Classification value | Set at creation, never moved |
@@ -381,7 +381,8 @@ App behavior (`src/server/services/catalog/`, `src/server/services/home/`):
 - resolve the active `ProductClientTerms` for the customer context (active, non-deleted, time-valid)
 - evaluate `ProductLocalConstraints` against destination, timing, quantity, and legal context
 - calculate display price and allowed quantity increments from MOQ, step, max, and currency, with `discountPercent` already applied
-- compose the home: products pinned by `Product.homeOfferRank` first, the rest ordered by the `HomeOfferSettings.criterion` ranking, the spotlight lifted out of the grid, truncated to `offersLimit`
+- compose the home: products pinned by `Product.homeOfferRank` first, the rest ordered by the `HomeOfferSettings.criterion` ranking, the spotlight lifted out of the grid, cut to a pool of 24 (or `offersLimit` if larger) that the storefront shows `offersLimit` at a time and filters by unit on the client
+- `orderVolume` ranks by paid orders per product over the last 90 days: distinct `UserOrder`s in `processing | completed` holding a `submitted`, non-deleted cart item of the product (under any of its client terms) and a `completed` `UserTransaction` whose `completedAt` falls in the window. A refund, chargeback or cancellation drops the order from the count; a product with no paid orders ranks last
 
 Clarifications:
 

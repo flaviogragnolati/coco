@@ -5,15 +5,11 @@ import {
 	productIdSchema,
 	productUnitSchema,
 } from "~/schemas/admin/product.schemas";
+import { homeOffersCriterionSchema } from "~/schemas/home.schemas";
 import {
 	currencySchema,
 	productClientTermsIdSchema,
 } from "./product-client-terms.schemas";
-
-export const homeOffersCriterionSchema = z.enum([
-	"marketSaving",
-	"discountPercent",
-]);
 
 export const homeOfferSettingsSchema = z.object({
 	spotlightProductId: productIdSchema.nullable(),
@@ -73,6 +69,7 @@ export const homeOfferCandidateSchema = z.object({
 	discountPercent: decimalOutputSchema.nullable(),
 	offerUnitPrice: z.number().nullable(),
 	marketSaving: z.number().nullable(),
+	paidOrderCount: z.number().int().nonnegative(),
 	productClientTermsId: productClientTermsIdSchema.nullable(),
 	termsFromDate: z.date().nullable(),
 	termsToDate: z.date().nullable(),

@@ -10,17 +10,29 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
-import type { HomeOffer } from "~/shared/common/home.types";
+import type { HomeContent, HomeOffer } from "~/shared/common/home.types";
 import { HomeOfferAddButton } from "./home-offer-add-button";
 import { HomeOfferCard } from "./home-offer-card";
+import { HomeOffersGrid } from "./home-offers-grid";
 import { SectionHeading } from "./section-heading";
+
+// The title promises what the admin's criterion actually ranks by.
+const offersTitleByCriterion: Record<HomeContent["offersCriterion"], string> = {
+	orderVolume: "Los productos más pedidos",
+	discountPercent: "Los mejores descuentos",
+	marketSaving: "Ofertas destacadas",
+};
 
 export function OffersSection({
 	offers,
+	offersLimit,
+	criterion,
 	isAuthenticated,
 	userId,
 }: {
 	offers: HomeOffer[];
+	offersLimit: number;
+	criterion: HomeContent["offersCriterion"];
 	isAuthenticated: boolean;
 	userId: string | null;
 }) {
@@ -36,25 +48,29 @@ export function OffersSection({
 							</Link>
 						</Button>
 					}
-					eyebrow="Ofertas destacadas"
-					title="Lo que se está juntando ahora"
+					eyebrow="Ofertas"
+					title={offersTitleByCriterion[criterion]}
 				/>
 				{offers.length > 0 ? (
-					<div className="grid grid-cols-[repeat(auto-fill,minmax(min(255px,100%),1fr))] gap-5">
-						{offers.map((offer) => (
-							<HomeOfferCard
-								action={
-									<HomeOfferAddButton
-										isAuthenticated={isAuthenticated}
-										offer={offer}
-										userId={userId}
-									/>
-								}
-								key={offer.productClientTermsId}
-								offer={offer}
-							/>
-						))}
-					</div>
+					<HomeOffersGrid
+						items={offers.map((offer) => ({
+							key: offer.productClientTermsId,
+							unit: offer.unit,
+							card: (
+								<HomeOfferCard
+									action={
+										<HomeOfferAddButton
+											isAuthenticated={isAuthenticated}
+											offer={offer}
+											userId={userId}
+										/>
+									}
+									offer={offer}
+								/>
+							),
+						}))}
+						visibleCount={offersLimit}
+					/>
 				) : (
 					<Empty className="border bg-brand-warm text-brand-warm-foreground">
 						<EmptyHeader>

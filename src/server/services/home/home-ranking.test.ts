@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import {
 	composeHomeContent,
+	HOME_OFFERS_POOL_SIZE,
 	type HomeOfferCuration,
 	type RankableHomeOffer,
 	rankHomeOffers,
@@ -30,6 +31,7 @@ function offer(
 		discountPercent: input.discountPercent ?? null,
 		currency: input.currency ?? "ARS",
 		homeOfferRank: input.homeOfferRank ?? null,
+		paidOrderCount: input.paidOrderCount ?? 0,
 		fromDate: input.fromDate ?? defaultFromDate,
 	};
 }
@@ -143,6 +145,51 @@ test("an offer without a discount ranks last under discountPercent", () => {
 	expect(productIds(ranked)).toEqual([2, 1]);
 });
 
+test("unpinned offers sort by paid orders descending under orderVolume", () => {
+	const ranked = rankHomeOffers(
+		[
+			offer({ productId: 1, paidOrderCount: 3 }),
+			offer({ productId: 2, paidOrderCount: 12 }),
+			offer({ productId: 3, paidOrderCount: 7 }),
+		],
+		"orderVolume",
+	);
+
+	expect(productIds(ranked)).toEqual([2, 3, 1]);
+});
+
+test("an offer without paid orders ranks last under orderVolume, by recency", () => {
+	const ranked = rankHomeOffers(
+		[
+			offer({
+				productId: 1,
+				discountPercent: "80",
+				fromDate: new Date("2026-05-01T00:00:00.000Z"),
+			}),
+			offer({
+				productId: 2,
+				fromDate: new Date("2026-06-01T00:00:00.000Z"),
+			}),
+			offer({ productId: 3, paidOrderCount: 1 }),
+		],
+		"orderVolume",
+	);
+
+	expect(productIds(ranked)).toEqual([3, 2, 1]);
+});
+
+test("pinned offers still come first under orderVolume", () => {
+	const ranked = rankHomeOffers(
+		[
+			offer({ productId: 1, paidOrderCount: 50 }),
+			offer({ productId: 2, homeOfferRank: 1 }),
+		],
+		"orderVolume",
+	);
+
+	expect(productIds(ranked)).toEqual([2, 1]);
+});
+
 test("offers the criterion cannot separate break the tie by fromDate then id", () => {
 	const ranked = rankHomeOffers(
 		[
@@ -209,13 +256,28 @@ test("a product with two current terms rows appears once", () => {
 	expect(productIds(content.offers)).toEqual([2]);
 });
 
-test("the grid is truncated to the configured limit", () => {
+test("the grid receives a pool larger than its limit, for the unit filter", () => {
 	const content = composeHomeContent(
-		[1, 2, 3, 4, 5].map((productId) => offer({ productId })),
+		Array.from({ length: HOME_OFFERS_POOL_SIZE + 5 }, (_, index) =>
+			offer({ productId: index + 1 }),
+		),
 		curation({ offersLimit: 2 }),
 	);
 
-	expect(content.offers).toHaveLength(2);
+	expect(content.offers).toHaveLength(HOME_OFFERS_POOL_SIZE);
+});
+
+test("the pool keeps pinned offers first, ahead of the ranking", () => {
+	const content = composeHomeContent(
+		[
+			offer({ productId: 1, paidOrderCount: 9 }),
+			offer({ productId: 2, homeOfferRank: 1 }),
+			offer({ productId: 3, paidOrderCount: 4 }),
+		],
+		curation({ criterion: "orderVolume", spotlightProductId: 1 }),
+	);
+
+	expect(productIds(content.offers)).toEqual([2, 3]);
 });
 
 test("no current offers leaves the hero and the grid empty", () => {

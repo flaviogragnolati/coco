@@ -7,8 +7,8 @@ import type {
 	homeOfferSetSpotlightInputSchema,
 	homeOfferSettingsSchema,
 	homeOfferSettingsUpdateInputSchema,
-	homeOffersCriterionSchema,
 } from "~/schemas/admin/home-offers.schemas";
+import type { homeOffersCriterionSchema } from "~/schemas/home.schemas";
 
 export type HomeOffersCriterion = z.output<typeof homeOffersCriterionSchema>;
 export type HomeOfferSettings = z.output<typeof homeOfferSettingsSchema>;
