@@ -40,7 +40,7 @@ const baseOverrides: QuintalOverrides = {
 		ALMENDRA: { prefix: "Almendra" },
 	},
 	subcategoryLabels: {},
-	wordSpelling: { almenda: "almendra", brasil: "Brasil" },
+	wordSpelling: {},
 	nameOverrides: {},
 	keyAliases: {},
 	splitVariants: {},
@@ -250,16 +250,29 @@ describe("parseQuintalSheet", () => {
 
 	it("drops the category prefix when the label already names it", () => {
 		const product = onlyProduct(
-			parse([
-				[9, { B: "ALMENDRA" }],
+			parse(
 				[
-					10,
-					{ B: "Harina de Almenda", C: "Promo x 5kg", D: "6000", E: "30000" },
+					[9, { B: "ALMENDRA" }],
+					[
+						10,
+						{ B: "Harina de Almenda", C: "Promo x 5kg", D: "6000", E: "30000" },
+					],
 				],
-			]),
+				{
+					overrides: { wordSpelling: { almenda: "almendra" } },
+				},
+			),
 		);
 
 		expect(product.name).toBe("Harina de almendra");
+	});
+
+	it("rejects a spelling fix no label uses", () => {
+		const result = parse(almendra, {
+			overrides: { wordSpelling: { almenda: "almendra" } },
+		});
+
+		expect(errorCodes(result)).toEqual(["override-unused"]);
 	});
 
 	it("reads a subheading from its B:E merge", () => {

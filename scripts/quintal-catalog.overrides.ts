@@ -61,19 +61,13 @@ export const quintalOverrides: QuintalOverrides = {
 	},
 
 	wordSpelling: {
-		almenda: "almendra",
-		arandanos: "arándanos",
 		argelia: "Argelia",
-		argenfrut: "Argenfrut",
 		alpino: "Alpino",
-		bidon: "bidón",
 		brasil: "Brasil",
-		chia: "chía",
 		chile: "Chile",
 		comun: "común",
 		economico: "económico",
 		egipto: "Egipto",
-		españa: "España",
 		fat: "FAT",
 		flame: "Flame",
 		high: "HIGH",
@@ -81,20 +75,27 @@ export const quintalOverrides: QuintalOverrides = {
 		kalpa: "Kalpa",
 		kuati: "Kuati",
 		lerida: "Lérida",
-		maiz: "maíz",
 		mani: "maní",
 		med: "MED",
 		medjool: "Medjool",
 		pecan: "pecán",
-		pet: "PET",
 		preimum: "premium",
 		president: "President",
 		semiamago: "semiamargo",
-		sesamo: "sésamo",
 		visimex: "Visimex",
 	},
 
 	nameOverrides: {
+		"almendra--harina-de-almendra-c-p-rebajada":
+			"Harina de almendra con piel (rebajada)",
+		"almendra--almendras-banadas-con-chocolate-c-leche-argenfrut":
+			"Almendras bañadas en chocolate con leche (Argenfrut)",
+		"aceite-oliva-extra-virgen--botella-0-5l-pet":
+			"Aceite de oliva extra virgen botella 0,5 L PET",
+		"aceite-oliva-extra-virgen--botella-1l":
+			"Aceite de oliva extra virgen botella 1 L",
+		"aceite-oliva-extra-virgen--bidon-5l":
+			"Aceite de oliva extra virgen bidón 5 L",
 		"almendra--harina-de-almenda-sin-piel-importada-espana":
 			"Harina de almendra sin piel importada (España)",
 		"arandanos--importados-chile-entero":

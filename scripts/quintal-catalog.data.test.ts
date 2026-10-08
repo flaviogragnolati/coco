@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { Prisma } from "~/prisma/client";
 import { quintalCatalog } from "./quintal-catalog.data";
-import { normalizeText } from "./quintal-catalog.parser";
-import { quintalCatalogSchema } from "./quintal-catalog.schema";
+import { normalizeText, quintalCatalogSchema } from "./quintal-catalog.schema";
 
 const products = quintalCatalog.products;
 const decimal = (value: string) => new Prisma.Decimal(value);

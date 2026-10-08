@@ -194,9 +194,9 @@ export const quintalCatalog: QuintalCatalog = {
 			category: "ALMENDRA",
 			subcategory: null,
 			sourceLabel: "Harina de Almendra C/P (Rebajada)",
-			name: "Harina de almendra C/P (rebajada)",
+			name: "Harina de almendra con piel (rebajada)",
 			description:
-				"Harina de almendra C/P (rebajada). Presentación del proveedor: 5 kg.",
+				"Harina de almendra con piel (rebajada). Presentación del proveedor: 5 kg.",
 			unit: "kg",
 			supplierTerms: {
 				sourceRow: 15,
@@ -258,9 +258,9 @@ export const quintalCatalog: QuintalCatalog = {
 			category: "ALMENDRA",
 			subcategory: null,
 			sourceLabel: "Almendras Bañadas con Chocolate c/ Leche (ARGENFRUT)",
-			name: "Almendras bañadas con chocolate c/ leche (Argenfrut)",
+			name: "Almendras bañadas en chocolate con leche (Argenfrut)",
 			description:
-				"Almendras bañadas con chocolate c/ leche (Argenfrut). Presentación del proveedor: 6 kg.",
+				"Almendras bañadas en chocolate con leche (Argenfrut). Presentación del proveedor: 6 kg.",
 			unit: "kg",
 			supplierTerms: {
 				sourceRow: 17,
@@ -2257,9 +2257,9 @@ export const quintalCatalog: QuintalCatalog = {
 			category: "ACEITE OLIVA EXTRA VIRGEN",
 			subcategory: null,
 			sourceLabel: "Botella 0,5L Pet",
-			name: "Aceite de oliva extra virgen botella 0,5L PET",
+			name: "Aceite de oliva extra virgen botella 0,5 L PET",
 			description:
-				"Aceite de oliva extra virgen botella 0,5L PET. Presentación del proveedor: 12 unidades.",
+				"Aceite de oliva extra virgen botella 0,5 L PET. Presentación del proveedor: 12 unidades.",
 			unit: "piece",
 			supplierTerms: {
 				sourceRow: 107,
@@ -2289,9 +2289,9 @@ export const quintalCatalog: QuintalCatalog = {
 			category: "ACEITE OLIVA EXTRA VIRGEN",
 			subcategory: null,
 			sourceLabel: "Botella 1L",
-			name: "Aceite de oliva extra virgen botella 1L",
+			name: "Aceite de oliva extra virgen botella 1 L",
 			description:
-				"Aceite de oliva extra virgen botella 1L. Presentación del proveedor: 6 unidades.",
+				"Aceite de oliva extra virgen botella 1 L. Presentación del proveedor: 6 unidades.",
 			unit: "piece",
 			supplierTerms: {
 				sourceRow: 108,
@@ -2321,9 +2321,9 @@ export const quintalCatalog: QuintalCatalog = {
 			category: "ACEITE OLIVA EXTRA VIRGEN",
 			subcategory: null,
 			sourceLabel: "Bidon 5L",
-			name: "Aceite de oliva extra virgen bidón 5L",
+			name: "Aceite de oliva extra virgen bidón 5 L",
 			description:
-				"Aceite de oliva extra virgen bidón 5L. Presentación del proveedor: 2 unidades.",
+				"Aceite de oliva extra virgen bidón 5 L. Presentación del proveedor: 2 unidades.",
 			unit: "piece",
 			supplierTerms: {
 				sourceRow: 109,

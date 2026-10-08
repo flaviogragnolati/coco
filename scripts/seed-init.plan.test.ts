@@ -258,6 +258,26 @@ describe("planSeedInit", () => {
 		).toThrow(/2 proveedores "Quintal"/);
 	});
 
+	it("skips when Quintal's product has another namesake", () => {
+		const plan = planSeedInit(
+			catalog,
+			{
+				...loadedState,
+				products: [
+					product(1, "Almendra guara"),
+					product(9, "Almendra guara", { defaultSupplierId: 3, deleted: true }),
+					product(2, "Nuez pecán"),
+				],
+			},
+			now,
+		);
+
+		expect(plan.products[0]).toMatchObject({
+			action: "skip",
+			reason: expect.stringContaining("hay 2 productos con este nombre"),
+		});
+	});
+
 	it("does not resurrect a soft-deleted product", () => {
 		const plan = planSeedInit(
 			catalog,

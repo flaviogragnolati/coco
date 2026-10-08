@@ -9,6 +9,15 @@ import {
 export const QUINTAL_SUPPLIER_NAME = "Quintal";
 export const QUINTAL_SHEET_NAME = "Lista WEB";
 
+export function normalizeText(value: string) {
+	return value
+		.normalize("NFD")
+		.replace(/\p{Diacritic}/gu, "")
+		.toLowerCase()
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 // Fixed scales of the Decimal(18,4) quantity and Decimal(18,2) money columns, so
 // the data file round-trips through Prisma without rounding.
 const quantitySchema = z
@@ -135,7 +144,25 @@ export const quintalCatalogSchema = z.object({
 		address: supplierAddressSchema,
 		contactInfo: supplierContactInfoSchema,
 	}),
-	products: z.array(quintalProductSchema).min(1),
+	// db:seed:init maps created rows back by name, so a repeat would cross terms.
+	products: z
+		.array(quintalProductSchema)
+		.min(1)
+		.superRefine((products, ctx) => {
+			const keys = new Set<string>();
+			const names = new Set<string>();
+			for (const product of products) {
+				const name = normalizeText(product.name);
+				if (keys.has(product.key) || names.has(name)) {
+					ctx.addIssue({
+						code: "custom",
+						message: `Clave o nombre repetido: ${product.key} / ${product.name}`,
+					});
+				}
+				keys.add(product.key);
+				names.add(name);
+			}
+		}),
 	notes: z.array(quintalNoteSchema),
 });
 

@@ -122,6 +122,15 @@ describe("readXlsxSheet", () => {
 		expect(() => readXlsxSheet(bytes, "Lista WEB")).toThrow(/byte limit/);
 	});
 
+	it("never inflates a worksheet other than the target", () => {
+		const bytes = workbook({
+			...validParts,
+			"xl/worksheets/sheet1.xml": new Uint8Array(XLSX_MAX_ENTRY_BYTES + 1),
+		});
+
+		expect(readXlsxSheet(bytes, "Lista WEB").rows).toHaveLength(3);
+	});
+
 	it("refuses XML with a DOCTYPE", () => {
 		const bytes = workbook({
 			...validParts,

@@ -96,10 +96,11 @@ function decideTerms(
 	if (terms.some((term) => sameInstant(term.fromDate, listDate))) {
 		return { action: "keep" };
 	}
-	if (terms.some((term) => isTermsWindowCurrent(term, now))) {
+	const current = terms.find((term) => isTermsWindowCurrent(term, now));
+	if (current) {
 		return {
 			action: "skip",
-			reason: `ya tiene ${label} vigentes cargados a mano; no se reemplazan`,
+			reason: `ya tiene ${label} vigentes desde ${current.fromDate.toISOString().slice(0, 10)}; no se reemplazan`,
 		};
 	}
 	return { action: "create" };
@@ -137,15 +138,15 @@ export function planSeedInit(
 			: [];
 		const [existing] = own;
 		if (own.length !== 1 || !existing || namesakes.length > 1) {
+			const ids = namesakes.map((namesake) => namesake.id).join(", ");
 			return {
 				key: product.key,
 				name: product.name,
 				action: "skip",
-				reason: `ya existe otro producto con este nombre (ids ${namesakes
-					.map((namesake) => namesake.id)
-					.join(
-						", ",
-					)}) que no es de ${catalog.supplierName}; no se crea un duplicado`,
+				reason:
+					own.length === 0
+						? `ya existe un producto con este nombre que no es de ${catalog.supplierName} (ids ${ids}); no se crea un duplicado`
+						: `hay ${namesakes.length} productos con este nombre (ids ${ids}); no se elige uno`,
 			};
 		}
 		if (existing.deleted) {

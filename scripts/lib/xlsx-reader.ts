@@ -91,15 +91,14 @@ function stringItemText(item: XmlNode): string {
 	return textOf(item.t);
 }
 
-function unzipWorkbookParts(bytes: Uint8Array) {
+class XlsxEntryTooLargeError extends Error {}
+
+/** fflate allocates each entry's declared size up front, hence the cap before inflating. */
+function unzipEntries(bytes: Uint8Array, paths: string[]) {
 	const filter = (file: UnzipFileInfo) => {
-		const wanted =
-			file.name === WORKBOOK_PATH ||
-			file.name === WORKBOOK_RELS_PATH ||
-			file.name === SHARED_STRINGS_PATH ||
-			WORKSHEET_PATH.test(file.name);
+		const wanted = paths.includes(file.name);
 		if (wanted && file.originalSize > XLSX_MAX_ENTRY_BYTES) {
-			throw new Error(
+			throw new XlsxEntryTooLargeError(
 				`${file.name} expands to ${file.originalSize} bytes, above the ${XLSX_MAX_ENTRY_BYTES} byte limit`,
 			);
 		}
@@ -109,8 +108,8 @@ function unzipWorkbookParts(bytes: Uint8Array) {
 	try {
 		return unzipSync(bytes, { filter });
 	} catch (error) {
+		if (error instanceof XlsxEntryTooLargeError) throw error;
 		const message = error instanceof Error ? error.message : String(error);
-		if (message.includes("byte limit")) throw error;
 		throw new Error(`Not a readable .xlsx (zip) file: ${message}`);
 	}
 }
@@ -175,7 +174,8 @@ function cellValue(cell: XmlNode, sharedStrings: string[]): string {
 
 	const raw = textOf(cell.v);
 	if (type === "s") {
-		const value = sharedStrings[Number(raw)];
+		if (raw === "") return "";
+		const value = /^\d+$/.test(raw) ? sharedStrings[Number(raw)] : undefined;
 		if (value === undefined) {
 			throw new Error(`Shared string ${raw} is out of range`);
 		}
@@ -185,8 +185,11 @@ function cellValue(cell: XmlNode, sharedStrings: string[]): string {
 }
 
 export function readXlsxSheet(bytes: Uint8Array, sheetName: string): XlsxSheet {
-	const files = unzipWorkbookParts(bytes);
-	const sheetPath = resolveSheetPath(files, sheetName);
+	const sheetPath = resolveSheetPath(
+		unzipEntries(bytes, [WORKBOOK_PATH, WORKBOOK_RELS_PATH]),
+		sheetName,
+	);
+	const files = unzipEntries(bytes, [SHARED_STRINGS_PATH, sheetPath]);
 	const sheetBytes = files[sheetPath];
 	if (!sheetBytes) throw new Error(`${sheetPath} is missing from the file`);
 

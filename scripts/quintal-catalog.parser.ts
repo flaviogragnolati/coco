@@ -1,6 +1,7 @@
 import { Prisma } from "~/prisma/client";
 import type { XlsxSheet } from "./lib/xlsx-reader";
 import {
+	normalizeText,
 	type PriceSource,
 	QUINTAL_SHEET_NAME,
 	QUINTAL_SUPPLIER_NAME,
@@ -95,6 +96,8 @@ type UsedOverrides = {
 	sideTableTargets: Set<string>;
 	categoryLabels: Set<string>;
 	subcategoryLabels: Set<string>;
+	wordSpelling: Set<string>;
+	excludedCategories: Set<string>;
 };
 
 const MAIN_COLUMNS = ["B", "C", "D", "E"];
@@ -102,15 +105,6 @@ const SIDE_COLUMNS = ["H", "I", "J", "K"];
 /** A continuation row priced under this share of its product is a surcharge. */
 const SURCHARGE_PRICE_SHARE = new Decimal("0.25");
 const PRICE_TOLERANCE = new Decimal("0.5");
-
-export function normalizeText(value: string) {
-	return value
-		.normalize("NFD")
-		.replace(/\p{Diacritic}/gu, "")
-		.toLowerCase()
-		.replace(/\s+/g, " ")
-		.trim();
-}
 
 export function slugify(value: string) {
 	return normalizeText(value)
@@ -266,14 +260,21 @@ function pieces(quantity: Decimal): ParsedDetail {
 export function displayLabel(
 	label: string,
 	wordSpelling: Record<string, string>,
+	usedSpellings?: Set<string>,
 ) {
 	return cleanLabel(label)
 		.split(" ")
 		.map((token) => {
 			const match = /^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}%]*)$/u.exec(token);
 			const [, lead = "", core = "", trail = ""] = match ?? [];
-			const spelled = wordSpelling[core.toLowerCase()];
-			if (spelled !== undefined) return `${lead}${spelled}${trail}`;
+			const word = core.toLowerCase();
+			const spelled = Object.hasOwn(wordSpelling, word)
+				? wordSpelling[word]
+				: undefined;
+			if (spelled !== undefined) {
+				usedSpellings?.add(word);
+				return `${lead}${spelled}${trail}`;
+			}
 			if (/[\d/%]/.test(core)) return token;
 			if (/^\p{Lu}{1,2}$/u.test(core)) return token;
 			return token.toLowerCase();
@@ -289,8 +290,9 @@ function productName(
 	label: string,
 	categoryLabel: { prefix: string; stem?: string },
 	wordSpelling: Record<string, string>,
+	usedSpellings: Set<string>,
 ) {
-	const display = displayLabel(label, wordSpelling);
+	const display = displayLabel(label, wordSpelling, usedSpellings);
 	const stem = normalizeText(categoryLabel.stem ?? categoryLabel.prefix);
 	const needsPrefix =
 		categoryLabel.prefix.length > 0 && !normalizeText(display).includes(stem);
@@ -379,6 +381,8 @@ export function parseQuintalSheet(
 		sideTableTargets: new Set(),
 		categoryLabels: new Set(),
 		subcategoryLabels: new Set(),
+		wordSpelling: new Set(),
+		excludedCategories: new Set(),
 	};
 
 	if (sheet.name !== QUINTAL_SHEET_NAME) {
@@ -740,7 +744,9 @@ export function parseQuintalSheet(
 				);
 			}
 			const excluded = overrides.excludedCategories.includes(label);
-			if (!excluded) {
+			if (excluded) {
+				usedOverrides.excludedCategories.add(label);
+			} else {
 				if (overrides.categoryLabels[label]) {
 					usedOverrides.categoryLabels.add(label);
 				} else {
@@ -1014,7 +1020,12 @@ function buildProducts(
 			const key = overrides.keyAliases[generatedKey] ?? generatedKey;
 			const name =
 				overrides.nameOverrides[key] ??
-				productName(variant.label, categoryLabel, overrides.wordSpelling);
+				productName(
+					variant.label,
+					categoryLabel,
+					overrides.wordSpelling,
+					usedOverrides.wordSpelling,
+				);
 
 			const refPrice = primary.unitPrice;
 			const unitPrice = clientUnitPrice(refPrice, unit, overrides.pricing);
@@ -1217,6 +1228,14 @@ function reportUnusedOverrides(
 	for (const heading of Object.keys(overrides.subcategoryLabels)) {
 		if (!used.subcategoryLabels.has(heading)) {
 			unused.push(`subcategoryLabels["${heading}"]`);
+		}
+	}
+	for (const word of Object.keys(overrides.wordSpelling)) {
+		if (!used.wordSpelling.has(word)) unused.push(`wordSpelling["${word}"]`);
+	}
+	for (const heading of overrides.excludedCategories) {
+		if (!used.excludedCategories.has(heading)) {
+			unused.push(`excludedCategories["${heading}"]`);
 		}
 	}
 	for (const key of Object.keys(overrides.nameOverrides)) {
