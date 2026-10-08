@@ -304,6 +304,7 @@ Source: "Tickets antiguos (27): Fase 0" in `docs/plans/qa-open-tickets-2026-10-r
   - #38 uses an account with role "Administrador" that is not superadmin, because the tester is already superadmin. The superadmin edits "Expiración minutos" and then restores it.
   - #54 requires an inbound package fractionated after the 19/09 deploy. Legacy allocations with no source still over-offer (§13).
   - #16: with "Pago externo" the payment stays "Pendiente" and is not credited on its own. With "Mercado Pago" the app redirects to Checkout Pro.
+  - #33 and #48 expect the readable "Reprogramado" reason from B10 (`qa-open-tickets-2026-10-report.md`), for example "El proveedor no confirmó toda la cantidad pedida.", with no internal code such as `LITEM-…`.
 
 **What `pnpm qa:seed` does** (`scripts/qa-seed.ts`):
 - It upserts codes 1–67 except 15 and 17, and rewrites only the text fields.
@@ -323,7 +324,7 @@ Source: "Tickets antiguos (27): Fase 0" in `docs/plans/qa-open-tickets-2026-10-r
 
 **Steps for the user, after this change is merged into `main`** (run from the main checkout; the commands hit the database in `.env`):
 
-1. Run `pnpm qa:seed`. It should print `QA tickets: 0 creados, 65 actualizados, 1 retirados (tracking preservado).` If #15 was already retired, it prints `0 retirados`.
+1. Deploy B10 first: the seed text of #33 and #48 describes it. Then run `pnpm qa:seed`. It should print `QA tickets: 0 creados, 65 actualizados, 1 retirados (tracking preservado).` If #15 was already retired, it prints `0 retirados`.
 2. Reopen the 26 tickets as `pending`, using one of the two options below:
    - **Admin (audited, one by one):** in `/admin/qa-tickets`, open the row menu → "Editar definición", set "Estado" to "Pendiente" and click "Guardar". This keeps the notes and the assignee, and writes a `qaTicket.update` audit entry.
    - **SQL (all at once, no audit entry):** run it in the Neon console against the QA database.

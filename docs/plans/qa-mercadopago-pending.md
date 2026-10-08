@@ -304,4 +304,4 @@ Source: "Tickets antiguos (27): Fase 0" in `docs/plans/qa-open-tickets-2026-10-r
 | Text-only rewrite | #21, #22, #23, #24, #25, #26, #37 | `qa:seed`, then re-test. #21, #23 and #24 need the MP test buyer and test cards, handed to the tester privately (A1). |
 | Text adjusted before the seed | #16, #38 | Done in `scripts/qa-tickets.data.ts`. #38 needs an account with role "Administrador" that is not superadmin. |
 
-**Steps for the user, after the merge:** run `pnpm qa:seed`, then reopen the 26 tickets as `pending`. The admin path and the SQL are in `qa-open-tickets-remediation.md` §17, "Release and re-test". Then share the MP test buyer and cards, and check follow-up 2 before #25.
+**Steps for the user, after the merge:** once B10 is deployed, run `pnpm qa:seed`, then reopen the 26 tickets as `pending`. The admin path and the SQL are in `qa-open-tickets-remediation.md` §17, "Release and re-test". Then share the MP test buyer and cards, and check follow-up 2 before #25.
