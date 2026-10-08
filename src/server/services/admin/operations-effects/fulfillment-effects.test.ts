@@ -1,5 +1,6 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { domainEventSchema } from "~/schemas/domain-events.schemas";
+import { mapDomainEventToTrackingCommands } from "~/server/services/tracking/tracking-event-mapper";
 import type {
 	DomainEventInput,
 	DomainEventType,
@@ -9,6 +10,7 @@ import {
 	type LifecycleCommandId,
 	lifecycleCommandIds,
 } from "~/shared/common/fulfillment-command-events";
+import { customerNoticeReason } from "~/shared/common/tracking-display";
 import {
 	buildExceptionEvents,
 	buildExceptionResolvedEvents,
@@ -36,12 +38,15 @@ import type {
 	AdminRollOverChangeSet,
 	AdminShipmentChangeSet,
 	AdminSupplierOrderChangeSet,
+	AdminSupplierOrderRollOverChange,
 } from "./operations-effects.types";
 import {
 	buildConfirmedEvents,
 	buildRequestedEvents,
 	buildSupplierOrderRollOverEvents,
 } from "./supplier-order-event-builders";
+
+vi.mock("server-only", () => ({}));
 
 const ctx: AdminOperationsEffectContext = {
 	// The builders are pure — they read only the actor, never the client.
@@ -542,4 +547,72 @@ test("the first occurrence keeps the key published before recovery existed", () 
 	});
 
 	expect(withOccurrence?.eventKey).toBe(without?.eventKey);
+});
+
+function withRollOverReason<
+	T extends { createdRollOvers?: AdminSupplierOrderRollOverChange[] },
+>(changeSet: T, reason: string): T {
+	return {
+		...changeSet,
+		createdRollOvers: changeSet.createdRollOvers?.map((rollOver) => ({
+			...rollOver,
+			reason,
+		})),
+	};
+}
+
+// The producers' own templates: they name lot items, shipments and packages,
+// which only the admin may read.
+test.each([
+	{
+		cause: "a supplier cut",
+		reason: "Confirmacion parcial del proveedor en la linea LITEM-700",
+		build: (reason: string) =>
+			buildSupplierOrderRollOverEvents(
+				ctx,
+				withRollOverReason(supplierOrderChangeSet, reason),
+			),
+		customer: "El proveedor no confirmó toda la cantidad pedida.",
+	},
+	{
+		cause: "a supplier line cancellation",
+		reason: "Linea de proveedor cancelada: sin stock en LITEM-700",
+		build: (reason: string) =>
+			buildSupplierOrderRollOverEvents(
+				ctx,
+				withRollOverReason(supplierOrderChangeSet, reason),
+			),
+		customer: "El proveedor no confirmó toda la cantidad pedida.",
+	},
+	{
+		cause: "a receipt shortfall",
+		reason: "Faltante en recepcion del envio SHP-1: caja rota",
+		build: (reason: string) =>
+			buildRollOverEvents(ctx, withRollOverReason(shipmentChangeSet, reason)),
+		customer: "Llegó menos mercadería de la que pedimos al proveedor.",
+	},
+	{
+		cause: "a package write-off",
+		reason: "Baja de paquete Paquete consolidado: Mercadería perdida",
+		build: (reason: string) =>
+			buildWriteOffRollOverEvents(
+				ctx,
+				withRollOverReason(packageChangeSet, reason),
+			),
+		customer: "Hubo un problema con el paquete que llevaba tu producto.",
+	},
+])("$cause shows the customer a readable reason and the admin the composed one", ({
+	reason,
+	build,
+	customer,
+}) => {
+	const rows = build(reason)
+		.flatMap(mapDomainEventToTrackingCommands)
+		.filter((row) => row.eventType === "rolledOverPostAllocation");
+
+	expect(rows.length).toBeGreaterThan(0);
+	for (const row of rows) {
+		expect(customerNoticeReason(row.eventType, row.metadata)).toBe(customer);
+		expect(row.metadata?.reason).toBe(reason);
+	}
 });

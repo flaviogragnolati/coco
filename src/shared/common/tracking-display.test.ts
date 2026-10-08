@@ -8,18 +8,38 @@ test("an exception carries the admin reason", () => {
 	).toBe("Camión demorado");
 });
 
-test("both roll over creations carry the admin reason", () => {
-	for (const eventType of [
-		"rolledOverPreAllocation",
-		"rolledOverPostAllocation",
-	] as const) {
-		expect(
-			customerNoticeReason(eventType, {
-				reason: "Faltante del proveedor",
-				domainEventId: 7,
-			}),
-		).toBe("Faltante del proveedor");
-	}
+test("a post-allocation roll over reads what cut it, never the composed reason", () => {
+	expect(
+		customerNoticeReason("rolledOverPostAllocation", {
+			supplierOrderId: "3",
+			supplierOrderCode: "SO-1",
+			reason: "Confirmacion parcial del proveedor en la linea LITEM-1",
+		}),
+	).toBe("El proveedor no confirmó toda la cantidad pedida.");
+	expect(
+		customerNoticeReason("rolledOverPostAllocation", {
+			shipmentId: "5",
+			supplierOrderId: "3",
+			reason: "Faltante en recepcion del envio SHP-1: caja rota",
+		}),
+	).toBe("Llegó menos mercadería de la que pedimos al proveedor.");
+	expect(
+		customerNoticeReason("rolledOverPostAllocation", {
+			packageId: "7",
+			reason: "Baja de paquete PKG-7: Mercadería perdida",
+		}),
+	).toBe("Hubo un problema con el paquete que llevaba tu producto.");
+});
+
+test("a roll over without a known reference shows no reason", () => {
+	expect(
+		customerNoticeReason("rolledOverPostAllocation", { reason: "x" }),
+	).toBeUndefined();
+	expect(
+		customerNoticeReason("rolledOverPreAllocation", {
+			reason: "Sin termino de proveedor vigente para Yerba",
+		}),
+	).toBeUndefined();
 });
 
 // Same `rollover` notice kind, but the reason is an internal operator note.
