@@ -31,6 +31,7 @@ export const env = createEnv({
 		MERCADOPAGO_ACCESS_TOKEN: z.string().optional(),
 		MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
 		MERCADOPAGO_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
+		BLOB_READ_WRITE_TOKEN: z.string().optional(),
 	},
 
 	/**
@@ -65,6 +66,7 @@ export const env = createEnv({
 			process.env.MP_WEBHOOK_TOKEN,
 		),
 		MERCADOPAGO_TIMEOUT_MS: process.env.MERCADOPAGO_TIMEOUT_MS,
+		BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
 	},
 	/**
 	 * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -48,7 +48,9 @@ function extensionOf(fileName: string) {
 	return lastDot >= 0 ? fileName.slice(lastDot + 1).toLowerCase() : "";
 }
 
-function detectedImageMimeType(bytes: Uint8Array): QaImageMimeType | null {
+export function detectedImageMimeType(
+	bytes: Uint8Array,
+): QaImageMimeType | null {
 	if (
 		bytes.length >= 3 &&
 		bytes[0] === 0xff &&

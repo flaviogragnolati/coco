@@ -33,6 +33,15 @@ signed webhook simulation have both succeeded. Local `.env` values are not
 automatically available to Vercel; configure the same server-only credentials
 in the linked Vercel project.
 
+## Product images (Vercel Blob)
+
+The admin product form uploads card, cart and gallery images to a public
+Vercel Blob store under `products/` and fills the field with the resulting
+URL. Uploads need the server-only `BLOB_READ_WRITE_TOKEN`: create a Blob store
+in the Vercel project (Storage → Blob) and connect it, which sets the variable
+for the linked environments; copy it into `.env` for local uploads. Without it
+the upload endpoint answers 503 and image URLs can still be pasted by hand.
+
 ## What's next? How do I make an app with this?
 
 We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.

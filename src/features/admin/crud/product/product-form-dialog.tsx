@@ -39,6 +39,7 @@ import {
 	defaultProductFormValues,
 	productDetailToFormValues,
 } from "./product.mappers";
+import { ProductImageUpload } from "./product-image-upload";
 
 const productUnitOptions: Array<{ label: string; value: ProductUnit }> = [
 	{ label: "Unidad", value: "piece" },
@@ -146,6 +147,10 @@ export function ProductFormDialog({
 			shouldDirty: true,
 			shouldValidate: true,
 		});
+	};
+
+	const setImageUrl = (name: "cartImageUrl" | "cardImageUrl", url: string) => {
+		form.setValue(name, url, { shouldDirty: true, shouldValidate: true });
 	};
 
 	const handleBrandModeChange = (nextMode: ProductBrandAssignment["mode"]) => {
@@ -497,26 +502,38 @@ export function ProductFormDialog({
 								<FieldLabel htmlFor="product-cart-image">
 									Imagen para carrito
 								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(errors.cartImageUrl)}
+								<ProductImageUpload
 									disabled={isSubmitting}
-									id="product-cart-image"
-									placeholder="https://..."
-									{...form.register("cartImageUrl")}
-								/>
+									label="Subir imagen para carrito"
+									onUploaded={(url) => setImageUrl("cartImageUrl", url)}
+								>
+									<Input
+										aria-invalid={Boolean(errors.cartImageUrl)}
+										disabled={isSubmitting}
+										id="product-cart-image"
+										placeholder="https://..."
+										{...form.register("cartImageUrl")}
+									/>
+								</ProductImageUpload>
 								<FieldError errors={[errors.cartImageUrl]} />
 							</Field>
 							<Field data-invalid={Boolean(errors.cardImageUrl)}>
 								<FieldLabel htmlFor="product-card-image">
 									Imagen para cards
 								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(errors.cardImageUrl)}
+								<ProductImageUpload
 									disabled={isSubmitting}
-									id="product-card-image"
-									placeholder="https://..."
-									{...form.register("cardImageUrl")}
-								/>
+									label="Subir imagen para cards"
+									onUploaded={(url) => setImageUrl("cardImageUrl", url)}
+								>
+									<Input
+										aria-invalid={Boolean(errors.cardImageUrl)}
+										disabled={isSubmitting}
+										id="product-card-image"
+										placeholder="https://..."
+										{...form.register("cardImageUrl")}
+									/>
+								</ProductImageUpload>
 								<FieldError errors={[errors.cardImageUrl]} />
 							</Field>
 							<Field
@@ -528,25 +545,37 @@ export function ProductFormDialog({
 									control={form.control}
 									name="images"
 									render={({ field }) => (
-										<Textarea
-											aria-invalid={Boolean(errors.images)}
+										<ProductImageUpload
 											disabled={isSubmitting}
-											id="product-images"
-											onChange={(event) => {
-												field.onChange(
-													event.target.value
-														.split(/\n+/)
-														.map((line) => line.trim())
-														.filter(Boolean),
-												);
-											}}
-											placeholder="Una URL por línea"
-											value={(field.value ?? []).join("\n")}
-										/>
+											label="Subir imagen a la galería"
+											onUploaded={(url) =>
+												field.onChange([
+													...(form.getValues("images") ?? []),
+													url,
+												])
+											}
+										>
+											<Textarea
+												aria-invalid={Boolean(errors.images)}
+												disabled={isSubmitting}
+												id="product-images"
+												onChange={(event) => {
+													field.onChange(
+														event.target.value
+															.split(/\n+/)
+															.map((line) => line.trim())
+															.filter(Boolean),
+													);
+												}}
+												placeholder="Una URL por línea"
+												value={(field.value ?? []).join("\n")}
+											/>
+										</ProductImageUpload>
 									)}
 								/>
 								<FieldDescription>
-									Cargá una URL por línea para la galería secundaria.
+									Cargá una URL por línea o subí una imagen (JPEG, PNG o WebP,
+									hasta 4 MiB) para sumarla a la galería secundaria.
 								</FieldDescription>
 								<FieldError errors={[errors.images]} />
 							</Field>
