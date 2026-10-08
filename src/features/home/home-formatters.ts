@@ -1,9 +1,15 @@
+import type {
+	CatalogClientTerms,
+	CatalogProductUnit,
+} from "~/shared/common/catalog.types";
 import {
+	calculateLineTotal,
 	formatCurrency,
 	formatQuantity,
 	getMarketSaving,
 	getOfferMoqPrice,
 	getPerUnitPrice,
+	normalizeCartQuantity,
 	productUnitLabelMap,
 	toNumber,
 } from "~/shared/common/commerce.helpers";
@@ -20,6 +26,10 @@ type OfferPricing = Pick<
 	| "unitPrice"
 >;
 
+// Customers never see a market-price comparison while this is off; the market
+// price still feeds the offers ranking and the admin.
+export const SHOW_MARKET_SAVING = false;
+
 const percentFormatter = new Intl.NumberFormat("es-AR", {
 	maximumFractionDigits: 2,
 });
@@ -34,17 +44,16 @@ export function getOfferBlockPrice(offer: OfferPricing) {
 	return formatCurrency(getOfferMoqPrice(offer), offer.currency);
 }
 
-function getMinimumQuantity(offer: OfferPricing) {
-	const quantity = formatQuantity(offer.moq, offer.unit);
-	if (toNumber(offer.moq) === 1) return quantity;
-	if (offer.unit === "box") return quantity.replace(/caja$/, "cajas");
-	if (offer.unit === "piece" || offer.unit === "other")
-		return quantity.replace(/unidad$/, "unidades");
-	return quantity;
-}
-
-export function getOfferMinimumLabel(offer: OfferPricing) {
-	return `Mínimo: ${getMinimumQuantity(offer)}`;
+export function getOfferQuantityLabel(
+	quantity: string,
+	unit: CatalogProductUnit,
+) {
+	const label = formatQuantity(quantity, unit);
+	if (toNumber(quantity) === 1) return label;
+	if (unit === "box") return label.replace(/caja$/, "cajas");
+	if (unit === "piece" || unit === "other")
+		return label.replace(/unidad$/, "unidades");
+	return label;
 }
 
 export function getOfferHeadlinePrice(offer: OfferPricing) {
@@ -55,12 +64,30 @@ export function getOfferHeadlinePrice(offer: OfferPricing) {
 		amount: hasUnitPrice
 			? formatCurrency(perUnitPrice ?? 0, offer.currency)
 			: getOfferBlockPrice(offer),
-		unitLabel: `por ${hasUnitPrice ? productUnitLabelMap[offer.unit] : getMinimumQuantity(offer)}`,
+		unitLabel: `por ${hasUnitPrice ? productUnitLabelMap[offer.unit] : getOfferQuantityLabel(offer.moq, offer.unit)}`,
 	};
 }
 
-export function getOfferMinimumTotal(offer: OfferPricing) {
-	return `Total del mínimo: ${getOfferBlockPrice(offer)}`;
+export function getOfferTotalLabel(
+	terms: CatalogClientTerms,
+	quantity: string,
+) {
+	return `Total ${formatCurrency(calculateLineTotal(terms, quantity), terms.currency)}`;
+}
+
+export function getOfferFixedQuantityLabel(
+	terms: CatalogClientTerms,
+	unit: CatalogProductUnit,
+) {
+	const quantity = normalizeCartQuantity(terms.moq, terms);
+	return `${getOfferQuantityLabel(quantity, unit)} · ${getOfferTotalLabel(terms, quantity)}`;
+}
+
+export function getOfferInCartLabel(
+	quantity: string,
+	unit: CatalogProductUnit,
+) {
+	return `Ya tenés ${getOfferQuantityLabel(quantity, unit)} en tu pedido`;
 }
 
 // Strike through Coco's undiscounted headline price, never the market price.

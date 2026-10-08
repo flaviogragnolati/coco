@@ -8,6 +8,7 @@ import {
 	formatQuantity,
 	getMarketSaving,
 	getPerUnitPrice,
+	isFixedQuantity,
 	normalizeCartQuantity,
 	PricingConfigurationError,
 	selectProductImage,
@@ -245,6 +246,23 @@ test.each([
 	],
 ] as const)("normalizeCartQuantity: %s", (_name, quantity, overrides, expected) => {
 	expect(normalizeCartQuantity(quantity, terms(overrides))).toBe(expected);
+});
+
+test.each([
+	["without a step", { moq: "12" }, true],
+	[
+		"with a max that leaves no step above the minimum",
+		{ moq: "12", step: "6", max: "17" },
+		true,
+	],
+	["with a step and no max", { moq: "12", step: "6" }, false],
+	[
+		"with room for one step below the max",
+		{ moq: "12", step: "6", max: "18" },
+		false,
+	],
+] as const)("isFixedQuantity: %s", (_name, overrides, expected) => {
+	expect(isFixedQuantity(terms(overrides))).toBe(expected);
 });
 
 test.each([

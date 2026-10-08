@@ -345,8 +345,9 @@ export function ProductClientTermsFormDialog({
 									{...form.register("marketPrice")}
 								/>
 								<FieldDescription>
-									Lo que cobran otros comercios por {unitLabel}. Se usa solo
-									para comparar: nunca se factura.
+									Lo que cobran otros comercios por {unitLabel}. Lo usa el
+									ranking de ofertas de la home (criterio de ahorro); no se
+									muestra al cliente y nunca se factura.
 								</FieldDescription>
 								<FieldError errors={[errors.marketPrice]} />
 							</Field>

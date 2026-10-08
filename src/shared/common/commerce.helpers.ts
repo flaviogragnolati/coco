@@ -265,6 +265,14 @@ export function canDecrementQuantity(
 }
 
 /**
+ * The MOQ is the only quantity the terms allow: no step, or a max that leaves
+ * no step above the MOQ.
+ */
+export function isFixedQuantity(terms: CatalogClientTerms) {
+	return !canIncrementQuantity(normalizeCartQuantity(terms.moq, terms), terms);
+}
+
+/**
  * Raised when the terms cannot price the quantity they themselves allow.
  * Callers must not fall back to a partial price: guessing here undercharges.
  */
