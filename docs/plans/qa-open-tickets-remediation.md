@@ -317,7 +317,7 @@ Source: "Tickets antiguos (27): Fase 0" in `docs/plans/qa-open-tickets-2026-10-r
 
 | Group | Tickets | Action |
 | --- | --- | --- |
-| Corrected in code | #2, #3, #16, #30, #33, #36, #45, #48, #54, #61, #69 | Re-test. #69 is re-tested by a developer on a Neon branch with `pnpm db:seed && pnpm db:seed-verify` (exit 0, no `quantityMismatch`), never on the shared database. |
+| Corrected in code | #2, #3, #16, #30, #33, #36, #45, #48, #54, #61, #69 | Re-test. #69 is re-tested by a developer on a Neon branch with `pnpm db:seed:test && pnpm db:seed-verify` (exit 0, no `quantityMismatch`; the demo seed was `db:seed` until 2026-10-08), never on the shared database. |
 | Text-only rewrite | #12, #18, #20, #21, #22, #23, #24, #25, #26, #31, #32, #37, #42, #67 | `qa:seed`, then re-test. #21, #23 and #24 need the Mercado Pago test buyer and test cards, handed to the tester privately. |
 | Text adjusted before the seed | #16, #38, #54 | Done in code (above). #16 and #54 are also in the "Corrected in code" group. |
 | Retire | #15 | `qa:seed` retires it. |

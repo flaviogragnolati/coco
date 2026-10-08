@@ -60,3 +60,44 @@ Pasos: ajustar #16, #38 y #54 → `pnpm qa:seed` (solo texto, en la DB compartid
 6. F1 + #78 (después de su grill).
 
 **Companions:** el conteo de FAQ en `e2e/smoke.spec.ts:27` pasa de 7 a 5, y a 6 con #78. Además: los tests de `home-ranking` y `home-formatters`, `glossary/data/catalog.ts` (drift test), `docs/schema-reference.md` y las enmiendas a `docs/plans/home-community-redesign.md`.
+
+## Registro de ejecución (2026-10-08)
+
+**Estado:** implementado y mergeado en `main` todo salvo **F1 y #78**, que esperan su grill. Cada workstream se hizo en un worktree aislado, con su mini review (`q-review-code` + `q-review-comments`) y su merge `--no-ff`. Nada se corrió contra la DB.
+
+| Ítem | Merge | Resultado | Desvíos y decisiones |
+| --- | --- | --- | --- |
+| B10 | `e0bb1b1` | El cliente ve una frase fija según la causa, por ejemplo "El proveedor no confirmó toda la cantidad pedida.". El motivo completo queda solo en el admin, el evento y la auditoría. Se resuelve al leer, así que corrige también los eventos viejos. | Cubre también los motivos de recepción incompleta, cierre definitivo y baja de paquete. Las incidencias siguen mostrando el texto del admin. |
+| #73, #74 | `98ecc3a` | Selector –/+ en la ficha (cart rules, total en vivo, agrega la cantidad elegida). Cantidad fija sin selector. "Ya tenés N en tu pedido". `SHOW_MARKET_SAVING = false` en home y /products. | `isFixedQuantity` también trata como fija la cantidad cuando el máximo no deja ningún step. |
+| #80 | `2d30cc0` | `POST /api/admin/product-images` sube a Vercel Blob. Botón "Subir" en los campos de tarjeta, carrito y galería. `cssUrl()` entrecomilla la URL. | Límite de 4 MiB (Vercel corta a 4,5 MB). Solo JPEG, PNG y WebP; el tipo se verifica por los primeros bytes. Sin token, la carga responde 503. |
+| #72 | `36e416f` | Criterio `orderVolume` ("Pedidos (90 días)") y título según el criterio. Chips por unidad sobre un pool de 24. Migración `20261008100000_home_offers_order_volume`. | Pedido pagado = `UserOrder` en `processing` o `completed`, con transacción `completed` dentro de los 90 días e ítem `submitted`. Se cuenta por producto, no por client terms. |
+| Fase 0 | `fff0ca4` | Textos de #16, #38 y #54, y también de #33 y #48 para alinearlos con B10. Se agregó el §17 a los dos planes. | `qa:seed` **no reabre** tickets: solo reescribe texto y retira #15. Se reabren **26**, no 29 (los 27 ya incluían #2 y #38, menos #15). |
+| #70, #71, #75, #76, #77, #79, #82 | `8a7ec78` | Ilustración en el hero con un solo CTA. Banda "Producto destacado". "Cómo funciona" en 5 pasos con el paso 5 interino. FAQ de 5 ítems. WhatsApp oculto (`WHATSAPP_NUMBER = null`). Preview del admin corregido. Enmiendas en `home-community-redesign.md`. | En la FAQ también quedaba "armar tu carrito", que pasó a "pedido". |
+| #83 | `5c5d7e4` | `/proveedores` con formulario (honeypot y CHECK de email o teléfono). Admin "Solicitudes de proveedor" con "Marcar como contactada" auditado. Migración `20261008200000_supplier_application`. | Sin enum de estado: `contactedAt` vacío significa pendiente. No tiene rate limit (follow-up). |
+| #81 | `259cff3` | Parser del Excel con `fflate` y `fast-xml-parser`, más `scripts/quintal-catalog.data.ts` (88 productos, 29 categorías). `db:seed:init` solo inserta. `db:seed` pasa a `db:seed:test`, que se niega a correr con `APP_ENV=production`. | Decisiones de Flavio: precio al cliente = precio de lista (sin margen ni IVA). MOQ 1 kg o 1 unidad, step 1. Se incluye OTROS. Identidad por nombre, sin migración. Si un producto tiene varias presentaciones, se carga la más barata por unidad. Los tiers por volumen y los recargos por fraccionado quedan solo como referencia. El Excel no se commitea. |
+
+**Commit en `main`:** `7d8078f` alinea en `CONTEXT.md` y en el glosario que el precio de góndola y el ahorro ya no se muestran al cliente.
+
+**Evidencia:** `pnpm typecheck` limpio y `pnpm test` con 86 archivos y 1469 tests verdes en `main` después del último merge. Biome está limpio en todos los archivos tocados. `pnpm check` falla en todo el repo, pero ya fallaba antes y solo en archivos que no se tocaron (`.agents/**`, `skills-lock.json`, `.vscode/launch.json`, `field.tsx`, `domain-event-publisher.ts`, `audit-log.service.ts`). **No se corrieron los e2e** (`smoke`, `home-offer-quantity`, `supplier-application`) ni se hizo prueba visual.
+
+**Mini review:** todos los workstreams pasaron `q-review-code` "con findings, sin blockers" (corregidos o anotados abajo) y `q-review-comments` "pass" o "pass con findings aplicados".
+
+**Acciones pendientes del usuario (escriben en una DB o son externas):**
+
+1. Aplicar las migraciones `20261008100000_home_offers_order_volume` y `20261008200000_supplier_application` antes del deploy.
+2. Deployar (B10 tiene que estar antes de `qa:seed`). Después: `pnpm qa:seed`, reabrir los 26 tickets (SQL o admin en el §17 de `qa-open-tickets-remediation.md`) y pasarle al tester el comprador y las tarjetas de MP (#21, #23, #24) más una cuenta `admin` que no sea superadmin (#38).
+3. Vercel: crear el Blob store para tener `BLOB_READ_WRITE_TOKEN`, redeployar y subir las fotos con derechos de uso.
+4. Producción: correr `pnpm db:seed:init` y corregir la dirección placeholder de Quintal en el admin. Poner `APP_ENV="production"` en todo `.env` que apunte a producción.
+5. Cargar `WHATSAPP_NUMBER` cuando esté el número contratado.
+
+**Follow-ups:**
+
+- F1 + #78 (grill de diseño).
+- Ticket de vocabulario carrito/pedido (#79).
+- Título "Reprogramado despues de asignacion": sin tildes y con un término interno.
+- Rate limit en `/proveedores`.
+- Los blobs reemplazados no se borran.
+- Margen y vigencia de la lista de Quintal: precios del 02/07, margen 0. Confirmar antes de producción.
+- Renombrar un producto Quintal en el admin lo duplica en el próximo `db:seed:init`.
+- "Mix de frutos secos cervecero premium" pertenece a la línea media.
+- Tests de componentes React: el repo no tiene setup.

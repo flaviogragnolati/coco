@@ -1,0 +1,64 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-open-tickets-2026-10-report.md"
+      change: "Execution record section added (2026-10-08)"
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-open-tickets-remediation.md"
+      change: "§17 release and re-test procedure; #69 re-test uses db:seed:test"
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-mercadopago-pending.md"
+      change: "§17 release and re-test procedure"
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/home-community-redesign.md"
+      change: "Amendments for #70 #71 #76 #77 #83 (2026-10-08)"
+  references_added: []
+  traceability_delta:
+    - {item: "B10", implemented_by: "e0bb1b1"}
+    - {item: "qa_ticket#73,#74", implemented_by: "98ecc3a"}
+    - {item: "qa_ticket#80", implemented_by: "2d30cc0"}
+    - {item: "qa_ticket#72", implemented_by: "36e416f"}
+    - {item: "qa_ticket#16,#33,#38,#48,#54 (Fase 0 texts)", implemented_by: "fff0ca4"}
+    - {item: "qa_ticket#70,#71,#75,#76,#77,#79,#82", implemented_by: "8a7ec78"}
+    - {item: "qa_ticket#83", implemented_by: "5c5d7e4"}
+    - {item: "qa_ticket#81", implemented_by: "259cff3"}
+    - {item: "F1, qa_ticket#78", implemented_by: "not started (needs design grill)"}
+  decisions_added_or_updated:
+    - "#81 client price = Quintal list price, no margin/VAT (user, 2026-10-08)"
+    - "#81 client MOQ 1 kg / 1 unit, step 1, no max (user, 2026-10-08)"
+    - "#81 scope includes OTROS (user, 2026-10-08)"
+    - "#81 product identity by name, no migration (user, 2026-10-08)"
+    - "Fase 0 DB writes (qa:seed, reopen) left to the user (user, 2026-10-08)"
+    - "F1 + #78 deferred to a separate design grill (user, 2026-10-08)"
+    - "Paid order for orderVolume = processing/completed order with a completed transaction in 90 days and a submitted item; counted per product"
+    - "Customer roll over reason is a fixed sentence per cause; admin keeps full detail"
+  risks_added_or_updated:
+    - "Quintal list dated 2026-07-02 sold at zero margin"
+    - "db:seed:test guard passes when a production .env lacks APP_ENV"
+    - "Renaming a Quintal product duplicates it on the next db:seed:init"
+    - "/proveedores has no rate limit"
+  stale_artifacts:
+    - path: "docs/plans/qa-open-tickets-2026-10-report.md"
+      proposed_change: "Fase 0 says reopen 29 tickets; correct count is 26"
+  blockers:
+    - "Not run: e2e specs (smoke, home-offer-quantity, supplier-application), visual check, migrations apply, qa:seed, ticket reopen, db:seed:init"
+  warnings:
+    - "Mini review per workstream: q-review-code pass with findings (no blockers, fixed or recorded); q-review-comments pass / pass with findings applied"
+    - "Repo-wide pnpm check fails on pre-existing files outside this change"
+  required_user_actions:
+    - "Apply migrations 20261008100000_home_offers_order_volume and 20261008200000_supplier_application"
+    - "Deploy, then pnpm qa:seed and reopen the 26 tickets per remediation §17"
+    - "Create Vercel Blob store (BLOB_READ_WRITE_TOKEN) and upload product photos"
+    - "Run pnpm db:seed:init in production; fix Quintal address; set APP_ENV=production in production .env files"
+    - "Set WHATSAPP_NUMBER when available"
+  next_recommended_action: "Run the e2e specs against a dev server; then q-code-grill-design for F1 + #78"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true
