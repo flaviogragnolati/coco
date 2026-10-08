@@ -162,24 +162,34 @@ export const userTrackingNoticeKindByEventType: Partial<
 };
 
 /**
- * Events whose `metadata.reason` explains the deviation to the customer. Decided
- * by event type, not notice kind, because the
- * `rollover` kind also covers a roll over resolution and an operation
- * compensation, whose reasons are internal operator notes.
+ * A post-allocation roll over's `metadata.reason` is composed from internal codes
+ * and admin notes, so the customer reads a fixed sentence per cause instead, keyed
+ * by the reference its event carries. Order matters: a shipment roll over also
+ * carries `supplierOrderId`.
  */
-const customerFacingReasonEventTypes: ReadonlySet<TrackingEventType> = new Set([
-	"fulfillmentException",
-	"rolledOverPreAllocation",
-	"rolledOverPostAllocation",
-]);
+const postAllocationRollOverReasons = [
+	["packageId", "Hubo un problema con el paquete que llevaba tu producto."],
+	["shipmentId", "Llegó menos mercadería de la que pedimos al proveedor."],
+	["supplierOrderId", "El proveedor no confirmó toda la cantidad pedida."],
+] as const;
 
-/** The admin-entered reason a customer notice may show, if any. */
+/**
+ * The reason a customer notice may show, if any. Decided by event type, not
+ * notice kind: the `rollover` kind also covers a roll over resolution and an
+ * operation compensation, whose reasons are internal operator notes. Only an
+ * exception shows its `metadata.reason` verbatim, because its dialog asks the
+ * admin for a reason the customer will read.
+ */
 export function customerNoticeReason(
 	eventType: TrackingEventType,
 	metadata: unknown,
 ): string | undefined {
-	if (!customerFacingReasonEventTypes.has(eventType)) return undefined;
 	if (typeof metadata !== "object" || metadata === null) return undefined;
+
+	if (eventType === "rolledOverPostAllocation") {
+		return postAllocationRollOverReasons.find(([ref]) => ref in metadata)?.[1];
+	}
+	if (eventType !== "fulfillmentException") return undefined;
 
 	const reason = (metadata as { reason?: unknown }).reason;
 	if (typeof reason !== "string") return undefined;
