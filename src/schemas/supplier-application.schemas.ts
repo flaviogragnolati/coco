@@ -68,8 +68,9 @@ export const supplierApplicationSubmitInputSchema = z
 			"Lo que ofrecés",
 			SUPPLIER_APPLICATION_LIMITS.offering,
 		),
-		// Honeypot: hidden from people, so only a bot fills it.
-		website: z.string().max(200).optional(),
+		// Honeypot: hidden from people, so only a bot fills it. Unbounded on
+		// purpose: a length error would tell the bot it was caught.
+		website: z.string().optional(),
 	})
 	.superRefine((value, ctx) => {
 		if (value.email || value.phone) return;

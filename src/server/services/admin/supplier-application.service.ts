@@ -6,6 +6,7 @@ import {
 import type { db } from "~/server/db";
 import type {
 	SupplierApplicationListInput,
+	SupplierApplicationListItem,
 	SupplierApplicationMarkContactedInput,
 } from "~/shared/common/admin-crud/supplier-application.types";
 import type { AdminMutationActor } from "./_base/admin-audit";
@@ -20,6 +21,15 @@ import {
 type AdminDb = typeof db;
 
 const SUPPLIER_APPLICATION_ENTITY = "supplierApplication";
+
+// Only the contact state: the sender's personal data stays out of audit_log.
+function auditSnapshot(application: SupplierApplicationListItem) {
+	return {
+		id: application.id,
+		contactedAt: application.contactedAt,
+		contactedBy: application.contactedBy,
+	};
+}
 
 async function getRequired(tx: Prisma.TransactionClient, id: number) {
 	const record = await findSupplierApplicationById(tx, id);
@@ -66,8 +76,8 @@ export async function markContacted(
 			actor,
 			entityType: SUPPLIER_APPLICATION_ENTITY,
 			entityId: String(after.id),
-			before,
-			after,
+			before: auditSnapshot(before),
+			after: auditSnapshot(after),
 		});
 
 		return after;

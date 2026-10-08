@@ -1,4 +1,5 @@
 import type { Prisma } from "~/prisma/client";
+import { SUPPLIER_APPLICATION_LIST_LIMIT } from "~/schemas/admin/supplier-application.schemas";
 import type { SupplierApplicationListInput } from "~/shared/common/admin-crud/supplier-application.types";
 
 type AdminDbClient = Prisma.TransactionClient;
@@ -39,6 +40,7 @@ export async function listSupplierApplications(
 			{ contactedAt: { sort: "desc", nulls: "first" } },
 			{ createdAt: "desc" },
 		],
+		take: SUPPLIER_APPLICATION_LIST_LIMIT,
 	});
 }
 

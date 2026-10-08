@@ -11,7 +11,7 @@ CREATE TABLE "supplier_application" (
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "supplier_application_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "supplier_application_contact_check" CHECK ("email" IS NOT NULL OR "phone" IS NOT NULL)
+    CONSTRAINT "supplier_application_contact_check" CHECK (NULLIF(btrim("email"), '') IS NOT NULL OR NULLIF(btrim("phone"), '') IS NOT NULL)
 );
 
 CREATE INDEX "supplier_application_contactedAt_idx"

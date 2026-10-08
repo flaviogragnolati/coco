@@ -62,13 +62,18 @@ export function SupplierApplicationForm() {
 	if (submitted) {
 		return (
 			<Card>
-				<CardContent className="flex flex-col items-start gap-4" role="status">
+				<CardContent className="flex flex-col items-start gap-4">
 					<CheckCircle2Icon
 						aria-hidden="true"
 						className="size-8 text-primary"
 					/>
 					<div className="flex flex-col gap-1">
-						<h2 className="font-heading font-semibold text-xl">
+						{/* The submit button unmounts, so focus moves here and announces it. */}
+						<h2
+							className="font-heading font-semibold text-xl outline-none"
+							ref={(node) => node?.focus()}
+							tabIndex={-1}
+						>
 							¡Gracias! Recibimos tu solicitud
 						</h2>
 						<p className="text-muted-foreground text-sm/relaxed">
@@ -157,7 +162,7 @@ export function SupplierApplicationForm() {
 								inputMode="tel"
 								maxLength={SUPPLIER_APPLICATION_LIMITS.phone}
 								type="tel"
-								{...form.register("phone")}
+								{...form.register("phone", { deps: ["email"] })}
 							/>
 							<FieldError errors={[errors.phone]} />
 						</Field>

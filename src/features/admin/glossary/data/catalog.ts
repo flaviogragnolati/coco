@@ -157,7 +157,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Solicitud de proveedor",
 		term: "Supplier application",
 		definition:
-			"El pedido que un posible proveedor envía desde la página pública /proveedores, que un admin revisa y marca como contactado. No es un proveedor hasta que un admin lo crea.",
+			"La solicitud que un posible proveedor envía desde la página pública /proveedores, que un admin revisa y marca como contactado. No es un proveedor hasta que un admin lo crea.",
 		aliases: ["Supplier lead", "Partner request"],
 		occurrences: [{ code: "SupplierApplication", db: "supplier_application" }],
 		href: "/admin/supplier-applications",

@@ -98,17 +98,13 @@ describe("supplierApplicationSubmitInputSchema", () => {
 				"offering",
 			),
 		).toHaveLength(1);
-		expect(
-			issuesAt({ ...valid, website: tooLong(200) }, "website"),
-		).toHaveLength(1);
 	});
 
-	it("lets a filled honeypot through so the service can discard it quietly", () => {
-		expect(
-			supplierApplicationSubmitInputSchema.parse({
-				...valid,
-				website: "https://spam.example",
-			}),
-		).toMatchObject({ website: "https://spam.example" });
+	it("lets any filled honeypot through so the service can discard it quietly", () => {
+		for (const website of ["https://spam.example", "x".repeat(10_000)]) {
+			expect(
+				supplierApplicationSubmitInputSchema.parse({ ...valid, website }),
+			).toMatchObject({ website });
+		}
 	});
 });

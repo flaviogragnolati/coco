@@ -24,6 +24,7 @@ import {
 } from "~/features/admin/crud/_components/crud-state";
 import { supplierApplicationStatusOptions } from "~/features/admin/crud/supplier-application/supplier-application.mappers";
 import { SupplierApplicationTable } from "~/features/admin/crud/supplier-application/supplier-application-table";
+import { SUPPLIER_APPLICATION_LIST_LIMIT } from "~/schemas/admin/supplier-application.schemas";
 import type {
 	SupplierApplicationListItem,
 	SupplierApplicationStatus,
@@ -72,16 +73,25 @@ export function SupplierApplicationsClient() {
 		}
 
 		return (
-			<SupplierApplicationTable
-				applications={applications}
-				onMarkContacted={setTarget}
-			/>
+			<>
+				<SupplierApplicationTable
+					applications={applications}
+					onMarkContacted={setTarget}
+				/>
+				{applications.length >= SUPPLIER_APPLICATION_LIST_LIMIT ? (
+					<p className="text-muted-foreground text-xs">
+						Se muestran las primeras {SUPPLIER_APPLICATION_LIST_LIMIT}{" "}
+						solicitudes: las sin contactar primero y, dentro de cada grupo, las
+						más recientes.
+					</p>
+				) : null}
+			</>
 		);
 	};
 
 	return (
 		<CrudPageShell
-			description="Pedidos de posibles proveedores enviados desde /proveedores. Marcá cada uno como contactado cuando te comuniques; si avanza, el proveedor se crea a mano en Proveedores."
+			description="Solicitudes de posibles proveedores enviadas desde /proveedores. Marcá cada una como contactada cuando te comuniques; si avanza, el proveedor se crea a mano en Proveedores."
 			title="Solicitudes de proveedor"
 		>
 			<section className="flex flex-col gap-3">

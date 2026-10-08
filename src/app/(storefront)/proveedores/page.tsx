@@ -14,7 +14,7 @@ const supplierBenefits = [
 	{
 		title: "Pedidos por volumen",
 		description:
-			"Juntamos lo que piden muchos vecinos y te hacemos una sola compra.",
+			"Juntamos lo que piden muchos vecinos y te hacemos una compra por volumen.",
 		Icon: BoxesIcon,
 	},
 	{
@@ -25,7 +25,7 @@ const supplierBenefits = [
 	{
 		title: "Entrega en la ciudad",
 		description:
-			"Recibimos la mercadería y nos ocupamos de que llegue a cada vecino.",
+			"Recibimos la mercadería en la ciudad y nos ocupamos de repartirla entre los vecinos.",
 		Icon: TruckIcon,
 	},
 ];

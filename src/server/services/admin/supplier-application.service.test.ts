@@ -78,8 +78,12 @@ describe("supplier application admin service", () => {
 			actor,
 			entityType: "supplierApplication",
 			entityId: "7",
-			before: record(),
-			after: contacted,
+			before: { id: 7, contactedAt: null, contactedBy: null },
+			after: {
+				id: 7,
+				contactedAt,
+				contactedBy: { id: actor.id, name: actor.name },
+			},
 		});
 	});
 

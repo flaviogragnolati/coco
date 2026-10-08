@@ -66,6 +66,18 @@ describe("public supplierApplication router", () => {
 		);
 	});
 
+	it("hides storage failures behind a generic message", async () => {
+		vi.mocked(publicService.submit).mockRejectedValue(
+			new Error('relation "supplier_application" does not exist'),
+		);
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+		await expect(caller(context()).submit(application)).rejects.toMatchObject({
+			code: "INTERNAL_SERVER_ERROR",
+			message: "No pudimos registrar la solicitud",
+		});
+	});
+
 	it("validates the payload on the server before reaching the service", async () => {
 		await expect(
 			caller(context()).submit({ ...application, email: "", phone: "" }),

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { SUPPLIER_APPLICATION_LIST_LIMIT } from "~/schemas/admin/supplier-application.schemas";
 import {
 	listSupplierApplications,
 	markSupplierApplicationContacted,
@@ -25,7 +26,7 @@ describe("listSupplierApplications", () => {
 		);
 	});
 
-	it("puts the applications nobody contacted yet first, newest within each group", async () => {
+	it("caps the list, keeping pending applications first and the newest within each group", async () => {
 		const { findMany, db } = listDb();
 
 		await listSupplierApplications(db as never, { status: "all" });
@@ -36,6 +37,7 @@ describe("listSupplierApplications", () => {
 					{ contactedAt: { sort: "desc", nulls: "first" } },
 					{ createdAt: "desc" },
 				],
+				take: SUPPLIER_APPLICATION_LIST_LIMIT,
 			}),
 		);
 	});

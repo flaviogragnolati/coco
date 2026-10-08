@@ -5,6 +5,9 @@ export const supplierApplicationIdSchema = z
 	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
+/** The table is filled by anonymous visitors, so the admin list is capped. */
+export const SUPPLIER_APPLICATION_LIST_LIMIT = 200;
+
 /** Derived from `contactedAt`, which is the only stored state. */
 export const supplierApplicationStatusSchema = z.enum(["pending", "contacted"]);
 
