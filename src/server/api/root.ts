@@ -6,6 +6,7 @@ import { checkoutRouter } from "./routers/checkout.router";
 import { companyRouter } from "./routers/company.router";
 import { ordersRouter } from "./routers/orders.router";
 import { profileRouter } from "./routers/profile.router";
+import { supplierApplicationRouter } from "./routers/supplier-application.router";
 import { trackingRouter } from "./routers/tracking.router";
 
 /**
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
 	company: companyRouter,
 	orders: ordersRouter,
 	profile: profileRouter,
+	supplierApplication: supplierApplicationRouter,
 	tracking: trackingRouter,
 });
 

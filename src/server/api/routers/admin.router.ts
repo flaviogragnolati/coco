@@ -20,6 +20,7 @@ import { qaTicketRouter } from "./admin/qa-ticket.router";
 import { rollOverRouter } from "./admin/roll-over.router";
 import { shipmentRouter } from "./admin/shipment.router";
 import { supplierRouter } from "./admin/supplier.router";
+import { supplierApplicationRouter } from "./admin/supplier-application.router";
 import { supplierOrderRouter } from "./admin/supplier-order.router";
 import { adminTrackingRouter } from "./admin/tracking.router";
 import { userRouter } from "./admin/user.router";
@@ -46,6 +47,7 @@ export const adminRouter = createTRPCRouter({
 	rollOver: rollOverRouter,
 	shipment: shipmentRouter,
 	supplier: supplierRouter,
+	supplierApplication: supplierApplicationRouter,
 	supplierOrder: supplierOrderRouter,
 	tracking: adminTrackingRouter,
 	user: userRouter,

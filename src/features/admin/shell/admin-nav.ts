@@ -5,6 +5,7 @@ import {
 	CreditCardIcon,
 	FactoryIcon,
 	ForkliftIcon,
+	HandshakeIcon,
 	HistoryIcon,
 	LayoutDashboardIcon,
 	type LucideIcon,
@@ -77,6 +78,11 @@ export const adminNavGroups: AdminNavGroup[] = [
 			{ title: "Productos", href: "/admin/products", icon: ShoppingBagIcon },
 			{ title: "Marcas", href: "/admin/brands", icon: TagsIcon },
 			{ title: "Proveedores", href: "/admin/suppliers", icon: FactoryIcon },
+			{
+				title: "Solicitudes de proveedor",
+				href: "/admin/supplier-applications",
+				icon: HandshakeIcon,
+			},
 			{
 				title: "Términos de producto",
 				href: "/admin/product-terms",

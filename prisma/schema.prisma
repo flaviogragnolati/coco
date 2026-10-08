@@ -37,6 +37,8 @@ model User {
   glossaryProposals         GlossaryProposal[] @relation("GlossaryProposalProposer")
   resolvedGlossaryProposals GlossaryProposal[] @relation("GlossaryProposalResolver")
 
+  contactedSupplierApplications SupplierApplication[]
+
   @@unique([email])
   @@map("user")
 }
@@ -1298,4 +1300,24 @@ enum GlossaryProposalStatus {
   accepted // agreed, but the code still says the old thing
   applied // the dataset, the label map and CONTEXT.md were edited
   rejected // decided against; the entry stays as it is
+}
+
+/// A request a prospective supplier sends from the public `/proveedores` page. It never becomes a
+/// `Supplier` by itself: an admin contacts the sender and, if it goes ahead, creates one by hand.
+model SupplierApplication {
+  id            Int       @id @default(autoincrement())
+  contactName   String    @db.Text
+  companyName   String    @db.Text
+  email         String?   @db.Text
+  phone         String?   @db.Text
+  offering      String    @db.Text
+  contactedAt   DateTime? // null means no admin has reached out yet
+  contactedById String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  contactedBy User? @relation(fields: [contactedById], references: [id], onDelete: SetNull)
+
+  @@index([contactedAt])
+  @@map("supplier_application")
 }
