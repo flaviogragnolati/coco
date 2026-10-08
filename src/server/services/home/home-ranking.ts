@@ -117,7 +117,7 @@ export function composeHomeContent(
 	);
 	// A spotlight whose terms are no longer vigente is simply absent from
 	// `ranked`; the pin is skipped silently and the top of the ranking fills the
-	// hero rather than leaving it empty.
+	// spotlight band rather than leaving it empty.
 	const spotlight =
 		ranked.find((offer) => offer.productId === curation.spotlightProductId) ??
 		ranked[0] ??

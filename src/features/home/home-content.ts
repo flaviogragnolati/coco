@@ -1,14 +1,4 @@
-import {
-	BoxesIcon,
-	type LucideIcon,
-	MailIcon,
-	PackageCheckIcon,
-	PhoneIcon,
-	ShieldCheckIcon,
-	ShoppingCartIcon,
-	TruckIcon,
-	UsersIcon,
-} from "lucide-react";
+import { type LucideIcon, MailIcon, PhoneIcon } from "lucide-react";
 
 export const homeNavLinks = [
 	{ href: "/#como-funciona", label: "Cómo funciona" },
@@ -20,50 +10,12 @@ export const homeNavLinks = [
 export const announcementMessage =
 	"Compras comunitarias en Ushuaia · Mirá el catálogo sin registrarte";
 
-export const heroSteps = [
-	{ title: "Sumate al pedido de otros vecinos.", Icon: UsersIcon },
-	{ title: "Entre todos acceden a tarifas mayoristas.", Icon: BoxesIcon },
-	{ title: "Coco lo entrega en tu ciudad.", Icon: TruckIcon },
-];
-
-export const trustItems = [
-	{
-		title: "Pedido a la vista",
-		description:
-			"Seguís cada etapa de tu compra en Mis pedidos, desde el pago hasta la entrega.",
-		Icon: PackageCheckIcon,
-	},
-	{
-		title: "Pago seguro",
-		description: "Pagás al confirmar tu pedido, sin sorpresas después.",
-		Icon: ShieldCheckIcon,
-	},
-	{
-		title: "Precio mayorista",
-		description: "Compramos en volumen y con menos intermediarios.",
-		Icon: BoxesIcon,
-	},
-];
-
-export const problemSolutionCards = [
-	{
-		title: "El problema",
-		description:
-			"Comprar de a poco sale más caro. Y organizar una compra entre vecinos lleva tiempo y esfuerzo.",
-		Icon: ShoppingCartIcon,
-	},
-	{
-		title: "La solución",
-		description:
-			"Nos juntamos para comprar mejor. Vos elegís lo que necesitás y Coco reúne los pedidos y coordina la compra.",
-		Icon: UsersIcon,
-	},
-	{
-		title: "El resultado",
-		description:
-			"Precio mayorista, sin coordinar nada. Pagás al confirmar y te avisamos cada avance hasta que tu compra llega a la ciudad.",
-		Icon: PackageCheckIcon,
-	},
+export const howItWorksSteps = [
+	"Cuando armás tu pedido, estás comprando con otros vecinos.",
+	"Coco consolida los pedidos para acceder al precio mayorista.",
+	"No somos una distribuidora: coordinamos los recursos para comprar lo que vos necesitás.",
+	"El pedido sale desde origen con destino a tu ciudad.",
+	"Cuando llega, te lo llevamos a la dirección que cargaste o te avisamos para retirarlo en nuestro punto de retiro.",
 ];
 
 export const footerColumns = [
@@ -92,32 +44,21 @@ export const faqItems = [
 	{
 		question: "¿Cuánto tarda en llegar mi compra?",
 		answer:
-			"Depende del proveedor y de cuándo se consolida la demanda; vas a ver cada avance en Mis pedidos.",
+			"En promedio, entre 7 y 10 días desde que tu pedido entra en preparación. El pedido sale directo desde origen — muchas veces desde otra provincia — y hasta Tierra del Fuego el camino tiene un tramo particular: al ser una isla, el camión cruza a Chile, atraviesa el Estrecho de Magallanes en balsa, reingresa a la Argentina y cruza la cordillera hasta Ushuaia. Vas a ver cada etapa en Mis pedidos.",
 	},
 	{
 		question: "¿Necesito una cuenta para ver productos?",
 		answer:
-			"No. Podés explorar el catálogo y armar tu carrito sin registrarte. Te pedimos que ingreses cuando empezás el checkout.",
-	},
-	{
-		question: "¿Qué significa cantidad mínima?",
-		answer:
-			"Es la menor cantidad que podés comprar de un producto bajo sus condiciones comerciales vigentes. La vas a ver antes de sumarlo al carrito.",
+			"No. Podés explorar el catálogo y armar tu pedido sin registrarte. Te pedimos que ingreses cuando empezás el checkout.",
 	},
 	{
 		question: "¿Cuándo pago mi pedido?",
-		answer:
-			"Pagás al confirmar el checkout, después de elegir la entrega. Con el pago aprobado, tu demanda queda lista para que Coco la consolide.",
+		answer: "Pagás al confirmar el checkout, después de elegir la entrega.",
 	},
 	{
 		question: "¿Qué pasa después del pago?",
 		answer:
-			"Tu pedido pasa a seguimiento. Coco agrupa la demanda pagada en operaciones compatibles y te informa cada cambio hasta la entrega.",
-	},
-	{
-		question: "¿Qué pasa si mi demanda no entra en una operación?",
-		answer:
-			"Puede reprogramarse para una operación posterior. Vas a ver su estado en Mis pedidos y podés contactar a soporte si necesitás revisar tu caso.",
+			"Tu pedido pasa a seguimiento y te informamos cada cambio hasta la entrega.",
 	},
 	{
 		question: "¿Dónde sigo el avance de mi compra?",
@@ -126,24 +67,39 @@ export const faqItems = [
 	},
 ];
 
-export const contactItems: Array<{
+type ContactItem = {
 	label: string;
 	value: string;
 	href?: string;
 	Icon: LucideIcon;
 	external?: boolean;
-}> = [
+};
+
+// Digits only, country code included, as wa.me expects. `null` hides the
+// WhatsApp contact until the line is contracted.
+export const WHATSAPP_NUMBER: string | null = null;
+
+export function getWhatsappContactItem(
+	digits: string | null,
+): ContactItem | null {
+	if (digits === null) return null;
+	return {
+		label: "WhatsApp",
+		value: `+${digits}`,
+		href: `https://wa.me/${digits}`,
+		Icon: PhoneIcon,
+		external: true,
+	};
+}
+
+const whatsappContactItem = getWhatsappContactItem(WHATSAPP_NUMBER);
+
+export const contactItems: ContactItem[] = [
 	{
 		label: "Email",
 		value: "contacto@coco.app",
 		href: "mailto:contacto@coco.app",
 		Icon: MailIcon,
 	},
-	{
-		label: "WhatsApp",
-		value: "+54 9 11 0000-0000",
-		href: "https://wa.me/5491100000000",
-		Icon: PhoneIcon,
-		external: true,
-	},
+	...(whatsappContactItem ? [whatsappContactItem] : []),
 ];

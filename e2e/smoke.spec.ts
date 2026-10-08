@@ -13,6 +13,7 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 		}),
 	).toBeVisible();
 	await expect(page.locator("#como-funciona")).toBeVisible();
+	await expect(page.locator("#como-funciona ol > li")).toHaveCount(5);
 	await expect(page.locator("#ofertas")).toBeVisible();
 	await expect(page.locator("#preguntas-frecuentes")).toBeVisible();
 	await expect(page.locator("footer#contacto")).toBeVisible();
@@ -24,7 +25,40 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 	);
 	await expect(
 		page.locator("#preguntas-frecuentes").getByRole("button"),
-	).toHaveCount(7);
+	).toHaveCount(5);
+});
+
+test("the hero shows the system illustration and the spotlight has its own band", async ({
+	page,
+}) => {
+	await page.goto("/");
+
+	const hero = page.locator("section").filter({
+		has: page.getByRole("heading", { level: 1, name: "coco" }),
+	});
+	await expect(
+		hero.getByRole("img", { name: /Coco junta los pedidos/ }),
+	).toBeVisible();
+	await expect(hero.locator("a[href^='/products?product=']")).toHaveCount(0);
+	await expect(hero.getByRole("button")).toHaveCount(0);
+	await expect(hero.getByRole("link")).toHaveCount(1);
+
+	const band = page.getByRole("region", { name: "Producto destacado" });
+	test.skip(
+		(await band.count()) === 0,
+		"The current fixture has no active home offers.",
+	);
+
+	const spotlightHref = await band
+		.locator("h2 a[href^='/products?product=']")
+		.getAttribute("href");
+	expect(spotlightHref).toMatch(/^\/products\?product=\d+$/);
+	await expect(
+		band.getByRole("button", { name: "Sumar al pedido", exact: true }),
+	).toBeVisible();
+	await expect(page.locator(`#ofertas a[href='${spotlightHref}']`)).toHaveCount(
+		0,
+	);
 });
 
 test("a home offer opens and closes its URL-addressable product detail", async ({

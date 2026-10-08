@@ -37,7 +37,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Producto destacado",
 		term: "Home spotlight",
 		definition:
-			"El único producto con el que abre el hero de la home: la elección explícita de un administrador o, cuando nadie eligió, el primero del ranking de ofertas. Queda excluido de la grilla de ofertas, así ningún producto aparece dos veces en la página.",
+			"El único producto que la home destaca en su propia banda, justo arriba de la grilla de ofertas: la elección explícita de un administrador o, cuando nadie eligió, el primero del ranking de ofertas. Queda excluido de la grilla de ofertas, así ningún producto aparece dos veces en la página.",
 		aliases: ["Oferta protagonista", "Oferta del hero", "Oferta destacada"],
 		href: "/admin/home-offers",
 	},

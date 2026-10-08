@@ -42,6 +42,7 @@ import {
 } from "~/shared/common/commerce.helpers";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { api } from "~/trpc/react";
+import { resolvePreviewSpotlightId } from "./home-offers-preview";
 
 const spotlightNoneValue = "none";
 
@@ -175,9 +176,7 @@ export function HomeOffersClient() {
 			candidates
 				.filter(
 					(candidate) =>
-						candidate.hasCurrentTerms &&
-						candidate.pinnedRank === null &&
-						candidate.productId !== spotlightProductId,
+						candidate.hasCurrentTerms && candidate.pinnedRank === null,
 				)
 				.map((candidate) => ({
 					...candidate,
@@ -192,18 +191,28 @@ export function HomeOffersClient() {
 							: toNumber(candidate.discountPercent);
 					}),
 				),
-		[candidates, criterion, spotlightProductId],
+		[candidates, criterion],
 	);
 
-	const renderedPinned = pinned.filter(
-		(candidate) =>
-			candidate.hasCurrentTerms && candidate.productId !== spotlightProductId,
+	const showablePinned = pinned.filter(
+		(candidate) => candidate.hasCurrentTerms,
+	);
+	const bandProductId = resolvePreviewSpotlightId(spotlightProductId, [
+		...showablePinned,
+		...rankingFill,
+	]);
+	const renderedPinned = showablePinned.filter(
+		(candidate) => candidate.productId !== bandProductId,
 	);
 	const shownPinned = renderedPinned.slice(0, gridSize);
 	const hiddenPinnedCount = renderedPinned.length - shownPinned.length;
-	const previewFill = rankingFill.slice(
-		0,
-		Math.max(0, gridSize - shownPinned.length),
+	const previewFill = rankingFill
+		.filter((candidate) => candidate.productId !== bandProductId)
+		.slice(0, Math.max(0, gridSize - shownPinned.length));
+	const rankedBandCandidate = rankingFill.find(
+		(candidate) =>
+			candidate.productId === bandProductId &&
+			candidate.productId !== spotlightProductId,
 	);
 
 	const spotlightOptions = useMemo<ComboboxOption[]>(
@@ -343,8 +352,8 @@ export function HomeOffersClient() {
 				<CardHeader>
 					<CardTitle>Configuración</CardTitle>
 					<CardDescription>
-						El producto destacado va al hero y no se repite en la grilla. El
-						criterio ordena todo lo que no esté fijado.
+						El producto destacado va en su propia banda, arriba de la grilla, y
+						no se repite en ella. El criterio ordena todo lo que no esté fijado.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="flex flex-col gap-5">
@@ -373,7 +382,7 @@ export function HomeOffersClient() {
 						/>
 						<FieldDescription>
 							Solo se ofrecen productos con términos de cliente vigentes: sin
-							ellos el hero no tendría precio que mostrar.
+							ellos la banda no tendría precio que mostrar.
 						</FieldDescription>
 					</Field>
 
@@ -463,7 +472,7 @@ export function HomeOffersClient() {
 					) : (
 						<ul className="flex flex-col gap-2">
 							{pinned.map((candidate, index) => {
-								const isSpotlight = candidate.productId === spotlightProductId;
+								const isSpotlight = candidate.productId === bandProductId;
 								const isOverLimit =
 									candidate.hasCurrentTerms &&
 									!isSpotlight &&
@@ -565,6 +574,13 @@ export function HomeOffersClient() {
 								{previewFill.length === 1 ? "lugar" : "lugares"})
 							</span>
 						</div>
+						{rankedBandCandidate ? (
+							<p className="text-muted-foreground text-xs">
+								Sin producto destacado elegido, {rankedBandCandidate.name} (el
+								primero del ranking) va a la banda y no ocupa lugar en la
+								grilla.
+							</p>
+						) : null}
 						{previewFill.length === 0 ? (
 							<p className="text-muted-foreground text-xs">
 								Las fijadas ya llenan la grilla.
