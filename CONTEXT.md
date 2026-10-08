@@ -112,7 +112,11 @@ _Avoid_: Shipping method, delivery type
 
 **Pickup point**:
 A shared address an end-user shipment travels to, where each customer collects their own package afterwards. Its arrival is not a handover, so every package on it still needs its own delivery confirmation. Spanish-facing UI labels it "Punto de retiro".
-_Avoid_: Depot, warehouse, destination
+_Avoid_: Depot, warehouse, destination, centro de retiro
+
+**Delivery preference**:
+The delivery mode — and, for a pickup point, which one — a customer picks at checkout. It pre-fills the end-user shipment; an admin may override it, and the override is audited and visible to the customer. Distinct from the delivery mode the shipment actually records.
+_Avoid_: Delivery mode (for the customer's choice), shipping option
 
 **Package recovery**:
 Returning a delayed package to the state it was in before the disruption — waiting at the destination if it had not left, moving if its shipment already departed. Spanish-facing UI labels it "Recuperar".
@@ -205,11 +209,11 @@ A current catalog product shown in the home offers grid, either pinned by an adm
 _Avoid_: Promotion, operation, oferta protagonista, pedido abierto
 
 **Home spotlight**:
-The single product the home hero leads with: an admin's pick, or the top of the offers ranking when nobody picked one. It is excluded from the offers grid, so no product appears twice on the page. Spanish-facing UI labels it "Producto destacado".
+The single product the home leads its offers with, in its own band right above the offers grid: an admin's pick, or the top of the offers ranking when nobody picked one. It is excluded from the offers grid, so no product appears twice on the page. Spanish-facing UI labels it "Producto destacado".
 _Avoid_: Oferta protagonista, hero offer, featured offer
 
 **Offers ranking**:
-The order in which non-pinned current products compete for the home grid: by money saved against the market price, or by offer discount, whichever criterion the admin selected. Terms missing the criterion's input rank last.
+The order in which non-pinned current products compete for the home grid: by money saved against the market price, by offer discount, or by order volume (paid orders per product over a recent window), whichever criterion the admin selected. Terms missing the criterion's input rank last.
 _Avoid_: Sort, top offers, query
 
 **Similar product**:
@@ -244,6 +248,10 @@ _Avoid_: Final price, sale price, discounted price, total operación
 The smallest purchasable quantity of a product and the unit in which demand is added; priced as a block by the client terms, with optional step increments above it.
 _Avoid_: Minimum, batch size
 
+**Fixed quantity**:
+Client terms with no step: the MOQ is the only purchasable quantity, so the customer cannot raise or lower it. Spanish-facing UI labels it "Cantidad fija".
+_Avoid_: Fixed pack, cantidad cerrada
+
 **Mini-cart**:
 The slide-over cart preview opened from the navbar and when adding a product. A quick view that complements, and never replaces, the full cart page.
 _Avoid_: Cart drawer, cart popover
@@ -257,6 +265,10 @@ The explicit way back from a frozen at-checkout cart to an editable one: it canc
 _Avoid_: Cancel checkout, abort checkout, unfreeze
 
 ### Legal and site content
+
+**Supplier application**:
+A request a prospective supplier sends from the public supplier page, which an admin reviews and marks as contacted. It is not a supplier until an admin creates one. Spanish-facing UI labels it "Solicitud de proveedor".
+_Avoid_: Supplier lead, partner request
 
 **Legal document**:
 A published version of a customer-facing legal text — terms and conditions, privacy, returns — held in the database with its version number, its body in Markdown, and its active flag. At most one version of each kind is active, and only the active one is ever rendered (ADR 0009). Spanish-facing UI labels it "Documento legal".
