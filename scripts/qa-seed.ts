@@ -14,8 +14,8 @@
  *
  * For the same reason `qa_ticket` is deliberately absent from
  * `resetDemoTransactionalData` and `requiredTables` in `prisma/seed.ts`. The QA
- * doc asks for `pnpm db:seed` as an environment precondition, so putting the
- * table in that reset would erase the tracking at the exact moment a pass
+ * doc asks for `pnpm db:seed:test` as an environment precondition, so putting
+ * the table in that reset would erase the tracking at the exact moment a pass
  * starts. Run this script separately, with `pnpm qa:seed`.
  */
 

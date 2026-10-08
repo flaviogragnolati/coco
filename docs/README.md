@@ -45,6 +45,27 @@ wired with `--conditions=react-server`):
 - `pnpm fulfillment:e2e` — the twelve-step lifecycle run through the real service layer
 - `pnpm db:seed-verify` — stored-equals-derived statuses, counters, zero critical diagnostics, per-enum state coverage
 
+## Seeds
+
+- `pnpm db:seed:init` — loads the real catalog from `scripts/quintal-catalog.data.ts`:
+  the Quintal supplier, its products, and one supplier terms plus one client terms
+  per product. Insert-only: it never updates or deletes, keeps whatever an admin
+  changed, and a rerun creates nothing. Safe for production; run it after the
+  deploy. Products are matched by name with Quintal as default supplier, so a
+  product renamed in the admin is created again under its list name on the next
+  run; the summary lists Quintal products whose names left the catalog.
+- `pnpm db:seed:test` — the demo dataset for development, fixtures, and QA
+  (`prisma/seed.ts`). It rewrites demo data and refuses to run when `APP_ENV`
+  resolves to `production`. `APP_ENV` falls back to `NODE_ENV`, so a local `.env`
+  pointing at the production database without `APP_ENV="production"` resolves
+  to development and is **not** stopped.
+- `pnpm catalog:quintal <xlsx> [--check]` — regenerates the catalog data file from
+  Quintal's price list (sheet "Lista WEB"); `--check` fails when the committed
+  file drifts. What the sheet cannot say (display names, variant splits, volume
+  tier and surcharge targets, client pricing) lives in
+  `scripts/quintal-catalog.overrides.ts`. The Excel is never committed. Client
+  price today is the list price (no margin, no VAT) with MOQ and step 1.
+
 ## Conventions
 
 - Reference documents state behavior in the present tense and cite the ADR
