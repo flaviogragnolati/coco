@@ -21,7 +21,10 @@ export const howItWorksSteps = [
 export const footerColumns = [
 	{
 		title: "Nosotros",
-		links: [{ label: "Cómo funciona", href: "/#como-funciona" }],
+		links: [
+			{ label: "Cómo funciona", href: "/#como-funciona" },
+			{ label: "Sé proveedor", href: "/proveedores" },
+		],
 	},
 	{
 		title: "Información",

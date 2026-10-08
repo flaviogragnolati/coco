@@ -151,6 +151,18 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		href: "/admin/suppliers",
 	},
 	{
+		slug: "entidad-solicitud-de-proveedor",
+		kind: "entity",
+		section: "catalog",
+		label: "Solicitud de proveedor",
+		term: "Supplier application",
+		definition:
+			"La solicitud que un posible proveedor envía desde la página pública /proveedores, que un admin revisa y marca como contactado. No es un proveedor hasta que un admin lo crea.",
+		aliases: ["Supplier lead", "Partner request"],
+		occurrences: [{ code: "SupplierApplication", db: "supplier_application" }],
+		href: "/admin/supplier-applications",
+	},
+	{
 		slug: "entidad-transportista",
 		kind: "entity",
 		section: "catalog",

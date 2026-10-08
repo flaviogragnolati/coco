@@ -35,7 +35,7 @@
 | Lenguaje prohibido en UI | Nada de "Pedido abierto", "Total operación", "personas en este pedido", "vecinos sumaron" ni "cierra el viernes". | user + `CONTEXT.md` |
 | Estructura | Barra → navbar → hero (con 3 pasos) → franja de confianza → Problema/Solución/Resultado (`#como-funciona`) → grilla (`#ofertas`) → FAQ (`#preguntas-frecuentes`) → footer (`#contacto`). | user |
 | Secciones eliminadas | `HowItWorksSection` y `ContactSection` dejan de existir. Email y WhatsApp pasan a una columna del footer. | user |
-| Links sin destino | No se renderizan los links a páginas inexistentes (filosofía, sé proveedor, tiempos de entrega, legales, botón de arrepentimiento). Quedan diferidos. | user |
+| Links sin destino | No se renderizan los links a páginas inexistentes (filosofía, sé proveedor, tiempos de entrega, legales, botón de arrepentimiento). Quedan diferidos. **Enmienda 2026-10-08 (QA #83):** "Sé proveedor" deja de estar diferido: la columna Nosotros enlaza a la página nueva `/proveedores`, con formulario de *Solicitud de proveedor* (ver `docs/plans/qa-open-tickets-2026-10-report.md`). | user |
 | Tipografía | Bricolage Grotesque (títulos) + Karla (cuerpo) en todo el storefront, vía wrapper en `(storefront)/layout.tsx`. El admin conserva Geist/Nunito. | user |
 | Paleta | Se reajustan los valores light de `--brand-ink`, `--brand-soft`, `--brand-warm` y `--highlight` a los hex del mockup (#0F2A30, #C9F0E6, #FBF1DF, #F5833E). Se mantiene la paridad `.dark`. No se crean tokens nuevos salvo que falte uno. | default (no bloqueante) |
 | CTA del hero | "Ver qué se puede comprar" hace scroll a `#ofertas`, o va a `/products` si no hay ofertas. **Revierte** "el CTA del hero siempre va a `/products`". | user |
@@ -73,6 +73,7 @@
   - Barra de anuncio editable desde el admin.
   - Páginas nuevas (filosofía, sé proveedor, tiempos de entrega, FAQ standalone) y
     documentos legales (ADR 0009 sigue sin implementar; no es parte de este trabajo).
+    _Enmienda 2026-10-08:_ "sé proveedor" salió de esta lista con QA #83 (`/proveedores`, ver §2).
   - Cambios en el checkout, los pagos, las operaciones, el ranking de ofertas o `HomeOfferSettings`.
   - Tipografía o rediseño del admin.
   - Imágenes nuevas en el repo.

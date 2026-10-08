@@ -245,6 +245,12 @@ While the attempt is `pending`, `providerStatus` walks `awaiting_transfer → re
 | `QaTicket` | One manual QA test case | Optional `assignee` (`User`, `SetNull`); has many `QaTicketEvidence` | Merges the specification and the work item: `steps`/`expectedResult` are the definition, `status`/`assigneeId`/`notes` are the live pass. `code` is a stable human identifier that is never renumbered or recycled; retiring a case is `deleted = true` |
 | `QaTicketEvidence` | Current image or log backing a result | Must belong to `QaTicket` (`Cascade`) | Unique on `(qaTicketId, kind, slot)`; content never appears in list, stats, or audit payloads |
 
+### Supplier intake
+
+| Model | Role | Key relationships | Notes |
+| --- | --- | --- | --- |
+| `SupplierApplication` | A *Supplier application*: the request a prospective supplier sends from the public `/proveedores` page | Optional `contactedBy` (`User`, `SetNull`); no relation to `Supplier` | Created by the public `supplierApplication.submit` procedure only. Requires a non-blank `email` or `phone` (zod in `src/schemas/supplier-application.schemas.ts` and the `supplier_application_contact_check` constraint); text lengths are capped and a honeypot field silently drops bot submissions. There is no rate limit yet. Its only state is `contactedAt`: null means pending. The admin list returns at most 200 rows, pending first. `admin.supplierApplication.markContacted` sets `contactedAt` and `contactedById` once, conditioned on `contactedAt IS NULL`, and writes an admin audit entry holding only the contact state, never the sender's personal data. No soft delete and no email is sent. Becoming a `Supplier` is a manual admin step; nothing links the two |
+
 ### Relationship chain that matters most
 
 The critical end-to-end lineage for a fulfilled request is:
