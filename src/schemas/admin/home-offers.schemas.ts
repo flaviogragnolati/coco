@@ -31,7 +31,7 @@ export const homeOfferSettingsUpdateInputSchema = z.object({
 		.max(12, "La grilla no puede mostrar más de 12 ofertas"),
 });
 
-/** `null` clears the pick and hands the hero back to the ranking. */
+/** `null` clears the pick and hands the spotlight band back to the ranking. */
 export const homeOfferSetSpotlightInputSchema = z.object({
 	productId: productIdSchema.nullable(),
 });
