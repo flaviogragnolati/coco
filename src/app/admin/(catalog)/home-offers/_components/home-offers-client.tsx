@@ -202,6 +202,11 @@ export function HomeOffersClient() {
 	const previewFill = rankingFill
 		.filter((candidate) => candidate.productId !== bandProductId)
 		.slice(0, Math.max(0, gridSize - shownPinned.length));
+	const rankedBandCandidate = rankingFill.find(
+		(candidate) =>
+			candidate.productId === bandProductId &&
+			candidate.productId !== spotlightProductId,
+	);
 
 	const spotlightOptions = useMemo<ComboboxOption[]>(
 		() => [
@@ -562,6 +567,13 @@ export function HomeOffersClient() {
 								{previewFill.length === 1 ? "lugar" : "lugares"})
 							</span>
 						</div>
+						{rankedBandCandidate ? (
+							<p className="text-muted-foreground text-xs">
+								Sin producto destacado elegido, {rankedBandCandidate.name} (el
+								primero del ranking) va a la banda y no ocupa lugar en la
+								grilla.
+							</p>
+						) : null}
 						{previewFill.length === 0 ? (
 							<p className="text-muted-foreground text-xs">
 								Las fijadas ya llenan la grilla.

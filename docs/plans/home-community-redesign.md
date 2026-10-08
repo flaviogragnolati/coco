@@ -432,6 +432,8 @@ la tarjeta sin botón activo. No aparece ningún texto de la lista prohibida de 
 
 ### T14 — Hero nuevo
 
+> **Enmienda 2026-10-08:** el hero ya no lleva pasos ni tarjeta: muestra la ilustración del sistema y el Producto destacado pasa a su propia banda. Ver §2.
+
 - **Files:** `src/features/home/_components/home-hero.tsx`, `src/features/home/home-content.ts`
 - **Symbols / signatures:** `HomeHero({ spotlightOffer, hasOffers, isAuthenticated, userId })`; `heroSteps` `[NEW]` en `home-content.ts`.
 - **Change:** fondo `bg-brand-ink`, grid de 2 columnas. A la izquierda: chip "Ushuaia · Tierra del
@@ -451,6 +453,8 @@ la tarjeta sin botón activo. No aparece ningún texto de la lista prohibida de 
 
 ### T15 — `TrustStrip` `[NEW]`
 
+> **Enmienda 2026-10-08:** `TrustStrip` se eliminó; lo reemplaza "Cómo funciona". Ver §2.
+
 - **Files:** `src/features/home/_components/trust-strip.tsx` `[NEW]`, `src/features/home/home-content.ts` (`trustItems` `[NEW]`)
 - **Change:** franja `bg-brand-soft` con 3 ítems (icono en cuadrado blanco + título + texto):
   "Pedido a la vista" (→ "Seguís cada etapa de tu compra en Mis pedidos, desde el pago hasta la
@@ -460,6 +464,8 @@ la tarjeta sin botón activo. No aparece ningún texto de la lista prohibida de 
 - **Acceptance:** sin "cuánto falta para cerrar" ni "directo del productor".
 
 ### T16 — `ProblemSolutionSection` `[NEW]`
+
+> **Enmienda 2026-10-08:** `ProblemSolutionSection` se eliminó; `#como-funciona` apunta a `HowItWorksSection`. Ver §2.
 
 - **Files:** `src/features/home/_components/problem-solution-section.tsx` `[NEW]`, `src/features/home/home-content.ts` (`problemSolutionCards` `[NEW]`)
 - **Change:** sección `bg-brand-warm`, `id="como-funciona"`, eyebrow "Cómo lo resuelve coco" en
@@ -488,6 +494,8 @@ la tarjeta sin botón activo. No aparece ningún texto de la lista prohibida de 
   FAQ queda en 5 preguntas y no usa "carrito". Ver la enmienda de §2.
 
 ### T18 — Ensamblado de `page.tsx` y borrado de piezas muertas
+
+> **Enmienda 2026-10-08:** el orden pasa a `HomeHero` → `HowItWorksSection` → `HomeSpotlightBand` → `OffersSection` → `FaqSection` → `HomeFooter`. Ver §2.
 
 - **Files:** `src/app/(storefront)/page.tsx`; se borran `src/features/home/_components/how-it-works-section.tsx`
   y `src/features/home/_components/contact-section.tsx`; `section-heading.tsx` se adapta o se borra según el uso.

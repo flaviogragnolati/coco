@@ -9,7 +9,9 @@ import {
 
 describe("WhatsApp contact", () => {
 	it("keeps the number as digits only", () => {
-		if (WHATSAPP_NUMBER !== null) expect(WHATSAPP_NUMBER).toMatch(/^\d+$/);
+		expect(WHATSAPP_NUMBER === null || /^\d+$/.test(WHATSAPP_NUMBER)).toBe(
+			true,
+		);
 	});
 
 	it("derives the link and the visible text from the same digits", () => {
