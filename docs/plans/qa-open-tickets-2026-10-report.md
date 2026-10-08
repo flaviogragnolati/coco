@@ -101,3 +101,9 @@ Pasos: ajustar #16, #38 y #54 → `pnpm qa:seed` (solo texto, en la DB compartid
 - Renombrar un producto Quintal en el admin lo duplica en el próximo `db:seed:init`.
 - "Mix de frutos secos cervecero premium" pertenece a la línea media.
 - Tests de componentes React: el repo no tiene setup.
+
+**Actualización (2026-10-08, verificada con lecturas a la DB):**
+
+- Hechas: migraciones (enum `orderVolume` y tabla `supplier_application`), `qa:seed` (#15 y #17 retirados, #33 con el texto nuevo), Blob token, `db:seed:init` (Quintal activo con 88 productos, 88 supplier terms y 88 client terms) y `NODE_ENV` de producción.
+- Pendiente: reabrir los 26 tickets (hoy hay 10 `failed`, 9 `needsClarification` y 7 `blocked`) y corregir la dirección placeholder de Quintal. El número de WhatsApp queda diferido a propósito.
+- Riesgo: el `.env` local no define `APP_ENV`, así que el guard de `db:seed:test` deja pasar el comando contra la DB que tiene el catálogo real.

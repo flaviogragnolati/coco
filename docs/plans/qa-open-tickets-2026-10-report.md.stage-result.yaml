@@ -52,11 +52,10 @@ stage_result:
     - "Mini review per workstream: q-review-code pass with findings (no blockers, fixed or recorded); q-review-comments pass / pass with findings applied"
     - "Repo-wide pnpm check fails on pre-existing files outside this change"
   required_user_actions:
-    - "Apply migrations 20261008100000_home_offers_order_volume and 20261008200000_supplier_application"
-    - "Deploy, then pnpm qa:seed and reopen the 26 tickets per remediation §17"
-    - "Create Vercel Blob store (BLOB_READ_WRITE_TOKEN) and upload product photos"
-    - "Run pnpm db:seed:init in production; fix Quintal address; set APP_ENV=production in production .env files"
-    - "Set WHATSAPP_NUMBER when available"
+    - "Reopen the 26 tickets per remediation §17 (migrations, qa:seed, Blob token and db:seed:init confirmed done 2026-10-08)"
+    - "Replace the Quintal placeholder address in the admin"
+    - "Set APP_ENV=production in any local .env that points at the production database"
+    - "Set WHATSAPP_NUMBER when available (deferred by the user)"
   next_recommended_action: "Run the e2e specs against a dev server; then q-code-grill-design for F1 + #78"
 orchestration:
   mode: "standalone"
