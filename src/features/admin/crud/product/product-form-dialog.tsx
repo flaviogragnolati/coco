@@ -549,7 +549,10 @@ export function ProductFormDialog({
 											disabled={isSubmitting}
 											label="Subir imagen a la galería"
 											onUploaded={(url) =>
-												field.onChange([...(field.value ?? []), url])
+												field.onChange([
+													...(form.getValues("images") ?? []),
+													url,
+												])
 											}
 										>
 											<Textarea

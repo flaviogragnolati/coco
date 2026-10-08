@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2Icon, UploadIcon } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -32,6 +32,16 @@ export function ProductImageUpload({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [isUploading, setIsUploading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// The dialog's form outlives this field; a late upload must not land in a
+	// form already reset for another product.
+	const isMountedRef = useRef(true);
+
+	useEffect(() => {
+		isMountedRef.current = true;
+		return () => {
+			isMountedRef.current = false;
+		};
+	}, []);
 
 	const upload = async (file: File) => {
 		setError(null);
@@ -57,7 +67,7 @@ export function ProductImageUpload({
 				return;
 			}
 			const { url } = (await response.json()) as { url: string };
-			onUploaded(url);
+			if (isMountedRef.current) onUploaded(url);
 		} catch {
 			setError("No se pudo conectar para subir la imagen.");
 		} finally {

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { env } from "~/env";
 import { requireAdminApi } from "~/server/auth/api-route-guards";
 import { detectedImageMimeType } from "~/server/services/admin/qa-ticket-evidence.validation";
+import { appLogger } from "~/server/services/logging/app-logger.service";
 import {
 	PRODUCT_IMAGE_MAX_BYTES,
 	type PRODUCT_IMAGE_MIME_TYPES,
@@ -80,7 +81,13 @@ export async function POST(request: Request) {
 			{ access: "public", contentType: mimeType, token },
 		);
 		return NextResponse.json({ url: blob.url }, { status: 201 });
-	} catch {
+	} catch (error) {
+		appLogger.error("productImageUploadFailed", {
+			error:
+				error instanceof Error
+					? { message: error.message, name: error.name }
+					: { message: String(error) },
+		});
 		return NextResponse.json(
 			{ error: "No se pudo subir la imagen. Intentá de nuevo." },
 			{ status: 502 },
