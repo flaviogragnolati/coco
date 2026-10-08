@@ -115,7 +115,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Ahorro",
 		term: "Market saving",
 		definition:
-			"Lo que ahorra el cliente por unidad y por bloque MOQ frente al precio de góndola. Solo se muestra cuando el precio de góndola supera al precio unitario de oferta.",
+			"Lo que ahorra el cliente por unidad y por bloque MOQ frente al precio de góndola. Ordena el ranking de ofertas de la home cuando el criterio es ahorro; hoy no se muestra al cliente.",
 		aliases: ["Descuento", "Savings claim"],
 		href: "/admin/product-terms",
 	},

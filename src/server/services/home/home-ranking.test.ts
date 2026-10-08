@@ -280,7 +280,7 @@ test("the pool keeps pinned offers first, ahead of the ranking", () => {
 	expect(productIds(content.offers)).toEqual([2, 3]);
 });
 
-test("no current offers leaves the hero and the grid empty", () => {
+test("no current offers leaves the spotlight band and the grid empty", () => {
 	const content = composeHomeContent([], curation());
 
 	expect(content.spotlight).toBeNull();

@@ -229,11 +229,11 @@ The per-unit price of a product under its client terms, used for display and com
 _Avoid_: Reference price, refPrice, precio de referencia
 
 **Market price**:
-The per-unit price the same product sells for outside Coco, loaded by an admin so the catalog can state what a customer saves. It is never charged and never prices a cart. Spanish-facing UI labels it "Precio de góndola".
+The per-unit price the same product sells for outside Coco, loaded by an admin; it feeds the market-saving offers ranking and is not shown to customers. It is never charged and never prices a cart. Spanish-facing UI labels it "Precio de góndola".
 _Avoid_: Reference price, list price, precio de referencia
 
 **Market saving**:
-What a customer saves per unit, and per MOQ block, by buying at the offer price instead of the market price. It exists only when the market price beats the offer unit price; otherwise nothing is claimed. Spanish-facing UI labels it "Ahorro".
+What a customer saves per unit, and per MOQ block, by buying at the offer price instead of the market price. It exists only when the market price beats the offer unit price; otherwise nothing is claimed. Customer views hide it for now (one code switch); it still drives the market-saving ranking. Spanish-facing UI labels it "Ahorro".
 _Avoid_: Discount, descuento, savings claim
 
 **Offer discount**:
