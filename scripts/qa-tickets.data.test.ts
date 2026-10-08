@@ -22,6 +22,10 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 	{ code: 12, mustMention: ["`/cart`", "`/checkout`", "`/admin/carts`"] },
 	{ code: 14, mustMention: ['"Envío"', '"Nueva"', '"Complemento"'] },
 	{
+		code: 16,
+		mustMention: ['"Pago externo"', '"Pendiente"', "Checkout Pro"],
+	},
+	{
 		code: 20,
 		mustMention: [
 			"`/admin/products`",
@@ -74,6 +78,17 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 		mustMention: ['"Reconciliar ahora"', "Pago (id de Mercado Pago)"],
 	},
 	{ code: 37, mustMention: ['"Ignorar"', '"Reprocesar"'] },
+	{
+		code: 38,
+		mustMention: [
+			'"Administrador"',
+			"`/admin/users`",
+			"`/admin/payments`",
+			'"Expiración minutos"',
+			"`CONFIRMAR`",
+		],
+	},
+	{ code: 54, mustMention: ["`/admin/packages`", "19/09/2026"] },
 ];
 
 const byCode = new Map(qaTicketSeedEntries.map((entry) => [entry.code, entry]));
