@@ -635,6 +635,33 @@ Admin event key shape:
 admin:cart:{cartId}:cartItem:{cartItemId}:{action}:{occurredAtIso}
 ```
 
+### Admin Order Delivery Change
+
+Files:
+
+- `src/server/services/admin/user-order.service.ts`
+
+"Cambiar entrega" (`admin.userOrder.changeDeliveryPreference`) is the only
+writer of an order's delivery preference after checkout (ADR 0011). It publishes
+one order-level event inside its transaction and wakes the dispatcher after
+commit:
+
+- `userOrder.deliveryPreferenceChanged` — payload `orderId`, `cartItemIds`
+  (the order's items still `submitted`), `before` / `after`
+  (`{ mode, pickupPointName? }`, `before.mode` null for an order paid before the
+  customer could choose) and the admin `reason`.
+
+No event is published when the order has no live item. Event key shape:
+
+```txt
+admin:userOrder:{orderId}:deliveryPreferenceChanged:{occurredAtIso}
+```
+
+The mapper fans the event out to one `deliveryPreferenceChanged` tracking event
+per cart item; because one domain event yields several commands, each tracking
+key appends the cart item id
+(`tracking:{domainEventKey}:deliveryPreferenceChanged:{cartItemId}`).
+
 ### Supplier Loop
 
 Files:
@@ -791,6 +818,7 @@ Current domain-to-tracking mappings:
 | `rollover.preAllocation.created` | `rolledOverPreAllocation` |
 | `rollover.postAllocation.created` | `rolledOverPostAllocation` |
 | `rollover.resolved` | `rollOverResolved` |
+| `userOrder.deliveryPreferenceChanged` | `deliveryPreferenceChanged` (one per live cart item) |
 
 ## Timeline APIs
 
@@ -817,9 +845,14 @@ Rules:
   using a simplified six-stage customer view: pedido confirmado, preparacion,
   proveedor, empaque, envio, and entrega.
 - Customer notices are separated from the main six stages for exceptions,
-  rollovers, cancellations/removals, and quantity changes.
+  rollovers, cancellations/removals, quantity changes, pickup-point arrivals
+  and delivery changes.
 - Notice `reason` is decided by event type (`customerNoticeReason`).
-  Exception notices carry the admin-entered `metadata.reason` verbatim.
+  Exception and delivery change ("Cambiamos tu entrega") notices carry the
+  admin-entered `metadata.reason` verbatim; both dialogs warn the admin that the
+  customer reads it. A delivery change notice also carries a `detail` line
+  (`customerNoticeDetail`): "<antes> → <ahora>", or only the new delivery when
+  the order had no preference.
   Post-allocation roll over notices never do: that reason is composed from
   internal codes (lot item, shipment, package), so the customer gets a fixed
   sentence chosen by the reference the event carries (package write-off,

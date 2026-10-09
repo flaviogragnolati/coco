@@ -284,6 +284,31 @@ model Carrier {
   @@map("carrier")
 }
 
+/// A customer-facing place where end-user shipments arrive and each customer collects their own
+/// package. Not a `Destination` (the internal warehouse) and not an `Address` (user-owned).
+model PickupPoint {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.Text
+  line1         String   @db.Text
+  line2         String?  @db.Text
+  city          String   @db.Text
+  state         String   @db.Text
+  postalCode    String?  @db.Text
+  country       String   @default("AR") @db.Text
+  googleMapsUrl String?  @db.Text
+  hours         String   @db.Text // free text, e.g. "Lun a vie 10 a 18 h"
+  instructions  String?  @db.Text
+  active        Boolean  @default(true)
+  deleted       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  userOrders UserOrder[]
+  shipments  Shipment[]
+
+  @@map("pickup_point")
+}
+
 // Internal warehouse. Used for delivery that is not directly sent to the customer.
 model Destination {
   id            Int      @id @default(autoincrement())
@@ -548,6 +573,7 @@ enum CartItemTrackingEventType {
   rollOverResolved
   excludedFromOperation
   exceptionResolved
+  deliveryPreferenceChanged
 }
 
 enum TrackingEventSource {
@@ -569,18 +595,24 @@ model UserOrder {
   shippingAddressSnapshot Json?           @db.JsonB
   termsSnapshot           Json?           @db.JsonB
   acceptedTermsAt         DateTime?
+  // The customer's delivery preference (ADR 0011). Null on orders paid before it existed.
+  deliveryPreference      DeliveryMode?
+  pickupPointId           Int?
+  pickupPointSnapshot     Json?           @db.JsonB
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   cart         Cart              @relation(fields: [cartId], references: [id], onDelete: Restrict)
+  pickupPoint  PickupPoint?      @relation(fields: [pickupPointId], references: [id], onDelete: Restrict)
   items        UserOrderItem[]
   transactions UserTransaction[]
 
   @@index([userId])
   @@index([cartId])
   @@index([userId, status])
+  @@index([pickupPointId])
   @@map("user_order")
 }
 
@@ -1062,15 +1094,18 @@ model Shipment {
   status                     ShipmentStatus @default(pending)
   destinationAddressSnapshot Json?          @db.JsonB
   destinationContactSnapshot Json?          @db.JsonB
+  pickupPointId              Int? // Only on endUserDelivery + pickupPoint.
   createdAt                  DateTime       @default(now())
   updatedAt                  DateTime       @default(now()) @updatedAt
 
   packages       Package[]
   carrierOrder   CarrierOrder?           @relation(fields: [carrierOrderId], references: [id])
   carrierOrderId Int?
+  pickupPoint    PickupPoint?            @relation(fields: [pickupPointId], references: [id], onDelete: Restrict)
   trackingEvents CartItemTrackingEvent[]
 
   @@index([carrierOrderId])
+  @@index([pickupPointId])
   @@map("shipment")
 }
 

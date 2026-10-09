@@ -56,6 +56,12 @@ import type {
 } from "./operations-effects/operations-effects.types";
 import { AdminOperationsSideEffects } from "./operations-effects/operations-side-effects.service";
 import {
+	type OrderDelivery,
+	ordersOfCarts,
+	packageCartIds,
+} from "./order-delivery";
+import { findLiveOrderDeliveriesByCartIds } from "./order-delivery.data";
+import {
 	attributePackageAllocationsToSource,
 	countPackageCandidates,
 	createOutboundPackage,
@@ -140,13 +146,46 @@ function toTrackingEventSummary(event: PackageTrackingEventRecord) {
 	};
 }
 
+/**
+ * Resolves every record's live orders with one query, so a page of packages
+ * never costs a query per package.
+ */
+async function loadPackageOrders(
+	database: AdminDb | Prisma.TransactionClient,
+	records: PackageSummaryRecord[],
+): Promise<(record: PackageSummaryRecord) => OrderDelivery[]> {
+	const ordersByCartId = await findLiveOrderDeliveriesByCartIds(
+		database,
+		records.flatMap(packageCartIds),
+	);
+	return (record) => ordersOfCarts(packageCartIds(record), ordersByCartId);
+}
+
+function toPackageOrder(orders: OrderDelivery[]): PackageListItem["order"] {
+	const [order] = orders;
+	if (!order || orders.length > 1) return null;
+
+	return {
+		orderId: order.orderId,
+		orderCode: order.orderCode,
+		customerName: order.customerName,
+		deliveryPreference: order.deliveryPreference,
+		pickupPointId: order.pickupPointId,
+		pickupPointName: order.pickupPointName,
+	};
+}
+
 function summarizePackage(
 	record: PackageSummaryRecord,
-	options?: PackageDiagnosticsOptions,
+	options: PackageDiagnosticsOptions = {},
+	orders: OrderDelivery[] = [],
 ): PackageListItem & {
 	diagnostics: ReturnType<typeof calculatePackageDiagnostics>;
 } {
-	const diagnostics = calculatePackageDiagnostics(record, options);
+	const diagnostics = calculatePackageDiagnostics(record, {
+		...options,
+		orders,
+	});
 	const packageLineQuantity = sumDecimals(
 		record.packageLotItems.map((line) => line.quantity),
 	);
@@ -172,6 +211,8 @@ function summarizePackage(
 		diagnosticCount: diagnostics.length,
 		highestDiagnosticSeverity: highestSeverity(diagnostics),
 		diagnosticMessages: diagnosticMessages(diagnostics),
+		order: toPackageOrder(orders),
+		orderCount: orders.length,
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 		diagnostics,
@@ -182,7 +223,8 @@ async function toDetail(
 	record: PackageDetailRecord,
 	database: AdminDb,
 ): Promise<PackageDetail> {
-	const summary = summarizePackage(record);
+	const ordersOf = await loadPackageOrders(database, [record]);
+	const summary = summarizePackage(record, {}, ordersOf(record));
 	const trackingEvents = await listLatestPackageTrackingEvents(
 		database,
 		record.id,
@@ -284,8 +326,11 @@ export async function list(input: PackageListInput, database: AdminDb) {
 				take: input.pageSize,
 			}),
 		]);
+		const ordersOf = await loadPackageOrders(database, records);
 		const items = records
-			.map((record) => summarizePackage(record, diagnosticOptions))
+			.map((record) =>
+				summarizePackage(record, diagnosticOptions, ordersOf(record)),
+			)
 			.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 		return packageListOutputSchema.parse({
@@ -301,8 +346,11 @@ export async function list(input: PackageListInput, database: AdminDb) {
 	const records = await listPackageCandidates(database, input, {
 		take: DIAGNOSTIC_SCAN_LIMIT,
 	});
+	const ordersOf = await loadPackageOrders(database, records);
 	const summarized = records
-		.map((record) => summarizePackage(record, diagnosticOptions))
+		.map((record) =>
+			summarizePackage(record, diagnosticOptions, ordersOf(record)),
+		)
 		.map(({ diagnostics: _diagnostics, ...item }) => item);
 
 	return packageListOutputSchema.parse(
@@ -350,8 +398,11 @@ export async function getStats(database: AdminDb): Promise<PackageStats> {
 	) as Record<PackageLeg, number>;
 
 	const packageLineQuantity = decimal(stats.packageLineQuantity);
+	const ordersOf = await loadPackageOrders(database, scanRecords);
 	const withDiagnostics = scanRecords
-		.map((record) => summarizePackage(record, diagnosticOptions))
+		.map((record) =>
+			summarizePackage(record, diagnosticOptions, ordersOf(record)),
+		)
 		.filter((summary) => summary.diagnosticCount > 0).length;
 
 	return packageStatsSchema.parse({

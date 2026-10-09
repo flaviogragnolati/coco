@@ -148,6 +148,21 @@ export const trackingGlossaryEntries: GlossaryEntry[] = [
 		href: "/admin/tracking",
 	},
 	{
+		slug: "estado-evento-entrega-cambiada",
+		kind: "status",
+		section: "tracking",
+		label: trackingEventLabelMap.deliveryPreferenceChanged,
+		definition:
+			"Un admin cambió la entrega que el cliente eligió para su pedido. El cliente lee el cambio y el motivo tal cual en su seguimiento.",
+		occurrences: [
+			{
+				code: "CartItemTrackingEventType.deliveryPreferenceChanged",
+				db: eventColumn,
+			},
+		],
+		href: "/admin/tracking",
+	},
+	{
 		slug: "estado-evento-incidencia-resuelta",
 		kind: "status",
 		section: "tracking",

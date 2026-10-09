@@ -9,12 +9,14 @@ import {
 	groupTimelineByCartItem,
 } from "./cart-traceability.assembler";
 import {
+	type CartTraceabilityRecord,
 	collectLineageEntityIds,
 	getCartTraceabilityRecord,
 } from "./cart-traceability.data";
 import { type LotDetailRecord, listLotsByIds } from "./lot.data";
 import { calculateLotDiagnostics } from "./lot-diagnostics";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
+import { deliveryPreferenceDiagnostics } from "./order-delivery";
 import { listPackagesByIds, type PackageDetailRecord } from "./package.data";
 import { calculatePackageDiagnostics } from "./package-diagnostics";
 import {
@@ -55,6 +57,31 @@ function buildShipmentDiagnostics(
 	);
 }
 
+function buildOrderDiagnostics(
+	record: CartTraceabilityRecord,
+): Map<number, OperationalDiagnostic[]> {
+	return new Map(
+		record.userOrders.map((order) => [
+			order.id,
+			deliveryPreferenceDiagnostics({
+				cartId: record.id,
+				orderId: order.id,
+				orderCode: order.code,
+				status: order.status,
+				customerName: record.user.name,
+				customerEmail: record.user.email,
+				deliveryPreference: order.deliveryPreference,
+				pickupPointId: order.pickupPointId,
+				pickupPointName: order.pickupPoint?.name ?? null,
+				pickupPointActive: order.pickupPoint
+					? order.pickupPoint.active && !order.pickupPoint.deleted
+					: null,
+				shippingAddressSnapshot: order.shippingAddressSnapshot,
+			}),
+		]),
+	);
+}
+
 export async function getCartTraceability(
 	cartId: number,
 	database: AdminDb,
@@ -77,6 +104,7 @@ export async function getCartTraceability(
 		lot: buildLotDiagnostics(lots),
 		package: buildPackageDiagnostics(packages),
 		shipment: buildShipmentDiagnostics(shipments, shipmentIdsWithEvents),
+		order: buildOrderDiagnostics(record),
 	};
 
 	return cartTraceabilityDetailSchema.parse(

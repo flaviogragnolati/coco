@@ -13,6 +13,7 @@ import {
 	operationalDiagnosticSchema,
 } from "~/schemas/admin/operational-diagnostic.schemas";
 import { packageLegSchema } from "~/schemas/admin/package.schemas";
+import { deliveryModeSchema } from "~/schemas/pickup-point.schemas";
 
 const optionalTrimmedText = z
 	.string()
@@ -38,11 +39,7 @@ export const shipmentTypeSchema = z.enum([
 	"endUserDelivery",
 ]);
 
-/**
- * Depot pickup is deliberately absent: it is the absence of a shipment, not a
- * mode of one (see the `DeliveryMode` enum in `prisma/schema.prisma`).
- */
-export const deliveryModeSchema = z.enum(["homeDelivery", "pickupPoint"]);
+export { deliveryModeSchema };
 
 export const shipmentIdSchema = positiveIdSchema;
 
@@ -159,6 +156,7 @@ export const shipmentListItemSchema = z.object({
 export const shipmentDetailSchema = shipmentListItemSchema.extend({
 	destinationAddressSnapshot: z.unknown().nullable(),
 	destinationContactSnapshot: z.unknown().nullable(),
+	pickupPoint: z.object({ id: positiveIdSchema, name: z.string() }).nullable(),
 	packages: z.array(packageSummarySchema),
 	trackingEvents: z.array(trackingEventSummarySchema),
 	diagnostics: z.array(operationalDiagnosticSchema),
@@ -209,18 +207,37 @@ export const shipmentExceptionInputSchema = z.object({
  * `deliver` branches on, and the diagnostics report a null one as critical.
  * Depot pickup is deliberately not expressible here: it is the absence of a
  * shipment, handled by `package.confirmDelivery` on an unassigned package.
+ *
+ * The destination is not an input: the server derives it from the pickup point
+ * or from the customer's order (ADR 0011).
  */
-export const shipmentCreateEndUserInputSchema = z.object({
-	name: requiredText("El nombre del envío es obligatorio"),
-	internalCode: requiredText("El código interno es obligatorio"),
-	trackingCode: optionalTrimmedText,
-	deliveryMode: deliveryModeSchema,
-	packageIds: z
-		.array(positiveIdSchema)
-		.min(1, "Se debe seleccionar al menos un paquete"),
-	destinationAddressSnapshot: z.record(z.string(), z.unknown()).optional(),
-	destinationContactSnapshot: z.record(z.string(), z.unknown()).optional(),
-});
+export const shipmentCreateEndUserInputSchema = z
+	.object({
+		name: requiredText("El nombre del envío es obligatorio"),
+		internalCode: requiredText("El código interno es obligatorio"),
+		trackingCode: optionalTrimmedText,
+		deliveryMode: deliveryModeSchema,
+		pickupPointId: positiveIdSchema.optional(),
+		packageIds: z
+			.array(positiveIdSchema)
+			.min(1, "Se debe seleccionar al menos un paquete"),
+	})
+	.superRefine((value, ctx) => {
+		if (value.deliveryMode === "pickupPoint" && !value.pickupPointId) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["pickupPointId"],
+				message: "Elegí el punto de retiro",
+			});
+		}
+		if (value.deliveryMode === "homeDelivery" && value.pickupPointId) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["pickupPointId"],
+				message: "Un envío a domicilio no lleva punto de retiro",
+			});
+		}
+	});
 
 export const shipmentAddPackagesInputSchema = z.object({
 	id: shipmentIdSchema,

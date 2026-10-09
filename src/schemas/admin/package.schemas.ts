@@ -12,6 +12,7 @@ import {
 	highestDiagnosticSeveritySchema,
 	operationalDiagnosticSchema,
 } from "~/schemas/admin/operational-diagnostic.schemas";
+import { deliveryModeSchema } from "~/schemas/pickup-point.schemas";
 
 const optionalTrimmedText = z
 	.string()
@@ -166,6 +167,19 @@ export const packageGetByIdInputSchema = z.object({
 	id: packageIdSchema,
 });
 
+/**
+ * The customer order behind an outbound package and the delivery it chose.
+ * Null when the package serves no live order or several of them.
+ */
+export const packageOrderSummarySchema = z.object({
+	orderId: positiveIdSchema,
+	orderCode: z.string(),
+	customerName: z.string(),
+	deliveryPreference: deliveryModeSchema.nullable(),
+	pickupPointId: positiveIdSchema.nullable(),
+	pickupPointName: z.string().nullable(),
+});
+
 export const packageListItemSchema = z.object({
 	id: packageIdSchema,
 	name: z.string(),
@@ -180,6 +194,9 @@ export const packageListItemSchema = z.object({
 	diagnosticCount: z.number().int().nonnegative(),
 	highestDiagnosticSeverity: highestDiagnosticSeveritySchema,
 	diagnosticMessages: z.array(z.string()),
+	order: packageOrderSummarySchema.nullable(),
+	/** Live orders the package's allocations reach. */
+	orderCount: z.number().int().nonnegative(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
 });

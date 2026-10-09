@@ -17,7 +17,6 @@ import type {
 	PackageStatus,
 } from "~/shared/common/admin-crud/package.types";
 import type {
-	DeliveryMode,
 	ShipmentAddPackagesInput,
 	ShipmentCreateEndUserInput,
 	ShipmentDeliverInput,
@@ -56,6 +55,19 @@ import type {
 } from "./operations-effects/operations-effects.types";
 import { AdminOperationsSideEffects } from "./operations-effects/operations-side-effects.service";
 import {
+	deriveShipmentDestination,
+	findDeliveryMismatch,
+	hasDeliveryConflict,
+	type OrderDelivery,
+	ordersOfCarts,
+	packageCartIds,
+	type ShipmentDeliveryTarget,
+} from "./order-delivery";
+import {
+	findLiveOrderDeliveriesByCartIds,
+	lockLiveOrdersOfCarts,
+} from "./order-delivery.data";
+import {
 	findPackagesForShipmentAssignment,
 	type PackageAssignmentRecord,
 	reassignPackagesToShipment,
@@ -64,6 +76,7 @@ import {
 } from "./package.data";
 import type { ShortfallCandidate } from "./package-allocation-planner";
 import { applyPackagedShortfall } from "./packaged-shortfall";
+import { findPickupPointById } from "./pickup-point.data";
 import {
 	createPostAllocationRollOvers,
 	type PostAllocationRollOverInput,
@@ -223,6 +236,7 @@ async function toDetail(
 		}),
 		destinationAddressSnapshot: record.destinationAddressSnapshot,
 		destinationContactSnapshot: record.destinationContactSnapshot,
+		pickupPoint: record.pickupPoint,
 		packages: record.packages.map((pkg) => {
 			const lineQuantity = sumDecimals(
 				pkg.packageLotItems.map((line) => line.quantity),
@@ -1129,6 +1143,9 @@ export async function retry(
 			type: record.type,
 			deliveryMode: record.deliveryMode ?? undefined,
 			status: "readyForDispatch",
+			pickupPointId: record.pickupPointId,
+			destinationAddressSnapshot: record.destinationAddressSnapshot,
+			destinationContactSnapshot: record.destinationContactSnapshot,
 		}).catch((error: unknown) => {
 			if (
 				error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -1185,17 +1202,7 @@ export async function retry(
 
 /** Carts the given assignment records' live allocations span. */
 function distinctCartIds(records: PackageAssignmentRecord[]): Set<number> {
-	return new Set(
-		records.flatMap((pkg) =>
-			pkg.packageLotItems
-				.filter((line) => line.status !== "cancelled")
-				.flatMap((line) =>
-					line.packageAllocations.map(
-						(allocation) => allocation.cartItemLotItem.cartItem.cartId,
-					),
-				),
-		),
-	);
+	return new Set(records.flatMap(packageCartIds));
 }
 
 /**
@@ -1207,13 +1214,16 @@ function distinctCartIds(records: PackageAssignmentRecord[]): Set<number> {
  * is a single JSON blob, so one address means one customer. `pickupPoint` is
  * legitimately multi-customer, which is why the multi-customer package diagnostic
  * is only a warning there.
+ *
+ * It is also the single place the delivery match rule is enforced (ADR 0011):
+ * every package's orders must have chosen the shipment's mode and point.
  */
 async function loadAssignablePackages(
 	tx: Prisma.TransactionClient,
 	packageIds: number[],
-	deliveryMode: DeliveryMode,
+	target: ShipmentDeliveryTarget,
 	alreadyOnShipment: PackageAssignmentRecord[] = [],
-): Promise<PackageAssignmentRecord[]> {
+): Promise<{ packages: PackageAssignmentRecord[]; orders: OrderDelivery[] }> {
 	const records = await findPackagesForShipmentAssignment(tx, packageIds);
 	if (records.length !== packageIds.length) {
 		throwNotFound("Paquete");
@@ -1231,14 +1241,54 @@ async function loadAssignablePackages(
 		}
 	}
 
-	if (deliveryMode === "homeDelivery") {
+	if (target.deliveryMode === "homeDelivery") {
 		const carts = distinctCartIds([...alreadyOnShipment, ...records]);
 		if (carts.size > 1) {
 			throwConflict("Un envio a domicilio debe ser de un unico cliente");
 		}
 	}
 
-	return records;
+	const cartIds = records.flatMap(packageCartIds);
+	await lockLiveOrdersOfCarts(tx, cartIds);
+	const ordersByCartId = await findLiveOrderDeliveriesByCartIds(tx, cartIds);
+	const orders: OrderDelivery[] = [];
+	for (const pkg of records) {
+		const packageOrders = ordersOfCarts(packageCartIds(pkg), ordersByCartId);
+		if (hasDeliveryConflict(packageOrders)) {
+			throwConflict(
+				`El paquete ${pkg.name} mezcla pedidos con entregas distintas`,
+			);
+		}
+		orders.push(...packageOrders);
+	}
+
+	if (
+		target.deliveryMode === "pickupPoint" &&
+		target.pickupPointId === null &&
+		orders.some((order) => order.deliveryPreference !== null)
+	) {
+		throwConflict(
+			"Este envio no tiene punto de retiro asignado; crea un envio nuevo para pedidos que eligieron su entrega",
+		);
+	}
+
+	const mismatch = findDeliveryMismatch(target, orders);
+	if (mismatch) throwConflict(mismatch.message);
+
+	return { packages: records, orders };
+}
+
+/** A pickup shipment names an existing point; inactive points still serve their orders. */
+async function loadShipmentPickupPoint(
+	tx: Prisma.TransactionClient,
+	pickupPointId: number | undefined,
+) {
+	if (pickupPointId === undefined) {
+		throwConflict("Un envio a punto de retiro debe indicar el punto");
+	}
+	const point = await findPickupPointById(tx, pickupPointId);
+	if (!point) throwNotFound("Punto de retiro");
+	return point;
 }
 
 /**
@@ -1257,10 +1307,22 @@ export async function createEndUser(
 	database: AdminDb,
 ): Promise<ShipmentDetail> {
 	return database.$transaction(async (tx) => {
-		const packages = await loadAssignablePackages(
+		const pickupPoint =
+			input.deliveryMode === "pickupPoint"
+				? await loadShipmentPickupPoint(tx, input.pickupPointId)
+				: null;
+		const { packages, orders } = await loadAssignablePackages(
 			tx,
 			input.packageIds,
-			input.deliveryMode,
+			{
+				deliveryMode: input.deliveryMode,
+				pickupPointId: pickupPoint?.id ?? null,
+			},
+		);
+		const destination = deriveShipmentDestination(
+			pickupPoint
+				? { deliveryMode: "pickupPoint", pickupPoint }
+				: { deliveryMode: "homeDelivery", orders },
 		);
 
 		const shipment = await createShipment(tx, {
@@ -1270,8 +1332,8 @@ export async function createEndUser(
 			type: "endUserDelivery",
 			deliveryMode: input.deliveryMode,
 			status: "readyForDispatch",
-			destinationAddressSnapshot: input.destinationAddressSnapshot,
-			destinationContactSnapshot: input.destinationContactSnapshot,
+			pickupPointId: pickupPoint?.id ?? null,
+			...destination,
 		}).catch((error: unknown) => {
 			if (
 				error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -1298,7 +1360,11 @@ export async function createEndUser(
 			// packages the command claimed.
 			before: null,
 			after,
-			metadata: { packageIds, deliveryMode: input.deliveryMode },
+			metadata: {
+				packageIds,
+				deliveryMode: input.deliveryMode,
+				pickupPointId: pickupPoint?.id ?? null,
+			},
 		});
 
 		return after;
@@ -1327,10 +1393,13 @@ export async function addPackages(
 			tx,
 			liveCommandPackages(record).map((pkg) => pkg.id),
 		);
-		const packages = await loadAssignablePackages(
+		const { packages } = await loadAssignablePackages(
 			tx,
 			input.packageIds,
-			record.deliveryMode,
+			{
+				deliveryMode: record.deliveryMode,
+				pickupPointId: record.pickupPointId,
+			},
 			existing,
 		);
 

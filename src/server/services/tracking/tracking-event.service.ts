@@ -14,6 +14,7 @@ import type {
 	UserTrackingTimelineItem,
 } from "~/shared/common/tracking.types";
 import {
+	customerNoticeDetail,
 	customerNoticeReason,
 	type TrackingEventType,
 	trackingEventLabelMap,
@@ -458,6 +459,10 @@ function toUserOrderItemTimeline(
 				kind: noticeKind,
 				label: labelFor(record.eventType),
 				quantity: record.quantity?.toString(),
+				detail: customerNoticeDetail(
+					record.eventType as TrackingEventType,
+					record.metadata,
+				),
 				reason: customerNoticeReason(
 					record.eventType as TrackingEventType,
 					record.metadata,

@@ -64,6 +64,9 @@ function NoticeList({ notices }: { notices: CustomerJourneyNoticeView[] }) {
 								{notice.label} ·{" "}
 								{formatDateTimeShort(new Date(notice.createdAt))}
 							</span>
+							{notice.detail ? (
+								<span className="font-normal">{notice.detail}</span>
+							) : null}
 							{notice.reason ? (
 								<span className="font-normal text-muted-foreground">
 									{notice.reason}

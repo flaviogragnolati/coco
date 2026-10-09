@@ -574,7 +574,6 @@ stepFn("7. home delivery — create, dispatch, deliver", async () => {
 			trackingCode: undefined,
 			deliveryMode: "homeDelivery",
 			packageIds: [state.homePackageId],
-			destinationAddressSnapshot: { label: "Domicilio e2e", city: "CABA" },
 		},
 		actor,
 		db,
@@ -642,17 +641,26 @@ stepFn("8. pickup point — arrival is not a handover", async () => {
 	}
 	state.pickupPackageIds = remaining;
 
+	const pickupPoint = await db.pickupPoint.create({
+		data: {
+			name: `${PREFIX} punto de retiro`,
+			line1: "Calle e2e 1",
+			city: "CABA",
+			state: "CABA",
+			hours: "Lun a vie 10 a 18 h",
+			active: false,
+		},
+		select: { id: true },
+	});
+
 	const shipment = await shipmentService.createEndUser(
 		{
 			name: `${PREFIX} punto de retiro`,
 			internalCode: `${PREFIX}-SHIP-PICKUP`,
 			trackingCode: undefined,
 			deliveryMode: "pickupPoint",
+			pickupPointId: pickupPoint.id,
 			packageIds: remaining,
-			destinationAddressSnapshot: {
-				label: "Punto de retiro e2e",
-				city: "CABA",
-			},
 		},
 		actor,
 		db,
@@ -1137,6 +1145,9 @@ async function teardown() {
 	});
 	await db.package.deleteMany({ where: { id: { in: packageIds } } });
 	await db.shipment.deleteMany({ where: { id: { in: shipmentIds } } });
+	await db.pickupPoint.deleteMany({
+		where: { name: { startsWith: `${PREFIX} ` } },
+	});
 	await db.cartItemLotItem.deleteMany({
 		where: { lotItemId: { in: lotItemIds } },
 	});

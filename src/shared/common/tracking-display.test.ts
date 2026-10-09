@@ -1,11 +1,57 @@
 import { expect, test } from "vitest";
 
-import { customerNoticeReason } from "./tracking-display";
+import {
+	customerNoticeDetail,
+	customerNoticeReason,
+	userTrackingNoticeKindByEventType,
+	userTrackingStageByEventType,
+} from "./tracking-display";
 
 test("an exception carries the admin reason", () => {
 	expect(
 		customerNoticeReason("fulfillmentException", { reason: "Camión demorado" }),
 	).toBe("Camión demorado");
+});
+
+test("a delivery change shows the admin reason verbatim", () => {
+	expect(
+		customerNoticeReason("deliveryPreferenceChanged", {
+			reason: "  La dirección queda fuera de la zona de reparto. ",
+		}),
+	).toBe("La dirección queda fuera de la zona de reparto.");
+});
+
+test("a delivery change is an info notice, never a stage", () => {
+	expect(userTrackingNoticeKindByEventType.deliveryPreferenceChanged).toBe(
+		"info",
+	);
+	expect(
+		userTrackingStageByEventType.deliveryPreferenceChanged,
+	).toBeUndefined();
+});
+
+test("a delivery change notice states what it changed from and to", () => {
+	expect(
+		customerNoticeDetail("deliveryPreferenceChanged", {
+			before: { mode: "homeDelivery" },
+			after: { mode: "pickupPoint", pickupPointName: "Centro" },
+		}),
+	).toBe("A domicilio → Punto de retiro · Centro");
+	expect(
+		customerNoticeDetail("deliveryPreferenceChanged", {
+			before: { mode: null },
+			after: { mode: "homeDelivery" },
+		}),
+	).toBe("A domicilio");
+	expect(
+		customerNoticeDetail("deliveryPreferenceChanged", {
+			before: { mode: "homeDelivery" },
+			after: { mode: "homeDelivery" },
+		}),
+	).toBe("A domicilio, en otra dirección");
+	expect(
+		customerNoticeDetail("fulfillmentException", { reason: "x" }),
+	).toBeUndefined();
 });
 
 test("a post-allocation roll over reads what cut it, never the composed reason", () => {

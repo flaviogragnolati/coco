@@ -12,6 +12,7 @@ import { operationRouter } from "./admin/operation.router";
 import { operationsCartRouter } from "./admin/operations-cart.router";
 import { packageRouter } from "./admin/package.router";
 import { paymentRouter } from "./admin/payment.router";
+import { pickupPointRouter } from "./admin/pickup-point.router";
 import { productRouter } from "./admin/product.router";
 import { productClientTermsRouter } from "./admin/product-client-terms.router";
 import { productLocalConstraintsRouter } from "./admin/product-local-constraints.router";
@@ -24,6 +25,7 @@ import { supplierApplicationRouter } from "./admin/supplier-application.router";
 import { supplierOrderRouter } from "./admin/supplier-order.router";
 import { adminTrackingRouter } from "./admin/tracking.router";
 import { userRouter } from "./admin/user.router";
+import { userOrderRouter } from "./admin/user-order.router";
 
 export const adminRouter = createTRPCRouter({
 	address: addressRouter,
@@ -39,6 +41,7 @@ export const adminRouter = createTRPCRouter({
 	operationsCart: operationsCartRouter,
 	package: packageRouter,
 	payment: paymentRouter,
+	pickupPoint: pickupPointRouter,
 	product: productRouter,
 	productClientTerms: productClientTermsRouter,
 	productLocalConstraints: productLocalConstraintsRouter,
@@ -51,4 +54,5 @@ export const adminRouter = createTRPCRouter({
 	supplierOrder: supplierOrderRouter,
 	tracking: adminTrackingRouter,
 	user: userRouter,
+	userOrder: userOrderRouter,
 });

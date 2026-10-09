@@ -116,6 +116,8 @@ const operationsCartDetailSelect = {
 			status: true,
 			billingAddressSnapshot: true,
 			shippingAddressSnapshot: true,
+			deliveryPreference: true,
+			pickupPointSnapshot: true,
 			createdAt: true,
 			updatedAt: true,
 			items: {

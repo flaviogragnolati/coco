@@ -20,7 +20,7 @@ const regressionChain = [
  */
 const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 	{ code: 12, mustMention: ["`/cart`", "`/checkout`", "`/admin/carts`"] },
-	{ code: 14, mustMention: ['"Envío"', '"Nueva"', '"Complemento"'] },
+	{ code: 14, mustMention: ['"Entrega"', '"Nueva"', '"Complemento"'] },
 	{
 		code: 16,
 		mustMention: ['"Pago externo"', '"Pendiente"', "Checkout Pro"],

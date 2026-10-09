@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { cn } from "~/lib/utils";
 
 /**
- * Selectable card used by the Envío and Pago steps: the whole left region is a
+ * Selectable card used by the Entrega and Pago steps: the whole left region is a
  * single toggle button, while `actions` (chip + Editar) stay outside it so the
  * markup keeps a valid, non-nested interactive tree.
  */

@@ -19,6 +19,7 @@ import {
 	ShoppingBagIcon,
 	ShoppingCartIcon,
 	SparklesIcon,
+	StoreIcon,
 	TagsIcon,
 	TruckIcon,
 	UsersIcon,
@@ -99,6 +100,11 @@ export const adminNavGroups: AdminNavGroup[] = [
 				icon: ForkliftIcon,
 			},
 			{ title: "Destinos", href: "/admin/destinations", icon: MapPinIcon },
+			{
+				title: "Puntos de retiro",
+				href: "/admin/pickup-points",
+				icon: StoreIcon,
+			},
 		],
 	},
 	{

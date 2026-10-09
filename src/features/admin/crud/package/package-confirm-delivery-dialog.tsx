@@ -8,7 +8,23 @@ import { CrudEffectsPanel } from "~/features/admin/crud/_components/crud-effects
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
 import { resolveDisclosure } from "~/features/admin/crud/_lib/fulfillment-effects";
 import type { PackageDetail } from "~/shared/common/admin-crud/package.types";
+import { describeDeliveryChoice } from "~/shared/common/delivery-display";
 import { packageDisclosures } from "./package.effects";
+
+/**
+ * A depot handover is the customer collecting in person, so it needs no change
+ * of delivery; the dialog only shows what they had chosen.
+ */
+function deliveryHint(pkg: PackageDetail | undefined) {
+	if (!pkg?.order) return null;
+	if (pkg.order.deliveryPreference === null) {
+		return "El cliente no eligió entrega (pedido anterior).";
+	}
+	return `El cliente eligió: ${describeDeliveryChoice({
+		mode: pkg.order.deliveryPreference,
+		pickupPointName: pkg.order.pickupPointName ?? undefined,
+	})}.`;
+}
 
 /**
  * The per-package handover: depot pickup, pickup-point collection, or a delayed
@@ -38,6 +54,7 @@ export function PackageConfirmDeliveryDialog({
 		pkg?.packageLines.filter((line) => line.status !== "cancelled") ?? [];
 	const customer = liveLines.flatMap((line) => line.packageAllocations).at(0)
 		?.demandAllocation.cartItem.cart;
+	const hint = deliveryHint(pkg);
 
 	return (
 		<CrudFormDialogShell
@@ -82,6 +99,7 @@ export function PackageConfirmDeliveryDialog({
 						? `${customer.code} — ${customer.user.name}`
 						: "Sin asignaciones activas"}
 				</p>
+				{hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
 			</section>
 
 			<CrudEffectsPanel

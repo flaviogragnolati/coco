@@ -37,6 +37,10 @@ import type {
 import type { ProductClientTermsListItem } from "~/shared/common/admin-crud/product-client-terms.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
+	describeOrderDelivery,
+	formatOrderDelivery,
+} from "~/shared/common/delivery-display";
+import {
 	cartItemStatusLabelMap,
 	cartStatusLabelMap,
 	cartStatusOptions,
@@ -46,6 +50,33 @@ import {
 	orderStatusLabelMap,
 	transactionStatusLabelMap,
 } from "./operations-cart.mappers";
+
+function OrderDeliverySummary({
+	order,
+}: {
+	order: Parameters<typeof describeOrderDelivery>[0];
+}) {
+	const delivery = describeOrderDelivery(order);
+
+	return (
+		<div className="flex flex-col gap-1">
+			<span className="font-medium text-xs">Entrega</span>
+			{delivery ? (
+				<>
+					<span className="text-xs">{formatOrderDelivery(delivery)}</span>
+					{delivery.instructions ? (
+						<span className="text-muted-foreground text-xs">
+							{delivery.instructions}
+						</span>
+					) : null}
+				</>
+			) : (
+				// Orders paid before the customer could choose keep their raw address.
+				<JsonPreview value={order.shippingAddressSnapshot} />
+			)}
+		</div>
+	);
+}
 
 function productTermsLabel(terms: ProductClientTermsListItem) {
 	return `${terms.product.name} - MOQ ${terms.moq} ${terms.product.unit} - ${terms.currency}`;
@@ -437,10 +468,7 @@ export function OperationsCartDetailForm({
 													</span>
 													<JsonPreview value={order.billingAddressSnapshot} />
 												</div>
-												<div>
-													<span className="font-medium text-xs">Envío</span>
-													<JsonPreview value={order.shippingAddressSnapshot} />
-												</div>
+												<OrderDeliverySummary order={order} />
 											</div>
 										</section>
 									))}

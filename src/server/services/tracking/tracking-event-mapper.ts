@@ -389,6 +389,27 @@ export function mapDomainEventToTrackingCommands(
 				},
 			];
 
+		case "userOrder.deliveryPreferenceChanged":
+			// One domain event covers the whole order, so the per-item key carries
+			// the cart item id to stay unique.
+			return event.payload.cartItemIds.map((cartItemId) => {
+				const base = commandBase(
+					event,
+					"deliveryPreferenceChanged",
+					cartItemId,
+				);
+				return {
+					...base,
+					eventKey: `${base.eventKey}:${cartItemId}`,
+					refs: { orderId: event.payload.orderId },
+					metadata: metadataWithDomainEvent(event, {
+						reason: event.payload.reason,
+						before: event.payload.before,
+						after: event.payload.after,
+					}),
+				};
+			});
+
 		case "rollover.resolved":
 			return [
 				{

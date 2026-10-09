@@ -351,3 +351,33 @@ test("notice views carry the reason", () => {
 	if (view.mode !== "unified") return;
 	expect(view.notices[0]?.reason).toBe("Demora del transporte");
 });
+
+test("a delivery change notice keeps both its change line and the admin reason", () => {
+	const view = buildCustomerOrderJourneyView([
+		makeItem({
+			cartItemId: 1,
+			timeline: makeTimeline({
+				cartItemId: 1,
+				currentStage: "preparation",
+				notices: [
+					{
+						eventType: "deliveryPreferenceChanged",
+						kind: "info",
+						label: "Cambiamos tu entrega",
+						detail: "A domicilio → Punto de retiro · Centro",
+						reason: "La dirección queda fuera de la zona de reparto.",
+						createdAt: "2026-03-02T10:00:00.000Z",
+					},
+				],
+			}),
+		}),
+	]);
+
+	expect(view.mode).toBe("unified");
+	if (view.mode !== "unified") return;
+	expect(view.notices[0]).toMatchObject({
+		label: "Cambiamos tu entrega",
+		detail: "A domicilio → Punto de retiro · Centro",
+		reason: "La dirección queda fuera de la zona de reparto.",
+	});
+});

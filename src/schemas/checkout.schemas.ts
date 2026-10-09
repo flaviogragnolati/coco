@@ -3,6 +3,12 @@ import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 import { externalPaymentInstructionsSchema } from "~/schemas/admin/payment.schemas";
 import { cartSnapshotSchema } from "~/schemas/cart.schemas";
 import { catalogCurrencySchema } from "~/schemas/catalog.schemas";
+import {
+	checkoutPickupPointSchema,
+	deliveryModeSchema,
+	pickupPointDataSchema,
+	pickupPointSnapshotSchema,
+} from "~/schemas/pickup-point.schemas";
 
 const requiredText = (message: string) => z.string().trim().min(1, message);
 
@@ -78,11 +84,24 @@ export const checkoutStateSchema = z.object({
 	cart: cartSnapshotSchema,
 	addresses: z.array(checkoutAddressSchema),
 	paymentMethods: z.array(checkoutPaymentMethodSchema),
+	/** Active points only; empty hides the pickup option. */
+	pickupPoints: z.array(checkoutPickupPointSchema),
 	termsText: z.string(),
 });
 
+export const checkoutDeliveryInputSchema = z.discriminatedUnion("mode", [
+	z.object({
+		mode: z.literal("homeDelivery"),
+		shippingAddressId: checkoutAddressIdSchema,
+	}),
+	z.object({
+		mode: z.literal("pickupPoint"),
+		pickupPointId: z.number().int().positive(),
+	}),
+]);
+
 export const checkoutConfirmInputSchema = z.object({
-	shippingAddressId: checkoutAddressIdSchema,
+	delivery: checkoutDeliveryInputSchema,
 	paymentMethodId: checkoutPaymentMethodIdSchema,
 	acceptedTerms: z.literal(true, {
 		error: "Tenés que aceptar los términos para confirmar el pedido",
@@ -135,7 +154,10 @@ export const checkoutPaymentResultSchema = z.object({
 	redirectUrl: z.string().nullable().optional(),
 	/** Transfer data the user needs while an external attempt stays pending (ADR 0010). */
 	externalPayment: externalPaymentInstructionsSchema.nullable().optional(),
-	shippingAddress: checkoutAddressSchema,
+	deliveryPreference: deliveryModeSchema.nullable(),
+	/** Null for a pickup-point order, which stores no address. */
+	shippingAddress: checkoutAddressSchema.nullable(),
+	pickupPoint: pickupPointDataSchema.nullable(),
 	paymentMethod: checkoutPaymentMethodSchema,
 });
 
@@ -194,6 +216,9 @@ export const orderDetailSchema = orderListItemSchema.extend({
 	cartCode: z.string(),
 	billingAddressSnapshot: z.unknown().nullable(),
 	shippingAddressSnapshot: z.unknown().nullable(),
+	/** Null on orders paid before the customer could choose. */
+	deliveryPreference: deliveryModeSchema.nullable(),
+	pickupPointSnapshot: pickupPointSnapshotSchema.nullable(),
 	termsSnapshot: z.unknown().nullable(),
 	acceptedTermsAt: z.date().nullable(),
 	/**

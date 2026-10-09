@@ -11,6 +11,7 @@ import {
 	RotateCcw,
 	Send,
 	ShoppingCart,
+	Signpost,
 	Trash2,
 	Truck,
 	Undo2,
@@ -152,6 +153,11 @@ export const trackingEventTypeConfig: Record<TrackingEventType, StatusConfig> =
 			...statusPresets.attention,
 			icon: Undo2,
 			label: trackingEventLabelMap.excludedFromOperation,
+		},
+		deliveryPreferenceChanged: {
+			...statusPresets.inProgress,
+			icon: Signpost,
+			label: trackingEventLabelMap.deliveryPreferenceChanged,
 		},
 	};
 

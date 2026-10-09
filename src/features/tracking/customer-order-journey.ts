@@ -28,7 +28,9 @@ export type CustomerOrderJourneyItemInput = {
 export type CustomerJourneyNoticeView = {
 	label: string;
 	kind: UserTrackingNoticeKind;
-	/** Admin-entered explanation; only exceptions and roll over creations carry one. */
+	/** What changed, e.g. "A domicilio → Punto de retiro · Centro". */
+	detail?: string;
+	/** Admin-entered explanation; only exceptions, delivery changes and roll over creations carry one. */
 	reason?: string;
 	createdAt: string;
 };
@@ -89,6 +91,7 @@ function toNoticeViews(
 			? `${notice.label} (${notice.quantity})`
 			: notice.label,
 		kind: notice.kind,
+		detail: notice.detail,
 		reason: notice.reason,
 		createdAt: notice.createdAt,
 	}));

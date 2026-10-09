@@ -15,14 +15,16 @@ function makeSelection(
 ): CheckoutSelection {
 	return {
 		hasItems: false,
+		deliveryMode: "homeDelivery",
 		addressId: null,
+		pickupPointId: null,
 		paymentMethodId: null,
 		acceptedTerms: false,
 		...overrides,
 	};
 }
 
-const ALL_STEPS: CheckoutStepId[] = ["order", "shipping", "payment", "review"];
+const ALL_STEPS: CheckoutStepId[] = ["order", "delivery", "payment", "review"];
 
 test("empty selection: only order is reachable, nothing complete", () => {
 	const selection = makeSelection();
@@ -30,7 +32,7 @@ test("empty selection: only order is reachable, nothing complete", () => {
 		ALL_STEPS.filter((step) => isStepReachable(step, selection)),
 	).toStrictEqual(["order"]);
 	expect(isStepComplete("order", selection)).toBe(false);
-	expect(isStepComplete("shipping", selection)).toBe(false);
+	expect(isStepComplete("delivery", selection)).toBe(false);
 	expect(isStepComplete("payment", selection)).toBe(false);
 	expect(isStepComplete("review", selection)).toBe(false);
 });
@@ -42,23 +44,23 @@ test("hasItems=false blocks every step past order", () => {
 		acceptedTerms: true,
 	});
 	expect(isStepReachable("order", selection)).toBe(true);
-	expect(isStepReachable("shipping", selection)).toBe(false);
+	expect(isStepReachable("delivery", selection)).toBe(false);
 	expect(isStepReachable("payment", selection)).toBe(false);
 	expect(isStepReachable("review", selection)).toBe(false);
 	expect(canConfirm(selection)).toBe(false);
 });
 
-test("items only: order complete, shipping reachable, payment/review locked", () => {
+test("items only: order complete, delivery reachable, payment/review locked", () => {
 	const selection = makeSelection({ hasItems: true });
 	expect(isStepComplete("order", selection)).toBe(true);
-	expect(isStepReachable("shipping", selection)).toBe(true);
+	expect(isStepReachable("delivery", selection)).toBe(true);
 	expect(isStepReachable("payment", selection)).toBe(false);
 	expect(isStepReachable("review", selection)).toBe(false);
 });
 
 test("address selected: payment reachable, review not", () => {
 	const selection = makeSelection({ hasItems: true, addressId: 1 });
-	expect(isStepComplete("shipping", selection)).toBe(true);
+	expect(isStepComplete("delivery", selection)).toBe(true);
 	expect(isStepReachable("payment", selection)).toBe(true);
 	expect(isStepReachable("review", selection)).toBe(false);
 	expect(canConfirm(selection)).toBe(false);
@@ -95,11 +97,11 @@ test("nextStep advances only when the next step is reachable", () => {
 	expect(nextStep("order", empty)).toBe(null);
 
 	const items = makeSelection({ hasItems: true });
-	expect(nextStep("order", items)).toBe("shipping");
-	expect(nextStep("shipping", items)).toBe(null);
+	expect(nextStep("order", items)).toBe("delivery");
+	expect(nextStep("delivery", items)).toBe(null);
 
 	const withAddress = makeSelection({ hasItems: true, addressId: 1 });
-	expect(nextStep("shipping", withAddress)).toBe("payment");
+	expect(nextStep("delivery", withAddress)).toBe("payment");
 	expect(nextStep("payment", withAddress)).toBe(null);
 
 	const withPayment = makeSelection({
@@ -111,9 +113,29 @@ test("nextStep advances only when the next step is reachable", () => {
 	expect(nextStep("review", withPayment)).toBe(null);
 });
 
+test("a pickup point completes the delivery step without an address", () => {
+	const selection = makeSelection({
+		hasItems: true,
+		deliveryMode: "pickupPoint",
+		pickupPointId: 3,
+		paymentMethodId: 2,
+		acceptedTerms: true,
+	});
+	expect(isStepComplete("delivery", selection)).toBe(true);
+	expect(canConfirm(selection)).toBe(true);
+
+	const addressOnly = makeSelection({
+		hasItems: true,
+		deliveryMode: "pickupPoint",
+		addressId: 1,
+	});
+	expect(isStepComplete("delivery", addressOnly)).toBe(false);
+	expect(isStepReachable("payment", addressOnly)).toBe(false);
+});
+
 test("prevStep walks backwards positionally regardless of selection", () => {
 	expect(prevStep("order")).toBe(null);
-	expect(prevStep("shipping")).toBe("order");
-	expect(prevStep("payment")).toBe("shipping");
+	expect(prevStep("delivery")).toBe("order");
+	expect(prevStep("payment")).toBe("delivery");
 	expect(prevStep("review")).toBe("payment");
 });

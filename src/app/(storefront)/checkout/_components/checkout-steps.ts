@@ -1,13 +1,13 @@
 /**
  * Pure step model for the checkout flow. No React, no I/O — encodes the lock
- * rules for the 4-step flow (Pedido → Envío → Pago → Confirmar) so the stepper
+ * rules for the 4-step flow (Pedido → Entrega → Pago → Confirmar) so the stepper
  * and orchestrator can derive completed/active/locked states from a single
  * source of truth. Unit-tested in `checkout-steps.test.ts`.
  *
  * Mirrors the pure-helper shape of `catalog-filtering.ts`.
  */
 
-export type CheckoutStepId = "order" | "shipping" | "payment" | "review";
+export type CheckoutStepId = "order" | "delivery" | "payment" | "review";
 
 export type CheckoutStepDefinition = {
 	id: CheckoutStepId;
@@ -17,17 +17,26 @@ export type CheckoutStepDefinition = {
 
 export const CHECKOUT_STEPS: CheckoutStepDefinition[] = [
 	{ id: "order", label: "Pedido", shortLabel: "Pedido" },
-	{ id: "shipping", label: "Envío", shortLabel: "Envío" },
+	{ id: "delivery", label: "Entrega", shortLabel: "Entrega" },
 	{ id: "payment", label: "Pago", shortLabel: "Pago" },
 	{ id: "review", label: "Confirmar", shortLabel: "Confirmar" },
 ];
 
 export type CheckoutSelection = {
 	hasItems: boolean;
+	deliveryMode: "homeDelivery" | "pickupPoint";
 	addressId: number | null;
+	pickupPointId: number | null;
 	paymentMethodId: number | null;
 	acceptedTerms: boolean;
 };
+
+/** The delivery step is complete when the chosen mode has its target picked. */
+function hasDeliveryTarget(selection: CheckoutSelection) {
+	return selection.deliveryMode === "pickupPoint"
+		? selection.pickupPointId !== null
+		: selection.addressId !== null;
+}
 
 /**
  * A step is "complete" when its requirement is satisfied. `review` is the
@@ -41,8 +50,8 @@ export function isStepComplete(
 	switch (step) {
 		case "order":
 			return selection.hasItems;
-		case "shipping":
-			return selection.addressId !== null;
+		case "delivery":
+			return hasDeliveryTarget(selection);
 		case "payment":
 			return selection.paymentMethodId !== null;
 		case "review":
@@ -62,17 +71,17 @@ export function isStepReachable(
 	switch (step) {
 		case "order":
 			return true;
-		case "shipping":
+		case "delivery":
 			return isStepComplete("order", selection);
 		case "payment":
 			return (
 				isStepComplete("order", selection) &&
-				isStepComplete("shipping", selection)
+				isStepComplete("delivery", selection)
 			);
 		case "review":
 			return (
 				isStepComplete("order", selection) &&
-				isStepComplete("shipping", selection) &&
+				isStepComplete("delivery", selection) &&
 				isStepComplete("payment", selection)
 			);
 	}
@@ -110,7 +119,7 @@ export function prevStep(current: CheckoutStepId): CheckoutStepId | null {
 export function canConfirm(selection: CheckoutSelection): boolean {
 	return (
 		selection.hasItems &&
-		selection.addressId !== null &&
+		hasDeliveryTarget(selection) &&
 		selection.paymentMethodId !== null &&
 		selection.acceptedTerms
 	);

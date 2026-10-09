@@ -181,15 +181,30 @@ export const operationGlossaryEntries: GlossaryEntry[] = [
 		href: "/admin/shipments",
 	},
 	{
-		slug: "concepto-punto-de-retiro",
-		kind: "concept",
+		slug: "entidad-punto-de-retiro",
+		kind: "entity",
 		section: "operation",
 		label: "Punto de retiro",
 		term: "Pickup point",
 		definition:
-			"Una dirección compartida a la que viaja un envío a usuario final, donde después cada cliente retira su propio paquete. Su arribo no es una entrega, así que cada paquete sigue necesitando su confirmación.",
-		aliases: ["Depósito", "Almacén", "Destino"],
-		href: "/admin/shipments",
+			"Un lugar administrado por el admin, con dirección, horarios e instrucciones, al que viaja un envío a usuario final y donde después cada cliente retira su propio paquete. El cliente lo elige en el checkout. Su arribo no es una entrega, así que cada paquete sigue necesitando su confirmación. No es el depósito interno.",
+		aliases: ["Depósito", "Almacén", "Destino", "Centro de retiro"],
+		occurrences: [{ code: "PickupPoint", db: "pickup_point" }],
+		href: "/admin/pickup-points",
+	},
+	{
+		slug: "concepto-preferencia-de-entrega",
+		kind: "concept",
+		section: "operation",
+		label: "Entrega",
+		term: "Delivery preference",
+		definition:
+			'El modo de entrega, y para un punto de retiro cuál, que el cliente elige en el checkout y el pedido guarda. Un envío a usuario final solo puede llevar paquetes cuyo pedido coincide con su modo y su punto. Un admin la cambia solo en el pedido ("Cambiar entrega"), con un motivo que el cliente lee en su seguimiento, y solo mientras ningún paquete del pedido esté en un envío a usuario final.',
+		aliases: [
+			"Modo de entrega (para la elección del cliente)",
+			"Opción de envío",
+		],
+		href: "/admin/carts",
 	},
 	{
 		slug: "concepto-confirmacion-de-entrega",

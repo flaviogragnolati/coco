@@ -62,6 +62,8 @@ export const userTrackingTimelineNoticeSchema = z.object({
 	kind: z.enum(userTrackingNoticeKinds),
 	label: z.string(),
 	quantity: decimalStringSchema.optional(),
+	/** What changed, when the notice is about a change (e.g. the delivery). */
+	detail: z.string().optional(),
 	reason: z.string().optional(),
 	createdAt: z.string(),
 });

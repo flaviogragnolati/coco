@@ -2,6 +2,7 @@ import type { PackageStatus } from "~/prisma/client";
 import { packageStatusLineCompatibility } from "~/shared/common/fulfillment-transitions";
 import type { OperationalDiagnostic } from "./operational-diagnostics.types";
 import { decimal, sumDecimals } from "./operational-diagnostics.types";
+import { hasDeliveryConflict, type OrderDelivery } from "./order-delivery";
 import {
 	type PackageSummaryRecord,
 	packageFractionableQuantity,
@@ -46,6 +47,8 @@ export type PackageDiagnosticsOptions = {
 	 * that read it.
 	 */
 	staleBefore?: Date | null;
+	/** The live orders the package serves; omitted, the delivery rule is skipped. */
+	orders?: OrderDelivery[];
 };
 
 /**
@@ -253,6 +256,17 @@ export function calculatePackageDiagnostics(
 					? "El paquete de un envio a domicilio agrupa demanda de varios clientes."
 					: "El paquete de salida agrupa demanda de varios clientes.",
 				refs: { packageId: pkg.id, cartCount: cartIds.size },
+			});
+		}
+
+		// The shipment match rule refuses such a package outright, so it can only
+		// wait at the depot until an admin changes one of the orders' delivery.
+		if (options?.orders && hasDeliveryConflict(options.orders)) {
+			diagnostics.push({
+				code: "package.outbound.deliveryPreferenceConflict",
+				severity: "warning",
+				message: "Los pedidos del paquete eligieron entregas distintas.",
+				refs: { packageId: pkg.id, orderCount: options.orders.length },
 			});
 		}
 	}
