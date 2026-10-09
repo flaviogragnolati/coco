@@ -60,7 +60,7 @@ export const cartLocalItemInputSchema = z.object({
 export const cartSyncInputSchema = z.object({
 	items: z
 		.array(cartLocalItemInputSchema)
-		.max(200, "Demasiados productos en el carrito local")
+		.max(200, "Demasiados productos en tu pedido")
 		.default([]),
 });
 

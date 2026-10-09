@@ -3,6 +3,8 @@ import { expect, test } from "vitest";
 import {
 	customerNoticeDetail,
 	customerNoticeReason,
+	customerTrackingEventLabelMap,
+	trackingEventLabelMap,
 	userTrackingNoticeKindByEventType,
 	userTrackingStageByEventType,
 } from "./tracking-display";
@@ -119,4 +121,13 @@ test("missing, blank or non-string reasons are dropped", () => {
 	expect(
 		customerNoticeReason("fulfillmentException", { reason: 3 }),
 	).toBeUndefined();
+});
+
+test("customer event labels never say carrito; admin keeps its own", () => {
+	for (const label of Object.values(customerTrackingEventLabelMap)) {
+		expect(label).not.toMatch(/carrito/i);
+	}
+	expect(trackingEventLabelMap.addedToCart).toBe(
+		"Producto agregado al carrito",
+	);
 });

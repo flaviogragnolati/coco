@@ -69,8 +69,8 @@ export function CartSummary({
 				</div>
 				<CardDescription>
 					{cart.code
-						? `Carrito ${cart.code}`
-						: "Carrito guardado en este browser"}
+						? `Código de armado ${cart.code}`
+						: "Pedido guardado en este navegador"}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-4">
@@ -107,7 +107,7 @@ export function CartSummary({
 						<ShoppingBagIcon />
 						<AlertTitle>Checkout en curso</AlertTitle>
 						<AlertDescription>
-							El carrito está congelado mientras se procesa el pago. Volvé a
+							Tu pedido está congelado mientras se procesa el pago. Volvé a
 							editarlo para cambiar cantidades o productos.
 						</AlertDescription>
 					</Alert>
@@ -125,7 +125,7 @@ export function CartSummary({
 						<LogInIcon />
 						<AlertTitle>Iniciá sesión para continuar</AlertTitle>
 						<AlertDescription>
-							Podés armar el carrito como invitado. Para iniciar checkout,
+							Podés armar tu pedido como invitado. Para iniciar checkout,
 							necesitamos asociarlo a tu usuario.
 						</AlertDescription>
 					</Alert>
@@ -148,7 +148,7 @@ export function CartSummary({
 							className="text-center text-muted-foreground text-xs"
 							id={checkoutBlockedReasonId}
 						>
-							Hay productos pendientes de agregar a tu carrito. Esperá a que se
+							Hay productos pendientes de agregar a tu pedido. Esperá a que se
 							resuelva el pago en curso.
 						</p>
 					</>
@@ -176,7 +176,7 @@ export function CartSummary({
 						variant="outline"
 					>
 						<PencilIcon data-icon="inline-start" />
-						Volver a editar el carrito
+						Volver a editar el pedido
 					</Button>
 				) : null}
 				<Button
@@ -189,7 +189,7 @@ export function CartSummary({
 					type="button"
 					variant="outline"
 				>
-					Vaciar carrito
+					Vaciar pedido
 				</Button>
 				{/* Next to the control it explains, not in another card: a disabled
 				    button with no adjacent reason is the original QA complaint. */}
@@ -198,7 +198,7 @@ export function CartSummary({
 						className="text-center text-muted-foreground text-xs"
 						id={clearBlockedReasonId}
 					>
-						No podés vaciar el carrito mientras haya un pago en curso. Si es un
+						No podés vaciar tu pedido mientras haya un pago en curso. Si es un
 						pago externo con comprobante declarado, esperá a que lo confirmemos.
 					</p>
 				) : null}

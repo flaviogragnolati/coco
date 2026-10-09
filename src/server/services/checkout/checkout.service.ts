@@ -135,7 +135,7 @@ function assertCartHasItems(cart: CheckoutCartRecord) {
 		throw new TRPCError({
 			code: "BAD_REQUEST",
 			message:
-				"Tu carrito está vacío. Agregá productos antes de iniciar checkout.",
+				"Tu pedido está vacío. Agregá productos antes de iniciar checkout.",
 		});
 	}
 }
@@ -150,7 +150,7 @@ function assertCartItemsStillValid(cart: CheckoutCartRecord) {
 		throw new TRPCError({
 			code: "CONFLICT",
 			message:
-				"Uno de los productos del carrito ya no está disponible. Revisá el carrito antes de continuar.",
+				"Uno de los productos de tu pedido ya no está disponible. Revisalo antes de continuar.",
 		});
 	}
 }
@@ -164,7 +164,7 @@ async function getRequiredCheckoutCart(
 	if (!cart) {
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message: "No encontramos un carrito activo para iniciar checkout.",
+			message: "No encontramos tu pedido para iniciar checkout.",
 		});
 	}
 
@@ -178,7 +178,7 @@ function assertSingleCurrency(cart: CartSnapshot) {
 		throw new TRPCError({
 			code: "CONFLICT",
 			message:
-				"El checkout de esta versión solo permite carritos con una moneda.",
+				"El checkout de esta versión solo permite pedidos con una moneda.",
 		});
 	}
 
@@ -186,7 +186,7 @@ function assertSingleCurrency(cart: CartSnapshot) {
 	if (!total) {
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message: "No encontramos un total válido para el carrito.",
+			message: "No encontramos un total válido para tu pedido.",
 		});
 	}
 
@@ -612,7 +612,7 @@ function buildReusedAttemptMessage(
 	if (transaction.status !== "pending") return undefined;
 
 	if (transaction.provider === "mercadopago") {
-		return "Ya tenés un pago iniciado para este carrito. Te redirigimos a Mercado Pago para completarlo.";
+		return "Ya tenés un pago iniciado para tu pedido. Te redirigimos a Mercado Pago para completarlo.";
 	}
 
 	if (transaction.provider === EXTERNAL_PROVIDER) {
@@ -633,8 +633,7 @@ async function createLiveUserOrder(
 		) {
 			throw new TRPCError({
 				code: "PRECONDITION_FAILED",
-				message:
-					"Ya existe un pedido activo para este carrito. Actualizá la página.",
+				message: "Ya hay un pago en curso para tu pedido. Actualizá la página.",
 			});
 		}
 		throw error;

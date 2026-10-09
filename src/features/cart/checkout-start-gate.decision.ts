@@ -15,8 +15,7 @@ export type CheckoutStartGateInput = {
  * Local hydration is not enough: a guest cart only reaches the server through
  * the cart bootstrap, which runs in the navbar, in a sibling of the checkout
  * screen. Starting before it finishes races it, and `checkout.start` answers a
- * cart-less server with "No encontramos un carrito activo para iniciar
- * checkout." (finding #2).
+ * cart-less server with "No encontramos tu pedido para iniciar checkout."
  *
  * `"done"` means the bootstrap finished, not that it succeeded — a failed merge
  * already told the user, and blocking here would leave the screen loading

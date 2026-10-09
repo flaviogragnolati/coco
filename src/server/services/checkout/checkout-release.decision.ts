@@ -59,6 +59,6 @@ export function checkoutReleaseBlockedMessage(
 	decision: CheckoutReleaseBlockedDecision,
 ) {
 	return decision === "blockedDeclaredReceipt"
-		? "Ya informaste una transferencia para este pedido. Esperá a que la confirmemos antes de volver al carrito."
-		: "Hay un pago en curso para este carrito. Esperá a que el proveedor lo resuelva.";
+		? "Ya informaste una transferencia para tu pedido. Esperá a que la confirmemos antes de volver a editarlo."
+		: "Hay un pago en curso para tu pedido. Esperá a que el proveedor lo resuelva.";
 }

@@ -30,7 +30,7 @@ export function CartNavButton({
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<Button
-					aria-label="Abrir carrito"
+					aria-label="Abrir tu pedido"
 					className="relative size-[42px] rounded-full"
 					onClick={openMiniCart}
 					size="icon"
@@ -46,7 +46,7 @@ export function CartNavButton({
 				</Button>
 			</TooltipTrigger>
 			<TooltipContent>
-				{isSyncing ? "Sincronizando carrito" : "Abrir carrito"}
+				{isSyncing ? "Sincronizando tu pedido" : "Abrir tu pedido"}
 			</TooltipContent>
 		</Tooltip>
 	);

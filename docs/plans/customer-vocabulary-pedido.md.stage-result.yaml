@@ -30,3 +30,44 @@ orchestration:
   mode: "standalone"
   global_state_updated: false
   reconciliation_required: true
+---
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/customer-vocabulary-pedido.md"
+      change: "Status Implemented; execution record added"
+    - artifact_type: "glossary"
+      path: "CONTEXT.md"
+      change: "Leave checkout Spanish label \"Volver a editar el pedido\""
+  references_added: []
+  traceability_delta:
+    - {item: "qa_ticket#79 follow-up: vocabulary carrito/pedido", implemented_by: "commits 172b3b6, babdf33"}
+  decisions_added_or_updated:
+    - "Customer tracking labels come from customerTrackingEventLabelMap (addedToCart -> \"Producto agregado a tu pedido\"); admin trackingEventLabelMap unchanged"
+    - "/cart header: h1 \"Tu pedido\", description \"Lo que vas a pagar al confirmar.\", eyebrow dropped"
+    - "Cart code shown as \"Código de armado {code}\" in the cart summary and the order detail"
+  risks_added_or_updated: []
+  stale_artifacts:
+    - path: "scripts/qa-tickets.data.ts"
+      proposed_change: "QA cases 6, 10, 11, 13, 19, 20, 29 expected results quote the old \"carrito\" copy; update to the new wording and rerun pnpm qa:seed"
+    - path: "docs/qa/qa-ciclo-de-vida.md"
+      proposed_change: "Same cases as scripts/qa-tickets.data.ts"
+  blockers: []
+  warnings:
+    - "q-review-code: standards pass with findings (1 suggestion, applied); specification pass with findings (stale QA case texts kept by rule; /cart header deviation)"
+    - "q-review-comments: 1 blocker rewrite (stale QA-contract note in checkout-release.decision.test.ts) applied, 3 keep; pass"
+    - "e2e not run (no spec matched a changed string)"
+    - "pnpm check fails only on pre-existing findings in untouched files"
+  required_user_actions:
+    - "Approve updating the QA case texts to the new copy (orchestrator), then pnpm qa:seed after deploy"
+  next_recommended_action: "Merge the work branch; orchestrator updates the QA case texts and the qa-open-tickets report row"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true

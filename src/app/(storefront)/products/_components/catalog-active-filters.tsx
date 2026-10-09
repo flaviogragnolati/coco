@@ -98,7 +98,7 @@ export function CatalogActiveFilters({
 			))}
 			{price ? <FilterChip label={price} onRemove={onRemovePrice} /> : null}
 			{filters.inCartOnly ? (
-				<FilterChip label="Solo en carrito" onRemove={onRemoveInCart} />
+				<FilterChip label="Solo en mi pedido" onRemove={onRemoveInCart} />
 			) : null}
 			<Button onClick={onClearAll} size="xs" type="button" variant="ghost">
 				Limpiar todo
