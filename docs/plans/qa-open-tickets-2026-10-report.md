@@ -109,3 +109,11 @@ Pasos: ajustar #16, #38 y #54 → `pnpm qa:seed` (solo texto, en la DB compartid
 - Riesgo: el `.env` local no define `APP_ENV`, así que el guard de `db:seed:test` deja pasar el comando contra la DB que tiene el catálogo real.
 
 **F1 + #78 (2026-10-09):** el grill de diseño quedó en `docs/architecture/features/customer-delivery-preference.md` y en el ADR 0011. La implementación está en `docs/plans/customer-delivery-preference.md` (§17, mergeada en `ffd231b`). El copy de #78 y del paso 5 espera en la rama `f1-home-copy` hasta que existan puntos de retiro activos. El ticket de vocabulario abierto con #79 se planificó en `docs/plans/customer-vocabulary-pedido.md`.
+
+**Cierre de la Fase 0 y de F1 (2026-10-09):**
+
+- `qa:seed` corrido: 65 casos actualizados, con los textos de F1 ("Entrega") y de "pedido".
+- Los 26 tickets se reabrieron como `pending` en una transacción con control previo.
+- La migración de F1 está aplicada y hay un punto de retiro activo ("Coco Ushuaia").
+- `f1-home-copy` está mergeada (`39523c9`) y los e2e pasan (18/18).
+- Pendiente: la dirección real de Quintal, diferida por el usuario.

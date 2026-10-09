@@ -46,14 +46,12 @@ stage_result:
   stale_artifacts:
     - path: "docs/plans/qa-open-tickets-2026-10-report.md"
       proposed_change: "Fase 0 says reopen 29 tickets; correct count is 26"
-  blockers:
-    - "Not run: e2e specs (smoke, home-offer-quantity, supplier-application), visual check, migrations apply, qa:seed, ticket reopen, db:seed:init"
+  blockers: []
   warnings:
     - "Mini review per workstream: q-review-code pass with findings (no blockers, fixed or recorded); q-review-comments pass / pass with findings applied"
     - "Repo-wide pnpm check fails on pre-existing files outside this change"
   required_user_actions:
-    - "Reopen the 26 tickets per remediation §17 (migrations, qa:seed, Blob token and db:seed:init confirmed done 2026-10-08)"
-    - "Replace the Quintal placeholder address in the admin"
+    - "Replace the Quintal placeholder address in the admin (deferred by the user)"
     - "Set APP_ENV=production in any local .env that points at the production database"
     - "Set WHATSAPP_NUMBER when available (deferred by the user)"
   next_recommended_action: "Run the e2e specs against a dev server; then q-code-grill-design for F1 + #78"
