@@ -20,6 +20,7 @@ export const trackingEventTypes = [
 	"rolledOverPostAllocation",
 	"rollOverResolved",
 	"excludedFromOperation",
+	"deliveryPreferenceChanged",
 ] as const;
 
 export const trackingEventSources = [
@@ -79,6 +80,7 @@ export const trackingEventLabelMap: Record<TrackingEventType, string> = {
 	rolledOverPostAllocation: "Reprogramado despues de asignacion",
 	rollOverResolved: "Rollover resuelto",
 	excludedFromOperation: "Excluido de la operación",
+	deliveryPreferenceChanged: "Cambiamos tu entrega",
 };
 
 export const trackingSourceLabelMap: Record<TrackingEventSource, string> = {
