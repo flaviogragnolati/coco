@@ -202,9 +202,11 @@ export function SupplierApplicationForm() {
 						/>
 					</div>
 
-					{submitMutation.isError ? (
+					{submitMutation.error ? (
 						<p className="text-destructive text-sm" role="alert">
-							No pudimos enviar tu solicitud. Probá de nuevo en unos minutos.
+							{submitMutation.error.data?.code === "TOO_MANY_REQUESTS"
+								? submitMutation.error.message
+								: "No pudimos enviar tu solicitud. Probá de nuevo en unos minutos."}
 						</p>
 					) : null}
 

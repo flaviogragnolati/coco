@@ -1349,11 +1349,13 @@ model SupplierApplication {
   offering      String    @db.Text
   contactedAt   DateTime? // null means no admin has reached out yet
   contactedById String?
+  ipHash        String?   @db.Text // keyed hash of the sender IP, never the IP itself
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
 
   contactedBy User? @relation(fields: [contactedById], references: [id], onDelete: SetNull)
 
   @@index([contactedAt])
+  @@index([ipHash, createdAt])
   @@map("supplier_application")
 }

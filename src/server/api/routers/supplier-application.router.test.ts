@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -22,10 +23,10 @@ import { supplierApplicationRouter as publicRouter } from "./supplier-applicatio
 
 type Role = "user" | "admin" | "superadmin";
 
-function context(role?: Role) {
+function context(role?: Role, headers = new Headers()) {
 	return {
 		db: {},
-		headers: new Headers(),
+		headers,
 		session: role
 			? {
 					session: { id: "session-1" },
@@ -63,7 +64,35 @@ describe("public supplierApplication router", () => {
 		expect(publicService.submit).toHaveBeenCalledWith(
 			expect.objectContaining({ ...application, phone: null }),
 			{},
+			null,
 		);
+	});
+
+	it("hands the sender IP to the service", async () => {
+		const headers = new Headers({
+			"x-forwarded-for": "190.12.34.56, 10.0.0.1",
+		});
+
+		await caller(context(undefined, headers)).submit(application);
+
+		expect(publicService.submit).toHaveBeenCalledWith(
+			expect.anything(),
+			{},
+			"190.12.34.56",
+		);
+	});
+
+	it("passes the rate limit refusal through to the form", async () => {
+		const refusal = new TRPCError({
+			code: "TOO_MANY_REQUESTS",
+			message: "Ya recibimos tu solicitud. Si necesitás algo más, escribinos.",
+		});
+		vi.mocked(publicService.submit).mockRejectedValue(refusal);
+
+		await expect(caller(context()).submit(application)).rejects.toMatchObject({
+			code: "TOO_MANY_REQUESTS",
+			message: refusal.message,
+		});
 	});
 
 	it("hides storage failures behind a generic message", async () => {
