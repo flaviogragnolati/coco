@@ -316,7 +316,7 @@ test("a notice before any stage still renders the journey", () => {
 					{
 						eventType: "rolledOverPreAllocation",
 						kind: "rollover",
-						label: "Reprogramado antes de asignacion",
+						label: "Reprogramado",
 						createdAt: "2026-03-02T10:00:00.000Z",
 					},
 				],

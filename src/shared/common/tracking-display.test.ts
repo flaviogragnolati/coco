@@ -131,3 +131,18 @@ test("customer event labels never say carrito; admin keeps its own", () => {
 		"Producto agregado al carrito",
 	);
 });
+
+test("customers read a plain roll over title; admin keeps the allocation stage", () => {
+	expect(customerTrackingEventLabelMap.rolledOverPreAllocation).toBe(
+		"Reprogramado",
+	);
+	expect(customerTrackingEventLabelMap.rolledOverPostAllocation).toBe(
+		"Reprogramado",
+	);
+	expect(trackingEventLabelMap.rolledOverPostAllocation).toBe(
+		"Reprogramado después de la asignación",
+	);
+	for (const label of Object.values(customerTrackingEventLabelMap)) {
+		expect(label).not.toMatch(/asignaci/i);
+	}
+});

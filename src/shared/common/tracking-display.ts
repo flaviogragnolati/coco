@@ -81,18 +81,20 @@ export const trackingEventLabelMap: Record<TrackingEventType, string> = {
 	movedInEndUserShipment: "En envio al cliente",
 	arrivedAtPickupPoint: "Disponible para retirar",
 	delivered: "Entregado",
-	rolledOverPreAllocation: "Reprogramado antes de asignacion",
-	rolledOverPostAllocation: "Reprogramado despues de asignacion",
+	rolledOverPreAllocation: "Reprogramado antes de la asignación",
+	rolledOverPostAllocation: "Reprogramado después de la asignación",
 	rollOverResolved: "Rollover resuelto",
 	excludedFromOperation: "Excluido de la operación",
 	deliveryPreferenceChanged: "Cambiamos tu entrega",
 };
 
-/** The customer never reads "carrito"; admin wording stays in the map above. */
+/** The customer never reads "carrito" or internal stages such as the allocation; admin wording stays in the map above. */
 export const customerTrackingEventLabelMap: Record<TrackingEventType, string> =
 	{
 		...trackingEventLabelMap,
 		addedToCart: "Producto agregado a tu pedido",
+		rolledOverPreAllocation: "Reprogramado",
+		rolledOverPostAllocation: "Reprogramado",
 	};
 
 export const trackingSourceLabelMap: Record<TrackingEventSource, string> = {
