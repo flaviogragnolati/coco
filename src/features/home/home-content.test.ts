@@ -4,6 +4,7 @@ import {
 	contactItems,
 	faqItems,
 	getWhatsappContactItem,
+	howItWorksSteps,
 	WHATSAPP_NUMBER,
 } from "./home-content";
 
@@ -36,5 +37,26 @@ describe("FAQ copy", () => {
 		for (const { question, answer } of faqItems) {
 			expect(`${question} ${answer}`).not.toMatch(/carrito/i);
 		}
+	});
+
+	it("explains the delivery choice right after the delivery time", () => {
+		const timing = faqItems.findIndex(
+			(item) => item.question === "¿Cuánto tarda en llegar mi compra?",
+		);
+
+		expect(faqItems[timing + 1]).toEqual({
+			question: "¿Cómo retiro mi pedido o lo recibo en casa?",
+			answer:
+				"Lo elegís al confirmar tu pedido: te lo llevamos a la dirección que cargues o lo retirás en uno de nuestros puntos de retiro, en el horario que indicamos. Las dos opciones cuestan lo mismo.",
+		});
+	});
+});
+
+describe("Cómo funciona", () => {
+	it("ends with the delivery the customer chose", () => {
+		expect(howItWorksSteps).toHaveLength(5);
+		expect(howItWorksSteps.at(-1)).toBe(
+			"Al llegar, lo retirás en el punto de retiro que elegiste o te lo llevamos a tu dirección.",
+		);
 	});
 });

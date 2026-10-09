@@ -25,7 +25,7 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 	);
 	await expect(
 		page.locator("#preguntas-frecuentes").getByRole("button"),
-	).toHaveCount(5);
+	).toHaveCount(6);
 });
 
 test("the hero shows the system illustration and the spotlight has its own band", async ({
