@@ -107,3 +107,5 @@ Pasos: ajustar #16, #38 y #54 → `pnpm qa:seed` (solo texto, en la DB compartid
 - Hechas: migraciones (enum `orderVolume` y tabla `supplier_application`), `qa:seed` (#15 y #17 retirados, #33 con el texto nuevo), Blob token, `db:seed:init` (Quintal activo con 88 productos, 88 supplier terms y 88 client terms) y `NODE_ENV` de producción.
 - Pendiente: reabrir los 26 tickets (hoy hay 10 `failed`, 9 `needsClarification` y 7 `blocked`) y corregir la dirección placeholder de Quintal. El número de WhatsApp queda diferido a propósito.
 - Riesgo: el `.env` local no define `APP_ENV`, así que el guard de `db:seed:test` deja pasar el comando contra la DB que tiene el catálogo real.
+
+**F1 + #78 (2026-10-09):** el grill de diseño quedó en `docs/architecture/features/customer-delivery-preference.md` y en el ADR 0011. La implementación está en `docs/plans/customer-delivery-preference.md` (§17, mergeada en `ffd231b`). El copy de #78 y del paso 5 espera en la rama `f1-home-copy` hasta que existan puntos de retiro activos. El ticket de vocabulario abierto con #79 se planificó en `docs/plans/customer-vocabulary-pedido.md`.
