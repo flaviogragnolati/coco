@@ -51,7 +51,7 @@ export function CartSheet({
 			<SheetContent className="gap-0" side="right">
 				<SheetHeader>
 					<div className="flex items-center justify-between gap-3 pr-8">
-						<SheetTitle>Tu carrito</SheetTitle>
+						<SheetTitle>Tu pedido</SheetTitle>
 						{hasHydrated && hasItems ? (
 							<Badge variant="secondary">
 								{cart.itemCount} {cart.itemCount === 1 ? "línea" : "líneas"}
@@ -59,7 +59,7 @@ export function CartSheet({
 						) : null}
 					</div>
 					<SheetDescription>
-						Revisá cantidades y subtotales antes de ir al carrito completo.
+						Revisá cantidades y subtotales antes de ver el pedido completo.
 					</SheetDescription>
 				</SheetHeader>
 
@@ -90,7 +90,7 @@ export function CartSheet({
 								<EmptyMedia variant="icon">
 									<PackageSearchIcon />
 								</EmptyMedia>
-								<EmptyTitle>Tu carrito está vacío</EmptyTitle>
+								<EmptyTitle>Tu pedido está vacío</EmptyTitle>
 								<EmptyDescription>
 									Agregá productos del catálogo para empezar a armar tu pedido.
 								</EmptyDescription>
@@ -162,7 +162,7 @@ export function CartSheet({
 							onClick={closeMiniCart}
 							variant="outline"
 						>
-							<Link href="/cart">Ver carrito completo</Link>
+							<Link href="/cart">Ver pedido completo</Link>
 						</Button>
 					</SheetFooter>
 				) : null}

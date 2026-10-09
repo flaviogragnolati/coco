@@ -124,7 +124,7 @@ export function ProductDetailsDialog({
 							{activeCartItem ? (
 								<Badge variant="success">
 									<CheckIcon data-icon="inline-start" />
-									En carrito
+									En tu pedido
 								</Badge>
 							) : null}
 						</div>
@@ -300,7 +300,7 @@ export function ProductDetailsDialog({
 							type="button"
 						>
 							<ShoppingCartIcon data-icon="inline-start" />
-							Agregar al carrito
+							Sumar al pedido
 						</Button>
 					) : null}
 				</DialogFooter>

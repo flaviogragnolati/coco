@@ -47,7 +47,7 @@ export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
 		// Every error must settle the bootstrap: leaving it unfinished would hang
 		// every screen gated on it.
 		onError(error) {
-			const message = error.message || "No se pudo sincronizar el carrito";
+			const message = error.message || "No se pudo sincronizar tu pedido";
 			toast.error(message);
 
 			if (error.data?.code === "PRECONDITION_FAILED") {
@@ -179,7 +179,7 @@ export function useCartActions({
 
 	const setItemMutation = api.cart.setItemQuantity.useMutation({
 		onError(error) {
-			toast.error(error.message || "No se pudo actualizar el carrito");
+			toast.error(error.message || "No se pudo actualizar tu pedido");
 		},
 		onSuccess: applyOutput,
 	});
@@ -193,21 +193,21 @@ export function useCartActions({
 
 	const clearMutation = api.cart.clear.useMutation({
 		onError(error) {
-			toast.error(error.message || "No se pudo vaciar el carrito");
+			toast.error(error.message || "No se pudo vaciar tu pedido");
 		},
 		onSuccess(output) {
 			applyOutput(output);
-			toast.success("Carrito vaciado");
+			toast.success("Pedido vaciado");
 		},
 	});
 
 	const leaveCheckoutMutation = api.checkout.leave.useMutation({
 		onError(error) {
-			toast.error(error.message || "No se pudo volver a editar el carrito");
+			toast.error(error.message || "No se pudo volver a editar tu pedido");
 		},
 		onSuccess(snapshot) {
 			replaceCart(snapshot, userId ?? null);
-			toast.success("Cerramos el checkout. Ya podés editar el carrito.");
+			toast.success("Cerramos el checkout. Ya podés editar tu pedido.");
 		},
 	});
 
@@ -222,7 +222,7 @@ export function useCartActions({
 			upsertItem(item);
 
 			if (!isAuthenticated || !userId) {
-				toast.success("Producto agregado al carrito");
+				toast.success("Producto agregado a tu pedido");
 				return;
 			}
 
@@ -266,7 +266,7 @@ export function useCartActions({
 			removeLocalItem(productClientTermsId);
 
 			if (!isAuthenticated || !userId) {
-				toast.info("Producto quitado del carrito");
+				toast.info("Producto quitado de tu pedido");
 				return;
 			}
 
@@ -279,7 +279,7 @@ export function useCartActions({
 		clearLocalCart();
 
 		if (!isAuthenticated || !userId) {
-			toast.info("Carrito vaciado");
+			toast.info("Pedido vaciado");
 			return;
 		}
 

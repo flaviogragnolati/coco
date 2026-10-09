@@ -65,7 +65,7 @@ export function ProductCard({
 					<CardAction>
 						<Badge variant="success">
 							<CheckIcon data-icon="inline-start" />
-							En carrito
+							En tu pedido
 						</Badge>
 					</CardAction>
 				) : null}

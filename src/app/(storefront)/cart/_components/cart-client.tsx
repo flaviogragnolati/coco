@@ -65,9 +65,8 @@ export function CartClient({
 						</Link>
 					</Button>
 				}
-				description="Revisá cantidades, subtotales estimados y el estado antes de continuar."
-				eyebrow="Carrito"
-				title="Tu pedido mayorista compartido"
+				description="Lo que vas a pagar al confirmar."
+				title="Tu pedido"
 			/>
 
 			{mergeBlocked ? (
@@ -76,11 +75,11 @@ export function CartClient({
 					<AlertTitle>Productos pendientes de agregar</AlertTitle>
 					<AlertDescription>
 						{mergeBlockedMessage ??
-							"No pudimos sumar estos productos a tu carrito."}{" "}
-						Los productos de abajo quedaron guardados en este browser y todavía
-						no forman parte de tu carrito. Cuando se resuelva el pago en curso,
-						recargá la página para agregarlos, o descartalos para retomar ese
-						pago.
+							"No pudimos sumar estos productos a tu pedido."}{" "}
+						Los productos de abajo quedaron guardados en este navegador y
+						todavía no forman parte de tu pedido. Cuando se resuelva el pago en
+						curso, recargá la página para agregarlos, o descartalos para retomar
+						ese pago.
 					</AlertDescription>
 					<div className="col-start-2 mt-2">
 						<Button
@@ -103,7 +102,7 @@ export function CartClient({
 						<EmptyMedia variant="icon">
 							<PackageSearchIcon />
 						</EmptyMedia>
-						<EmptyTitle>Tu carrito está vacío</EmptyTitle>
+						<EmptyTitle>Tu pedido está vacío</EmptyTitle>
 						<EmptyDescription>
 							Agregá productos del catálogo para empezar a armar tu pedido.
 						</EmptyDescription>

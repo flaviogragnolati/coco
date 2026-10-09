@@ -145,7 +145,7 @@ export default async function OrderDetailPage({
 					Pedido {order.code}
 				</h1>
 				<p className="text-muted-foreground text-sm/relaxed">
-					Carrito de origen {order.cartCode}
+					Código de armado {order.cartCode}
 				</p>
 			</section>
 

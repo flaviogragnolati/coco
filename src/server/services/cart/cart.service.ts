@@ -173,7 +173,7 @@ async function assertUsableTerms(
 	if (!terms || !isClientTermsUsable(terms, now)) {
 		throw new TRPCError({
 			code: "CONFLICT",
-			message: "El producto ya no esta disponible para agregar al carrito",
+			message: "El producto ya no está disponible para sumar a tu pedido",
 		});
 	}
 

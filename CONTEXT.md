@@ -265,7 +265,7 @@ The customer-facing flow that turns an at-checkout cart into a submitted order p
 _Avoid_: Order placement, purchase flow
 
 **Leave checkout**:
-The explicit way back from a frozen at-checkout cart to an editable one: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why editing the cart mid-checkout is offered as leaving rather than as a direct edit. Blocked while a payment is in process. Spanish-facing UI labels it "Volver a editar el carrito".
+The explicit way back from a frozen at-checkout cart to an editable one: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why editing the cart mid-checkout is offered as leaving rather than as a direct edit. Blocked while a payment is in process. Spanish-facing UI labels it "Volver a editar el pedido".
 _Avoid_: Cancel checkout, abort checkout, unfreeze
 
 ### Legal and site content

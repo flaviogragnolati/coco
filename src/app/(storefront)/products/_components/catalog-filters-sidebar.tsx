@@ -231,7 +231,7 @@ export function CatalogFiltersSidebar({
 				className="flex items-center justify-between gap-2"
 				htmlFor={inCartId}
 			>
-				<span className="text-sm">Solo en carrito</span>
+				<span className="text-sm">Solo en mi pedido</span>
 				<Switch
 					checked={filters.inCartOnly}
 					id={inCartId}

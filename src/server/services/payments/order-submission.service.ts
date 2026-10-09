@@ -72,7 +72,8 @@ export async function submitOrderForCompletedPayment(
 				if (!orderItem) {
 					throw new TRPCError({
 						code: "INTERNAL_SERVER_ERROR",
-						message: "No se pudo vincular el item del carrito con el pedido.",
+						message:
+							"No se pudo vincular un producto de tu pedido al confirmarlo.",
 					});
 				}
 

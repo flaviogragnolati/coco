@@ -149,9 +149,9 @@ export function CheckoutClient() {
 	});
 
 	// Waits for the navbar bootstrap to land the guest cart on the server: a
-	// start fired on hydration alone races it and gets "No encontramos un carrito
-	// activo para iniciar checkout." (finding #2). CheckoutLoadingState covers the
-	// screen meanwhile, since `checkout` is still null.
+	// start fired on hydration alone races it and gets "No encontramos tu pedido
+	// para iniciar checkout." CheckoutLoadingState covers the screen meanwhile,
+	// since `checkout` is still null.
 	useEffect(() => {
 		if (startRequested.current) return;
 		if (!canStartCheckout({ bootstrapState, hasHydrated })) return;
@@ -205,7 +205,7 @@ export function CheckoutClient() {
 
 	const leaveCheckout = api.checkout.leave.useMutation({
 		onError(error) {
-			toast.error(error.message || "No se pudo volver al carrito");
+			toast.error(error.message || "No se pudo volver a tu pedido");
 		},
 		onSuccess(snapshot) {
 			replaceCart(snapshot, syncedUserId);
@@ -255,7 +255,7 @@ export function CheckoutClient() {
 	const startBlockedMessage =
 		bootstrapState === "blocked" && !checkout
 			? (bootstrapBlockedMessage ??
-				"No pudimos sumar a tu carrito los productos que agregaste sin sesión.")
+				"No pudimos sumar a tu pedido los productos que agregaste sin sesión.")
 			: null;
 
 	if (
@@ -276,12 +276,12 @@ export function CheckoutClient() {
 					<AlertDescription>
 						{startBlockedMessage ??
 							startCheckout.error?.message ??
-							"Revisá tu carrito antes de continuar."}
+							"Revisá tu pedido antes de continuar."}
 					</AlertDescription>
 				</Alert>
 				<div className="flex flex-wrap gap-2">
 					<Button asChild variant="outline">
-						<Link href="/cart">Volver al carrito</Link>
+						<Link href="/cart">Volver a tu pedido</Link>
 					</Button>
 					{startBlockedMessage ? (
 						<Button
@@ -309,7 +309,7 @@ export function CheckoutClient() {
 						<EmptyMedia variant="icon">
 							<PackageSearchIcon />
 						</EmptyMedia>
-						<EmptyTitle>Tu carrito está vacío</EmptyTitle>
+						<EmptyTitle>Tu pedido está vacío</EmptyTitle>
 						<EmptyDescription>
 							Quitaste todos los productos. Agregá items para retomar el
 							checkout.
@@ -318,7 +318,7 @@ export function CheckoutClient() {
 					<EmptyContent>
 						<div className="flex gap-2">
 							<Button asChild variant="outline">
-								<Link href="/cart">Ver carrito</Link>
+								<Link href="/cart">Ver tu pedido</Link>
 							</Button>
 							<Button asChild>
 								<Link href="/products">Ver productos</Link>
@@ -417,7 +417,7 @@ export function CheckoutClient() {
 						variant="outline"
 					>
 						<ChevronLeftIcon data-icon="inline-start" />
-						Volver al carrito
+						Volver a tu pedido
 					</Button>
 				}
 				description="Cuatro pasos para dejar tu pedido listo para la agregación mayorista."

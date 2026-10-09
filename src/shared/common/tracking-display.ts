@@ -88,6 +88,13 @@ export const trackingEventLabelMap: Record<TrackingEventType, string> = {
 	deliveryPreferenceChanged: "Cambiamos tu entrega",
 };
 
+/** The customer never reads "carrito"; admin wording stays in the map above. */
+export const customerTrackingEventLabelMap: Record<TrackingEventType, string> =
+	{
+		...trackingEventLabelMap,
+		addedToCart: "Producto agregado a tu pedido",
+	};
+
 export const trackingSourceLabelMap: Record<TrackingEventSource, string> = {
 	user: "Usuario",
 	admin: "Admin",

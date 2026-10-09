@@ -89,7 +89,7 @@ export function CatalogTable({
 											{cartItem ? (
 												<Badge variant="success">
 													<CheckIcon data-icon="inline-start" />
-													En carrito
+													En tu pedido
 												</Badge>
 											) : null}
 										</span>

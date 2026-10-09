@@ -47,7 +47,7 @@ export function CheckoutOrderStep({
 							<EmptyMedia variant="icon">
 								<PackageSearchIcon />
 							</EmptyMedia>
-							<EmptyTitle>Tu carrito está vacío</EmptyTitle>
+							<EmptyTitle>Tu pedido está vacío</EmptyTitle>
 							<EmptyDescription>
 								Agregá productos del catálogo para continuar con el checkout.
 							</EmptyDescription>
@@ -75,7 +75,7 @@ export function CheckoutOrderStep({
 					</div>
 					<Button onClick={onEditCart} type="button" variant="outline">
 						<PencilIcon data-icon="inline-start" />
-						Editar carrito
+						Editar pedido
 					</Button>
 				</div>
 			</CardHeader>

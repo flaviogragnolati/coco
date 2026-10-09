@@ -35,7 +35,7 @@ export default async function MyOrdersPage() {
 						</EmptyMedia>
 						<EmptyTitle>Todavía no tenés pedidos</EmptyTitle>
 						<EmptyDescription>
-							Armá un carrito para sumarte a una compra mayorista compartida.
+							Armá tu pedido para sumarte a una compra mayorista compartida.
 						</EmptyDescription>
 					</EmptyHeader>
 					<EmptyContent>

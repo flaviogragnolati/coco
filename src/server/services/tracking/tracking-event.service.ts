@@ -16,6 +16,7 @@ import type {
 import {
 	customerNoticeDetail,
 	customerNoticeReason,
+	customerTrackingEventLabelMap,
 	type TrackingEventType,
 	trackingEventLabelMap,
 	type UserTrackingStageKey,
@@ -274,6 +275,12 @@ function labelFor(eventType: string) {
 	return trackingEventLabelMap[eventType as TrackingEventType] ?? eventType;
 }
 
+function customerLabelFor(eventType: string) {
+	return (
+		customerTrackingEventLabelMap[eventType as TrackingEventType] ?? eventType
+	);
+}
+
 function toAdminRefs(record: TimelineTrackingEventRecord) {
 	return {
 		operationId: record.operationId,
@@ -295,7 +302,7 @@ function toUserTimelineItem(
 		source: record.source,
 		quantity: record.quantity?.toString(),
 		createdAt: record.createdAt.toISOString(),
-		label: labelFor(record.eventType),
+		label: customerLabelFor(record.eventType),
 	};
 }
 
@@ -457,7 +464,7 @@ function toUserOrderItemTimeline(
 			notices.push({
 				eventType: record.eventType,
 				kind: noticeKind,
-				label: labelFor(record.eventType),
+				label: customerLabelFor(record.eventType),
 				quantity: record.quantity?.toString(),
 				detail: customerNoticeDetail(
 					record.eventType as TrackingEventType,
