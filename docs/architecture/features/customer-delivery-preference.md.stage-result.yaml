@@ -1,0 +1,54 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-grill-design"
+  mode: "standalone"
+  outcome: "completed"
+  authored_outputs:
+    - artifact_type: "feature-architecture"
+      path: "docs/architecture/features/customer-delivery-preference.md"
+      lifecycle: "Working"
+      source_item_id: "report:F1, qa_ticket:#78"
+    - artifact_type: "adr"
+      path: "docs/adr/0011-delivery-preference-lives-on-the-order.md"
+      lifecycle: "Working"
+      source_item_id: "docs/architecture/features/customer-delivery-preference.md"
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "glossary"
+      path: "CONTEXT.md"
+      change: "Pickup point and Delivery preference entries refined"
+  references_added: []
+  traceability_delta:
+    - {item: "report:F1", refined_by: "customer-delivery-preference.md §4-§15"}
+    - {item: "qa_ticket#78", refined_by: "customer-delivery-preference.md §11 (copy A), stage S-E"}
+  decisions_added_or_updated:
+    - "Pickup orders ask no address (user, 2026-10-08)"
+    - "Override reason is admin text shown verbatim to the customer (user, 2026-10-08)"
+    - "No customer change after payment; contact + admin override (user, 2026-10-08)"
+    - "Override lives on the order; shipments must match the preference (user, 2026-10-08)"
+    - "Deactivating a pickup point is allowed with a warning (user, 2026-10-08)"
+    - "Depot handover needs no override (user, 2026-10-08)"
+    - "FAQ #78 and step 5 copy A (user, 2026-10-08)"
+    - "Preference stored as UserOrder columns + snapshot; destination snapshot derived server-side; retry keeps destination; reuse path refreshes delivery snapshots; hours free text (grill)"
+  risks_added_or_updated:
+    - "Package-to-order resolution in the shipment picker is a multi-hop query"
+    - "Releasing checkout before the admin side would create unenforced preferences; gated by creating pickup points after deploy"
+  stale_artifacts:
+    - path: "docs/fulfillment-reference.md"
+      proposed_change: "§6 delivery modes: customer preference, match rule, pickup point entity"
+    - path: "docs/tracking-architecture.md"
+      proposed_change: "New userOrder.deliveryPreferenceChanged event and customer notice reason entry"
+    - path: "docs/schema-reference.md"
+      proposed_change: "PickupPoint model, UserOrder and Shipment fields, new tracking type"
+    - path: "docs/plans/qa-open-tickets-2026-10-report.md"
+      proposed_change: "F1/#78 rows point to this architecture document"
+  blockers: []
+  warnings:
+    - "Repo convention places feature architecture in docs/architecture/features and ADRs in docs/adr, not docs/development-workflow/architecture"
+  required_user_actions:
+    - "Review technical decisions D10-D15"
+  next_recommended_action: "q-code-implementation-plan over docs/architecture/features/customer-delivery-preference.md (slices S-A..S-E)"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true

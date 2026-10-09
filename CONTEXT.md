@@ -111,11 +111,11 @@ How an outbound package reaches its customer: home delivery and pickup point bot
 _Avoid_: Shipping method, delivery type
 
 **Pickup point**:
-A shared address an end-user shipment travels to, where each customer collects their own package afterwards. Its arrival is not a handover, so every package on it still needs its own delivery confirmation. Spanish-facing UI labels it "Punto de retiro".
+An admin-managed place — address, opening hours and instructions — that an end-user shipment travels to and where each customer collects their own package afterwards. Customers pick one at checkout. Its arrival is not a handover, so every package on it still needs its own delivery confirmation. Distinct from the internal warehouse. Spanish-facing UI labels it "Punto de retiro".
 _Avoid_: Depot, warehouse, destination, centro de retiro
 
 **Delivery preference**:
-The delivery mode — and, for a pickup point, which one — a customer picks at checkout. It pre-fills the end-user shipment; an admin may override it, and the override is audited and visible to the customer. Distinct from the delivery mode the shipment actually records.
+The delivery mode — and, for a pickup point, which one — a customer picks at checkout and the order stores. An end-user shipment may only carry packages whose order preference matches its mode and pickup point. An admin changes it only on the order ("Cambiar entrega"), with a reason the customer reads in their journey, and only while none of the order's packages is on an end-user shipment. Depot pickup needs no change. Distinct from the delivery mode the shipment actually records. Spanish-facing UI labels it "Entrega".
 _Avoid_: Delivery mode (for the customer's choice), shipping option
 
 **Package recovery**:
