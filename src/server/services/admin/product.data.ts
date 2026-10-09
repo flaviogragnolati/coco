@@ -227,6 +227,24 @@ export async function hardDeleteProduct(db: AdminDbClient, id: number) {
 	});
 }
 
+/** Includes soft-deleted products, which keep their images in case they are restored. */
+export async function findOtherProductsUsingImages(
+	db: AdminDbClient,
+	input: { excludeId: number; urls: string[] },
+) {
+	return db.product.findMany({
+		where: {
+			id: { not: input.excludeId },
+			OR: [
+				{ cardImageUrl: { in: input.urls } },
+				{ cartImageUrl: { in: input.urls } },
+				{ images: { hasSome: input.urls } },
+			],
+		},
+		select: { cardImageUrl: true, cartImageUrl: true, images: true },
+	});
+}
+
 export async function getProductRelationCounts(db: AdminDbClient, id: number) {
 	return db.product.findUnique({
 		where: { id },
