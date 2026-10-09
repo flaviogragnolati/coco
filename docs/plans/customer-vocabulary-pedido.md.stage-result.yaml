@@ -1,0 +1,32 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-grill-simple"
+  mode: "standalone"
+  outcome: "completed"
+  authored_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/customer-vocabulary-pedido.md"
+      lifecycle: "Working"
+      source_item_id: "report:qa-open-tickets-2026-10 #79 follow-up (vocabulary ticket)"
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "glossary"
+      path: "CONTEXT.md"
+      change: "Cart entry added with Spanish label \"Tu pedido\"; Mini-cart label"
+  references_added: []
+  traceability_delta:
+    - {item: "qa_ticket#79 follow-up: vocabulary carrito/pedido", refined_by: "docs/plans/customer-vocabulary-pedido.md"}
+  decisions_added_or_updated:
+    - "\"Pedido\" for the pre-payment cart in all customer copy; \"Mis pedidos\" unchanged (user, 2026-10-09)"
+    - "Filter \"Solo en mi pedido\"; /cart title \"Tu pedido\", subtitle \"Lo que vas a pagar al confirmar\" (user, 2026-10-09)"
+  risks_added_or_updated:
+    - "Checkout copy overlaps with the in-flight F1 change; implement after F1 merges"
+  stale_artifacts: []
+  blockers: []
+  warnings: []
+  required_user_actions: []
+  next_recommended_action: "q-code-implement docs/plans/customer-vocabulary-pedido.md after the F1 branch merges"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true

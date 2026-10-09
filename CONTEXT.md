@@ -252,8 +252,12 @@ _Avoid_: Minimum, batch size
 Client terms with no step: the MOQ is the only purchasable quantity, so the customer cannot raise or lower it. Spanish-facing UI labels it "Cantidad fija".
 _Avoid_: Fixed pack, cantidad cerrada
 
+**Cart**:
+A customer's open collection of items before checkout; it becomes a submitted user order when paid. Spanish-facing UI labels it "Tu pedido" — never "carrito" — and the paid orders are listed under "Mis pedidos".
+_Avoid_: Carrito, basket
+
 **Mini-cart**:
-The slide-over cart preview opened from the navbar and when adding a product. A quick view that complements, and never replaces, the full cart page.
+The slide-over cart preview opened from the navbar and when adding a product. A quick view that complements, and never replaces, the full cart page. Spanish-facing UI titles it "Tu pedido".
 _Avoid_: Cart drawer, cart popover
 
 **Checkout**:
