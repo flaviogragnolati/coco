@@ -1,3 +1,6 @@
+import { del } from "@vercel/blob";
+import { env } from "~/env";
+import type { Prisma } from "~/prisma/client";
 import { adminOptionsOutputSchema } from "~/schemas/admin/_options.schemas";
 import { brandDetailSchema } from "~/schemas/admin/brand.schemas";
 import {
@@ -11,6 +14,7 @@ import {
 	type CatalogProductDetailRecord,
 	findCatalogProductDetail,
 } from "~/server/services/catalog/catalog.data";
+import { appLogger } from "~/server/services/logging/app-logger.service";
 import type {
 	ProductBrandAssignment,
 	ProductCreateInput,
@@ -36,6 +40,7 @@ import { AdminCrudError, throwNotFound } from "./_base/admin-crud.errors";
 import { createBrand } from "./brand.data";
 import {
 	createProduct,
+	findOtherProductsUsingImages,
 	findProductBrandById,
 	findProductById,
 	findProductSupplierById,
@@ -50,6 +55,10 @@ import {
 	softDeleteProduct,
 	updateProduct,
 } from "./product.data";
+import {
+	type ProductImageFields,
+	productImageUrlsToDelete,
+} from "./product-image-cleanup";
 
 type AdminDb = typeof db;
 
@@ -251,6 +260,48 @@ function toProductWriteInput(
 	};
 }
 
+async function findUnusedProductImageUrls(
+	tx: Prisma.TransactionClient,
+	productId: number,
+	before: ProductImageFields,
+	after: ProductImageFields | null,
+) {
+	const candidates = productImageUrlsToDelete({ before, after });
+	if (candidates.length === 0) return [];
+
+	const otherProducts = await findOtherProductsUsingImages(tx, {
+		excludeId: productId,
+		urls: candidates,
+	});
+	return productImageUrlsToDelete({ before, after, otherProducts });
+}
+
+/** Runs after commit and never throws: an orphaned blob is cheaper than a failed save. */
+async function deleteProductImageBlobs(urls: string[]) {
+	if (urls.length === 0) return;
+
+	const token = env.BLOB_READ_WRITE_TOKEN;
+	if (!token) {
+		appLogger.warn("productImageDeleteSkipped", {
+			reason: "missingBlobToken",
+			urls,
+		});
+		return;
+	}
+
+	try {
+		await del(urls, { token });
+	} catch (error) {
+		appLogger.error("productImageDeleteFailed", {
+			urls,
+			error:
+				error instanceof Error
+					? { message: error.message, name: error.name }
+					: { message: String(error) },
+		});
+	}
+}
+
 export async function list(input: ProductListInput, database: AdminDb) {
 	const records = await listProducts(database, input);
 	return productListOutputSchema.parse(records);
@@ -341,7 +392,7 @@ export async function update(
 	actor: AdminMutationActor,
 	database: AdminDb,
 ) {
-	return database.$transaction(async (tx) => {
+	const { after, unusedImageUrls } = await database.$transaction(async (tx) => {
 		const beforeRecord = await findProductById(tx, input.id);
 		if (!beforeRecord) throwNotFound("Producto");
 		const before = parseDetail(beforeRecord);
@@ -380,8 +431,19 @@ export async function update(
 			after,
 		});
 
-		return after;
+		return {
+			after,
+			unusedImageUrls: await findUnusedProductImageUrls(
+				tx,
+				after.id,
+				before,
+				after,
+			),
+		};
 	});
+
+	await deleteProductImageBlobs(unusedImageUrls);
+	return after;
 }
 
 export async function softDelete(
@@ -415,7 +477,7 @@ export async function hardDelete(
 	actor: AdminMutationActor,
 	database: AdminDb,
 ) {
-	return database.$transaction(async (tx) => {
+	const { id, unusedImageUrls } = await database.$transaction(async (tx) => {
 		const product = await getProductRelationCounts(tx, input.id);
 		if (!product) throwNotFound("Producto");
 
@@ -443,6 +505,17 @@ export async function hardDelete(
 			metadata: { hardDelete: true },
 		});
 
-		return { id: deleted.id };
+		return {
+			id: deleted.id,
+			unusedImageUrls: await findUnusedProductImageUrls(
+				tx,
+				deleted.id,
+				before,
+				null,
+			),
+		};
 	});
+
+	await deleteProductImageBlobs(unusedImageUrls);
+	return { id };
 }

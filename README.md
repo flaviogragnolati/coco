@@ -42,6 +42,17 @@ in the Vercel project (Storage → Blob) and connect it, which sets the variable
 for the linked environments; copy it into `.env` for local uploads. Without it
 the upload endpoint answers 503 and image URLs can still be pasted by hand.
 
+Saving a product deletes the uploaded images it no longer uses: when an update
+replaces or removes the card, cart or a gallery image, or the product is
+deleted permanently, each dropped image is deleted from the store after the
+database change commits. Only Vercel Blob URLs under `products/` are
+deleted; other pasted URLs are never touched, and an image still used by
+another product (deleted ones included) is kept. Soft-deleting a product keeps
+its images so it can be restored. A Blob error or a missing token never fails
+the save: it is logged (`productImageDeleteFailed`, `productImageDeleteSkipped`)
+and the image stays in the store. Images uploaded from a form that was then
+cancelled are not cleaned up.
+
 ## What's next? How do I make an app with this?
 
 We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
