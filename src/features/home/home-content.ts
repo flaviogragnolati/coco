@@ -15,7 +15,7 @@ export const howItWorksSteps = [
 	"Coco consolida los pedidos para acceder al precio mayorista.",
 	"No somos una distribuidora: coordinamos los recursos para comprar lo que vos necesitás.",
 	"El pedido sale desde origen con destino a tu ciudad.",
-	"Cuando llega, te lo llevamos a la dirección que cargaste o te avisamos para retirarlo en nuestro punto de retiro.",
+	"Al llegar, lo retirás en el punto de retiro que elegiste o te lo llevamos a tu dirección.",
 ];
 
 export const footerColumns = [
@@ -48,6 +48,11 @@ export const faqItems = [
 		question: "¿Cuánto tarda en llegar mi compra?",
 		answer:
 			"En promedio, entre 7 y 10 días desde que tu pedido entra en preparación. El pedido sale directo desde origen — muchas veces desde otra provincia — y hasta Tierra del Fuego el camino tiene un tramo particular: al ser una isla, el camión cruza a Chile, atraviesa el Estrecho de Magallanes en balsa, reingresa a la Argentina y cruza la cordillera hasta Ushuaia. Vas a ver cada etapa en Mis pedidos.",
+	},
+	{
+		question: "¿Cómo retiro mi pedido o lo recibo en casa?",
+		answer:
+			"Lo elegís al confirmar tu pedido: te lo llevamos a la dirección que cargues o lo retirás en uno de nuestros puntos de retiro, en el horario que indicamos. Las dos opciones cuestan lo mismo.",
 	},
 	{
 		question: "¿Necesito una cuenta para ver productos?",
