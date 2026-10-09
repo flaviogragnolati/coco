@@ -14,6 +14,7 @@ import {
 	productClientTermsIdSchema,
 } from "~/schemas/admin/product-client-terms.schemas";
 import { userRoleSchema } from "~/schemas/admin/user.schemas";
+import { deliveryModeSchema } from "~/schemas/pickup-point.schemas";
 
 export const operationsCartIdSchema = z
 	.number()
@@ -225,6 +226,8 @@ const operationsUserOrderSchema = z.object({
 	status: operationsUserOrderStatusSchema,
 	billingAddressSnapshot: z.unknown().nullable(),
 	shippingAddressSnapshot: z.unknown().nullable(),
+	deliveryPreference: deliveryModeSchema.nullable(),
+	pickupPointSnapshot: z.unknown().nullable(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
 	items: z.array(operationsUserOrderItemSchema),

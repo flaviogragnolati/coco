@@ -1,13 +1,24 @@
+"use client";
+
+import { useState } from "react";
+
+import { Button } from "~/components/ui/button";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import {
 	orderStatusConfig,
 	transactionStatusConfig,
 } from "~/features/admin/crud/operations-cart/operations-cart.mappers";
+import { OrderDeliveryChangeDialog } from "~/features/admin/crud/user-order/order-delivery-change-dialog";
 import type {
 	CartTraceabilityOrder,
 	CartTraceabilityPayment,
 } from "~/shared/common/cart-traceability.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
+import {
+	describeOrderDelivery,
+	formatOrderDelivery,
+} from "~/shared/common/delivery-display";
+import { api } from "~/trpc/react";
 
 function PaymentRow({ payment }: { payment: CartTraceabilityPayment }) {
 	return (
@@ -31,6 +42,46 @@ function PaymentRow({ payment }: { payment: CartTraceabilityPayment }) {
 	);
 }
 
+function OrderDeliveryBlock({ order }: { order: CartTraceabilityOrder }) {
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const utils = api.useUtils();
+	const delivery = describeOrderDelivery(order);
+
+	return (
+		<div className="flex flex-col gap-1">
+			<div className="flex items-center justify-between gap-2">
+				<span className="text-muted-foreground text-xs">Entrega</span>
+				{order.status === "processing" ? (
+					<Button
+						onClick={() => setDialogOpen(true)}
+						size="sm"
+						type="button"
+						variant="outline"
+					>
+						Cambiar entrega
+					</Button>
+				) : null}
+			</div>
+			<span className="text-xs">
+				{delivery
+					? formatOrderDelivery(delivery)
+					: "Sin elección (pedido anterior al checkout con entrega)"}
+			</span>
+			{delivery?.instructions ? (
+				<span className="text-muted-foreground text-xs">
+					{delivery.instructions}
+				</span>
+			) : null}
+			<OrderDeliveryChangeDialog
+				onChanged={() => utils.admin.cartTraceability.invalidate()}
+				onOpenChange={setDialogOpen}
+				open={dialogOpen}
+				orderId={order.id}
+			/>
+		</div>
+	);
+}
+
 function OrderCard({ order }: { order: CartTraceabilityOrder }) {
 	return (
 		<article className="flex flex-col gap-2 rounded-2xl border p-3">
@@ -43,6 +94,8 @@ function OrderCard({ order }: { order: CartTraceabilityOrder }) {
 				</div>
 				<StatusChip config={orderStatusConfig[order.status]} />
 			</div>
+
+			<OrderDeliveryBlock order={order} />
 
 			<div className="flex flex-col gap-2">
 				<span className="text-muted-foreground text-xs">Intentos de pago</span>

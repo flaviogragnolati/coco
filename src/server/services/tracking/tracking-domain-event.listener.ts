@@ -33,6 +33,7 @@ const supportedEventTypes = new Set<DomainEventInput["type"]>([
 	"rollover.preAllocation.created",
 	"rollover.postAllocation.created",
 	"rollover.resolved",
+	"userOrder.deliveryPreferenceChanged",
 ]);
 
 export class TrackingDomainEventListener implements DomainEventListener {

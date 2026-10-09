@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deliveryModeSchema } from "~/schemas/pickup-point.schemas";
 
 type JsonSafeValue =
 	| string
@@ -340,6 +341,32 @@ export const rolloverResolvedEventSchema = baseDomainEventSchema.extend({
 	}),
 });
 
+const deliveryChoiceSchema = z.object({
+	mode: deliveryModeSchema,
+	pickupPointName: z.string().optional(),
+});
+
+/**
+ * An admin changed the delivery a customer chose ("Cambiar entrega"). One event
+ * per order; the tracking listener fans it out to every live item so each one's
+ * journey shows the notice. `reason` is admin text the customer reads verbatim.
+ * `before.mode` is null for an order paid before the customer could choose.
+ */
+export const userOrderDeliveryPreferenceChangedEventSchema =
+	baseDomainEventSchema.extend({
+		type: z.literal("userOrder.deliveryPreferenceChanged"),
+		aggregateType: z.literal("UserOrder"),
+		payload: z.object({
+			orderId: z.string(),
+			cartItemIds: z.array(z.string()).min(1),
+			before: deliveryChoiceSchema.extend({
+				mode: deliveryModeSchema.nullable(),
+			}),
+			after: deliveryChoiceSchema,
+			reason: z.string().min(1),
+		}),
+	});
+
 export const domainEventSchema = z.discriminatedUnion("type", [
 	cartItemSubmittedToOrderEventSchema,
 	adminCartItemAddedEventSchema,
@@ -362,6 +389,7 @@ export const domainEventSchema = z.discriminatedUnion("type", [
 	rolloverPreAllocationCreatedEventSchema,
 	rolloverPostAllocationCreatedEventSchema,
 	rolloverResolvedEventSchema,
+	userOrderDeliveryPreferenceChangedEventSchema,
 ]);
 
 export const domainEventTypeSchema = z.enum([
@@ -386,6 +414,7 @@ export const domainEventTypeSchema = z.enum([
 	"rollover.preAllocation.created",
 	"rollover.postAllocation.created",
 	"rollover.resolved",
+	"userOrder.deliveryPreferenceChanged",
 ]);
 
 export type DomainEventInput = z.infer<typeof domainEventSchema>;

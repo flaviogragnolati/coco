@@ -1,3 +1,8 @@
+import {
+	type DeliveryChoice,
+	describeDeliveryChoice,
+} from "./delivery-display";
+
 export const trackingEventTypes = [
 	"addedToCart",
 	"submittedToOrder",
@@ -158,6 +163,7 @@ export const userTrackingNoticeKindByEventType: Partial<
 	// A notice, never a stage: reaching the pickup point is not the handover, so it
 	// is deliberately absent from both stage maps. The customer still has to collect.
 	arrivedAtPickupPoint: "info",
+	deliveryPreferenceChanged: "info",
 	cartItemCancelled: "cancelled",
 	cartItemRemoved: "cancelled",
 	cartItemQuantityChanged: "quantity",
@@ -175,12 +181,17 @@ const postAllocationRollOverReasons = [
 	["supplierOrderId", "El proveedor no confirmó toda la cantidad pedida."],
 ] as const;
 
+/** Event types whose dialog asks the admin for a reason the customer will read. */
+const verbatimReasonEventTypes: ReadonlySet<TrackingEventType> = new Set([
+	"fulfillmentException",
+	"deliveryPreferenceChanged",
+]);
+
 /**
  * The reason a customer notice may show, if any. Decided by event type, not
  * notice kind: the `rollover` kind also covers a roll over resolution and an
  * operation compensation, whose reasons are internal operator notes. Only an
- * exception shows its `metadata.reason` verbatim, because its dialog asks the
- * admin for a reason the customer will read.
+ * exception and a delivery change show their `metadata.reason` verbatim.
  */
 export function customerNoticeReason(
 	eventType: TrackingEventType,
@@ -191,12 +202,46 @@ export function customerNoticeReason(
 	if (eventType === "rolledOverPostAllocation") {
 		return postAllocationRollOverReasons.find(([ref]) => ref in metadata)?.[1];
 	}
-	if (eventType !== "fulfillmentException") return undefined;
+	if (!verbatimReasonEventTypes.has(eventType)) return undefined;
 
 	const reason = (metadata as { reason?: unknown }).reason;
 	if (typeof reason !== "string") return undefined;
 
 	return reason.trim() || undefined;
+}
+
+function readDeliveryChoice(value: unknown): DeliveryChoice | null {
+	if (typeof value !== "object" || value === null) return null;
+	const { mode, pickupPointName } = value as Record<string, unknown>;
+	if (mode !== null && mode !== "homeDelivery" && mode !== "pickupPoint") {
+		return null;
+	}
+	return {
+		mode,
+		pickupPointName:
+			typeof pickupPointName === "string" ? pickupPointName : undefined,
+	};
+}
+
+/**
+ * The "<antes> → <ahora>" line of a delivery change notice. An order paid before
+ * the customer could choose has no "before", so only the new delivery shows.
+ */
+export function customerNoticeDetail(
+	eventType: TrackingEventType,
+	metadata: unknown,
+): string | undefined {
+	if (eventType !== "deliveryPreferenceChanged") return undefined;
+	if (typeof metadata !== "object" || metadata === null) return undefined;
+
+	const { before, after } = metadata as Record<string, unknown>;
+	const next = readDeliveryChoice(after);
+	if (!next) return undefined;
+
+	const previous = readDeliveryChoice(before);
+	return previous && previous.mode !== null
+		? `${describeDeliveryChoice(previous)} → ${describeDeliveryChoice(next)}`
+		: describeDeliveryChoice(next);
 }
 
 /**

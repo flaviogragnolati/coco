@@ -25,6 +25,7 @@ import { supplierApplicationRouter } from "./admin/supplier-application.router";
 import { supplierOrderRouter } from "./admin/supplier-order.router";
 import { adminTrackingRouter } from "./admin/tracking.router";
 import { userRouter } from "./admin/user.router";
+import { userOrderRouter } from "./admin/user-order.router";
 
 export const adminRouter = createTRPCRouter({
 	address: addressRouter,
@@ -53,4 +54,5 @@ export const adminRouter = createTRPCRouter({
 	supplierOrder: supplierOrderRouter,
 	tracking: adminTrackingRouter,
 	user: userRouter,
+	userOrder: userOrderRouter,
 });

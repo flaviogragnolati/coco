@@ -273,7 +273,10 @@ function toOrderDetail(
 	});
 }
 
-/** Null for a pickup-point order, which stores no address. */
+/**
+ * The saved address an order was confirmed with. Null for a pickup-point order,
+ * which stores none, and for an address an admin typed for the order alone.
+ */
 function getAddressFromSnapshot(
 	record: OrderDetailRecord,
 ): CheckoutAddress | null {
@@ -284,10 +287,11 @@ function getAddressFromSnapshot(
 		snapshot !== null &&
 		"address" in snapshot
 	) {
-		return checkoutAddressSchema.parse(snapshot.address);
+		const parsed = checkoutAddressSchema.safeParse(snapshot.address);
+		if (parsed.success) return parsed.data;
 	}
 
-	if (record.deliveryPreference === "pickupPoint") return null;
+	if (record.deliveryPreference !== null) return null;
 
 	throw new TRPCError({
 		code: "INTERNAL_SERVER_ERROR",
