@@ -1,6 +1,6 @@
 # Implementation Plan: Customer Delivery Preference and Pickup Points
 
-> **Lifecycle:** Working · **Owner skill:** q-code-implementation-plan · **Created:** 2026-10-09
+> **Lifecycle:** Working · **Owner skill:** q-code-implementation-plan · **Created:** 2026-10-09 · **Executed:** 2026-10-09 (§17)
 > **Source:** `docs/architecture/features/customer-delivery-preference.md` (slices S-A..S-E, scenarios S1–S12, decisions D1–D15) and `docs/adr/0011-delivery-preference-lives-on-the-order.md`. Report rows F1 and #78 of `docs/plans/qa-open-tickets-2026-10-report.md`.
 > **Base:** `main` at `1ba5693`.
 
@@ -437,3 +437,97 @@ None blocking. A2–A5 are technical readings of the architecture, recorded so a
 - Use Spanish UI copy from architecture §11 and the CONTEXT.md labels; English identifiers; Biome tabs.
 - Comments only for intent, invariants or hazards.
 - Commit at the end of each slice, with conventional commits ending in the Co-Authored-By trailer.
+
+## 17. Execution record (q-code-implement, 2026-10-09)
+
+**Status:** implemented and reviewed on branch `worktree-agent-a64f72e767bdb7c8f` (base `1ba5693`). Not deployed, and the migration is not applied. The home copy (S-E E2) lives on branch `f1-home-copy`, which is this branch plus one commit.
+
+### Change summary
+
+| Slice | Commit | What landed |
+|---|---|---|
+| plan | `0028dab` | This plan |
+| S-A | `33c43bf` | `PickupPoint` model and migration `20261009000000_customer_delivery_preference` (the whole of §7.1 plus two CHECKs); admin CRUD at `/admin/pickup-points` (Destination pattern + `setActive` with a confirmation that shows the pending-order count); nav entry; glossary (Pickup point becomes an entity, a new "Entrega" concept, the `deliveryPreferenceChanged` status) |
+| S-B | `3b3b31c` | Checkout "Entrega" step (mode toggle hidden without active points, address list or "Elegí un punto de retiro"); `delivery` union input; `resolveCheckoutDelivery`; snapshots written on create and on **both** reuse paths; My orders "Entrega" row + footnote |
+| S-C | `7eced46` | `order-delivery.ts` (match rule, conflict, derived destination, order diagnostic) + one-query order resolution; `loadAssignablePackages` enforces the rule for `createEndUser`/`addPackages`; `Shipment.pickupPointId`; `retry` copies the point and the destination; grouped picker with pre-fill; depot handover hint; `package.outbound.deliveryPreferenceConflict` and `order.deliveryPreference.pointInactive` |
+| S-D | `8ee4471` | `admin.userOrder.{deliveryOptions,changeDeliveryPreference}`; event `userOrder.deliveryPreferenceChanged` → one `deliveryPreferenceChanged` tracking event per live item; notice "Cambiamos tu entrega" + "<antes> → <ahora>" + the reason verbatim; "Cambiar entrega" dialog on the cart traceability order card; readable "Entrega" in the operations cart detail |
+| S-E E1 | `0ce3087` | `docs/fulfillment-reference.md` §6, `docs/tracking-architecture.md`, `docs/schema-reference.md` |
+| review | `2804030` | Mini review fixes (see below) |
+| S-E E2 | branch `f1-home-copy` | FAQ "¿Cómo retiro mi pedido o lo recibo en casa?", step 5, `home-content.test.ts`, e2e FAQ count 5 → 6 |
+
+### Acceptance coverage (architecture §5)
+
+| # | Result | Evidence |
+|---|---|---|
+| S1 | covered | `checkout-delivery.ts` home branch; `checkout-delivery.test.ts` |
+| S2 | covered | pickup branch writes point + `checkout` snapshot, address and billing SQL NULL; CHECK enforces it; `checkout.data.test.ts` |
+| S3 | covered | `checkout-delivery-step.tsx` hides the toggle with no points; the client forces `homeDelivery` |
+| S4 | covered | `confirmAndPay` calls `updateOrderDelivery` before both reuse branches; `checkout.delivery-refresh.test.ts` |
+| S5 | covered | "Punto de retiro · <name>" group, "Seleccionar grupo" pre-fills mode and point; destination from the point; `shipment.delivery-match.test.ts` |
+| S6 | covered | `findDeliveryMismatch` message "El pedido ORD-… eligió A domicilio; cambiá su entrega primero."; `order-delivery.test.ts`, `shipment.delivery-match.test.ts` |
+| S7 | covered | guard (processing only, no package on an end-user shipment or received), reason 1–500 chars, audit, event per live item, row lock; `user-order.service.test.ts`, `tracking-event-mapper.test.ts` |
+| S8 | covered | dialog offers saved addresses or "Otra dirección" (stored only on the order); ownership checked server-side |
+| S9 | covered | deactivation allowed with count; checkout lists active points only; shipments still accept inactive or trashed points; hard delete refused while referenced; `pickup-point.service.test.ts` |
+| S10 | covered | confirm-delivery dialog shows "El cliente eligió: …", with no guard change |
+| S11 | covered | "Sin elección" group; null preference exempt; My orders keeps the "Envío" row |
+| S12 | covered | arrival notice unchanged; My orders row shows name, address, hours, instructions and map link |
+
+### Evidence
+
+- `pnpm typecheck`: clean.
+- `pnpm test`: 99 files, 1520 tests, all passed.
+- `pnpm exec biome check src scripts e2e`: no errors in changed files. The only errors are pre-existing ones in `src/components/ui/field.tsx`, and `pnpm check` also fails on pre-existing `.agents/` files.
+- e2e not run (by rule). `smoke.spec.ts` was updated on `f1-home-copy` only.
+- The migration was generated with `prisma migrate diff` in schema-to-schema mode and then hand-edited. It was never applied.
+
+### Mini review
+
+**q-review-code** passed with findings on both axes and no blockers.
+- Standards findings applied:
+  - the override / assignment race (row locks);
+  - stale dialog cache;
+  - a specific refusal for legacy pickup shipments;
+  - test gaps (DbNull mappers, reuse path, shipment wiring);
+  - billing kept in step;
+  - http(s) map URLs;
+  - an optional-chain lint;
+  - a stale test title.
+- Standards findings not applied:
+  - The `admin:userOrder:{id}:deliveryPreferenceChanged:{iso}` key keeps its timestamp, the same shape as the admin cart event keys.
+  - The label stays "Cambiamos tu entrega" because it is the §11 notice copy and the map is shared, like "Disponible para retirar".
+  - The duplicated `OrderDelivery` mapping in the cart traceability was left as is.
+  - The home copy test asserts the §11 text verbatim, on purpose.
+- Specification findings applied:
+  - the pickup CHECK requires no address;
+  - billing on override;
+  - trashed points selectable on shipments;
+  - QA ticket step renamed to "Entrega";
+  - this record;
+  - the My orders separator;
+  - home → home notice wording;
+  - one active-point predicate;
+  - `update` no longer toggles `active`.
+- Specification findings not applied: the list-level view of the pointInactive diagnostic (optional suggestion).
+
+**q-review-comments** found 1 blocker (a stale `listActivePickupPoints` docstring) and 3 rewrite suggestions (the migration enum note, the create-dialog pre-fill docstring, the domain event docblock), out of about 70 added comments. All were applied, so the outcome is a pass.
+
+### Deviations and decisions
+
+- **A2–A5 as planned:**
+  - the override only applies to `processing` orders;
+  - a pickup shipment requires its point;
+  - shipments accept inactive or trashed points;
+  - `order: null` + `orderCount` for multi-order packages.
+- **Additive API:** `admin.userOrder.deliveryOptions` (saved addresses, active points and the guard reason for the dialog); `pickupPoint.getById/getStats` (CRUD pattern); `cartItemIds` in the override audit metadata.
+- **Snapshot sources:** the shipment destination snapshot uses source `"shipment"`. A home shipment's destination is `{ source: "order", orderId, orderCode, address }` plus contact `{ name, email }`.
+- **Notice and diagnostic:** the `detail` line is a new optional field on customer notices. The conflict uses its own diagnostic code rather than an extended multi-customer message.
+- **Locking:** `changeDeliveryPreference` takes `FOR UPDATE` on the order, and `loadAssignablePackages` takes `FOR SHARE` on the live orders it reads.
+- **QA copy:** `scripts/qa-tickets.data.ts` and `docs/qa/qa-ciclo-de-vida.md` rename the checkout step "Envío" → "Entrega" (tickets 12, 14, 20).
+
+### Follow-ups / required actions
+
+1. Deploy the main branch, then apply the migration (`pnpm db:migrate`, by the user).
+2. Right after the migration, create the real pickup points in `/admin/pickup-points`. Until one exists, no pickup-point shipment can be created, legacy ones included. An inactive point is enough for shipments and stays hidden from checkout.
+3. Merge `f1-home-copy` only once active pickup points exist.
+4. Run `pnpm qa:seed` after deploy so tickets 12, 14 and 20 read "Entrega".
+5. Optional: a list-level view of `order.deliveryPreference.pointInactive`. Today it shows per cart, and through the "Pedidos en curso" column on pickup points.
