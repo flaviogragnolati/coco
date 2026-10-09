@@ -117,3 +117,26 @@ Pasos: ajustar #16, #38 y #54 → `pnpm qa:seed` (solo texto, en la DB compartid
 - La migración de F1 está aplicada y hay un punto de retiro activo ("Coco Ushuaia").
 - `f1-home-copy` está mergeada (`39523c9`) y los e2e pasan (18/18).
 - Pendiente: la dirección real de Quintal, diferida por el usuario.
+
+**Mejoras menores (2026-10-09):**
+
+| Follow-up | Merge | Resultado |
+| --- | --- | --- |
+| Título "Reprogramado despues de asignacion" | `9f4f84a` | El cliente ve "Reprogramado" y el admin "Reprogramado antes/después de la asignación". |
+| Rate limit en `/proveedores` | `da823c2` | Hasta 3 solicitudes por hora por IP. Se guarda un HMAC de la IP (clave derivada de `BETTER_AUTH_SECRET`), nunca la IP. Migración `20261009100000_supplier_application_ip_hash`. |
+| Blobs reemplazados | `29c1fa5` | Al guardar o borrar definitivamente un producto se eliminan de Blob las imágenes subidas que ya no usa ningún producto, después del commit y sin hacer fallar el guardado. El borrado suave las conserva. |
+| `pnpm check` en todo el repo | `3ba28f4` | Pasa: `.agents`, `.claude`, `skills-lock.json` y `.vscode/launch.json` quedan excluidos por ser archivos de herramientas, y los errores de código están corregidos. También se arregló el `]` que faltaba en `launch.json`. |
+| Vocabulario carrito/pedido | `7b39085` | Ver `docs/plans/customer-vocabulary-pedido.md`. |
+
+**Evidencia:** `pnpm typecheck`, `pnpm check` (757 archivos) y `pnpm test` (1552 tests) verdes en `main`. Cada cambio pasó su mini review (`q-review-code` con findings y sin blockers; `q-review-comments` pass).
+
+**Follow-ups abiertos:**
+
+- Dirección real de Quintal (diferida).
+- Margen y vigencia de la lista de Quintal.
+- `WHATSAPP_NUMBER`.
+- Si se renombra un producto Quintal en el admin, `db:seed:init` lo duplica.
+- Imágenes subidas en un formulario cancelado.
+- Limpiar `ipHash` después de la ventana de una hora y mencionarlo en el aviso de privacidad.
+- Pasar a módulos las seis clases que hoy tienen `biome-ignore noStaticOnlyClass`.
+- Setup de tests de componentes React.

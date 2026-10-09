@@ -59,3 +59,40 @@ orchestration:
   mode: "standalone"
   global_state_updated: false
   reconciliation_required: true
+---
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-open-tickets-2026-10-report.md"
+      change: "Minor improvements record (2026-10-09)"
+  references_added: []
+  traceability_delta:
+    - {item: "follow-up: Reprogramado title", implemented_by: "9f4f84a"}
+    - {item: "follow-up: /proveedores rate limit", implemented_by: "da823c2"}
+    - {item: "follow-up: replaced Blob images", implemented_by: "29c1fa5"}
+    - {item: "follow-up: pnpm check repo-wide", implemented_by: "3ba28f4"}
+  decisions_added_or_updated:
+    - "Customer roll over title is \"Reprogramado\" (user, 2026-10-09)"
+    - "Rate limit stored in the database by keyed IP hash, 3 per hour (user, 2026-10-09)"
+    - "Unused uploaded product images are deleted on save (user, 2026-10-09)"
+    - "Tooling folders and files excluded from Biome; six static-only classes keep a biome-ignore"
+  risks_added_or_updated:
+    - "Rate limit trusts x-forwarded-for, valid only behind Vercel"
+    - "Concurrent saves sharing a copied image URL could delete an image still in use (unlikely)"
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "Migration 20261009100000_supplier_application_ip_hash must be applied before deploying main"
+  required_user_actions:
+    - "Apply migration 20261009100000_supplier_application_ip_hash, then push/deploy main"
+  next_recommended_action: "Apply the migration, then push main"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true
