@@ -105,7 +105,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		feature: "Alta de item (cantidad inicial = MOQ)",
 		steps: '1) En `/products`, click en "Agregar" sobre un producto.',
 		expectedResult:
-			'El mini-carrito se abre, el producto figura con cantidad = MOQ, la tarjeta pasa a mostrar el badge "En carrito" con stepper y subtotal.',
+			'El mini-carrito se abre, el producto figura con cantidad = MOQ, la tarjeta pasa a mostrar el badge "En tu pedido" con stepper y subtotal.',
 		isRegressionPath: true,
 	},
 	{
@@ -151,9 +151,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Bajas del carrito",
 		steps:
-			'1) En `/cart`, quitar un item con el botón de basura.\n2) Click en "Vaciar carrito".',
+			'1) En `/cart`, quitar un item con el botón de basura.\n2) Click en "Vaciar pedido".',
 		expectedResult:
-			'El item desaparece (toast "Producto quitado del carrito"); "Vaciar carrito" deja el estado vacío ("Tu carrito está vacío") con CTA "Ver productos".',
+			'El item desaparece (toast "Producto quitado de tu pedido"); "Vaciar pedido" deja el estado vacío ("Tu pedido está vacío") con CTA "Ver productos".',
 		isRegressionPath: false,
 	},
 	{
@@ -163,9 +163,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Carrito vivo durante el checkout",
 		steps:
-			'1) Iniciar checkout con 2 items.\n2) En el paso "Pedido", click "Editar carrito" y quitar un item desde el mini-carrito.\n3) Quitar también el último item.',
+			'1) Iniciar checkout con 2 items.\n2) En el paso "Pedido", click "Editar pedido" y quitar un item desde el mini-carrito.\n3) Quitar también el último item.',
 		expectedResult:
-			'El resumen del checkout refleja el cambio al instante. Al vaciarlo aparece "Tu carrito está vacío" y los pasos posteriores se bloquean.',
+			'El resumen del checkout refleja el cambio al instante. Al vaciarlo aparece "Tu pedido está vacío" y los pasos posteriores se bloquean.',
 		isRegressionPath: false,
 	},
 	{
@@ -188,7 +188,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		feature: "Guardas de `checkout.start`",
 		steps: "1) Con el carrito vacío, navegar directo a `/checkout`.",
 		expectedResult:
-			'Alerta "No se pudo iniciar checkout" con el mensaje del servidor ("Tu carrito está vacío..." o "No encontramos un carrito activo...") y botones "Volver al carrito" / "Ver productos".',
+			'Alerta "No se pudo iniciar checkout" con el mensaje del servidor ("Tu pedido está vacío..." o "No encontramos tu pedido para iniciar checkout.") y botones "Volver a tu pedido" / "Ver productos".',
 		isRegressionPath: false,
 	},
 	{
@@ -236,7 +236,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		steps:
 			'1) Armar un carrito con productos en dos monedas distintas (se permite en `/cart`, que muestra un total por moneda).\n2) Intentar "Confirmar y pagar".',
 		expectedResult:
-			'Error "El checkout de esta versión solo permite carritos con una moneda." El pedido no se crea dos veces ni queda a medias.',
+			'Error "El checkout de esta versión solo permite pedidos con una moneda." El pedido no se crea dos veces ni queda a medias.',
 		isRegressionPath: false,
 	},
 	{
@@ -248,7 +248,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		steps:
 			'Precondiciones: dos sesiones abiertas en navegadores distintos (Cliente y Admin). El Cliente tiene en el carrito un producto activo, anotado por nombre.\n1) Cliente: ir a `/checkout` y avanzar por "Pedido", "Entrega" y "Pago" hasta el paso "Confirmar". Aceptar los términos y NO hacer click en "Confirmar y pagar" todavía.\n2) Admin: abrir `/admin/products`, buscar ese producto por nombre, abrir "Editar", desactivar el switch "Producto activo" y hacer click en "Guardar". Comprobar que la fila queda como inactiva.\n3) Cliente: sin refrescar la página, hacer click en "Confirmar y pagar". Leer el mensaje que aparece.\n4) Cliente: hacer click en "Volver al carrito". En `/cart`, mirar la línea del producto desactivado.\n5) Admin: en `/admin/carts`, buscar el carrito del Cliente y abrir su detalle.',
 		expectedResult:
-			'Paso 3: la confirmación se rechaza con "Uno de los productos del carrito ya no está disponible. Revisá el carrito antes de continuar."\nPaso 4: el carrito queda editable y permite quitar el producto inválido.\nPaso 5: el carrito no tiene un pedido ni un intento de pago nuevos por este intento.',
+			'Paso 3: la confirmación se rechaza con "Uno de los productos de tu pedido ya no está disponible. Revisalo antes de continuar."\nPaso 4: el carrito queda editable y permite quitar el producto inválido.\nPaso 5: el carrito no tiene un pedido ni un intento de pago nuevos por este intento.',
 		isRegressionPath: false,
 	},
 	{
@@ -355,7 +355,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		feature: "Snapshot de productos, resumen y pago",
 		steps: "1) Abrir `/my-orders/[id]` de un pedido pagado.",
 		expectedResult:
-			'Se ven: "Pedido {code}", carrito de origen, card "Productos" (nombres, cantidades y montos del snapshot), "Resumen" (items, monto, dirección de envío) y "Pago" (estado, transacción, referencia, método). Un id ajeno o inválido da 404.',
+			'Se ven: "Pedido {code}", "Código de armado {code}", card "Productos" (nombres, cantidades y montos del snapshot), "Resumen" (items, monto, dirección de envío) y "Pago" (estado, transacción, referencia, método). Un id ajeno o inválido da 404.',
 		isRegressionPath: false,
 	},
 	{
