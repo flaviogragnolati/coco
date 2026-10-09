@@ -173,7 +173,8 @@ export function PickupPointCrudClient() {
 
 	const handleSubmit = (values: PickupPointFormValues) => {
 		if (state.formState.mode === "edit" && state.formState.entityId !== null) {
-			updateMutation.mutate({ id: state.formState.entityId, ...values });
+			const { active: _active, ...fields } = values;
+			updateMutation.mutate({ id: state.formState.entityId, ...fields });
 			return;
 		}
 

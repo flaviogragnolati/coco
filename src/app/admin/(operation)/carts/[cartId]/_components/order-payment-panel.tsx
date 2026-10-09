@@ -73,7 +73,14 @@ function OrderDeliveryBlock({ order }: { order: CartTraceabilityOrder }) {
 				</span>
 			) : null}
 			<OrderDeliveryChangeDialog
-				onChanged={() => utils.admin.cartTraceability.invalidate()}
+				onChanged={() =>
+					Promise.all([
+						utils.admin.cartTraceability.invalidate(),
+						utils.admin.userOrder.deliveryOptions.invalidate({
+							orderId: order.id,
+						}),
+					])
+				}
 				onOpenChange={setDialogOpen}
 				open={dialogOpen}
 				orderId={order.id}

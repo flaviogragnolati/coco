@@ -72,7 +72,35 @@ export type OrderDeliveryUpdate = {
 	shippingAddressSnapshot: unknown;
 };
 
-/** Cleared JSON goes as `Prisma.DbNull`, which the `user_order` delivery CHECK requires. */
+/**
+ * Serializes "Cambiar entrega" against shipment assembly, which share-locks the
+ * same row before reading the preference (`lockLiveOrdersOfCarts`).
+ */
+export async function lockOrderForDeliveryChange(
+	db: AdminDbClient,
+	id: number,
+) {
+	await db.$queryRaw`SELECT "id" FROM "user_order" WHERE "id" = ${id} FOR UPDATE`;
+}
+
+function jsonOrDbNull(value: unknown) {
+	return value == null ? Prisma.DbNull : toPrismaInputJson(value);
+}
+
+/**
+ * Cleared JSON goes as `Prisma.DbNull`, which the `user_order` delivery CHECK
+ * requires. Billing mirrors the shipping address, as checkout writes it.
+ */
+export function orderDeliveryUpdateData(update: OrderDeliveryUpdate) {
+	return {
+		deliveryPreference: update.deliveryPreference,
+		pickupPointId: update.pickupPointId,
+		pickupPointSnapshot: jsonOrDbNull(update.pickupPointSnapshot),
+		shippingAddressSnapshot: jsonOrDbNull(update.shippingAddressSnapshot),
+		billingAddressSnapshot: jsonOrDbNull(update.shippingAddressSnapshot),
+	};
+}
+
 export async function updateOrderDeliveryPreference(
 	db: AdminDbClient,
 	id: number,
@@ -80,18 +108,7 @@ export async function updateOrderDeliveryPreference(
 ) {
 	return db.userOrder.update({
 		where: { id },
-		data: {
-			deliveryPreference: update.deliveryPreference,
-			pickupPointId: update.pickupPointId,
-			pickupPointSnapshot:
-				update.pickupPointSnapshot == null
-					? Prisma.DbNull
-					: toPrismaInputJson(update.pickupPointSnapshot),
-			shippingAddressSnapshot:
-				update.shippingAddressSnapshot == null
-					? Prisma.DbNull
-					: toPrismaInputJson(update.shippingAddressSnapshot),
-		},
+		data: orderDeliveryUpdateData(update),
 		select: orderDeliveryChangeSelect,
 	});
 }

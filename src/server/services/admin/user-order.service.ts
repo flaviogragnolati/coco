@@ -33,6 +33,7 @@ import {
 import {
 	countPackagesBlockingDeliveryChange,
 	findOrderForDeliveryChange,
+	lockOrderForDeliveryChange,
 	type OrderDeliveryChangeRecord,
 	type OrderDeliveryUpdate,
 	updateOrderDeliveryPreference,
@@ -149,7 +150,7 @@ async function resolveTarget(
 ): Promise<ResolvedTarget> {
 	if (delivery.mode === "pickupPoint") {
 		const point = await findPickupPointById(tx, delivery.pickupPointId);
-		if (!point || !point.active || point.deleted) {
+		if (!point?.active || point.deleted) {
 			throwConflict("El punto de retiro ya no está disponible");
 		}
 		if (
@@ -210,6 +211,7 @@ export async function changeDeliveryPreference(
 	database: AdminDb,
 ): Promise<UserOrderDelivery> {
 	const result = await database.$transaction(async (tx) => {
+		await lockOrderForDeliveryChange(tx, input.orderId);
 		const order = await loadOrder(tx, input.orderId);
 		const cartItemIds = liveCartItemIds(order);
 		const blockedReason = deliveryChangeBlockedReason(

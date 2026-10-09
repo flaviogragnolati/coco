@@ -15,17 +15,20 @@ export const pickupPointCreateInputSchema = z.object({
 	state: requiredText("La provincia es obligatoria"),
 	postalCode: nullishText,
 	country: requiredText("El país es obligatorio").default("AR"),
-	googleMapsUrl: optionalUrl,
+	// Customers open it, so only web links are accepted.
+	googleMapsUrl: optionalUrl.refine(
+		(value) => value === undefined || /^https?:\/\//i.test(value),
+		"Ingresá un enlace que empiece con https://",
+	),
 	hours: requiredText("Los horarios son obligatorios"),
 	instructions: nullishText,
 	active: z.boolean().default(true),
 });
 
-export const pickupPointUpdateInputSchema = pickupPointCreateInputSchema.extend(
-	{
-		id: pickupPointIdSchema,
-	},
-);
+/** `active` changes only through `setActive`, which audits it and shows the impact. */
+export const pickupPointUpdateInputSchema = pickupPointCreateInputSchema
+	.omit({ active: true })
+	.extend({ id: pickupPointIdSchema });
 
 export const pickupPointSetActiveInputSchema = z.object({
 	id: pickupPointIdSchema,

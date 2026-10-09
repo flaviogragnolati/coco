@@ -175,9 +175,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "`checkout.start` + stepper",
 		steps:
-			'Precondiciones: sesión de Cliente con una cuenta de Google SIN direcciones guardadas (por ejemplo, una cuenta nueva: la app no permite borrar direcciones) y carrito editable con al menos un producto vigente. Con una dirección ya guardada, el checkout la preselecciona y "Pago" aparece habilitado desde el inicio: eso es correcto y no sirve para este caso.\n1) En `/cart`, anotar el código del carrito y hacer click en "Ir a pagar".\n2) Esperar la carga de `/checkout` y verificar que el paso activo inicial sea "Pedido".\n3) Sin cargar dirección, hacer click en "Envío", "Pago" y "Confirmar" en la barra de pasos de arriba.\n4) En otra sesión Admin, abrir `/admin/carts`, buscar el código anotado y revisar su estado.',
+			'Precondiciones: sesión de Cliente con una cuenta de Google SIN direcciones guardadas (por ejemplo, una cuenta nueva: la app no permite borrar direcciones) y carrito editable con al menos un producto vigente. Con una dirección ya guardada, el checkout la preselecciona y "Pago" aparece habilitado desde el inicio: eso es correcto y no sirve para este caso.\n1) En `/cart`, anotar el código del carrito y hacer click en "Ir a pagar".\n2) Esperar la carga de `/checkout` y verificar que el paso activo inicial sea "Pedido".\n3) Sin cargar dirección, hacer click en "Entrega", "Pago" y "Confirmar" en la barra de pasos de arriba.\n4) En otra sesión Admin, abrir `/admin/carts`, buscar el código anotado y revisar su estado.',
 		expectedResult:
-			'El checkout muestra la barra "Pedido → Envío → Pago → Confirmar" y comienza en "Pedido".\n"Envío" se puede abrir (el pedido ya tiene productos). "Pago" y "Confirmar" están deshabilitados y al pasar el mouse muestran "Completá los pasos anteriores".\nEn `/admin/carts`, el mismo carrito figura "En checkout"; todavía no existe una orden ni un intento de pago.',
+			'El checkout muestra la barra "Pedido → Entrega → Pago → Confirmar" y comienza en "Pedido".\n"Entrega" se puede abrir (el pedido ya tiene productos). "Pago" y "Confirmar" están deshabilitados y al pasar el mouse muestran "Completá los pasos anteriores".\nEn `/admin/carts`, el mismo carrito figura "En checkout"; todavía no existe una orden ni un intento de pago.',
 		isRegressionPath: true,
 	},
 	{
@@ -196,9 +196,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		section: SECTION_C,
 		title: "Alta y edición de dirección de envío",
 		actor: "Cliente",
-		feature: 'Address book en el paso "Envío"',
+		feature: 'Address book en el paso "Entrega"',
 		steps:
-			'Precondiciones: checkout iniciado y paso "Pedido" completo.\n1) Avanzar a "Envío" y hacer click en "Nueva".\n2) En "Agregar dirección", dejar vacíos los campos obligatorios y hacer click en "Guardar dirección".\n3) Completar Dirección, Ciudad, Provincia / Estado, Código postal y País. Dejar "Complemento" vacío: es opcional y sirve para piso, departamento, oficina u otra referencia interna.\n4) Guardar y comprobar qué tarjeta queda seleccionada.\n5) En esa tarjeta, hacer click en "Editar", cambiar Ciudad y Complemento, y volver a guardar.',
+			'Precondiciones: checkout iniciado y paso "Pedido" completo.\n1) Avanzar a "Entrega" (con "A domicilio" si se ofrece un punto de retiro) y hacer click en "Nueva".\n2) En "Agregar dirección", dejar vacíos los campos obligatorios y hacer click en "Guardar dirección".\n3) Completar Dirección, Ciudad, Provincia / Estado, Código postal y País. Dejar "Complemento" vacío: es opcional y sirve para piso, departamento, oficina u otra referencia interna.\n4) Guardar y comprobar qué tarjeta queda seleccionada.\n5) En esa tarjeta, hacer click en "Editar", cambiar Ciudad y Complemento, y volver a guardar.',
 		expectedResult:
 			'El envío vacío muestra mensajes de validación junto a cada campo obligatorio.\nEl alta muestra "Dirección guardada"; la nueva tarjeta queda con badge "Seleccionada" y habilita continuar.\nLa edición muestra "Dirección actualizada", conserva la selección y refleja Ciudad y Complemento nuevos.\nEliminar direcciones no forma parte de este caso; la falta de esa capacidad se registra como seguimiento de producto separado.',
 		isRegressionPath: true,
@@ -246,7 +246,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Admin",
 		feature: "Revalidación de términos",
 		steps:
-			'Precondiciones: dos sesiones abiertas en navegadores distintos (Cliente y Admin). El Cliente tiene en el carrito un producto activo, anotado por nombre.\n1) Cliente: ir a `/checkout` y avanzar por "Pedido", "Envío" y "Pago" hasta el paso "Confirmar". Aceptar los términos y NO hacer click en "Confirmar y pagar" todavía.\n2) Admin: abrir `/admin/products`, buscar ese producto por nombre, abrir "Editar", desactivar el switch "Producto activo" y hacer click en "Guardar". Comprobar que la fila queda como inactiva.\n3) Cliente: sin refrescar la página, hacer click en "Confirmar y pagar". Leer el mensaje que aparece.\n4) Cliente: hacer click en "Volver al carrito". En `/cart`, mirar la línea del producto desactivado.\n5) Admin: en `/admin/carts`, buscar el carrito del Cliente y abrir su detalle.',
+			'Precondiciones: dos sesiones abiertas en navegadores distintos (Cliente y Admin). El Cliente tiene en el carrito un producto activo, anotado por nombre.\n1) Cliente: ir a `/checkout` y avanzar por "Pedido", "Entrega" y "Pago" hasta el paso "Confirmar". Aceptar los términos y NO hacer click en "Confirmar y pagar" todavía.\n2) Admin: abrir `/admin/products`, buscar ese producto por nombre, abrir "Editar", desactivar el switch "Producto activo" y hacer click en "Guardar". Comprobar que la fila queda como inactiva.\n3) Cliente: sin refrescar la página, hacer click en "Confirmar y pagar". Leer el mensaje que aparece.\n4) Cliente: hacer click en "Volver al carrito". En `/cart`, mirar la línea del producto desactivado.\n5) Admin: en `/admin/carts`, buscar el carrito del Cliente y abrir su detalle.',
 		expectedResult:
 			'Paso 3: la confirmación se rechaza con "Uno de los productos del carrito ya no está disponible. Revisá el carrito antes de continuar."\nPaso 4: el carrito queda editable y permite quitar el producto inválido.\nPaso 5: el carrito no tiene un pedido ni un intento de pago nuevos por este intento.',
 		isRegressionPath: false,

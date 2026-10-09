@@ -1,6 +1,6 @@
 -- Additive only, no backfill: orders paid before this change keep a null
--- delivery preference and existing shipments a null pickup point. No row
--- carries the new tracking value until a later release writes it.
+-- delivery preference and existing shipments a null pickup point. Nothing here
+-- uses the new enum value, so adding it inside this transaction is safe.
 ALTER TYPE "CartItemTrackingEventType" ADD VALUE 'deliveryPreferenceChanged';
 
 CREATE TABLE "pickup_point" (
@@ -33,7 +33,7 @@ ADD COLUMN "pickupPointSnapshot" JSONB;
 ALTER TABLE "user_order"
 ADD CONSTRAINT "user_order_delivery_preference_check" CHECK (
     ("deliveryPreference" IS NULL AND "pickupPointId" IS NULL AND "pickupPointSnapshot" IS NULL)
-    OR ("deliveryPreference" = 'pickupPoint' AND "pickupPointId" IS NOT NULL AND "pickupPointSnapshot" IS NOT NULL)
+    OR ("deliveryPreference" = 'pickupPoint' AND "pickupPointId" IS NOT NULL AND "pickupPointSnapshot" IS NOT NULL AND "shippingAddressSnapshot" IS NULL)
     OR ("deliveryPreference" = 'homeDelivery' AND "pickupPointId" IS NULL AND "pickupPointSnapshot" IS NULL AND "shippingAddressSnapshot" IS NOT NULL)
 );
 

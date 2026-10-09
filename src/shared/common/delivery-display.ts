@@ -91,7 +91,9 @@ export function describeOrderDelivery(order: {
 			mode: "pickupPoint",
 			label: deliveryPreferenceLabelMap.pickupPoint,
 			place: point
-				? `${point.name}, ${formatAddressLine(point)}`
+				? [point.name, point.line1, point.line2, point.city]
+						.filter(Boolean)
+						.join(", ")
 				: "Sin punto de retiro",
 			hours: point?.hours ?? null,
 			instructions: point?.instructions ?? null,

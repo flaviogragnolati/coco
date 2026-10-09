@@ -239,9 +239,11 @@ export function customerNoticeDetail(
 	if (!next) return undefined;
 
 	const previous = readDeliveryChoice(before);
-	return previous && previous.mode !== null
-		? `${describeDeliveryChoice(previous)} → ${describeDeliveryChoice(next)}`
-		: describeDeliveryChoice(next);
+	if (!previous || previous.mode === null) return describeDeliveryChoice(next);
+	if (previous.mode === "homeDelivery" && next.mode === "homeDelivery") {
+		return "A domicilio, en otra dirección";
+	}
+	return `${describeDeliveryChoice(previous)} → ${describeDeliveryChoice(next)}`;
 }
 
 /**

@@ -28,7 +28,7 @@ import { shipmentDisclosures } from "./shipment.effects";
  *
  * The one-cart rule for `homeDelivery` and the match against each customer's
  * chosen delivery are enforced server-side; this only pre-fills the mode and
- * point from the first package picked, so the button and the command can never
+ * point from the packages picked, so the button and the command can never
  * disagree.
  */
 export function ShipmentCreateEndUserDialog({
@@ -49,8 +49,9 @@ export function ShipmentCreateEndUserDialog({
 		packageIds: number[];
 	}) => void;
 }) {
+	// Inactive and trashed points still serve the orders that chose them.
 	const pickupPointsQuery = api.admin.pickupPoint.list.useQuery(
-		{ includeDeleted: false },
+		{ includeDeleted: true },
 		{ enabled: open },
 	);
 	const [name, setName] = useState("");
@@ -221,7 +222,11 @@ export function ShipmentCreateEndUserDialog({
 							<option value="">Elegí un punto</option>
 							{pickupPoints.map((point) => (
 								<option key={point.id} value={point.id}>
-									{point.active ? point.name : `${point.name} (inactivo)`}
+									{point.deleted
+										? `${point.name} (eliminado)`
+										: point.active
+											? point.name
+											: `${point.name} (inactivo)`}
 								</option>
 							))}
 						</Select>

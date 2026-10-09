@@ -48,7 +48,13 @@ export type PickupPointRelationCountRecord = Prisma.PickupPointGetPayload<{
 	select: typeof pickupPointRelationCountSelect;
 }>;
 
-function toData(input: PickupPointCreateInput) {
+/** The one definition of a point checkout and "Cambiar entrega" may offer. */
+export const activePickupPointWhere = {
+	active: true,
+	deleted: false,
+} satisfies Prisma.PickupPointWhereInput;
+
+function toData(input: Omit<PickupPointCreateInput, "active">) {
 	return {
 		name: input.name,
 		line1: input.line1,
@@ -60,7 +66,6 @@ function toData(input: PickupPointCreateInput) {
 		googleMapsUrl: input.googleMapsUrl ?? null,
 		hours: input.hours,
 		instructions: input.instructions ?? null,
-		active: input.active,
 	};
 }
 
@@ -98,7 +103,7 @@ export async function createPickupPoint(
 	input: PickupPointCreateInput,
 ) {
 	return db.pickupPoint.create({
-		data: { ...toData(input), deleted: false },
+		data: { ...toData(input), active: input.active, deleted: false },
 		select: pickupPointDetailSelect,
 	});
 }
@@ -148,10 +153,9 @@ export async function getPickupPointRelationCounts(
 	});
 }
 
-/** What checkout and the override may offer: live, active points only. */
 export async function listActivePickupPoints(db: AdminDbClient) {
 	return db.pickupPoint.findMany({
-		where: { active: true, deleted: false },
+		where: activePickupPointWhere,
 		select: pickupPointDetailSelect,
 		orderBy: [{ name: "asc" }, { id: "asc" }],
 	});

@@ -67,7 +67,7 @@ describe("describeOrderDelivery", () => {
 		});
 
 		expect(view && formatOrderDelivery(view)).toBe(
-			"Punto de retiro — Centro, San Martín 100 · Ushuaia, Tierra del Fuego 9410 · Lun a vie 10 a 18 h",
+			"Punto de retiro — Centro, San Martín 100, Ushuaia · Lun a vie 10 a 18 h",
 		);
 		expect(view).toMatchObject({
 			instructions: "Tocá timbre.",

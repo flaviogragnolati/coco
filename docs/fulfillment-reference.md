@@ -185,7 +185,8 @@ the choice existed have a null preference.
   shipment, the single customer's order address and contact for a home
   delivery. `retry` copies `pickupPointId` and both destination snapshots.
 - **Override.** `admin.userOrder.changeDeliveryPreference` ("Cambiar entrega")
-  is the only writer after checkout: paid orders in progress only, refused while
+  is the only writer after checkout: paid orders in progress only (row-locked
+  against shipment assembly, which share-locks the same orders), refused while
   any outbound package of the order is on an end-user shipment or handed over,
   reason required (shown verbatim to the customer), audited, and announced in
   the journey through `userOrder.deliveryPreferenceChanged`.

@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("./user-order.data", () => ({
 	countPackagesBlockingDeliveryChange: vi.fn(),
 	findOrderForDeliveryChange: vi.fn(),
+	lockOrderForDeliveryChange: vi.fn(),
 	updateOrderDeliveryPreference: vi.fn(),
 }));
 vi.mock("./pickup-point.data", () => ({
@@ -159,6 +160,7 @@ describe("changeDeliveryPreference", () => {
 				}),
 			}),
 		);
+		expect(data.lockOrderForDeliveryChange).toHaveBeenCalledWith(tx, 7);
 		expect(data.countPackagesBlockingDeliveryChange).toHaveBeenCalledWith(
 			tx,
 			[21],

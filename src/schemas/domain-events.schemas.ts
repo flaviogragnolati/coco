@@ -348,8 +348,9 @@ const deliveryChoiceSchema = z.object({
 
 /**
  * An admin changed the delivery a customer chose ("Cambiar entrega"). One event
- * per order; the tracking listener fans it out to every live item so each one's
- * journey shows the notice. `reason` is admin text the customer reads verbatim.
+ * per order; the tracking listener fans it out to the items in `cartItemIds` so
+ * each one's journey shows the notice. `reason` is admin text the customer reads
+ * verbatim.
  * `before.mode` is null for an order paid before the customer could choose.
  */
 export const userOrderDeliveryPreferenceChangedEventSchema =

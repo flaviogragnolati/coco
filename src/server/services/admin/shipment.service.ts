@@ -63,7 +63,10 @@ import {
 	packageCartIds,
 	type ShipmentDeliveryTarget,
 } from "./order-delivery";
-import { findLiveOrderDeliveriesByCartIds } from "./order-delivery.data";
+import {
+	findLiveOrderDeliveriesByCartIds,
+	lockLiveOrdersOfCarts,
+} from "./order-delivery.data";
 import {
 	findPackagesForShipmentAssignment,
 	type PackageAssignmentRecord,
@@ -1245,10 +1248,9 @@ async function loadAssignablePackages(
 		}
 	}
 
-	const ordersByCartId = await findLiveOrderDeliveriesByCartIds(
-		tx,
-		records.flatMap(packageCartIds),
-	);
+	const cartIds = records.flatMap(packageCartIds);
+	await lockLiveOrdersOfCarts(tx, cartIds);
+	const ordersByCartId = await findLiveOrderDeliveriesByCartIds(tx, cartIds);
 	const orders: OrderDelivery[] = [];
 	for (const pkg of records) {
 		const packageOrders = ordersOfCarts(packageCartIds(pkg), ordersByCartId);
@@ -1258,6 +1260,16 @@ async function loadAssignablePackages(
 			);
 		}
 		orders.push(...packageOrders);
+	}
+
+	if (
+		target.deliveryMode === "pickupPoint" &&
+		target.pickupPointId === null &&
+		orders.some((order) => order.deliveryPreference !== null)
+	) {
+		throwConflict(
+			"Este envio no tiene punto de retiro asignado; crea un envio nuevo para pedidos que eligieron su entrega",
+		);
 	}
 
 	const mismatch = findDeliveryMismatch(target, orders);

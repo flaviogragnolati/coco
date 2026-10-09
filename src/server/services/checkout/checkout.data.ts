@@ -7,6 +7,7 @@ import type {
 	CheckoutAddressUpdateInput,
 } from "~/shared/common/checkout.types";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
+import { activePickupPointWhere } from "../admin/pickup-point.data";
 import { cartProductClientTermsSelect } from "../cart/cart.data";
 import type { OrderDeliveryColumns } from "./checkout-delivery";
 
@@ -240,10 +241,9 @@ export async function findCheckoutAddressById(
 	});
 }
 
-/** What checkout offers: only live, active points. */
 export async function listCheckoutPickupPoints(db: CheckoutDbClient) {
 	return db.pickupPoint.findMany({
-		where: { active: true, deleted: false },
+		where: activePickupPointWhere,
 		select: checkoutPickupPointSelect,
 		orderBy: [{ name: "asc" }, { id: "asc" }],
 	});
@@ -254,7 +254,7 @@ export async function findCheckoutPickupPointById(
 	id: number,
 ) {
 	return db.pickupPoint.findFirst({
-		where: { id, active: true, deleted: false },
+		where: { id, ...activePickupPointWhere },
 		select: checkoutPickupPointSelect,
 	});
 }
@@ -263,7 +263,7 @@ export async function findCheckoutPickupPointById(
  * JSON columns cleared with `Prisma.DbNull`: a JSON `null` would satisfy no
  * `IS NULL` branch of the `user_order` delivery CHECK.
  */
-function deliveryColumnsData(delivery: OrderDeliveryColumns) {
+export function deliveryColumnsData(delivery: OrderDeliveryColumns) {
 	return {
 		deliveryPreference: delivery.deliveryPreference,
 		pickupPointId: delivery.pickupPointId,

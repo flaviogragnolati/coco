@@ -44,6 +44,12 @@ test("a delivery change notice states what it changed from and to", () => {
 		}),
 	).toBe("A domicilio");
 	expect(
+		customerNoticeDetail("deliveryPreferenceChanged", {
+			before: { mode: "homeDelivery" },
+			after: { mode: "homeDelivery" },
+		}),
+	).toBe("A domicilio, en otra dirección");
+	expect(
 		customerNoticeDetail("fulfillmentException", { reason: "x" }),
 	).toBeUndefined();
 });

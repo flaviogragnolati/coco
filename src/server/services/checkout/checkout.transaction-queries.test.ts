@@ -125,7 +125,7 @@ test("start reads addresses and provider configs one at a time", async () => {
 	expect(overlaps).toEqual([]);
 });
 
-test("confirmAndPay looks up the address and payment method one at a time", async () => {
+test("confirmAndPay refuses an address the customer does not have", async () => {
 	await expect(
 		checkoutService.confirmAndPay("user-1", {
 			idempotencyKey: "idem-1",

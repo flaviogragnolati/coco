@@ -1,4 +1,4 @@
-import type { Prisma } from "~/prisma/client";
+import { Prisma } from "~/prisma/client";
 import type { db as prismaDb } from "~/server/db";
 import type { OrderDelivery } from "./order-delivery";
 
@@ -36,6 +36,18 @@ export function toOrderDelivery(record: OrderDeliveryRecord): OrderDelivery {
 			: null,
 		shippingAddressSnapshot: record.shippingAddressSnapshot,
 	};
+}
+
+/**
+ * Share-locks the carts' live orders so "Cambiar entrega", which takes the row
+ * lock, cannot change a preference between this read and the assignment.
+ */
+export async function lockLiveOrdersOfCarts(
+	db: Prisma.TransactionClient,
+	cartIds: number[],
+) {
+	if (cartIds.length === 0) return;
+	await db.$queryRaw`SELECT "id" FROM "user_order" WHERE "cartId" IN (${Prisma.join([...new Set(cartIds)])}) AND "status" NOT IN ('cancelled', 'failed') FOR SHARE`;
 }
 
 /**
