@@ -243,6 +243,7 @@ const packageDetailSelect = {
 								select: {
 									id: true,
 									code: true,
+									cartId: true,
 									quantity: true,
 									fulfillmentStatus: true,
 									cart: {

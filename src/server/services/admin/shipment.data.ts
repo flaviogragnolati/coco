@@ -32,6 +32,7 @@ const shipmentDetailSelect = {
 	status: true,
 	destinationAddressSnapshot: true,
 	destinationContactSnapshot: true,
+	pickupPoint: { select: { id: true, name: true } },
 	createdAt: true,
 	updatedAt: true,
 	carrierOrder: {
@@ -284,6 +285,9 @@ const shipmentCommandSelect = {
 	type: true,
 	deliveryMode: true,
 	status: true,
+	pickupPointId: true,
+	destinationAddressSnapshot: true,
+	destinationContactSnapshot: true,
 	packages: {
 		orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 		select: {
@@ -441,8 +445,9 @@ export async function createShipment(
 		type: Prisma.ShipmentCreateInput["type"];
 		deliveryMode?: Prisma.ShipmentCreateInput["deliveryMode"];
 		status: Prisma.ShipmentCreateInput["status"];
-		destinationAddressSnapshot?: Record<string, unknown>;
-		destinationContactSnapshot?: Record<string, unknown>;
+		pickupPointId?: number | null;
+		destinationAddressSnapshot?: unknown;
+		destinationContactSnapshot?: unknown;
 	},
 ) {
 	return db.shipment.create({
@@ -453,12 +458,13 @@ export async function createShipment(
 			type: data.type,
 			deliveryMode: data.deliveryMode,
 			status: data.status,
+			pickupPointId: data.pickupPointId ?? null,
 			destinationAddressSnapshot:
-				data.destinationAddressSnapshot === undefined
+				data.destinationAddressSnapshot == null
 					? undefined
 					: toPrismaInputJson(data.destinationAddressSnapshot),
 			destinationContactSnapshot:
-				data.destinationContactSnapshot === undefined
+				data.destinationContactSnapshot == null
 					? undefined
 					: toPrismaInputJson(data.destinationContactSnapshot),
 		},

@@ -49,6 +49,7 @@ function Resumen({ shipment }: { shipment: ShipmentDetail }) {
 							{shipment.deliveryMode
 								? deliveryModeLabelMap[shipment.deliveryMode]
 								: "Sin modo de entrega"}
+							{shipment.pickupPoint ? ` · ${shipment.pickupPoint.name}` : ""}
 						</p>
 					) : null}
 				</div>

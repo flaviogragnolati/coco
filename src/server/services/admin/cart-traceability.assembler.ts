@@ -30,6 +30,8 @@ export type CartTraceabilityDiagnosticsMaps = {
 	lot: Map<number, OperationalDiagnostic[]>;
 	package: Map<number, OperationalDiagnostic[]>;
 	shipment: Map<number, OperationalDiagnostic[]>;
+	/** Keyed by order id; cart-level only, no item's lineage passes through it. */
+	order: Map<number, OperationalDiagnostic[]>;
 };
 
 export type CartTraceabilityTimelines = {
@@ -197,6 +199,9 @@ function toOrder(order: OrderRecord): CartTraceabilityOrder {
 		status: order.status,
 		createdAt: order.createdAt,
 		updatedAt: order.updatedAt,
+		deliveryPreference: order.deliveryPreference,
+		pickupPointSnapshot: order.pickupPointSnapshot,
+		shippingAddressSnapshot: order.shippingAddressSnapshot,
 		payments: order.transactions.map(toPayment),
 	};
 }
@@ -253,6 +258,7 @@ function buildCartDiagnostics(diagnostics: CartTraceabilityDiagnosticsMaps) {
 		...Array.from(diagnostics.lot.values()).flat(),
 		...Array.from(diagnostics.package.values()).flat(),
 		...Array.from(diagnostics.shipment.values()).flat(),
+		...Array.from(diagnostics.order.values()).flat(),
 	]);
 }
 

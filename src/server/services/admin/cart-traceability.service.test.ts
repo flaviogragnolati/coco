@@ -187,6 +187,11 @@ function buildRecord(): CartTraceabilityRecord {
 				status: "processing",
 				createdAt: baseDate,
 				updatedAt: baseDate,
+				deliveryPreference: null,
+				pickupPointId: null,
+				pickupPointSnapshot: null,
+				shippingAddressSnapshot: null,
+				pickupPoint: null,
 				transactions: [
 					{
 						id: 800,
@@ -237,6 +242,7 @@ function buildDiagnostics(): CartTraceabilityDiagnosticsMaps {
 		]),
 		package: new Map([[1, [packageDiagnostic1]]]),
 		shipment: new Map([[1, [shipmentDiagnostic1]]]),
+		order: new Map(),
 	};
 }
 

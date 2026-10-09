@@ -145,6 +145,11 @@ const cartTraceabilitySelect = {
 			status: true,
 			createdAt: true,
 			updatedAt: true,
+			deliveryPreference: true,
+			pickupPointId: true,
+			pickupPointSnapshot: true,
+			shippingAddressSnapshot: true,
+			pickupPoint: { select: { name: true, active: true, deleted: true } },
 			transactions: {
 				orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 				select: {

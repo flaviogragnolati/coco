@@ -34,7 +34,7 @@ export function ShipmentAddPackagesDialog({
 			description={
 				shipment?.deliveryMode === "homeDelivery"
 					? "El envío es a domicilio, así que los paquetes agregados deben ser del mismo cliente."
-					: "El envío es a un punto de retiro, así que puede agrupar paquetes de varios clientes."
+					: `El envío es al punto de retiro ${shipment?.pickupPoint?.name ?? ""}: puede agrupar paquetes de varios clientes que hayan elegido ese punto.`
 			}
 			footer={
 				<>
@@ -80,11 +80,14 @@ export function ShipmentAddPackagesDialog({
 			</section>
 
 			<OutboundPackagePicker
-				onToggle={(packageId) =>
+				onSelectGroup={(group) =>
+					setPackageIds(group.packages.map((pkg) => pkg.id))
+				}
+				onToggle={(pkg) =>
 					setPackageIds((current) =>
-						current.includes(packageId)
-							? current.filter((id) => id !== packageId)
-							: [...current, packageId],
+						current.includes(pkg.id)
+							? current.filter((id) => id !== pkg.id)
+							: [...current, pkg.id],
 					)
 				}
 				selectedIds={packageIds}

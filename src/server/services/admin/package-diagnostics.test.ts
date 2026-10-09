@@ -571,3 +571,45 @@ test("a delivered outbound package is not uncollected", () => {
 		"package.outbound.notCollected",
 	);
 });
+
+function orderOf(
+	orderId: number,
+	deliveryPreference: "homeDelivery" | "pickupPoint" | null,
+	pickupPointId: number | null = null,
+) {
+	return {
+		cartId: orderId,
+		orderId,
+		orderCode: `ORD-${orderId}`,
+		status: "processing" as const,
+		customerName: "Cliente",
+		customerEmail: "cliente@example.com",
+		deliveryPreference,
+		pickupPointId,
+		pickupPointName: pickupPointId ? "Centro" : null,
+		pickupPointActive: pickupPointId ? true : null,
+		shippingAddressSnapshot: null,
+	};
+}
+
+test("an outbound package whose orders chose different deliveries reports it", () => {
+	const outbound = pkg({
+		leg: "outbound",
+		shipment: null,
+		lines: multiCustomerLines,
+	});
+
+	expect(
+		calculatePackageDiagnostics(outbound, {
+			orders: [orderOf(900, "homeDelivery"), orderOf(901, "pickupPoint", 3)],
+		}).map((diagnostic) => diagnostic.code),
+	).toEqual([
+		"package.outbound.multiCustomer",
+		"package.outbound.deliveryPreferenceConflict",
+	]);
+	expect(
+		calculatePackageDiagnostics(outbound, {
+			orders: [orderOf(900, "pickupPoint", 3), orderOf(901, null)],
+		}).map((diagnostic) => diagnostic.code),
+	).toEqual(["package.outbound.multiCustomer"]);
+});

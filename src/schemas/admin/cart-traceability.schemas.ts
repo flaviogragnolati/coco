@@ -30,6 +30,7 @@ import {
 	shipmentTypeSchema,
 } from "~/schemas/admin/shipment.schemas";
 import { userRoleSchema } from "~/schemas/admin/user.schemas";
+import { deliveryModeSchema } from "~/schemas/pickup-point.schemas";
 import { adminTrackingTimelineItemSchema } from "~/schemas/tracking.schemas";
 
 export const cartTraceabilityInputSchema = z.object({
@@ -166,6 +167,9 @@ const cartTraceabilityOrderSchema = z.object({
 	status: operationsUserOrderStatusSchema,
 	createdAt: z.date(),
 	updatedAt: z.date(),
+	deliveryPreference: deliveryModeSchema.nullable(),
+	pickupPointSnapshot: z.unknown().nullable(),
+	shippingAddressSnapshot: z.unknown().nullable(),
 	payments: z.array(cartTraceabilityPaymentSchema),
 });
 
