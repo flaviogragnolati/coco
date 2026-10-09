@@ -6,6 +6,7 @@ import { appLogger } from "~/server/services/logging/app-logger.service";
 import type { DomainEventInput } from "~/shared/common/domain-events.types";
 import { toPrismaInputJson } from "../services/admin/_base/prisma-json";
 
+// biome-ignore lint/complexity/noStaticOnlyClass: This class is a logical grouping of related functionality and is not expected to be instantiated or extended.
 export class DomainEventPublisher {
 	static async publish(
 		tx: Prisma.TransactionClient,
