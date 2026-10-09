@@ -276,7 +276,7 @@ async function findUnusedProductImageUrls(
 	return productImageUrlsToDelete({ before, after, otherProducts });
 }
 
-/** Runs after commit and never throws: an orphaned blob is cheaper than a failed save. */
+/** Call only after the save commits. Never throws: an orphaned blob is cheaper than a failed save. */
 async function deleteProductImageBlobs(urls: string[]) {
 	if (urls.length === 0) return;
 

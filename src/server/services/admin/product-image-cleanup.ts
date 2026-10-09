@@ -12,7 +12,7 @@ function productImageUrls(product: ProductImageFields) {
 	);
 }
 
-/** Only blobs written by the product image upload route; pasted URLs are never ours to delete. */
+/** The upload route's Vercel Blob `products/` paths; any other URL was pasted by hand and is never ours to delete. */
 function isUploadedProductImageUrl(url: string) {
 	let parsed: URL;
 	try {

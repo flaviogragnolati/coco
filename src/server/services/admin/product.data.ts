@@ -227,7 +227,7 @@ export async function hardDeleteProduct(db: AdminDbClient, id: number) {
 	});
 }
 
-/** Includes soft-deleted products: restoring one brings its images back. */
+/** Includes soft-deleted products, which keep their images in case they are restored. */
 export async function findOtherProductsUsingImages(
 	db: AdminDbClient,
 	input: { excludeId: number; urls: string[] },
