@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+/**
+ * Depot pickup is deliberately absent: it is the absence of a shipment, not a
+ * mode of one (see the `DeliveryMode` enum in `prisma/schema.prisma`). The same
+ * values name the customer's delivery preference on an order.
+ */
+export const deliveryModeSchema = z.enum(["homeDelivery", "pickupPoint"]);
+
 /** What a pickup point looks like once copied into an order or a shipment. */
 export const pickupPointDataSchema = z.object({
 	id: z.number().int().positive(),

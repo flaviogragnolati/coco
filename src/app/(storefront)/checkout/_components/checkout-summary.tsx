@@ -18,14 +18,12 @@ import {
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
 import type { CartSnapshot } from "~/shared/common/cart.types";
-import type {
-	CheckoutAddress,
-	CheckoutPaymentMethod,
-} from "~/shared/common/checkout.types";
+import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import {
 	formatCurrency,
 	formatQuantity,
 } from "~/shared/common/commerce.helpers";
+import type { CheckoutDeliverySelection } from "./checkout-delivery-step";
 import type { CheckoutStepId } from "./checkout-steps";
 
 const ITEM_PEEK_LIMIT = 4;
@@ -71,14 +69,14 @@ function SummaryEditRow({
 
 export function CheckoutSummary({
 	cart,
-	selectedAddress,
+	delivery,
 	selectedPaymentMethod,
 	currentStep,
 	onEditStep,
 	className,
 }: {
 	cart: CartSnapshot;
-	selectedAddress?: CheckoutAddress | null;
+	delivery?: CheckoutDeliverySelection;
 	selectedPaymentMethod?: CheckoutPaymentMethod | null;
 	currentStep: CheckoutStepId;
 	onEditStep: (step: CheckoutStepId) => void;
@@ -147,12 +145,16 @@ export function CheckoutSummary({
 				<Separator />
 				<div className="flex flex-col gap-3">
 					<SummaryEditRow
-						canEdit={currentStep !== "shipping"}
-						editStep="shipping"
+						canEdit={currentStep !== "delivery"}
+						editStep="delivery"
 						icon={<MapPinIcon className="size-3.5" />}
-						label="Dirección"
+						label="Entrega"
 						onEditStep={onEditStep}
-						value={selectedAddress?.line1 ?? "Sin seleccionar"}
+						value={
+							delivery?.mode === "pickupPoint"
+								? delivery.pickupPoint.name
+								: (delivery?.address.line1 ?? "Sin seleccionar")
+						}
 					/>
 					<SummaryEditRow
 						canEdit={currentStep !== "payment"}

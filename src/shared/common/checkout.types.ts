@@ -5,6 +5,7 @@ import type {
 	checkoutAddressSchema,
 	checkoutAddressUpdateInputSchema,
 	checkoutConfirmInputSchema,
+	checkoutDeliveryInputSchema,
 	checkoutPaymentMethodSchema,
 	checkoutPaymentResultSchema,
 	checkoutPaymentStatusSchema,
@@ -29,6 +30,9 @@ export type CheckoutPaymentMethod = z.output<
 >;
 export type CheckoutState = z.output<typeof checkoutStateSchema>;
 export type CheckoutConfirmInput = z.output<typeof checkoutConfirmInputSchema>;
+export type CheckoutDeliveryInput = z.output<
+	typeof checkoutDeliveryInputSchema
+>;
 export type CheckoutPaymentStatus = z.output<
 	typeof checkoutPaymentStatusSchema
 >;

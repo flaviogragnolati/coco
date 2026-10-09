@@ -38,9 +38,13 @@ import type {
 	CheckoutPaymentResult,
 	CheckoutState,
 } from "~/shared/common/checkout.types";
+import type { DeliveryPreference } from "~/shared/common/delivery-display";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
 import { api } from "~/trpc/react";
-import { CheckoutAddressStep } from "./checkout-address-step";
+import {
+	type CheckoutDeliverySelection,
+	CheckoutDeliveryStep,
+} from "./checkout-delivery-step";
 import { CheckoutOrderStep } from "./checkout-order-step";
 import { CheckoutPaymentStep } from "./checkout-payment-step";
 import { CheckoutResultPanel } from "./checkout-result-panel";
@@ -100,9 +104,14 @@ export function CheckoutClient() {
 
 	const [checkout, setCheckout] = useState<CheckoutState | null>(null);
 	const [currentStep, setCurrentStep] = useState<CheckoutStepId>("order");
+	const [deliveryMode, setDeliveryMode] =
+		useState<DeliveryPreference>("homeDelivery");
 	const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
 		null,
 	);
+	const [selectedPickupPointId, setSelectedPickupPointId] = useState<
+		number | null
+	>(null);
 	const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<
 		number | null
 	>(null);
@@ -123,6 +132,9 @@ export function CheckoutClient() {
 		setCheckout(nextCheckout);
 		setSelectedAddressId(
 			(current) => current ?? nextCheckout.addresses[0]?.id ?? null,
+		);
+		setSelectedPickupPointId(
+			(current) => current ?? nextCheckout.pickupPoints[0]?.id ?? null,
 		);
 		setSelectedPaymentMethodId(
 			(current) => current ?? nextCheckout.paymentMethods[0]?.id ?? null,
@@ -321,6 +333,20 @@ export function CheckoutClient() {
 	const selectedAddress = checkout.addresses.find(
 		(address) => address.id === selectedAddressId,
 	);
+	const selectedPickupPoint = checkout.pickupPoints.find(
+		(point) => point.id === selectedPickupPointId,
+	);
+	// Pickup is only a choice while checkout offers a point.
+	const effectiveDeliveryMode: DeliveryPreference =
+		checkout.pickupPoints.length > 0 ? deliveryMode : "homeDelivery";
+	const deliverySelection: CheckoutDeliverySelection | undefined =
+		effectiveDeliveryMode === "pickupPoint"
+			? selectedPickupPoint
+				? { mode: "pickupPoint", pickupPoint: selectedPickupPoint }
+				: undefined
+			: selectedAddress
+				? { mode: "homeDelivery", address: selectedAddress }
+				: undefined;
 	const selectedPaymentMethod = checkout.paymentMethods.find(
 		(paymentMethod) => paymentMethod.id === selectedPaymentMethodId,
 	);
@@ -329,7 +355,9 @@ export function CheckoutClient() {
 
 	const selection: CheckoutSelection = {
 		hasItems: liveCart.items.length > 0,
-		addressId: selectedAddressId,
+		deliveryMode: effectiveDeliveryMode,
+		addressId: selectedAddress?.id ?? null,
+		pickupPointId: selectedPickupPoint?.id ?? null,
 		paymentMethodId: selectedPaymentMethodId,
 		acceptedTerms,
 	};
@@ -360,12 +388,21 @@ export function CheckoutClient() {
 	};
 
 	const handleConfirm = () => {
-		if (!(selectedAddress && selectedPaymentMethod)) return;
+		if (!(deliverySelection && selectedPaymentMethod)) return;
 		confirmAndPay.mutate({
 			acceptedTerms: true,
 			idempotencyKey: paymentAttemptKey,
 			paymentMethodId: selectedPaymentMethod.id,
-			shippingAddressId: selectedAddress.id,
+			delivery:
+				deliverySelection.mode === "pickupPoint"
+					? {
+							mode: "pickupPoint",
+							pickupPointId: deliverySelection.pickupPoint.id,
+						}
+					: {
+							mode: "homeDelivery",
+							shippingAddressId: deliverySelection.address.id,
+						},
 		});
 	};
 
@@ -401,19 +438,24 @@ export function CheckoutClient() {
 						<CheckoutOrderStep cart={liveCart} onEditCart={handleEditCart} />
 					) : null}
 
-					{currentStep === "shipping" ? (
-						<CheckoutAddressStep
+					{currentStep === "delivery" ? (
+						<CheckoutDeliveryStep
 							addresses={checkout.addresses}
-							onAdd={() => {
+							deliveryMode={effectiveDeliveryMode}
+							onAddAddress={() => {
 								setEditingAddress(null);
 								setAddressDialogOpen(true);
 							}}
-							onEdit={(address) => {
+							onDeliveryModeChange={setDeliveryMode}
+							onEditAddress={(address) => {
 								setEditingAddress(address);
 								setAddressDialogOpen(true);
 							}}
-							onSelect={setSelectedAddressId}
+							onSelectAddress={setSelectedAddressId}
+							onSelectPickupPoint={setSelectedPickupPointId}
+							pickupPoints={checkout.pickupPoints}
 							selectedAddressId={selectedAddressId}
+							selectedPickupPointId={selectedPickupPointId}
 						/>
 					) : null}
 
@@ -426,17 +468,17 @@ export function CheckoutClient() {
 					) : null}
 
 					{currentStep === "review" &&
-					selectedAddress &&
+					deliverySelection &&
 					selectedPaymentMethod ? (
 						<CheckoutReviewStep
 							acceptedTerms={acceptedTerms}
 							cart={liveCart}
+							delivery={deliverySelection}
 							isSubmitting={confirmAndPay.isPending}
 							onAcceptedTermsChange={setAcceptedTerms}
 							onConfirm={handleConfirm}
 							onEditStep={goToStep}
 							paymentMethod={selectedPaymentMethod}
-							shippingAddress={selectedAddress}
 							termsText={checkout.termsText}
 						/>
 					) : null}
@@ -468,8 +510,8 @@ export function CheckoutClient() {
 					cart={liveCart}
 					className="hidden lg:sticky lg:top-20 lg:block"
 					currentStep={currentStep}
+					delivery={deliverySelection}
 					onEditStep={goToStep}
-					selectedAddress={selectedAddress}
 					selectedPaymentMethod={selectedPaymentMethod}
 				/>
 			</div>
@@ -489,15 +531,15 @@ export function CheckoutClient() {
 					<SheetHeader className="sr-only">
 						<SheetTitle>Resumen del pedido</SheetTitle>
 						<SheetDescription>
-							Productos, totales, dirección y pago seleccionados.
+							Productos, totales, entrega y pago seleccionados.
 						</SheetDescription>
 					</SheetHeader>
 					<div className="flex-1 overflow-y-auto px-4 py-4">
 						<CheckoutSummary
 							cart={liveCart}
 							currentStep={currentStep}
+							delivery={deliverySelection}
 							onEditStep={goToStep}
-							selectedAddress={selectedAddress}
 							selectedPaymentMethod={selectedPaymentMethod}
 						/>
 					</div>

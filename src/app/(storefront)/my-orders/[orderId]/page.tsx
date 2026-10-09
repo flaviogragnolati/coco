@@ -21,6 +21,10 @@ import {
 	formatQuantity,
 } from "~/shared/common/commerce.helpers";
 import {
+	describeOrderDelivery,
+	formatOrderDelivery,
+} from "~/shared/common/delivery-display";
+import {
 	orderStatusChipConfigMap,
 	paymentStatusLabelMap,
 } from "~/shared/common/order-display";
@@ -118,6 +122,7 @@ export default async function OrderDetailPage({
 		})),
 	);
 	const statusChip = orderStatusChipConfigMap[order.status];
+	const delivery = describeOrderDelivery(order);
 	const StatusIcon = statusChip.icon;
 
 	return (
@@ -206,10 +211,43 @@ export default async function OrderDetailPage({
 								<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
 									<MapPinIcon className="size-4" />
 								</span>
-								<div className="flex min-w-0 flex-col gap-1">
-									<span className="text-muted-foreground">Envío</span>
-									<span>{getAddressLine(order.shippingAddressSnapshot)}</span>
-								</div>
+								{delivery ? (
+									<div className="flex min-w-0 flex-col gap-1">
+										<span className="text-muted-foreground">Entrega</span>
+										<span>{formatOrderDelivery(delivery)}</span>
+										{delivery.instructions ? (
+											<span className="text-muted-foreground">
+												{delivery.instructions}
+											</span>
+										) : null}
+										{delivery.googleMapsUrl ? (
+											<a
+												className="underline underline-offset-2"
+												href={delivery.googleMapsUrl}
+												rel="noreferrer"
+												target="_blank"
+											>
+												Ver en el mapa
+											</a>
+										) : null}
+										{order.status === "processing" ? (
+											<span className="text-muted-foreground">
+												¿Querés cambiarla?{" "}
+												<Link
+													className="underline underline-offset-2"
+													href="/#contacto"
+												>
+													Escribinos.
+												</Link>
+											</span>
+										) : null}
+									</div>
+								) : (
+									<div className="flex min-w-0 flex-col gap-1">
+										<span className="text-muted-foreground">Envío</span>
+										<span>{getAddressLine(order.shippingAddressSnapshot)}</span>
+									</div>
+								)}
 							</div>
 						</CardContent>
 					</Card>

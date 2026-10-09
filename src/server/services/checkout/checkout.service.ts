@@ -38,6 +38,7 @@ import {
 	calculateLineTotal,
 	selectProductImage,
 } from "~/shared/common/commerce.helpers";
+import { readPickupPointSnapshot } from "~/shared/common/delivery-display";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
 import {
@@ -58,6 +59,7 @@ import {
 	findCheckoutAddressById,
 	findCheckoutCartByUserId,
 	findCheckoutPaymentMethodById,
+	findCheckoutPickupPointById,
 	findExternalPaymentMethod,
 	findLiveOrderByCartId,
 	findMercadoPagoPaymentMethod,
@@ -66,14 +68,20 @@ import {
 	findOrderByUserId,
 	findTransactionByIdempotencyKey,
 	listCheckoutAddresses,
+	listCheckoutPickupPoints,
 	listOrdersByUserId,
 	markTransactionAsExternalPending,
 	type OrderDetailRecord,
 	type OrderListRecord,
 	updateCartStatus,
 	updateCheckoutAddress,
+	updateOrderDelivery,
 	updateTransactionWithMercadoPagoPreference,
 } from "./checkout.data";
+import {
+	type OrderDeliveryColumns,
+	resolveCheckoutDelivery,
+} from "./checkout-delivery";
 import { releaseCheckoutCart } from "./checkout-release";
 import { checkoutReleaseBlockedMessage } from "./checkout-release.decision";
 import { isSpentPaymentAttempt } from "./payment-attempt.decision";
@@ -185,14 +193,6 @@ function assertSingleCurrency(cart: CartSnapshot) {
 	return total;
 }
 
-function buildAddressSnapshot(address: CheckoutAddress) {
-	return {
-		source: "checkout",
-		capturedAt: new Date().toISOString(),
-		address,
-	};
-}
-
 function buildTermsSnapshot(acceptedAt: Date) {
 	return {
 		source: "checkout",
@@ -255,6 +255,10 @@ function toOrderDetail(
 		cartCode: record.cart.code,
 		billingAddressSnapshot: record.billingAddressSnapshot,
 		shippingAddressSnapshot: record.shippingAddressSnapshot,
+		deliveryPreference: record.deliveryPreference,
+		pickupPointSnapshot: readPickupPointSnapshot(record.pickupPointSnapshot)
+			? record.pickupPointSnapshot
+			: null,
 		termsSnapshot: record.termsSnapshot,
 		acceptedTermsAt: record.acceptedTermsAt,
 		externalPayment,
@@ -269,7 +273,10 @@ function toOrderDetail(
 	});
 }
 
-function getAddressFromSnapshot(record: OrderDetailRecord): CheckoutAddress {
+/** Null for a pickup-point order, which stores no address. */
+function getAddressFromSnapshot(
+	record: OrderDetailRecord,
+): CheckoutAddress | null {
 	const snapshot = record.shippingAddressSnapshot;
 
 	if (
@@ -279,6 +286,8 @@ function getAddressFromSnapshot(record: OrderDetailRecord): CheckoutAddress {
 	) {
 		return checkoutAddressSchema.parse(snapshot.address);
 	}
+
+	if (record.deliveryPreference === "pickupPoint") return null;
 
 	throw new TRPCError({
 		code: "INTERNAL_SERVER_ERROR",
@@ -304,7 +313,6 @@ function mapTransactionStatusToPaymentStatus(
 function buildPaymentResult(input: {
 	order: OrderDetailRecord;
 	transaction: OrderDetailRecord["transactions"][number];
-	shippingAddress: CheckoutAddress;
 	paymentMethod: CheckoutPaymentMethod;
 	message?: string;
 	externalPayment?: ExternalPaymentInstructions | null;
@@ -347,7 +355,9 @@ function buildPaymentResult(input: {
 						input.transaction.sandboxCheckoutUrl)
 				: null,
 		externalPayment: input.externalPayment ?? null,
-		shippingAddress: input.shippingAddress,
+		deliveryPreference: input.order.deliveryPreference,
+		shippingAddress: getAddressFromSnapshot(input.order),
+		pickupPoint: readPickupPointSnapshot(input.order.pickupPointSnapshot),
 		paymentMethod: input.paymentMethod,
 	});
 }
@@ -439,10 +449,13 @@ export async function start(userId: string): Promise<CheckoutState> {
 			paymentMethods.push(await findOrCreateExternalPaymentMethod(tx, userId));
 		}
 
+		const pickupPoints = await listCheckoutPickupPoints(tx);
+
 		return checkoutStateSchema.parse({
 			cart: mapCart(checkoutCart),
 			addresses: addresses.map(toCheckoutAddress),
 			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
+			pickupPoints,
 			termsText: CHECKOUT_TERMS.text,
 		});
 	});
@@ -466,10 +479,13 @@ export async function getState(userId: string): Promise<CheckoutState> {
 			if (method) paymentMethods.push(method);
 		}
 
+		const pickupPoints = await listCheckoutPickupPoints(tx);
+
 		return checkoutStateSchema.parse({
 			cart: mapCart(cart),
 			addresses: addresses.map(toCheckoutAddress),
 			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
+			pickupPoints,
 			termsText: CHECKOUT_TERMS.text,
 		});
 	});
@@ -635,12 +651,53 @@ async function getExistingPaymentResult(
 	return buildPaymentResult({
 		order: existing.userOrder,
 		transaction: existing,
-		shippingAddress: getAddressFromSnapshot(existing.userOrder),
 		paymentMethod: toCheckoutPaymentMethod(existing.paymentMethod),
 		externalPayment: await loadExternalPaymentInstructions(db, {
 			orderCode: existing.userOrder.code,
 			transaction: existing,
 		}),
+	});
+}
+
+/**
+ * The customer's delivery choice, checked against what checkout offers right
+ * now: one of their saved addresses, or a point that is still active.
+ */
+async function resolveRequestedDelivery(
+	database: CheckoutDbClient,
+	userId: string,
+	input: CheckoutConfirmInput,
+): Promise<OrderDeliveryColumns> {
+	if (input.delivery.mode === "pickupPoint") {
+		const pickupPoint = await findCheckoutPickupPointById(
+			database,
+			input.delivery.pickupPointId,
+		);
+		if (!pickupPoint) {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "El punto de retiro ya no está disponible",
+			});
+		}
+
+		return resolveCheckoutDelivery({ delivery: input.delivery, pickupPoint });
+	}
+
+	const addressRecord = await findCheckoutAddressById(
+		database,
+		userId,
+		input.delivery.shippingAddressId,
+	);
+	if (!addressRecord) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "Seleccioná una dirección de envío válida.",
+		});
+	}
+
+	return resolveCheckoutDelivery({
+		delivery: input.delivery,
+		address: toCheckoutAddress(addressRecord),
 	});
 }
 
@@ -659,23 +716,12 @@ export async function confirmAndPay(
 		const cart = await getRequiredCheckoutCart(tx, userId);
 		const cartSnapshot = mapCart(cart);
 		const total = assertSingleCurrency(cartSnapshot);
-		const addressRecord = await findCheckoutAddressById(
-			tx,
-			userId,
-			input.shippingAddressId,
-		);
+		const delivery = await resolveRequestedDelivery(tx, userId, input);
 		const paymentRecord = await findCheckoutPaymentMethodById(
 			tx,
 			userId,
 			input.paymentMethodId,
 		);
-
-		if (!addressRecord) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "Seleccioná una dirección de envío válida.",
-			});
-		}
 
 		if (!paymentRecord) {
 			throw new TRPCError({
@@ -684,14 +730,18 @@ export async function confirmAndPay(
 			});
 		}
 
-		const address = toCheckoutAddress(addressRecord);
 		const paymentMethod = toCheckoutPaymentMethod(paymentRecord);
 		const providerConfig = await resolvePaymentProviderConfig(
 			tx,
 			paymentMethod,
 		);
 
-		const liveOrder = await findLiveOrderByCartId(tx, cart.id);
+		const foundLiveOrder = await findLiveOrderByCartId(tx, cart.id);
+		// A live order has no completed payment (one would have moved the cart out
+		// of checkout), so the customer's latest choice replaces the earlier one.
+		const liveOrder = foundLiveOrder
+			? await updateOrderDelivery(tx, foundLiveOrder.id, delivery)
+			: null;
 		const latestAttempt = liveOrder?.transactions[0] ?? null;
 
 		if (
@@ -704,7 +754,6 @@ export async function confirmAndPay(
 				result: buildPaymentResult({
 					order: liveOrder,
 					transaction: latestAttempt,
-					shippingAddress: getAddressFromSnapshot(liveOrder),
 					paymentMethod: toCheckoutPaymentMethod(latestAttempt.paymentMethod),
 					message: buildReusedAttemptMessage(latestAttempt),
 					externalPayment: await loadExternalPaymentInstructions(tx, {
@@ -730,7 +779,7 @@ export async function confirmAndPay(
 				code: buildOrderCode(),
 				userId,
 				cartId: cart.id,
-				shippingAddressSnapshot: buildAddressSnapshot(address),
+				delivery,
 				termsSnapshot: buildTermsSnapshot(acceptedAt),
 				acceptedTermsAt: acceptedAt,
 				items: cart.cartItems.map((item) => ({
@@ -765,7 +814,6 @@ export async function confirmAndPay(
 
 		return {
 			kind: "created" as const,
-			address,
 			cart,
 			order,
 			paymentMethod,
@@ -797,7 +845,6 @@ export async function confirmAndPay(
 		return buildPaymentResult({
 			order: prepared.order,
 			transaction,
-			shippingAddress: prepared.address,
 			paymentMethod: prepared.paymentMethod,
 			message:
 				"Te redirigimos a Mercado Pago. El pedido se confirma cuando el proveedor aprueba el pago.",
@@ -827,7 +874,6 @@ export async function confirmAndPay(
 	return buildPaymentResult({
 		order: prepared.order,
 		transaction,
-		shippingAddress: prepared.address,
 		paymentMethod: prepared.paymentMethod,
 		message:
 			"Registramos tu pedido. Hacé la transferencia con estos datos; confirmamos el pedido cuando la verifiquemos.",

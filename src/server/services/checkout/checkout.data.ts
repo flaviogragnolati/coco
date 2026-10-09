@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Prisma } from "~/prisma/client";
+import { Prisma } from "~/prisma/client";
 import type { db as prismaDb } from "~/server/db";
 import type {
 	CheckoutAddressCreateInput,
@@ -8,6 +8,7 @@ import type {
 } from "~/shared/common/checkout.types";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import { cartProductClientTermsSelect } from "../cart/cart.data";
+import type { OrderDeliveryColumns } from "./checkout-delivery";
 
 export type CheckoutDbClient = typeof prismaDb | Prisma.TransactionClient;
 
@@ -46,6 +47,20 @@ export const checkoutAddressSelect = {
 	country: true,
 	active: true,
 } satisfies Prisma.AddressSelect;
+
+export const checkoutPickupPointSelect = {
+	id: true,
+	name: true,
+	line1: true,
+	line2: true,
+	city: true,
+	state: true,
+	postalCode: true,
+	country: true,
+	googleMapsUrl: true,
+	hours: true,
+	instructions: true,
+} satisfies Prisma.PickupPointSelect;
 
 export const checkoutPaymentMethodSelect = {
 	id: true,
@@ -90,6 +105,8 @@ const orderDetailSelect = {
 	status: true,
 	billingAddressSnapshot: true,
 	shippingAddressSnapshot: true,
+	deliveryPreference: true,
+	pickupPointSnapshot: true,
 	termsSnapshot: true,
 	acceptedTermsAt: true,
 	createdAt: true,
@@ -223,6 +240,62 @@ export async function findCheckoutAddressById(
 	});
 }
 
+/** What checkout offers: only live, active points. */
+export async function listCheckoutPickupPoints(db: CheckoutDbClient) {
+	return db.pickupPoint.findMany({
+		where: { active: true, deleted: false },
+		select: checkoutPickupPointSelect,
+		orderBy: [{ name: "asc" }, { id: "asc" }],
+	});
+}
+
+export async function findCheckoutPickupPointById(
+	db: CheckoutDbClient,
+	id: number,
+) {
+	return db.pickupPoint.findFirst({
+		where: { id, active: true, deleted: false },
+		select: checkoutPickupPointSelect,
+	});
+}
+
+/**
+ * JSON columns cleared with `Prisma.DbNull`: a JSON `null` would satisfy no
+ * `IS NULL` branch of the `user_order` delivery CHECK.
+ */
+function deliveryColumnsData(delivery: OrderDeliveryColumns) {
+	return {
+		deliveryPreference: delivery.deliveryPreference,
+		pickupPointId: delivery.pickupPointId,
+		pickupPointSnapshot:
+			delivery.pickupPointSnapshot === null
+				? Prisma.DbNull
+				: toPrismaInputJson(delivery.pickupPointSnapshot),
+		shippingAddressSnapshot:
+			delivery.shippingAddressSnapshot === null
+				? Prisma.DbNull
+				: toPrismaInputJson(delivery.shippingAddressSnapshot),
+		// Billing is not captured; it mirrors the shipping address as before.
+		billingAddressSnapshot:
+			delivery.shippingAddressSnapshot === null
+				? Prisma.DbNull
+				: toPrismaInputJson(delivery.shippingAddressSnapshot),
+	};
+}
+
+/** Refreshes a live order's delivery when the customer confirms again before paying. */
+export async function updateOrderDelivery(
+	db: CheckoutDbClient,
+	id: number,
+	delivery: OrderDeliveryColumns,
+) {
+	return db.userOrder.update({
+		where: { id },
+		data: deliveryColumnsData(delivery),
+		select: orderDetailSelect,
+	});
+}
+
 export async function createCheckoutAddress(
 	db: CheckoutDbClient,
 	userId: string,
@@ -321,7 +394,7 @@ export async function createUserOrder(
 		code: string;
 		userId: string;
 		cartId: number;
-		shippingAddressSnapshot: unknown;
+		delivery: OrderDeliveryColumns;
 		termsSnapshot: unknown;
 		acceptedTermsAt: Date;
 		items: Array<{
@@ -338,8 +411,7 @@ export async function createUserOrder(
 			status: "pending",
 			userId: input.userId,
 			cartId: input.cartId,
-			billingAddressSnapshot: toPrismaInputJson(input.shippingAddressSnapshot),
-			shippingAddressSnapshot: toPrismaInputJson(input.shippingAddressSnapshot),
+			...deliveryColumnsData(input.delivery),
 			termsSnapshot: toPrismaInputJson(input.termsSnapshot),
 			acceptedTermsAt: input.acceptedTermsAt,
 			items: {

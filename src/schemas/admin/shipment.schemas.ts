@@ -13,6 +13,7 @@ import {
 	operationalDiagnosticSchema,
 } from "~/schemas/admin/operational-diagnostic.schemas";
 import { packageLegSchema } from "~/schemas/admin/package.schemas";
+import { deliveryModeSchema } from "~/schemas/pickup-point.schemas";
 
 const optionalTrimmedText = z
 	.string()
@@ -38,11 +39,7 @@ export const shipmentTypeSchema = z.enum([
 	"endUserDelivery",
 ]);
 
-/**
- * Depot pickup is deliberately absent: it is the absence of a shipment, not a
- * mode of one (see the `DeliveryMode` enum in `prisma/schema.prisma`).
- */
-export const deliveryModeSchema = z.enum(["homeDelivery", "pickupPoint"]);
+export { deliveryModeSchema };
 
 export const shipmentIdSchema = positiveIdSchema;
 

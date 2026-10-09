@@ -24,11 +24,13 @@ import { Separator } from "~/components/ui/separator";
 import { Switch } from "~/components/ui/switch";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
 import type { CartSnapshot } from "~/shared/common/cart.types";
-import type {
-	CheckoutAddress,
-	CheckoutPaymentMethod,
-} from "~/shared/common/checkout.types";
+import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
+import {
+	deliveryPreferenceLabelMap,
+	formatAddressLine,
+} from "~/shared/common/delivery-display";
+import type { CheckoutDeliverySelection } from "./checkout-delivery-step";
 import { paymentMethodCopy } from "./checkout-payment-step";
 import type { CheckoutStepId } from "./checkout-steps";
 
@@ -69,7 +71,7 @@ function ReviewSection({
 
 export function CheckoutReviewStep({
 	cart,
-	shippingAddress,
+	delivery,
 	paymentMethod,
 	termsText,
 	acceptedTerms,
@@ -79,7 +81,7 @@ export function CheckoutReviewStep({
 	onEditStep,
 }: {
 	cart: CartSnapshot;
-	shippingAddress: CheckoutAddress;
+	delivery: CheckoutDeliverySelection;
 	paymentMethod: CheckoutPaymentMethod;
 	termsText: string;
 	acceptedTerms: boolean;
@@ -93,7 +95,7 @@ export function CheckoutReviewStep({
 			<CardHeader>
 				<CardTitle>Confirmación del pedido</CardTitle>
 				<CardDescription>
-					Revisá cantidades, dirección, pago y total antes de confirmar.
+					Revisá cantidades, entrega, pago y total antes de confirmar.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-5">
@@ -131,20 +133,30 @@ export function CheckoutReviewStep({
 
 				<div className="grid gap-3 md:grid-cols-2">
 					<ReviewSection
-						editStep="shipping"
+						editStep="delivery"
 						icon={<MapPinIcon className="size-4 text-muted-foreground" />}
 						onEditStep={onEditStep}
-						title="Envío"
+						title="Entrega"
 					>
 						<div className="flex flex-col gap-1">
-							<span className="text-xs/relaxed">
-								{shippingAddress.line1}
-								{shippingAddress.line2 ? `, ${shippingAddress.line2}` : ""}
-							</span>
 							<span className="text-muted-foreground text-xs">
-								{shippingAddress.city}, {shippingAddress.state}{" "}
-								{shippingAddress.postalCode}
+								{deliveryPreferenceLabelMap[delivery.mode]}
 							</span>
+							{delivery.mode === "pickupPoint" ? (
+								<>
+									<span className="text-xs/relaxed">
+										{delivery.pickupPoint.name} —{" "}
+										{formatAddressLine(delivery.pickupPoint)}
+									</span>
+									<span className="text-muted-foreground text-xs">
+										{delivery.pickupPoint.hours}
+									</span>
+								</>
+							) : (
+								<span className="text-xs/relaxed">
+									{formatAddressLine(delivery.address)}
+								</span>
+							)}
 						</div>
 					</ReviewSection>
 					<ReviewSection

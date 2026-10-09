@@ -66,6 +66,8 @@ const cart = {
 const data = {
 	findCheckoutCartByUserId: tracked("findCheckoutCartByUserId", cart),
 	listCheckoutAddresses: tracked("listCheckoutAddresses", []),
+	listCheckoutPickupPoints: tracked("listCheckoutPickupPoints", []),
+	findCheckoutPickupPointById: tracked("findCheckoutPickupPointById", null),
 	findCheckoutAddressById: tracked("findCheckoutAddressById", null),
 	findCheckoutPaymentMethodById: tracked("findCheckoutPaymentMethodById", null),
 	findTransactionByIdempotencyKey: vi.fn(async () => null),
@@ -113,6 +115,7 @@ test("getState reads addresses and provider configs one at a time", async () => 
 	expect(data.listCheckoutAddresses).toHaveBeenCalledWith(tx, "user-1");
 	expect(getMercadoPagoConfig).toHaveBeenCalledWith(tx);
 	expect(getExternalPaymentConfig).toHaveBeenCalledWith(tx);
+	expect(data.listCheckoutPickupPoints).toHaveBeenCalledWith(tx);
 	expect(overlaps).toEqual([]);
 });
 
@@ -126,16 +129,24 @@ test("confirmAndPay looks up the address and payment method one at a time", asyn
 	await expect(
 		checkoutService.confirmAndPay("user-1", {
 			idempotencyKey: "idem-1",
-			shippingAddressId: 1,
+			delivery: { mode: "homeDelivery", shippingAddressId: 1 },
 			paymentMethodId: 2,
 		} as Parameters<typeof checkoutService.confirmAndPay>[1]),
 	).rejects.toThrow("Seleccioná una dirección de envío válida.");
 
 	expect(data.findCheckoutAddressById).toHaveBeenCalledWith(tx, "user-1", 1);
-	expect(data.findCheckoutPaymentMethodById).toHaveBeenCalledWith(
-		tx,
-		"user-1",
-		2,
-	);
+	expect(overlaps).toEqual([]);
+});
+
+test("confirmAndPay refuses a pickup point checkout no longer offers", async () => {
+	await expect(
+		checkoutService.confirmAndPay("user-1", {
+			idempotencyKey: "idem-2",
+			delivery: { mode: "pickupPoint", pickupPointId: 7 },
+			paymentMethodId: 2,
+		} as Parameters<typeof checkoutService.confirmAndPay>[1]),
+	).rejects.toThrow("El punto de retiro ya no está disponible");
+
+	expect(data.findCheckoutPickupPointById).toHaveBeenCalledWith(tx, 7);
 	expect(overlaps).toEqual([]);
 });
