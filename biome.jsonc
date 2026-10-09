@@ -1,6 +1,15 @@
 {
 	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"root": true,
+	"files": {
+		"includes": [
+			"**",
+			"!!.agents",
+			"!!.claude",
+			"!skills-lock.json",
+			"!.vscode/launch.json"
+		]
+	},
 	"vcs": {
 		"enabled": true,
 		"useIgnoreFile": true,

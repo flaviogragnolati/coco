@@ -61,7 +61,7 @@ export function OrderDeliveryChangeDialog({
 	orderId: number;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onChanged: () => Promise<unknown> | void;
+	onChanged: () => unknown;
 }) {
 	const optionsQuery = api.admin.userOrder.deliveryOptions.useQuery(
 		{ orderId },

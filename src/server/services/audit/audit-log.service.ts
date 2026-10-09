@@ -23,6 +23,7 @@ function actorUserId(actor: DomainActor | undefined) {
 	return actor.actorId;
 }
 
+// biome-ignore lint/complexity/noStaticOnlyClass: This class is a logical grouping of related functionality and is not expected to be instantiated or extended.
 export class AuditLogService {
 	static async write(
 		db: Prisma.TransactionClient,
