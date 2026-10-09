@@ -114,15 +114,15 @@ describe("decideCheckoutRelease", () => {
 	});
 });
 
-// QA traces tickets 3 and 10 by quoting these strings; they are contract.
+// Customer-facing wording: a change here is a copy decision, not a refactor.
 describe("checkoutReleaseBlockedMessage", () => {
-	test("the in-flight payment message is unchanged", () => {
+	test("pins the in-flight payment wording", () => {
 		expect(checkoutReleaseBlockedMessage("blockedPaymentInFlight")).toBe(
 			"Hay un pago en curso para tu pedido. Esperá a que el proveedor lo resuelva.",
 		);
 	});
 
-	test("the declared receipt message is unchanged", () => {
+	test("pins the declared receipt wording", () => {
 		expect(checkoutReleaseBlockedMessage("blockedDeclaredReceipt")).toBe(
 			"Ya informaste una transferencia para tu pedido. Esperá a que la confirmemos antes de volver a editarlo.",
 		);
