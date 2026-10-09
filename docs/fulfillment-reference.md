@@ -163,6 +163,42 @@ status** records the handover (delivery confirmation is per package).
 | **Pickup point** (`deliveryMode: pickupPoint`) | end-user shipment, multi-customer allowed | arrival is **not** a handover: `deliver` marks only the shipment `received` and publishes an arrival notice ("Disponible para retirar"); each customer's own `package.confirmDelivery` (`inTransit → received`) produces `delivered` |
 | **Depot pickup** (no mode value) | **no shipment at all — the absence is the mode** | `package.confirmDelivery` on the never-shipped outbound package (`readyForShipment → received`) |
 
+### Customer delivery preference (ADR 0011)
+
+At checkout the customer chooses **home delivery** to one of their addresses or
+a **pickup point** — an admin-managed `PickupPoint` (address, free-text hours,
+instructions), distinct from the internal `Destination`. The order stores it:
+`UserOrder.deliveryPreference`, `pickupPointId`, `pickupPointSnapshot` (a pickup
+order stores no address; a CHECK keeps the columns consistent). Checkout offers
+the pickup option only while an active point exists, and a choice changed
+before paying replaces the earlier one on the live order. Orders paid before
+the choice existed have a null preference.
+
+- **Match rule.** `loadAssignablePackages` — shared by `createEndUser` and
+  `addPackages` — resolves each package's live order (package → allocations →
+  cart item → cart → live order, one query) and refuses a package whose order
+  chose another mode or another point ("El pedido ORD-… eligió A domicilio;
+  cambiá su entrega primero."), or whose orders disagree. Null preferences are
+  exempt. A pickup shipment must name its `pickupPointId` (inactive points still
+  serve the orders that chose them).
+- **Destination.** Derived on the server: the point's snapshot for a pickup
+  shipment, the single customer's order address and contact for a home
+  delivery. `retry` copies `pickupPointId` and both destination snapshots.
+- **Override.** `admin.userOrder.changeDeliveryPreference` ("Cambiar entrega")
+  is the only writer after checkout: paid orders in progress only, refused while
+  any outbound package of the order is on an end-user shipment or handed over,
+  reason required (shown verbatim to the customer), audited, and announced in
+  the journey through `userOrder.deliveryPreferenceChanged`.
+- **Depot pickup** needs no change: the confirm-delivery dialog only shows what
+  the customer chose.
+- **Diagnostics.** `package.outbound.deliveryPreferenceConflict` (a package
+  whose orders chose differently) and `order.deliveryPreference.pointInactive`
+  (a paid order waiting on a point that is no longer active, on the cart
+  traceability page).
+- **Catalog.** `/admin/pickup-points`; deactivating is allowed (orders keep
+  their snapshot; checkout stops offering it), hard delete is refused while an
+  order or a shipment references the point.
+
 Commands: `shipment.createEndUser` (claims outbound `readyForShipment`
 packages, creates at `readyForDispatch`, publishes nothing — nothing moved),
 `shipment.addPackages` (until departure), `shipment.dispatch` (requires a

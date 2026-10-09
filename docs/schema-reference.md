@@ -165,6 +165,7 @@ Operations no longer execute on creation. A draft is created with its parameters
 | `ProductSupplierTerms` | Supplier-facing buy terms | Belongs to `Product` and `Supplier`; referenced by `LotItem` | Source of sourcing MOQ and buy-side price logic; still carries `refPrice` (see modeling limit 11) |
 | `ProductLocalConstraints` | Context-sensitive restrictions | Belongs to `Product` | Flexible JSON-based rule container, interpreted in app code |
 | `Destination` | Internal warehouse or operational destination | Referenced by `LotItem` and optionally by `Operation` | Not the same as the end-user address |
+| `PickupPoint` | Customer-facing *Pickup point*: where end-user shipments arrive and each customer collects | Referenced by `UserOrder.pickupPointId` and `Shipment.pickupPointId` (both `Restrict`) | Admin CRUD at `/admin/pickup-points`. Address, free-text `hours`, optional `instructions` and map URL; `active`/`deleted` flags. Checkout offers only active points; deactivating keeps serving the orders that chose it; hard delete refused while referenced (ADR 0011). Not a `Destination` and not an `Address` |
 | `HomeOfferSettings` | Home offers curation singleton | Optional `spotlightProduct` relation to `Product` (`onDelete: SetNull`) | One row, `id = 1`, always read and written through an upsert; holds the spotlight pick, the ranking `criterion`, and `offersLimit` (default `4`) |
 
 #### `ProductClientTerms` pricing columns
@@ -189,7 +190,7 @@ The discount is an attribute of the terms row, not a promotion entity (ADR 0008)
 | --- | --- | --- | --- |
 | `Cart` | Editable request container | Belongs to `User`; has many `CartItem`; can originate many `UserOrder` | Cart lifecycle stops at request submission |
 | `CartItem` | Requested product line | Belongs to `Cart` and one `ProductClientTerms`; has many allocations, tracking events, roll overs, and `UserOrderItem` records | The root traceability record for a customer request line; keeps the initial product snapshot |
-| `UserOrder` | Commercial order record | Belongs to `User` and `Cart`; has many `UserOrderItem` and `UserTransaction` | Holds address and terms snapshots; closure is derived (ADR 0002) |
+| `UserOrder` | Commercial order record | Belongs to `User` and `Cart`; optional `PickupPoint`; has many `UserOrderItem` and `UserTransaction` | Holds address and terms snapshots and the customer's *Delivery preference* (below); closure is derived (ADR 0002) |
 | `UserOrderItem` | Commercial order line | Belongs to `UserOrder`; must reference `sourceCartItem` | Manual order lines are out of scope |
 | `UserTransaction` | Customer payment record | Belongs to `UserOrder` and `PaymentMethod` | Payment lifecycle is separate from fulfillment lifecycle; carries gateway request/response snapshots and, for external payments, the declared-receipt columns below (ADR 0010) |
 
@@ -205,6 +206,16 @@ An attempt with `provider = "external"` has no gateway to ask: the customer move
 They live as columns rather than inside `requestSnapshot` because a snapshot is an immutable record of creation time, and a declaration arrives later.
 
 While the attempt is `pending`, `providerStatus` walks `awaiting_transfer → receipt_declared`, and `expiresAt` comes from the provider config's `expiresInHours`, so an unpaid transfer becomes a spent attempt that re-confirming replaces. Only the admin actions in `/admin/payments` end it, both audited: settling writes `externalTransactionId` with the verified reference, `providerStatus = settled_manually`, `completedAt` and an actor-stamped `responseSnapshot`, then runs the same `submitOrderForCompletedPayment` transition the Mercado Pago webhook runs; rejecting writes `status = failed` with `failureCode = external_rejected` and the reason, and fails the order.
+
+#### `UserOrder` delivery preference columns (ADR 0011)
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| `deliveryPreference` | `DeliveryMode`, nullable | What the customer chose at checkout ("Entrega"); null on orders paid before the choice existed |
+| `pickupPointId` | `Int`, nullable, FK `pickup_point` | The chosen point, for a pickup order only |
+| `pickupPointSnapshot` | `JsonB`, nullable | `{ source: checkout \| admin, capturedAt, pickupPoint: { id, name, line1, line2, city, state, postalCode, country, googleMapsUrl, hours, instructions } }` |
+
+The `user_order_delivery_preference_check` constraint keeps them consistent: all three null (legacy), or a pickup order with point id and snapshot and **no** address snapshot, or a home order with an address snapshot and no point. Checkout writes them on create and refreshes them on the live order while no payment completed; afterwards only `admin.userOrder.changeDeliveryPreference` writes them (audited, and announced in the journey as one `CartItemTrackingEventType.deliveryPreferenceChanged` event per live item). End-user shipments must match them (fulfillment reference §6).
 
 ### Aggregation, sourcing, and rebatching
 
@@ -225,7 +236,7 @@ While the attempt is `pending`, `providerStatus` walks `awaiting_transfer → re
 | `Package` | Physical package | Optional `Shipment`; has many `PackageLotItem`; carries `leg` (`inbound \| outbound`) | Always represents a real physical bundle (ADR 0004); granularity is an operational choice with a consolidated default |
 | `PackageLotItem` | Lot-item quantity inside a package | Joins `Package` and `LotItem`; has many `PackageAllocation` | The package-line scope; unique on `(packageId, lotItemId)` |
 | `PackageAllocation` | Packaged allocation | Joins `CartItemLotItem` and `PackageLotItem` with quantity | Second conservation checkpoint, checked **per leg** (ADR 0004) |
-| `Shipment` | Movement record | Optional `CarrierOrder`; has many `Package`; carries `type` and `deliveryMode` | `deliveryMode` (`homeDelivery \| pickupPoint`) is only meaningful on `endUserDelivery`; depot pickup is deliberately the absence of a shipment |
+| `Shipment` | Movement record | Optional `CarrierOrder` and `PickupPoint`; has many `Package`; carries `type` and `deliveryMode` | `deliveryMode` (`homeDelivery \| pickupPoint`) is only meaningful on `endUserDelivery`; depot pickup is deliberately the absence of a shipment. `pickupPointId` is set only on `endUserDelivery` + `pickupPoint` (`shipment_pickup_point_check`); the destination snapshots are derived server-side from the point or the order |
 | `Carrier` | Carrier master data | Has many `CarrierOrder` | JSON address/contact remain flexible for now |
 | `CarrierOrder` | Carrier booking | Belongs to `Carrier`; has many `Shipment`; soft-delete flag `deleted` | Records the contracting, never the goods; publishes no fulfillment fact of its own |
 
@@ -489,10 +500,12 @@ Records: `Package(leg = outbound)`, `PackageLotItem`, `PackageAllocation` (`admi
 Records: `Shipment(endUserDelivery, deliveryMode)`, `Package`, `CarrierOrder` optionally (`admin.shipment`, `admin.package`).
 
 - **Home delivery** — `shipment.createEndUser({deliveryMode: homeDelivery})` claims outbound packages (exactly one customer per shipment); `dispatch` → items derive `inEndUserShipment`; `deliver` cascades shipment, packages, and lines to `received` → `delivered`
-- **Pickup point** — same construction with `pickupPoint`, multi-customer allowed; `deliver` marks **only the shipment** `received` (arrival is not a handover — packages stay `inTransit`, items stay `inEndUserShipment` with a "Disponible para retirar" notice) and each customer's `package.confirmDelivery` produces `delivered`
+- **Pickup point** — same construction with `pickupPoint` and its `pickupPointId`, multi-customer allowed; `deliver` marks **only the shipment** `received` (arrival is not a handover — packages stay `inTransit`, items stay `inEndUserShipment` with a "Disponible para retirar" notice) and each customer's `package.confirmDelivery` produces `delivered`
 - **Depot pickup** — no shipment at all (that absence *is* the mode): `package.confirmDelivery` on the never-shipped outbound package moves `readyForShipment → received` → `delivered`
 
 Delivery confirmation is per package: automatic only for home delivery, explicit for the other two modes.
+
+The customer's delivery preference on the order decides which end-user shipment a package may join: `createEndUser` and `addPackages` refuse a package whose order chose another mode or point; orders with a null preference are exempt (ADR 0011).
 
 ### 10. Commercial closure (ADR 0002)
 
