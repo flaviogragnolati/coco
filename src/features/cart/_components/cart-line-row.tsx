@@ -2,7 +2,6 @@
 
 import { Trash2Icon } from "lucide-react";
 
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { QuantityStepper } from "~/features/cart/_components/quantity-stepper";
 import { cssUrl } from "~/features/catalog/_components/product-image";
@@ -84,9 +83,11 @@ export function CartLineRow({
 							<span className="truncate font-medium text-sm">
 								{item.product.name}
 							</span>
-							<span className="text-muted-foreground text-xs">
-								{item.product.brandName ?? "Sin marca"}
-							</span>
+							{item.product.brandName ? (
+								<span className="text-muted-foreground text-xs">
+									{item.product.brandName}
+								</span>
+							) : null}
 						</div>
 						{readOnly ? null : (
 							<Button
@@ -101,7 +102,7 @@ export function CartLineRow({
 							</Button>
 						)}
 					</div>
-					<div className="flex items-center justify-between gap-2">
+					<div className="flex flex-wrap items-center justify-between gap-2">
 						{readOnly ? (
 							<span className="text-muted-foreground text-xs">
 								{formatQuantity(item.quantity, item.product.unit, item.product)}
@@ -133,34 +134,26 @@ export function CartLineRow({
 				<CartLineImage className="aspect-square w-20" item={item} />
 				<div className="flex min-w-0 flex-col gap-1 sm:hidden">
 					<span className="font-medium">{item.product.name}</span>
-					<span className="text-muted-foreground text-xs">
-						{item.product.brandName ?? "Sin marca"}
-					</span>
+					{item.product.brandName ? (
+						<span className="text-muted-foreground text-xs">
+							{item.product.brandName}
+						</span>
+					) : null}
 				</div>
 			</div>
 			<div className="flex min-w-0 flex-col gap-3">
 				<div className="hidden min-w-0 flex-col gap-1 sm:flex">
 					<span className="font-medium">{item.product.name}</span>
-					<span className="text-muted-foreground text-xs">
-						{item.product.brandName ?? "Sin marca"}
-					</span>
+					{item.product.brandName ? (
+						<span className="text-muted-foreground text-xs">
+							{item.product.brandName}
+						</span>
+					) : null}
 				</div>
 				<p className="line-clamp-2 text-muted-foreground text-xs/relaxed">
 					{item.product.description ??
 						"Producto agregado para compra mayorista compartida."}
 				</p>
-				<div className="flex flex-wrap gap-2">
-					<Badge variant="info">
-						MOQ{" "}
-						{formatQuantity(item.terms.moq, item.product.unit, item.product)}
-					</Badge>
-					<Badge variant="secondary">
-						Step{" "}
-						{item.terms.step
-							? formatQuantity(item.terms.step, item.product.unit, item.product)
-							: "sin incrementos"}
-					</Badge>
-				</div>
 				{readOnly ? (
 					<span className="text-muted-foreground text-sm">
 						{formatQuantity(item.quantity, item.product.unit, item.product)}

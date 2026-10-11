@@ -92,9 +92,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Catálogo + términos de cliente vigentes",
 		steps:
-			"1) Ir a `/products`.\n2) Contrastar contra el admin: un producto inactivo o con términos vencidos.\n3) Probar búsqueda, filtros de marca/unidad/precio y orden.",
+			'Precondiciones: catálogo de Quintal cargado y sin productos demo, sin sesión y con el pedido vacío. Para el paso 2, una sesión Admin.\n1) Ir a `/products` y mirar la tarjeta de un producto por kg (por ejemplo "Almendra non pareil 20/22") y la de uno por unidad con presentación (por ejemplo "Pasta de maní Entre Nuts 370 g").\n2) Contrastar contra el admin: un producto inactivo o con términos vencidos.\n3) Probar búsqueda, filtros de marca/unidad/precio y orden.\n4) Click en la foto de un producto, cerrar el detalle y click en su nombre.',
 		expectedResult:
-			'Solo aparecen productos activos con términos vigentes. El precio se muestra por bloque ("por bloque MOQ de {n}"). Búsqueda insensible a acentos; "Limpiar filtros" restaura el listado.',
+			'Solo aparecen productos activos con términos vigentes.\nCada tarjeta muestra, de arriba abajo: la marca chica sobre el nombre (solo si tiene), el precio por unidad en una sola línea (por ejemplo "$ 19.500 por kg" o "$ 4.200 por frasco 370 g"), el selector de cantidad con la unidad dentro del campo, el "Total" y el botón "Agregar", alineado con el de las otras tarjetas de la fila.\nNo aparecen MOQ, "por bloque MOQ", "≈ $X / unidad", el chip de moneda ni "Marca disponible próximamente", y no hay vista de tabla.\nLa foto y el nombre abren el detalle del producto (la URL suma `?product=`).\nBúsqueda insensible a acentos; "Limpiar filtros" restaura el listado.',
 		isRegressionPath: false,
 	},
 	{
@@ -102,10 +102,11 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		section: SECTION_B,
 		title: "Agregar un item al carrito",
 		actor: "Cliente",
-		feature: "Alta de item (cantidad inicial = MOQ)",
-		steps: '1) En `/products`, click en "Agregar" sobre un producto.',
+		feature: "Alta de item con la cantidad elegida en la tarjeta",
+		steps:
+			'Precondiciones: catálogo de Quintal cargado y sin productos demo, sin sesión y con el pedido vacío.\n1) En `/products`, buscar un producto por kg (por ejemplo "Almendra non pareil 20/22") y anotar la cantidad del selector y el "Total" de su tarjeta.\n2) Click en "+" una vez.\n3) Click en "Agregar".\n4) Cerrar el mini-carrito y mirar la misma tarjeta.\n5) Click en "Ver en tu pedido".',
 		expectedResult:
-			'El mini-carrito se abre, el producto figura con cantidad = MOQ, la tarjeta pasa a mostrar el badge "En tu pedido" con stepper y subtotal.',
+			'Paso 1: el selector arranca en el mínimo (0,5 kg) y el "Total" es el precio por kg × 0,5.\nPaso 2: la cantidad pasa a 1 kg y el "Total" se recalcula (precio por kg × 1).\nPaso 3: se abre el mini-carrito con el producto en 1 kg, la cantidad elegida y no el mínimo.\nPaso 4: en lugar del selector, la tarjeta muestra "Ya tenés 1 kg en tu pedido" y el botón pasa a "Ver en tu pedido".\nPaso 5: se abre el mini-carrito y la cantidad no cambia.',
 		isRegressionPath: true,
 	},
 	{

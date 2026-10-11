@@ -3,8 +3,6 @@ import { homeOfferTerms } from "~/features/cart/cart-mappers";
 import type { HomeOffer } from "~/shared/common/home.types";
 import {
 	getMarketSavingLabel,
-	getOfferBlockPrice,
-	getOfferBlockStrikethroughPrice,
 	getOfferDiscountLabel,
 	getOfferFixedQuantityLabel,
 	getOfferHeadlinePrice,
@@ -54,7 +52,6 @@ test("discount and strike-through apply to the same headline basis", () => {
 	const discounted = { ...offer, discountPercent: "25" };
 	expect(getOfferHeadlinePrice(discounted).amount).toBe("$ 1.125");
 	expect(getOfferStrikethroughPrice(discounted)).toBe("$ 1.500");
-	expect(getOfferBlockPrice(discounted)).toBe("$ 11.250");
 	expect(getOfferTotalLabel(homeOfferTerms(discounted), "10")).toBe(
 		"Total $ 11.250",
 	);
@@ -110,13 +107,6 @@ test("discount labels normalize decimals and hide zero discounts", () => {
 	);
 	expect(getOfferDiscountLabel({ ...offer, discountPercent: "0" })).toBeNull();
 	expect(getOfferStrikethroughPrice(offer)).toBeNull();
-});
-
-test("catalog strike-through is the undiscounted price of the minimum", () => {
-	expect(
-		getOfferBlockStrikethroughPrice({ ...offer, discountPercent: "25" }),
-	).toBe("$ 15.000");
-	expect(getOfferBlockStrikethroughPrice(offer)).toBeNull();
 });
 
 test("quantities use plural countable units", () => {

@@ -9,7 +9,6 @@ import {
 	formatUnitLabel,
 	getBaseUnitPrice,
 	getMarketSaving,
-	getOfferMoqPrice,
 	getPerUnitPrice,
 	normalizeCartQuantity,
 	type ProductPresentation,
@@ -17,7 +16,7 @@ import {
 } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
 
-type OfferPricing = Pick<
+export type OfferPricing = Pick<
 	HomeOffer,
 	| "currency"
 	| "discountPercent"
@@ -41,10 +40,6 @@ function getEffectiveDiscountPercent(offer: OfferPricing) {
 	const percent = toNumber(offer.discountPercent);
 	if (percent === null || percent <= 0) return null;
 	return Math.min(percent, 100);
-}
-
-export function getOfferBlockPrice(offer: OfferPricing) {
-	return formatCurrency(getOfferMoqPrice(offer), offer.currency);
 }
 
 export function getOfferQuantityLabel(
@@ -106,30 +101,4 @@ export function getMarketSavingLabel(offer: OfferPricing) {
 	const saving = getMarketSaving(offer);
 	if (saving === null) return null;
 	return `Ahorrás ${formatCurrency(saving.perUnit, offer.currency)} por ${perUnitLabel(offer)} vs. góndola`;
-}
-
-export function getOfferUnitReference(offer: OfferPricing) {
-	const perUnitPrice = getPerUnitPrice(offer);
-	if (perUnitPrice === null) return null;
-
-	return `≈ ${formatCurrency(perUnitPrice, offer.currency)} / ${perUnitLabel(offer)}`;
-}
-
-export function getMarketComparison(offer: OfferPricing) {
-	const marketPrice = toNumber(offer.marketPrice);
-	const saving = getMarketSaving(offer);
-	if (marketPrice === null || saving === null) return null;
-
-	const reference = `En otros comercios ≈ ${formatCurrency(marketPrice, offer.currency)} / ${perUnitLabel(offer)}`;
-	if (saving.perBlock <= 0) return reference;
-
-	return `${reference} · ahorrás ${formatCurrency(saving.perBlock, offer.currency)}`;
-}
-
-export function getOfferBlockStrikethroughPrice(offer: OfferPricing) {
-	if (getEffectiveDiscountPercent(offer) === null) return null;
-	return formatCurrency(
-		(getBaseUnitPrice(offer) ?? 0) * (toNumber(offer.moq) ?? 0),
-		offer.currency,
-	);
 }

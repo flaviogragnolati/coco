@@ -82,16 +82,15 @@ export function CartSummary({
 				</div>
 				<Separator />
 				<div className="flex flex-col gap-2">
-					<span className="text-muted-foreground text-xs">
-						Totales estimados
-					</span>
 					{cart.totals.length > 0 ? (
 						cart.totals.map((total) => (
 							<div
 								className="flex items-center justify-between gap-3"
 								key={total.currency}
 							>
-								<Badge variant="info">{total.currency}</Badge>
+								<span className="text-muted-foreground text-xs">
+									Total estimado
+								</span>
 								<span className="font-heading font-semibold text-lg">
 									{formatCurrency(total.amount, total.currency)}
 								</span>

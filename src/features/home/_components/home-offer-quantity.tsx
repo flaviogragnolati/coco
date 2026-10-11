@@ -1,28 +1,13 @@
 "use client";
 
-import { CheckIcon } from "lucide-react";
-import {
-	createContext,
-	type ReactNode,
-	useContext,
-	useMemo,
-	useState,
-} from "react";
-import { QuantityStepper } from "~/features/cart/_components/quantity-stepper";
+import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { homeOfferTerms } from "~/features/cart/cart-mappers";
 import {
-	getNextQuantity,
-	getPreviousQuantity,
-	isFixedQuantity,
-	normalizeCartQuantity,
-} from "~/shared/common/commerce.helpers";
+	PurchasePanel,
+	usePurchaseQuantity,
+} from "~/features/catalog/_components/purchase-panel";
 import type { HomeOffer } from "~/shared/common/home.types";
 import { useCartStore } from "~/store/cart-store";
-import {
-	getOfferFixedQuantityLabel,
-	getOfferInCartLabel,
-	getOfferTotalLabel,
-} from "../home-formatters";
 
 type HomeOfferQuantityState = {
 	quantity: string;
@@ -40,10 +25,11 @@ export function HomeOfferQuantityProvider({
 	offer: HomeOffer;
 	children: ReactNode;
 }) {
-	const [quantity, setQuantity] = useState(() =>
-		normalizeCartQuantity(offer.moq, homeOfferTerms(offer)),
+	const [quantity, setQuantity] = usePurchaseQuantity(homeOfferTerms(offer));
+	const value = useMemo(
+		() => ({ quantity, setQuantity }),
+		[quantity, setQuantity],
 	);
-	const value = useMemo(() => ({ quantity, setQuantity }), [quantity]);
 	return (
 		<HomeOfferQuantityContext.Provider value={value}>
 			{children}
@@ -64,54 +50,35 @@ export function useHomeOfferCartQuantity(offer: HomeOffer) {
 	);
 }
 
-export function HomeOfferQuantity({ offer }: { offer: HomeOffer }) {
+export function HomeOfferPurchasePanel({
+	offer,
+	action,
+	size,
+}: {
+	offer: HomeOffer;
+	action?: ReactNode;
+	size?: "default" | "hero";
+}) {
 	const state = useContext(HomeOfferQuantityContext);
 	const hasHydrated = useCartStore((store) => store.hasHydrated);
 	const cartQuantity = useHomeOfferCartQuantity(offer);
 	if (!state) {
 		throw new Error(
-			"HomeOfferQuantity must render inside HomeOfferQuantityProvider",
-		);
-	}
-	const terms = homeOfferTerms(offer);
-
-	if (cartQuantity !== null) {
-		return (
-			<p className="flex items-center gap-1.5 font-medium text-sm text-success">
-				<CheckIcon aria-hidden="true" className="size-4 shrink-0" />
-				{getOfferInCartLabel(cartQuantity, offer.unit, offer)}
-			</p>
-		);
-	}
-
-	if (isFixedQuantity(terms)) {
-		return (
-			<p className="font-medium text-sm">
-				{getOfferFixedQuantityLabel(terms, offer.unit, offer)}
-			</p>
+			"HomeOfferPurchasePanel must render inside HomeOfferQuantityProvider",
 		);
 	}
 
 	return (
-		<div className="flex flex-col gap-2">
-			<QuantityStepper
-				className="flex-wrap"
-				disabled={!hasHydrated}
-				onCommit={state.setQuantity}
-				onDecrement={() =>
-					state.setQuantity(getPreviousQuantity(state.quantity, terms))
-				}
-				onIncrement={() =>
-					state.setQuantity(getNextQuantity(state.quantity, terms))
-				}
-				presentation={offer}
-				terms={terms}
-				unit={offer.unit}
-				value={state.quantity}
-			/>
-			<p aria-live="polite" className="font-medium text-sm">
-				{getOfferTotalLabel(terms, state.quantity)}
-			</p>
-		</div>
+		<PurchasePanel
+			action={action}
+			disabled={!hasHydrated}
+			inCartQuantity={cartQuantity}
+			onQuantityChange={state.setQuantity}
+			presentation={offer}
+			quantity={state.quantity}
+			size={size}
+			terms={homeOfferTerms(offer)}
+			unit={offer.unit}
+		/>
 	);
 }

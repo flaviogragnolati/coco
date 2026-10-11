@@ -1,25 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Badge } from "~/components/ui/badge";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "~/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { ProductImage } from "~/features/catalog/_components/product-image";
 import { cn } from "~/lib/utils";
 import type { HomeOffer } from "~/shared/common/home.types";
+import { getOfferDiscountLabel } from "../home-formatters";
 import {
-	getMarketSavingLabel,
-	getOfferDiscountLabel,
-	getOfferHeadlinePrice,
-	getOfferStrikethroughPrice,
-	SHOW_MARKET_SAVING,
-} from "../home-formatters";
-import {
-	HomeOfferQuantity,
+	HomeOfferPurchasePanel,
 	HomeOfferQuantityProvider,
 } from "./home-offer-quantity";
 
@@ -32,10 +20,7 @@ export function HomeOfferCard({
 	action?: ReactNode;
 	size?: "default" | "hero";
 }) {
-	const price = getOfferHeadlinePrice(offer);
-	const previousPrice = getOfferStrikethroughPrice(offer);
 	const discount = getOfferDiscountLabel(offer);
-	const saving = SHOW_MARKET_SAVING ? getMarketSavingLabel(offer) : null;
 	const Heading = size === "hero" ? "h2" : "h3";
 	const href = `/products?product=${offer.productId}`;
 	return (
@@ -59,7 +44,7 @@ export function HomeOfferCard({
 					</Badge>
 				) : null}
 			</div>
-			<CardHeader className="gap-2 pt-5">
+			<CardHeader className="gap-1 pt-5">
 				{offer.brandName ? (
 					<p className="font-semibold text-muted-foreground text-xs uppercase tracking-widest">
 						{offer.brandName}
@@ -76,37 +61,11 @@ export function HomeOfferCard({
 					</Heading>
 				</CardTitle>
 			</CardHeader>
-			<HomeOfferQuantityProvider offer={offer}>
-				<CardContent className="flex flex-1 flex-col gap-3 py-4">
-					<div>
-						<div className="flex flex-wrap items-baseline gap-2">
-							<p
-								className={cn(
-									"font-bold font-heading tracking-tight",
-									size === "hero" ? "text-4xl" : "text-3xl",
-								)}
-							>
-								{price.amount}
-							</p>
-							{previousPrice ? (
-								<del className="text-muted-foreground text-sm">
-									{previousPrice}
-								</del>
-							) : null}
-						</div>
-						<p className="text-muted-foreground text-sm">{price.unitLabel}</p>
-					</div>
-					{saving ? (
-						<p className="w-fit rounded-full bg-brand-soft px-3 py-1.5 font-medium text-brand-soft-foreground text-xs">
-							{saving}
-						</p>
-					) : null}
-					<div className="mt-auto">
-						<HomeOfferQuantity offer={offer} />
-					</div>
-				</CardContent>
-				{action ? <CardFooter className="pb-5">{action}</CardFooter> : null}
-			</HomeOfferQuantityProvider>
+			<CardContent className="flex flex-1 flex-col pt-4 pb-5">
+				<HomeOfferQuantityProvider offer={offer}>
+					<HomeOfferPurchasePanel action={action} offer={offer} size={size} />
+				</HomeOfferQuantityProvider>
+			</CardContent>
 		</Card>
 	);
 }

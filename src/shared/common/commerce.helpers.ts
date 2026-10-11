@@ -238,16 +238,6 @@ export function getPerUnitPrice(
 	return unitPrice * getDiscountMultiplier(terms);
 }
 
-/** What the minimum quantity costs at the offer price. */
-export function getOfferMoqPrice(
-	terms: Pick<
-		CatalogClientTerms,
-		"unitPrice" | "moqPrice" | "moq" | "discountPercent"
-	>,
-): number {
-	return (getPerUnitPrice(terms) ?? 0) * (toNumber(terms.moq) ?? 0);
-}
-
 /**
  * What the customer saves against what other shops charge. `marketPrice` is an
  * unverified admin claim, so this returns `null` rather than a negative saving

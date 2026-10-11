@@ -23,6 +23,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { catalogProductToCartItem } from "~/features/cart/cart-mappers";
 import { useCartActions } from "~/features/cart/use-cart-sync";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
+import { useCartStore } from "~/store/cart-store";
 import { useCartUiStore } from "~/store/cart-ui-store";
 import { api } from "~/trpc/react";
 import { CatalogActiveFilters } from "./catalog-active-filters";
@@ -36,7 +37,6 @@ import {
 	sortCatalog,
 } from "./catalog-filtering";
 import { CatalogFiltersSidebar } from "./catalog-filters-sidebar";
-import { CatalogTable } from "./catalog-table";
 import { CatalogToolbar } from "./catalog-toolbar";
 import { ClientPagination } from "./client-pagination";
 import { ProductDetailsDialog } from "./product-details-dialog";
@@ -44,7 +44,6 @@ import { ProductGrid } from "./product-grid";
 import { useCatalogParams } from "./use-catalog-params";
 
 const cardSkeletonKeys = ["a", "b", "c", "d", "e", "f"];
-const tableSkeletonKeys = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 function ProductGridSkeleton() {
 	return (
@@ -64,16 +63,6 @@ function ProductGridSkeleton() {
 	);
 }
 
-function CatalogTableSkeleton() {
-	return (
-		<div className="flex flex-col gap-2 rounded-3xl bg-card p-4 shadow-md ring-1 ring-foreground/5">
-			{tableSkeletonKeys.map((key) => (
-				<Skeleton className="h-12 w-full rounded-2xl" key={key} />
-			))}
-		</div>
-	);
-}
-
 export function ProductsClient({
 	isAuthenticated,
 	userId,
@@ -82,12 +71,13 @@ export function ProductsClient({
 	userId: string | null;
 }) {
 	const params = useCatalogParams();
-	const { sort, view, perPage } = params;
+	const { sort, perPage } = params;
 	const [filtersOpen, setFiltersOpen] = useState(false);
 
 	const productsQuery = api.catalog.list.useQuery();
 	const cartActions = useCartActions({ isAuthenticated, userId });
 	const openMiniCart = useCartUiStore((state) => state.openMiniCart);
+	const hasHydrated = useCartStore((state) => state.hasHydrated);
 
 	const products = useMemo(
 		() => productsQuery.data ?? [],
@@ -95,8 +85,11 @@ export function ProductsClient({
 	);
 
 	const cartItems = cartActions.cart.items;
-	const cartItemsByTermsId = useMemo(
-		() => new Map(cartItems.map((item) => [item.productClientTermsId, item])),
+	const cartQuantities = useMemo(
+		() =>
+			new Map(
+				cartItems.map((item) => [item.productClientTermsId, item.quantity]),
+			),
 		[cartItems],
 	);
 	const inCartTermsIds = useMemo(
@@ -143,13 +136,8 @@ export function ProductsClient({
 		}
 	}, [productsQuery.isLoading, params.page, pageCount, params.setPage]);
 
-	const selectedCartItem =
-		params.productId === null
-			? undefined
-			: cartItems.find((item) => item.product.id === params.productId);
-
-	const handleAdd = (product: CatalogProductListItem) => {
-		cartActions.setItem(catalogProductToCartItem(product));
+	const handleAdd = (product: CatalogProductListItem, quantity: string) => {
+		cartActions.setItem(catalogProductToCartItem(product, quantity));
 		openMiniCart();
 	};
 
@@ -166,20 +154,16 @@ export function ProductsClient({
 	};
 
 	const gridProps = {
-		cartItemsByTermsId,
-		disabled: cartActions.isPending,
+		cartQuantities,
+		disabled: cartActions.isPending || !hasHydrated,
 		onAdd: handleAdd,
 		onDetails: params.setProductId,
-		onDecrement: cartActions.decrement,
-		onIncrement: cartActions.increment,
-		onQuantityCommit: cartActions.updateQuantity,
-		onRemove: cartActions.removeItem,
+		onViewInCart: openMiniCart,
 	};
 
 	let content: React.ReactNode;
 	if (productsQuery.isLoading) {
-		content =
-			view === "table" ? <CatalogTableSkeleton /> : <ProductGridSkeleton />;
+		content = <ProductGridSkeleton />;
 	} else if (productsQuery.isError) {
 		content = (
 			<Alert variant="destructive">
@@ -214,11 +198,7 @@ export function ProductsClient({
 	} else {
 		content = (
 			<>
-				{view === "table" ? (
-					<CatalogTable products={visibleProducts} {...gridProps} />
-				) : (
-					<ProductGrid products={visibleProducts} {...gridProps} />
-				)}
+				<ProductGrid products={visibleProducts} {...gridProps} />
 				<ClientPagination
 					onPageChange={params.setPage}
 					onPerPageChange={params.setPerPage}
@@ -242,8 +222,8 @@ export function ProductsClient({
 						Productos disponibles
 					</h1>
 					<p className="text-muted-foreground text-sm/relaxed">
-						Elegí productos, ajustá cantidades por MOQ y sumate a compras
-						mayoristas compartidas.
+						Elegí productos y cantidades, y sumate a compras mayoristas
+						compartidas.
 					</p>
 				</div>
 			</section>
@@ -259,11 +239,9 @@ export function ProductsClient({
 						onOpenFilters={() => setFiltersOpen(true)}
 						onSearchChange={params.setSearch}
 						onSortChange={params.setSort}
-						onViewChange={params.setView}
 						search={params.searchInput}
 						sort={sort}
 						total={total}
-						view={view}
 					/>
 					<CatalogCategoryChips
 						chips={categoryChips}
@@ -304,20 +282,14 @@ export function ProductsClient({
 			</Sheet>
 
 			<ProductDetailsDialog
-				cartItem={selectedCartItem}
-				disabled={cartActions.isPending}
-				inCartTermsIds={inCartTermsIds}
+				cartQuantities={cartQuantities}
+				disabled={gridProps.disabled}
 				onAdd={handleAdd}
-				onDecrement={cartActions.decrement}
 				onDetails={params.setProductId}
-				onIncrement={cartActions.increment}
 				onOpenChange={(open) => {
 					if (!open) params.setProductId(null);
 				}}
-				onQuantityCommit={(item, quantity) =>
-					cartActions.updateQuantity(item, quantity)
-				}
-				onRemove={cartActions.removeItem}
+				onViewInCart={openMiniCart}
 				open={params.productId !== null}
 				productId={params.productId}
 			/>

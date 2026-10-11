@@ -6,11 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CatalogProductUnit } from "~/shared/common/catalog.types";
 import type { CatalogFilters, CatalogSort } from "./catalog-filtering";
 
-export type CatalogView = "cards" | "table";
-
 export const PER_PAGE_OPTIONS = [12, 24, 48] as const;
 const DEFAULT_PER_PAGE = 12;
-const VIEW_STORAGE_KEY = "coco.catalog.view";
 const SEARCH_DEBOUNCE_MS = 250;
 
 const SORT_VALUES: CatalogSort[] = [
@@ -137,22 +134,6 @@ export function useCatalogParams() {
 	const effectiveSort: CatalogSort =
 		sort === "relevance" && !hasSearch ? "name-asc" : sort;
 
-	const [storedView, setStoredView] = useState<CatalogView | null>(null);
-	useEffect(() => {
-		try {
-			const value = localStorage.getItem(VIEW_STORAGE_KEY);
-			if (value === "cards" || value === "table") setStoredView(value);
-		} catch {
-			// localStorage unavailable; fall back to default view.
-		}
-	}, []);
-
-	const rawView = searchParams.get("view");
-	const view: CatalogView =
-		rawView === "cards" || rawView === "table"
-			? rawView
-			: (storedView ?? "cards");
-
 	const rawPage = Number(searchParams.get("page"));
 	const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
 
@@ -197,18 +178,6 @@ export function useCatalogParams() {
 	);
 	const setSort = useCallback(
 		(next: CatalogSort) => commit({ sort: next, page: null }),
-		[commit],
-	);
-	const setView = useCallback(
-		(next: CatalogView) => {
-			try {
-				localStorage.setItem(VIEW_STORAGE_KEY, next);
-			} catch {
-				// ignore persistence failures
-			}
-			setStoredView(next);
-			commit({ view: next });
-		},
 		[commit],
 	);
 	const setPage = useCallback(
@@ -258,7 +227,6 @@ export function useCatalogParams() {
 		searchInput,
 		sort: effectiveSort,
 		hasSearch,
-		view,
 		page,
 		perPage,
 		productId,
@@ -271,7 +239,6 @@ export function useCatalogParams() {
 		setInCartOnly,
 		setCategoryId,
 		setSort,
-		setView,
 		setPage,
 		setPerPage,
 		setProductId,

@@ -4,7 +4,7 @@ import { CheckIcon } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
 import { ProductImage } from "~/features/catalog/_components/product-image";
-import { getOfferBlockPrice } from "~/features/home/home-formatters";
+import { getOfferHeadlinePrice } from "~/features/home/home-formatters";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 
 type ProductMiniCardProps = {
@@ -18,6 +18,12 @@ export function ProductMiniCard({
 	product,
 	onSelect,
 }: ProductMiniCardProps) {
+	const price = getOfferHeadlinePrice({
+		...product.terms,
+		unit: product.unit,
+		presentationContainer: product.presentationContainer,
+		presentationSize: product.presentationSize,
+	});
 	return (
 		<button
 			aria-label={`Ver ${product.name}`}
@@ -33,8 +39,9 @@ export function ProductMiniCard({
 			<span className="flex min-w-0 flex-1 flex-col gap-0.5">
 				<span className="line-clamp-2 text-xs">{product.name}</span>
 				<span className="flex flex-wrap items-center gap-1.5">
-					<span className="font-heading font-semibold text-xs">
-						{getOfferBlockPrice({ ...product.terms, unit: product.unit })}
+					<span className="text-xs">
+						<span className="font-heading font-semibold">{price.amount}</span>{" "}
+						<span className="text-muted-foreground">{price.unitLabel}</span>
 					</span>
 					{inCart ? (
 						<Badge variant="success">
