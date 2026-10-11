@@ -19,30 +19,39 @@ type AuditLogInput = {
 	metadata?: unknown;
 };
 
+function toAuditLogData(input: AuditLogInput) {
+	return {
+		action: input.action,
+		source: "admin" as const,
+		actorReference: input.actor.id,
+		entityType: input.entityType,
+		entityId: input.entityId,
+		before:
+			input.before === undefined ? undefined : toPrismaInputJson(input.before),
+		after:
+			input.after === undefined ? undefined : toPrismaInputJson(input.after),
+		metadata:
+			input.metadata === undefined
+				? undefined
+				: toPrismaInputJson({
+						actorName: input.actor.name,
+						...((input.metadata ?? {}) as Record<string, unknown>),
+					}),
+	} satisfies Prisma.AuditLogUncheckedCreateInput;
+}
+
 export async function writeAdminAuditLog(
 	db: Prisma.TransactionClient,
 	input: AuditLogInput,
 ) {
-	await db.auditLog.create({
-		data: {
-			action: input.action,
-			source: "admin",
-			actorReference: input.actor.id,
-			entityType: input.entityType,
-			entityId: input.entityId,
-			before:
-				input.before === undefined
-					? undefined
-					: toPrismaInputJson(input.before),
-			after:
-				input.after === undefined ? undefined : toPrismaInputJson(input.after),
-			metadata:
-				input.metadata === undefined
-					? undefined
-					: toPrismaInputJson({
-							actorName: input.actor.name,
-							...((input.metadata ?? {}) as Record<string, unknown>),
-						}),
-		},
-	});
+	await db.auditLog.create({ data: toAuditLogData(input) });
+}
+
+/** One row per input, in a single insert. */
+export async function writeAdminAuditLogs(
+	db: Prisma.TransactionClient,
+	inputs: AuditLogInput[],
+) {
+	if (inputs.length === 0) return;
+	await db.auditLog.createMany({ data: inputs.map(toAuditLogData) });
 }

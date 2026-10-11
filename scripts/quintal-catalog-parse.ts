@@ -14,7 +14,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { readXlsxSheet } from "./lib/xlsx-reader";
+import { readXlsxSheet } from "~/server/lib/xlsx/xlsx-reader";
 import { quintalOverrides } from "./quintal-catalog.overrides";
 import { type ParseIssue, parseQuintalSheet } from "./quintal-catalog.parser";
 import {
