@@ -19,6 +19,14 @@ const regressionChain = [
  * transcription: exact wording is reviewed against the doc by hand.
  */
 const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
+	{
+		code: 7,
+		mustMention: ["`/admin/product-terms`", "`/cart`", '"Maximo"', '"1,5"'],
+	},
+	{
+		code: 8,
+		mustMention: ["`/admin/product-terms`", "`/cart`", '"Step"'],
+	},
 	{ code: 12, mustMention: ["`/cart`", "`/checkout`", "`/admin/carts`"] },
 	{ code: 14, mustMention: ['"Entrega"', '"Nueva"', '"Complemento"'] },
 	{
