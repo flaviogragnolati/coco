@@ -8,7 +8,10 @@ const STATUS_BY_CODE = {
 	RELATION_BLOCKED: 412,
 } as const;
 
-export function adminRouteErrorResponse(error: unknown) {
+export function adminRouteErrorResponse(
+	error: unknown,
+	fallbackMessage = "No se pudo procesar la evidencia de QA",
+) {
 	if (error instanceof AdminCrudError) {
 		return NextResponse.json(
 			{ error: error.message },
@@ -16,8 +19,5 @@ export function adminRouteErrorResponse(error: unknown) {
 		);
 	}
 
-	return NextResponse.json(
-		{ error: "No se pudo procesar la evidencia de QA" },
-		{ status: 500 },
-	);
+	return NextResponse.json({ error: fallbackMessage }, { status: 500 });
 }
