@@ -233,7 +233,11 @@ function withCategoryNames(catalog: Catalog) {
 	const products = catalog.products.map((product) => {
 		const categoryName = resolveQuintalCategory(product);
 		if (!categoryName) unmapped.push(`${product.key} (${product.category})`);
-		return { key: product.key, name: product.name, categoryName: categoryName ?? "" };
+		return {
+			key: product.key,
+			name: product.name,
+			categoryName: categoryName ?? "",
+		};
 	});
 	if (unmapped.length > 0) {
 		throw new Error(

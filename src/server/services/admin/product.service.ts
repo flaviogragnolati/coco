@@ -268,7 +268,11 @@ async function resolveDefaultSupplierId(
 
 function toProductWriteInput(
 	input: ProductCreateInput | ProductUpdateInput,
-	references: { brandId?: number; categoryId: number; defaultSupplierId?: number },
+	references: {
+		brandId?: number;
+		categoryId: number;
+		defaultSupplierId?: number;
+	},
 ): ProductWriteInput {
 	return {
 		name: input.name,

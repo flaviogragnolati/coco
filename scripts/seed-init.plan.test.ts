@@ -354,11 +354,7 @@ describe("planSeedInit", () => {
 	});
 
 	it("does not need the categories when it creates nothing", () => {
-		const plan = planSeedInit(
-			catalog,
-			{ ...loadedState, categories: [] },
-			now,
-		);
+		const plan = planSeedInit(catalog, { ...loadedState, categories: [] }, now);
 
 		expect(plan.products.map((decision) => decision.action)).toEqual([
 			"keep",

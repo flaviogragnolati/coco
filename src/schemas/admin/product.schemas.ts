@@ -67,9 +67,7 @@ export const productCreateInputSchema = z.object({
 	images: z.array(imageUrlSchema).default([]),
 	unit: productUnitSchema,
 	brandAssignment: productBrandAssignmentSchema,
-	categoryId: z
-		.number({ error: "Elegí una categoría" })
-		.pipe(categoryIdSchema),
+	categoryId: z.number({ error: "Elegí una categoría" }).pipe(categoryIdSchema),
 	defaultSupplierId: supplierIdSchema.optional(),
 	active: z.boolean().default(true),
 });

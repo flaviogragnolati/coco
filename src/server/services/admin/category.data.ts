@@ -123,10 +123,7 @@ export async function hardDeleteCategory(db: AdminDbClient, id: number) {
 	});
 }
 
-export async function getCategoryRelationCounts(
-	db: AdminDbClient,
-	id: number,
-) {
+export async function getCategoryRelationCounts(db: AdminDbClient, id: number) {
 	return db.category.findUnique({
 		where: { id },
 		select: categoryRelationCountSelect,

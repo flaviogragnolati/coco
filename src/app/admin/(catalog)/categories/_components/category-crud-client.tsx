@@ -6,9 +6,9 @@ import { CrudEntityPage } from "~/features/admin/crud/_components/crud-entity-pa
 import type { CrudEntityCopy } from "~/features/admin/crud/_lib/crud-entity-copy";
 import { useCrudEntityPage } from "~/features/admin/crud/_lib/use-crud-entity-page";
 import { useCrudPageState } from "~/features/admin/crud/_lib/use-crud-page-state";
+import { nextCategorySortOrder } from "~/features/admin/crud/category/category.mappers";
 import { CategoryFormDialog } from "~/features/admin/crud/category/category-form-dialog";
 import { CategoryTable } from "~/features/admin/crud/category/category-table";
-import { nextCategorySortOrder } from "~/features/admin/crud/category/category.mappers";
 import type {
 	CategoryFormValues,
 	CategoryListItem,

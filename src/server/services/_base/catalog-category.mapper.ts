@@ -12,7 +12,7 @@ export type CatalogCategorySource = {
 export function toCatalogCategory(
 	category: CatalogCategorySource | null,
 ): CatalogCategorySummary | null {
-	if (!category || !category.active || category.deleted) return null;
+	if (!category?.active || category.deleted) return null;
 
 	return {
 		id: category.id,
