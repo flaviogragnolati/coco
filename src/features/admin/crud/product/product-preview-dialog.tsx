@@ -4,7 +4,6 @@ import { AlertTriangleIcon, ImageIcon } from "lucide-react";
 import { ProductCard } from "~/app/(storefront)/products/_components/product-card";
 import { ProductPriceBlock } from "~/app/(storefront)/products/_components/product-price-block";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -22,6 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
 import { ProductImage } from "~/features/catalog/_components/product-image";
+import { PurchaseActionButton } from "~/features/catalog/_components/purchase-panel";
 import { HomeOfferCard } from "~/features/home/_components/home-offer-card";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
 import type { CartItem } from "~/shared/common/cart.types";
@@ -41,6 +41,7 @@ const ignoreCartQuantity = (_item: CartItem, _quantity: string) => undefined;
 const ignoreProductId = (_productId: number) => undefined;
 const ignoreRemove = (_productClientTermsId: number) => undefined;
 const ignoreProduct = (_product: CatalogProductListItem) => undefined;
+const ignore = () => undefined;
 
 function PreviewUnavailable({
 	title,
@@ -240,9 +241,12 @@ export function ProductPreviewDialog({
 									<div className="max-w-md">
 										<HomeOfferCard
 											action={
-												<Button className="w-full" disabled>
-													Sumar al pedido
-												</Button>
+												<PurchaseActionButton
+													disabled
+													inCart={false}
+													onAdd={ignore}
+													onViewInCart={ignore}
+												/>
 											}
 											offer={preview.homeOffer}
 										/>

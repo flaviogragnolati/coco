@@ -1,9 +1,8 @@
 "use client";
 
-import { ShoppingCartIcon } from "lucide-react";
-import { Button } from "~/components/ui/button";
 import { homeOfferToCartItem } from "~/features/cart/cart-mappers";
 import { useCartActions } from "~/features/cart/use-cart-sync";
+import { PurchaseActionButton } from "~/features/catalog/_components/purchase-panel";
 import type { HomeOffer } from "~/shared/common/home.types";
 import { useCartStore } from "~/store/cart-store";
 import { useCartUiStore } from "~/store/cart-ui-store";
@@ -27,17 +26,14 @@ export function HomeOfferAddButton({
 	const inCart = useHomeOfferCartQuantity(offer) !== null;
 	const quantity = useHomeOfferQuantity(offer);
 	return (
-		<Button
-			className="w-full rounded-full"
+		<PurchaseActionButton
 			disabled={isPending || !hasHydrated}
-			onClick={() => {
-				if (!inCart) setItem(homeOfferToCartItem(offer, quantity));
+			inCart={inCart}
+			onAdd={() => {
+				setItem(homeOfferToCartItem(offer, quantity));
 				openMiniCart();
 			}}
-			variant="highlight"
-		>
-			<ShoppingCartIcon data-icon="inline-start" />
-			{inCart ? "Ver en tu pedido" : "Sumar al pedido"}
-		</Button>
+			onViewInCart={openMiniCart}
+		/>
 	);
 }
