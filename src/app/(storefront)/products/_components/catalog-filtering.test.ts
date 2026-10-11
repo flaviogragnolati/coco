@@ -7,11 +7,14 @@ import type {
 } from "~/shared/common/catalog.types";
 import {
 	computeBrandFacets,
+	computeCategoryChips,
 	computeUnitFacets,
+	emptyCatalogFilters,
 	filterCatalog,
 	matchScore,
 	normalizeSearch,
 	productPrice,
+	resolveCategoryId,
 	selectSimilarProducts,
 	sortCatalog,
 } from "./catalog-filtering";
@@ -22,6 +25,7 @@ type ProductOverrides = {
 	description?: string | null;
 	unit?: CatalogProductUnit;
 	brand?: { id: number; name: string } | null;
+	category?: { id: number; name: string; sortOrder: number } | null;
 	createdAt?: Date;
 	terms?: Partial<CatalogClientTerms>;
 };
@@ -52,7 +56,7 @@ function makeProduct(overrides: ProductOverrides = {}): CatalogProductListItem {
 			overrides.description === undefined ? null : overrides.description,
 		unit: overrides.unit ?? "piece",
 		brand: overrides.brand === undefined ? null : overrides.brand,
-		category: null,
+		category: overrides.category === undefined ? null : overrides.category,
 		imageUrl: null,
 		createdAt: overrides.createdAt ?? new Date("2024-01-01"),
 		terms,
@@ -109,6 +113,7 @@ test("filterCatalog narrows by accent-insensitive search", () => {
 		minPrice: "",
 		maxPrice: "",
 		inCartOnly: false,
+		categoryId: null,
 	});
 	expect(result.map((product) => product.name)).toStrictEqual(["Café molido"]);
 });
@@ -126,6 +131,7 @@ test("filterCatalog narrows by brand membership", () => {
 		minPrice: "",
 		maxPrice: "",
 		inCartOnly: false,
+		categoryId: null,
 	});
 	expect(result.map((product) => product.name)).toStrictEqual(["A", "B"]);
 });
@@ -142,6 +148,7 @@ test("filterCatalog narrows by unit membership", () => {
 		minPrice: "",
 		maxPrice: "",
 		inCartOnly: false,
+		categoryId: null,
 	});
 	expect(result.map((product) => product.name)).toStrictEqual(["A"]);
 });
@@ -159,6 +166,7 @@ test("filterCatalog narrows by price range", () => {
 		minPrice: "100",
 		maxPrice: "200",
 		inCartOnly: false,
+		categoryId: null,
 	});
 	expect(result.map((product) => product.name)).toStrictEqual(["Mid"]);
 });
@@ -175,10 +183,102 @@ test("filterCatalog narrows by inCartOnly", () => {
 			minPrice: "",
 			maxPrice: "",
 			inCartOnly: true,
+			categoryId: null,
 		},
 		{ inCartTermsIds: new Set([999]) },
 	);
 	expect(result.map((product) => product.name)).toStrictEqual(["InCart"]);
+});
+
+const frutos = { id: 1, name: "Frutos secos", sortOrder: 1 };
+const semillas = { id: 2, name: "Semillas y granola", sortOrder: 4 };
+const aceites = { id: 3, name: "Aceites y despensa", sortOrder: 5 };
+
+test("filterCatalog narrows by category and leaves uncategorized products out", () => {
+	const products = [
+		makeProduct({ name: "Almendras", category: frutos }),
+		makeProduct({ name: "Chía", category: semillas }),
+		makeProduct({ name: "Sin categoría", category: null }),
+	];
+	const filtered = filterCatalog(products, {
+		...emptyCatalogFilters,
+		categoryId: frutos.id,
+	});
+	expect(filtered.map((product) => product.name)).toStrictEqual(["Almendras"]);
+	expect(filterCatalog(products, emptyCatalogFilters)).toHaveLength(3);
+});
+
+test("filterCatalog composes the category with search and sort", () => {
+	const products = [
+		makeProduct({ name: "Nueces mariposa", category: frutos }),
+		makeProduct({ name: "Almendras", category: frutos }),
+		makeProduct({ name: "Nueces con chía", category: semillas }),
+		makeProduct({ name: "Nueces peladas", category: frutos }),
+	];
+	const filters = {
+		...emptyCatalogFilters,
+		search: "nueces",
+		categoryId: frutos.id,
+	};
+	const result = sortCatalog(
+		filterCatalog(products, filters),
+		"name-desc",
+		filters.search,
+	);
+	expect(result.map((product) => product.name)).toStrictEqual([
+		"Nueces peladas",
+		"Nueces mariposa",
+	]);
+});
+
+test("computeCategoryChips lists each category once in sortOrder", () => {
+	const products = [
+		makeProduct({ category: aceites }),
+		makeProduct({ category: frutos }),
+		makeProduct({ category: semillas }),
+		makeProduct({ category: frutos }),
+		makeProduct({ category: null }),
+	];
+	expect(computeCategoryChips(products)).toStrictEqual([
+		{ id: 1, label: "Frutos secos" },
+		{ id: 2, label: "Semillas y granola" },
+		{ id: 3, label: "Aceites y despensa" },
+	]);
+});
+
+test("computeCategoryChips needs the whole catalog: a filtered list drops chips", () => {
+	const products = [
+		makeProduct({ name: "Almendras", category: frutos }),
+		makeProduct({ name: "Chía", category: semillas }),
+	];
+	const filtered = filterCatalog(products, {
+		...emptyCatalogFilters,
+		search: "almendras",
+	});
+	expect(computeCategoryChips(filtered)).toStrictEqual([]);
+	expect(computeCategoryChips(products)).toHaveLength(2);
+});
+
+test("computeCategoryChips offers nothing with fewer than two categories", () => {
+	expect(computeCategoryChips([])).toStrictEqual([]);
+	expect(
+		computeCategoryChips([
+			makeProduct({ category: frutos }),
+			makeProduct({ category: frutos }),
+			makeProduct({ category: null }),
+		]),
+	).toStrictEqual([]);
+});
+
+test("resolveCategoryId ignores a category the chips do not offer", () => {
+	const chips = [
+		{ id: 1, label: "Frutos secos" },
+		{ id: 2, label: "Semillas y granola" },
+	];
+	expect(resolveCategoryId(chips, 2)).toBe(2);
+	expect(resolveCategoryId(chips, 99)).toBeNull();
+	expect(resolveCategoryId(chips, null)).toBeNull();
+	expect(resolveCategoryId([], 1)).toBeNull();
 });
 
 test("sortCatalog name-asc and name-desc", () => {

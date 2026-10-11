@@ -26,10 +26,13 @@ import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import { useCartUiStore } from "~/store/cart-ui-store";
 import { api } from "~/trpc/react";
 import { CatalogActiveFilters } from "./catalog-active-filters";
+import { CatalogCategoryChips } from "./catalog-category-chips";
 import {
 	computeBrandFacets,
+	computeCategoryChips,
 	computeUnitFacets,
 	filterCatalog,
+	resolveCategoryId,
 	sortCatalog,
 } from "./catalog-filtering";
 import { CatalogFiltersSidebar } from "./catalog-filters-sidebar";
@@ -79,7 +82,7 @@ export function ProductsClient({
 	userId: string | null;
 }) {
 	const params = useCatalogParams();
-	const { filters, sort, view, perPage } = params;
+	const { sort, view, perPage } = params;
 	const [filtersOpen, setFiltersOpen] = useState(false);
 
 	const productsQuery = api.catalog.list.useQuery();
@@ -103,6 +106,17 @@ export function ProductsClient({
 
 	const brandFacets = useMemo(() => computeBrandFacets(products), [products]);
 	const unitFacets = useMemo(() => computeUnitFacets(products), [products]);
+	const categoryChips = useMemo(
+		() => computeCategoryChips(products),
+		[products],
+	);
+	const filters = useMemo(
+		() => ({
+			...params.filters,
+			categoryId: resolveCategoryId(categoryChips, params.filters.categoryId),
+		}),
+		[params.filters, categoryChips],
+	);
 
 	const filteredProducts = useMemo(
 		() =>
@@ -186,8 +200,8 @@ export function ProductsClient({
 					</EmptyMedia>
 					<EmptyTitle>No hay productos para esos filtros</EmptyTitle>
 					<EmptyDescription>
-						Modificá la búsqueda, marca o rango de precios para ver más
-						opciones.
+						Modificá la búsqueda, categoría, marca o rango de precios para ver
+						más opciones.
 					</EmptyDescription>
 				</EmptyHeader>
 				<EmptyContent>
@@ -251,8 +265,14 @@ export function ProductsClient({
 						total={total}
 						view={view}
 					/>
+					<CatalogCategoryChips
+						chips={categoryChips}
+						onChange={params.setCategoryId}
+						value={filters.categoryId}
+					/>
 					<CatalogActiveFilters
 						brands={brandFacets}
+						categories={categoryChips}
 						filters={filters}
 						onClearAll={params.reset}
 						onRemoveBrand={(id) =>
@@ -260,6 +280,7 @@ export function ProductsClient({
 								filters.brandIds.filter((brandId) => brandId !== id),
 							)
 						}
+						onRemoveCategory={() => params.setCategoryId(null)}
 						onRemoveInCart={() => params.setInCartOnly(false)}
 						onRemovePrice={() => params.setPriceRange("", "")}
 						onRemoveSearch={() => params.setSearch("")}
