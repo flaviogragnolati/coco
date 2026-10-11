@@ -135,13 +135,13 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 	{
 		code: 9,
 		section: SECTION_B,
-		title: "Subtotal por bloque, no lineal",
+		title: "Subtotal = precio por unidad × cantidad",
 		actor: "Cliente",
-		feature: "Precio por bloque (moqPrice + bloques × stepPrice)",
+		feature: "Precio por unidad (precio por unidad × cantidad, coma decimal)",
 		steps:
-			"1) Producto con MOQ, step y stepPrice conocidos.\n2) Llevar la cantidad a MOQ + 2 steps.\n3) Verificar el subtotal de la línea.",
+			'1) Producto por kg con mínimo y paso 0,5 y precio por unidad conocido.\n2) Escribir "1,5" en la cantidad y salir del campo.\n3) Verificar la cantidad y el subtotal de la línea.',
 		expectedResult:
-			"Subtotal = moqPrice + 2 × stepPrice (no cantidad × precio unitario). Los totales del resumen se muestran por moneda.",
+			"La cantidad queda en 1,5 kg y el subtotal es 1,5 × precio por unidad, con el descuento aplicado si lo hay. Los totales del resumen se muestran por moneda.",
 		isRegressionPath: false,
 	},
 	{
