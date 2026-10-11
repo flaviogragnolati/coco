@@ -184,7 +184,7 @@ export const quintalOverrides: QuintalOverrides = {
 /**
  * The six catalog categories, by sheet heading. A heading left out (COCO) has
  * every product listed in `categoryExceptions`. Applied by `db:seed:init` and
- * `categories:backfill`; the parser does not read it.
+ * `db:backfill:categories`; the parser does not read it.
  */
 export const quintalCategoryOverrides: QuintalCategoryOverrides = {
 	categoryMap: {
