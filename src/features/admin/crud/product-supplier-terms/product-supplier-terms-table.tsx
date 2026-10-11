@@ -55,6 +55,15 @@ const productSupplierTermsColumns: CrudColumn<ProductSupplierTermsListItem>[] =
 			),
 		},
 		{
+			key: "supplierPresentation",
+			header: "Presentación",
+			cell: (terms) => (
+				<span className="text-muted-foreground text-xs">
+					{terms.supplierPresentation ?? "-"}
+				</span>
+			),
+		},
+		{
 			key: "status",
 			header: "Estado",
 			cell: (terms) => (

@@ -101,6 +101,9 @@ async function applyPlan(
 					name: product.name,
 					description: product.description,
 					unit: product.unit,
+					presentationContainer:
+						product.presentation?.presentationContainer ?? null,
+					presentationSize: product.presentation?.presentationSize ?? null,
 					active: true,
 					brandId: null,
 					defaultSupplierId: supplierId,
@@ -143,6 +146,7 @@ async function applyPlan(
 				stepPrice: supplierTerms.stepPrice,
 				max: null,
 				refPrice: supplierTerms.refPrice,
+				supplierPresentation: supplierTerms.supplierPresentation,
 				currency: catalog.source.currency,
 				active: true,
 				fromDate: listDate,

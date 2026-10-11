@@ -57,19 +57,71 @@ describe("quintal catalog data", () => {
 
 	it.each(
 		products.map((product) => [product.key, product] as const),
-	)("%s: the customer pays the list price per kg or unit, from 1", (_key, product) => {
+	)("%s: the customer pays the list price, by the half kilo or the unit", (_key, product) => {
 		const terms = product.clientTerms;
+		const quantity = product.unit === "kg" ? "0.5000" : "1.0000";
+		const priceOf = (amount: string) =>
+			decimal(terms.unitPrice)
+				.times(amount)
+				.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
 		expect(terms.unitPrice).toBe(product.supplierTerms.refPrice);
-		expect(terms.moq).toBe("1.0000");
-		expect(terms.step).toBe("1.0000");
+		expect(terms.moq).toBe(quantity);
+		expect(terms.step).toBe(quantity);
 		expect(terms.max).toBeNull();
-		expect(decimal(terms.unitPrice).times(terms.moq).eq(terms.moqPrice)).toBe(
-			true,
-		);
-		expect(decimal(terms.unitPrice).times(terms.step).eq(terms.stepPrice)).toBe(
-			true,
-		);
+		expect(priceOf(terms.moq).eq(terms.moqPrice)).toBe(true);
+		expect(priceOf(terms.step).eq(terms.stepPrice)).toBe(true);
+	});
+
+	it("keeps the supplier presentation as supplier data, not description", () => {
+		for (const product of products) {
+			expect(product.description).not.toMatch(/presentación del proveedor/i);
+			expect(product.supplierTerms.supplierPresentation.length).toBeGreaterThan(
+				0,
+			);
+		}
+	});
+
+	it("gives a presentation only to products sold by the unit", () => {
+		expect(
+			products.filter(
+				(product) => product.unit === "kg" && product.presentation,
+			),
+		).toEqual([]);
+		expect(
+			products
+				.filter((product) => product.presentation)
+				.map((product) => [product.name, product.presentation]),
+		).toEqual([
+			[
+				"Pasta de maní Entre Nuts 370 g",
+				{ presentationContainer: "frasco", presentationSize: "370 g" },
+			],
+			[
+				"Nuez pecán garapiñada 500 g",
+				{ presentationContainer: "bolsa", presentationSize: "500 g" },
+			],
+			[
+				"Nuez pecán con chocolate negro 500 g",
+				{ presentationContainer: "bolsa", presentationSize: "500 g" },
+			],
+			[
+				"Nuez pecán con chocolate blanco 500 g",
+				{ presentationContainer: "bolsa", presentationSize: "500 g" },
+			],
+			[
+				"Aceite de oliva extra virgen botella 0,5 L PET",
+				{ presentationContainer: "botella", presentationSize: "0,5 L" },
+			],
+			[
+				"Aceite de oliva extra virgen botella 1 L",
+				{ presentationContainer: "botella", presentationSize: "1 L" },
+			],
+			[
+				"Aceite de oliva extra virgen bidón 5 L",
+				{ presentationContainer: "bidon", presentationSize: "5 L" },
+			],
+		]);
 	});
 
 	it("never prices a volume tier above the list price", () => {

@@ -5,6 +5,7 @@ import {
 	supplierAddressSchema,
 	supplierContactInfoSchema,
 } from "~/schemas/admin/supplier.schemas";
+import { productPresentationContainerSchema } from "~/schemas/catalog.schemas";
 
 export const QUINTAL_SUPPLIER_NAME = "Quintal";
 export const QUINTAL_SHEET_NAME = "Lista WEB";
@@ -46,6 +47,13 @@ const supplierTermsSchema = z.object({
 	stepPrice: moneySchema,
 	refPrice: moneySchema,
 	priceSource: priceSourceSchema,
+	/** How Quintal packs it; admin-only, never part of the description. */
+	supplierPresentation: z.string().min(1),
+});
+
+const presentationSchema = z.object({
+	presentationContainer: productPresentationContainerSchema,
+	presentationSize: z.string().min(1).nullable(),
 });
 
 const clientTermsSchema = z.object({
@@ -86,6 +94,8 @@ export const quintalProductSchema = z
 		name: z.string().trim().min(1),
 		description: z.string().min(1),
 		unit: z.enum(["kg", "piece"]),
+		/** Only products sold by the unit; inferred from the name. */
+		presentation: presentationSchema.nullable(),
 		supplierTerms: supplierTermsSchema,
 		clientTerms: clientTermsSchema,
 		alternatePacks: z.array(quintalPackSchema),
@@ -104,6 +114,19 @@ export const quintalProductSchema = z
 			ctx.addIssue({
 				code: "custom",
 				message: "El step del proveedor debe ser el pack (step = MOQ)",
+			});
+		}
+
+		if (product.unit === "kg" && product.presentation) {
+			ctx.addIssue({
+				code: "custom",
+				message: "Un producto por kg no lleva presentación",
+			});
+		}
+		if (/presentación del proveedor/i.test(product.description)) {
+			ctx.addIssue({
+				code: "custom",
+				message: "La presentación del proveedor no va en la descripción",
 			});
 		}
 
@@ -191,7 +214,11 @@ export type QuintalOverrides = {
 		/** null: no rounding beyond cents. */
 		roundUpTo: number | null;
 	};
-	clientTerms: { moq: string; step: string; max: string | null };
+	/** Default client quantities per unit: kilos sell by the half. */
+	clientTerms: Record<
+		"kg" | "piece",
+		{ moq: string; step: string; max: string | null }
+	>;
 	/** Per product key, replaces the default client quantities. */
 	clientTermsOverrides: Record<
 		string,
