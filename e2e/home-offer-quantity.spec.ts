@@ -32,7 +32,7 @@ test("a home offer adds the quantity chosen on its card", async ({ page }) => {
 		has: page.getByRole("heading", { name, exact: true }),
 	});
 
-	const quantity = card.getByRole("textbox", { name: /^Cantidad en / });
+	const quantity = card.getByRole("textbox", { name: /^Cantidad \(.+\)$/ });
 	const minimum = await quantity.inputValue();
 	await expect(
 		card.getByRole("button", { name: "Reducir cantidad" }),
