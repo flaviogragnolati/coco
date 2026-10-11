@@ -26,6 +26,8 @@ function mapHomeOffer(
 		max: record.max?.toString() ?? null,
 		toDate: record.toDate,
 		unit: record.product.unit,
+		presentationContainer: record.product.presentationContainer,
+		presentationSize: record.product.presentationSize,
 		brandName: record.product.brand?.name ?? null,
 		imageUrl: selectProductImage(record.product, "catalog"),
 		moq: record.moq.toString(),

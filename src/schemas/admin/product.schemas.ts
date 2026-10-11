@@ -7,7 +7,10 @@ import {
 import { categoryIdSchema } from "~/schemas/admin/category.schemas";
 import { supplierIdSchema } from "~/schemas/admin/supplier.schemas";
 import { cartItemSchema } from "~/schemas/cart.schemas";
-import { catalogProductDetailSchema } from "~/schemas/catalog.schemas";
+import {
+	catalogProductDetailSchema,
+	productPresentationContainerSchema,
+} from "~/schemas/catalog.schemas";
 import { homeOfferSchema } from "~/schemas/home.schemas";
 import { nullishText, optionalUrl, requiredText } from "./_crud-schema-helpers";
 
@@ -59,22 +62,65 @@ export const productBrandAssignmentSchema = z.discriminatedUnion("mode", [
 	}),
 ]);
 
-export const productCreateInputSchema = z.object({
+const productWeightUnits: ReadonlySet<string> = new Set(["kg", "gr", "lb"]);
+
+/** The select's empty option means "no container". */
+const optionalPresentationContainer = z
+	.union([productPresentationContainerSchema, z.literal("")])
+	.nullish()
+	.transform((value) => (value ? value : undefined));
+
+function validatePresentation(
+	value: {
+		unit: string;
+		presentationContainer?: string;
+		presentationSize?: string;
+	},
+	ctx: z.RefinementCtx,
+) {
+	if (productWeightUnits.has(value.unit)) {
+		if (value.presentationContainer || value.presentationSize) {
+			ctx.addIssue({
+				code: "custom",
+				message: "Los productos por peso no llevan presentación",
+				path: ["presentationContainer"],
+			});
+		}
+		return;
+	}
+
+	if (value.presentationSize && !value.presentationContainer) {
+		ctx.addIssue({
+			code: "custom",
+			message: "Elegí el envase del tamaño",
+			path: ["presentationContainer"],
+		});
+	}
+}
+
+const productInputFieldsSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
 	description: nullishText,
 	cartImageUrl: optionalUrl,
 	cardImageUrl: optionalUrl,
 	images: z.array(imageUrlSchema).default([]),
 	unit: productUnitSchema,
+	presentationContainer: optionalPresentationContainer,
+	presentationSize: nullishText,
 	brandAssignment: productBrandAssignmentSchema,
 	categoryId: z.number({ error: "Elegí una categoría" }).pipe(categoryIdSchema),
 	defaultSupplierId: supplierIdSchema.optional(),
 	active: z.boolean().default(true),
 });
 
-export const productUpdateInputSchema = productCreateInputSchema.extend({
-	id: productIdSchema,
-});
+export const productCreateInputSchema =
+	productInputFieldsSchema.superRefine(validatePresentation);
+
+export const productUpdateInputSchema = productInputFieldsSchema
+	.extend({
+		id: productIdSchema,
+	})
+	.superRefine(validatePresentation);
 
 export const productDeleteInputSchema = z.object({
 	id: productIdSchema,
@@ -93,6 +139,8 @@ export const productListItemSchema = z.object({
 	name: z.string(),
 	description: z.string().nullable(),
 	unit: productUnitSchema,
+	presentationContainer: productPresentationContainerSchema.nullable(),
+	presentationSize: z.string().nullable(),
 	cartImageUrl: z.string().nullable(),
 	brand: productReferenceBrandSchema.nullable(),
 	category: productReferenceCategorySchema.nullable(),
@@ -110,6 +158,8 @@ export const productDetailSchema = z.object({
 	cardImageUrl: z.string().nullable(),
 	images: z.array(z.string()),
 	unit: productUnitSchema,
+	presentationContainer: productPresentationContainerSchema.nullable(),
+	presentationSize: z.string().nullable(),
 	brand: productReferenceBrandSchema.nullable(),
 	category: productReferenceCategorySchema.nullable(),
 	defaultSupplier: productReferenceSupplierSchema.nullable(),

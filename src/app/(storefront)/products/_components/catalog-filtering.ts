@@ -4,7 +4,6 @@ import type {
 	CatalogProductUnit,
 } from "~/shared/common/catalog.types";
 import {
-	getOfferMoqPrice,
 	getPerUnitPrice,
 	productUnitLabelMap,
 	toNumber,
@@ -55,15 +54,12 @@ export function normalizeSearch(value: string) {
 }
 
 /**
- * The price the customer would actually be charged, so filtering and sorting
- * rank products by the same number the card advertises. Falls back to the
- * MOQ block price when the terms carry no unit price, and to `0` when they
+ * The offer price per unit the customer is charged, so filtering and sorting
+ * rank products by the same number the card advertises; `0` when the terms
  * carry no usable price at all.
  */
 export function productPrice(product: Pick<CatalogProductListItem, "terms">) {
-	const { terms } = product;
-	if (toNumber(terms.unitPrice) === null) return getOfferMoqPrice(terms);
-	return getPerUnitPrice(terms) ?? 0;
+	return getPerUnitPrice(product.terms) ?? 0;
 }
 
 /**

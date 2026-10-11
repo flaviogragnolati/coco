@@ -1,4 +1,5 @@
 import { Prisma } from "~/prisma/client";
+import { inferPresentationFromName } from "./lib/infer-presentation";
 import type { XlsxSheet } from "./lib/xlsx-reader";
 import {
 	normalizeText,
@@ -1030,7 +1031,7 @@ function buildProducts(
 			const refPrice = primary.unitPrice;
 			const unitPrice = clientUnitPrice(refPrice, unit, overrides.pricing);
 			const clientQuantities = {
-				...overrides.clientTerms,
+				...overrides.clientTerms[unit],
 				...overrides.clientTermsOverrides[key],
 			};
 
@@ -1040,9 +1041,6 @@ function buildProducts(
 				: undefined;
 			if (subcategoryLabel) descriptionParts.push(subcategoryLabel);
 			if (primary.calibre) descriptionParts.push(`Calibre ${primary.calibre}.`);
-			descriptionParts.push(
-				`Presentación del proveedor: ${primary.presentation}.`,
-			);
 
 			products.push({
 				key,
@@ -1053,6 +1051,10 @@ function buildProducts(
 				name,
 				description: descriptionParts.join(" "),
 				unit,
+				presentation:
+					unit === "piece"
+						? inferPresentationFromName(name, primary.presentation)
+						: null,
 				supplierTerms: {
 					sourceRow: primary.sourceRow,
 					detail: primary.detail,
@@ -1062,6 +1064,7 @@ function buildProducts(
 					stepPrice: moneyText(primary.price),
 					refPrice: moneyText(refPrice),
 					priceSource: primary.priceSource,
+					supplierPresentation: primary.presentation,
 				},
 				clientTerms: {
 					moq: quantityText(new Decimal(clientQuantities.moq)),

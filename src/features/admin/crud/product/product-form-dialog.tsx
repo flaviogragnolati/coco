@@ -36,6 +36,11 @@ import type {
 	ProductUnit,
 } from "~/shared/common/admin-crud/product.types";
 import type { SupplierListItem } from "~/shared/common/admin-crud/supplier.types";
+import type { CatalogProductPresentationContainer } from "~/shared/common/catalog.types";
+import {
+	isWeightUnit,
+	productPresentationContainerLabelMap,
+} from "~/shared/common/commerce.helpers";
 import {
 	defaultProductFormValues,
 	productDetailToFormValues,
@@ -50,6 +55,12 @@ const productUnitOptions: Array<{ label: string; value: ProductUnit }> = [
 	{ label: "Libra", value: "lb" },
 	{ label: "Otro", value: "other" },
 ];
+
+const presentationContainerOptions = Object.entries(
+	productPresentationContainerLabelMap,
+) as Array<
+	[CatalogProductPresentationContainer, { one: string; other: string }]
+>;
 
 type InlineBrandValues = Extract<
 	ProductFormValues["brandAssignment"],
@@ -133,6 +144,7 @@ export function ProductFormDialog({
 			? toInlineBrandValues(brandAssignment.brand)
 			: defaultInlineBrand;
 	const title = mode === "create" ? "Agregar producto" : "Editar producto";
+	const soldByWeight = isWeightUnit(form.watch("unit"));
 
 	useEffect(() => {
 		if (!open) return;
@@ -289,7 +301,16 @@ export function ProductFormDialog({
 						</Field>
 						<Field data-invalid={Boolean(errors.unit)}>
 							<FieldLabel htmlFor="product-unit">Unidad</FieldLabel>
-							<Select id="product-unit" {...form.register("unit")}>
+							<Select
+								id="product-unit"
+								{...form.register("unit", {
+									onChange: (event: { target: { value: ProductUnit } }) => {
+										if (!isWeightUnit(event.target.value)) return;
+										form.setValue("presentationContainer", undefined);
+										form.setValue("presentationSize", "");
+									},
+								})}
+							>
 								{productUnitOptions.map((option) => (
 									<option key={option.value} value={option.value}>
 										{option.label}
@@ -326,6 +347,46 @@ export function ProductFormDialog({
 									: "Agrupa el producto en el catálogo."}
 							</FieldDescription>
 							<FieldError errors={[errors.categoryId]} />
+						</Field>
+						<Field data-invalid={Boolean(errors.presentationContainer)}>
+							<FieldLabel htmlFor="product-presentation-container">
+								Envase
+							</FieldLabel>
+							<Select
+								aria-invalid={Boolean(errors.presentationContainer)}
+								disabled={isSubmitting || soldByWeight}
+								id="product-presentation-container"
+								{...form.register("presentationContainer")}
+							>
+								<option value="">Sin presentación</option>
+								{presentationContainerOptions.map(([value, label]) => (
+									<option key={value} value={value}>
+										{label.one}
+									</option>
+								))}
+							</Select>
+							<FieldDescription>
+								{soldByWeight
+									? "Los productos por peso no llevan presentación."
+									: "Lo que compra el cliente: las cantidades se cuentan en este envase."}
+							</FieldDescription>
+							<FieldError errors={[errors.presentationContainer]} />
+						</Field>
+						<Field data-invalid={Boolean(errors.presentationSize)}>
+							<FieldLabel htmlFor="product-presentation-size">
+								Tamaño
+							</FieldLabel>
+							<Input
+								aria-invalid={Boolean(errors.presentationSize)}
+								disabled={isSubmitting || soldByWeight}
+								id="product-presentation-size"
+								placeholder="0,5 L"
+								{...form.register("presentationSize")}
+							/>
+							<FieldDescription>
+								Opcional. Se muestra junto al envase: "2 frascos 370 g".
+							</FieldDescription>
+							<FieldError errors={[errors.presentationSize]} />
 						</Field>
 						<Field data-invalid={Boolean(errors.defaultSupplierId)}>
 							<FieldLabel htmlFor="product-default-supplier">

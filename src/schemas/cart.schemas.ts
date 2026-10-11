@@ -4,6 +4,7 @@ import {
 	catalogClientTermsSchema,
 	catalogCurrencySchema,
 	catalogProductUnitSchema,
+	productPresentationContainerSchema,
 } from "~/schemas/catalog.schemas";
 
 const positiveDecimalStringSchema = decimalOutputSchema.refine((value) => {
@@ -26,6 +27,8 @@ export const cartProductSummarySchema = z.object({
 	name: z.string(),
 	description: z.string().nullable(),
 	unit: catalogProductUnitSchema,
+	presentationContainer: productPresentationContainerSchema.nullable(),
+	presentationSize: z.string().nullable(),
 	brandName: z.string().nullable(),
 	imageUrl: z.string().nullable(),
 });

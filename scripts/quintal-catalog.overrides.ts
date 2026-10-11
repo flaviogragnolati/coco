@@ -21,7 +21,10 @@ export const quintalOverrides: QuintalOverrides = {
 		freightPerPiece: 0,
 		roundUpTo: null,
 	},
-	clientTerms: { moq: "1", step: "1", max: null },
+	clientTerms: {
+		kg: { moq: "0.5", step: "0.5", max: null },
+		piece: { moq: "1", step: "1", max: null },
+	},
 	clientTermsOverrides: {},
 
 	excludedCategories: [],

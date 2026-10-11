@@ -2,6 +2,7 @@ import type { CartSnapshot } from "./cart.types";
 import type {
 	CatalogClientTerms,
 	CatalogCurrency,
+	CatalogProductPresentationContainer,
 	CatalogProductUnit,
 } from "./catalog.types";
 
@@ -13,6 +14,40 @@ export const productUnitLabelMap: Record<CatalogProductUnit, string> = {
 	other: "unidad",
 	piece: "unidad",
 };
+
+type CountNoun = { one: string; other: string };
+
+const countableUnitNouns: Partial<Record<CatalogProductUnit, CountNoun>> = {
+	box: { one: "caja", other: "cajas" },
+	other: { one: "unidad", other: "unidades" },
+	piece: { one: "unidad", other: "unidades" },
+};
+
+export const productPresentationContainerLabelMap: Record<
+	CatalogProductPresentationContainer,
+	CountNoun
+> = {
+	botella: { one: "botella", other: "botellas" },
+	bidon: { one: "bidón", other: "bidones" },
+	frasco: { one: "frasco", other: "frascos" },
+	bolsa: { one: "bolsa", other: "bolsas" },
+	paquete: { one: "paquete", other: "paquetes" },
+	unidad: { one: "unidad", other: "unidades" },
+};
+
+/**
+ * The package a customer buys, as stored on the product and copied into the
+ * order snapshot. Old snapshots lack both fields, hence optional.
+ */
+export type ProductPresentation = {
+	presentationContainer?: CatalogProductPresentationContainer | null;
+	presentationSize?: string | null;
+};
+
+/** Sold by weight: these never carry a presentation. */
+export function isWeightUnit(unit: CatalogProductUnit) {
+	return unit === "kg" || unit === "gr" || unit === "lb";
+}
 
 const quantityFormatter = new Intl.NumberFormat("es-AR", {
 	maximumFractionDigits: 4,
@@ -53,14 +88,76 @@ export function formatCurrency(
 	}).format(amount);
 }
 
+/**
+ * The noun a quantity is counted in, agreeing with it in number: "kg",
+ * "frasco 370 g" / "frascos 370 g", "unidad" / "unidades". A presentation
+ * replaces the unit noun, except on weight units, which never carry one.
+ */
+export function formatUnitLabel(
+	quantity: string | number,
+	unit: CatalogProductUnit,
+	presentation?: ProductPresentation | null,
+) {
+	const amount = toNumber(quantity);
+	const form =
+		amount !== null && Math.abs(amount - 1) < epsilon ? "one" : "other";
+	const container = isWeightUnit(unit)
+		? null
+		: presentation?.presentationContainer;
+
+	if (container) {
+		const noun = productPresentationContainerLabelMap[container][form];
+		const size = presentation?.presentationSize?.trim();
+		return size ? `${noun} ${size}` : noun;
+	}
+
+	return countableUnitNouns[unit]?.[form] ?? productUnitLabelMap[unit];
+}
+
 export function formatQuantity(
 	value: string | number,
 	unit: CatalogProductUnit,
+	presentation?: ProductPresentation | null,
 ) {
 	const amount = toNumber(value);
 	const formatted =
 		amount === null ? String(value) : quantityFormatter.format(amount);
-	return `${formatted} ${productUnitLabelMap[unit]}`;
+	return `${formatted} ${formatUnitLabel(value, unit, presentation)}`;
+}
+
+const quantityInputFormatter = new Intl.NumberFormat("es-AR", {
+	maximumFractionDigits: 4,
+	minimumFractionDigits: 0,
+	useGrouping: false,
+});
+
+/**
+ * Reads a quantity typed in es-AR ("1,5") or with a dot ("1.5"). A comma makes
+ * every dot a thousands separator ("1.000,5"); without one, a single dot is the
+ * decimal point and several are separators. Null for anything else.
+ */
+export function parseQuantityInput(text: string): number | null {
+	const compact = text.trim().replace(/\s+/g, "");
+	if (!compact) return null;
+
+	let canonical = compact;
+	if (compact.includes(",")) {
+		canonical = compact.replace(/\./g, "").replace(",", ".");
+	} else if ((compact.match(/\./g) ?? []).length > 1) {
+		canonical = compact.replace(/\./g, "");
+	}
+	if (!/^\d+(?:\.\d+)?$|^\.\d+$/.test(canonical)) return null;
+
+	const parsed = Number(canonical);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** A quantity as the input shows it: es-AR decimals, no grouping ("1,5"). */
+export function formatQuantityInput(value: string | number) {
+	const amount = toNumber(value);
+	return amount === null
+		? String(value)
+		: quantityInputFormatter.format(amount);
 }
 
 export function toQuantityString(value: number) {
@@ -99,41 +196,28 @@ function getDiscountMultiplier(terms: DiscountableTerms) {
 	return 1 - Math.min(Math.max(percent, 0), 100) / 100;
 }
 
-export function getOfferMoqPrice(
-	terms: Pick<CatalogClientTerms, "moqPrice" | "discountPercent">,
-): number {
-	return (toNumber(terms.moqPrice) ?? 0) * getDiscountMultiplier(terms);
-}
-
 /**
- * Discounted alongside `moqPrice` and never on its own: discounting only the
- * MOQ block would make the marginal step cost more than the minimum, which is
- * not what any admin means by a percentage off (ADR 0008).
+ * The charged price per unit, before any discount. Legacy terms saved before
+ * the unit price became the only price the admin enters may lack it; for those
+ * the minimum block stands in (`moqPrice / moq`), which is exactly what the
+ * minimum always cost.
  */
-export function getOfferStepPrice(
-	terms: Pick<CatalogClientTerms, "stepPrice" | "discountPercent">,
+export function getBaseUnitPrice(
+	terms: Pick<CatalogClientTerms, "unitPrice" | "moqPrice" | "moq">,
 ): number | null {
-	const stepPrice = toNumber(terms.stepPrice);
-	if (stepPrice === null) return null;
-	return stepPrice * getDiscountMultiplier(terms);
-}
+	const unitPrice = toNumber(terms.unitPrice);
+	if (unitPrice !== null) return unitPrice;
 
-export function getDisplayPrice(terms: CatalogClientTerms) {
-	return terms.unitPrice ?? terms.moqPrice;
-}
-
-export function getPriceLabel(
-	terms: CatalogClientTerms,
-	unit: CatalogProductUnit,
-) {
-	if (terms.unitPrice)
-		return `Precio unitario por ${productUnitLabelMap[unit]}`;
-	return `Precio MOQ por ${formatQuantity(terms.moq, unit)}`;
+	const moq = toNumber(terms.moq);
+	const moqPrice = toNumber(terms.moqPrice);
+	if (moqPrice === null || moq === null || moq <= 0) return null;
+	return moqPrice / moq;
 }
 
 /**
- * Always the *offer* unit price: both branches apply the discount, so the
- * catalog can never advertise a number the cart will not charge.
+ * Always the *offer* unit price: the discount comes off the one price every
+ * total is built from, so the catalog can never advertise a number the cart
+ * will not charge (ADR 0008).
  */
 export function getPerUnitPrice(
 	terms: Pick<
@@ -141,13 +225,19 @@ export function getPerUnitPrice(
 		"unitPrice" | "moqPrice" | "moq" | "discountPercent"
 	>,
 ): number | null {
-	const unitPrice = toNumber(terms.unitPrice);
-	if (unitPrice !== null) return unitPrice * getDiscountMultiplier(terms);
+	const unitPrice = getBaseUnitPrice(terms);
+	if (unitPrice === null) return null;
+	return unitPrice * getDiscountMultiplier(terms);
+}
 
-	const moq = toNumber(terms.moq);
-	if (toNumber(terms.moqPrice) === null || moq === null || moq <= 0)
-		return null;
-	return getOfferMoqPrice(terms) / moq;
+/** What the minimum quantity costs at the offer price. */
+export function getOfferMoqPrice(
+	terms: Pick<
+		CatalogClientTerms,
+		"unitPrice" | "moqPrice" | "moq" | "discountPercent"
+	>,
+): number {
+	return (getPerUnitPrice(terms) ?? 0) * (toNumber(terms.moq) ?? 0);
 }
 
 /**
@@ -273,7 +363,7 @@ export function isFixedQuantity(terms: CatalogClientTerms) {
 }
 
 /**
- * Raised when the terms cannot price the quantity they themselves allow.
+ * Raised when the terms carry no price the quantity can be multiplied by.
  * Callers must not fall back to a partial price: guessing here undercharges.
  */
 export class PricingConfigurationError extends Error {
@@ -283,34 +373,26 @@ export class PricingConfigurationError extends Error {
 	}
 }
 
+/**
+ * Offer unit price × the normalized quantity. The quantity is normalized first,
+ * so a total is only ever quoted for a quantity the terms allow.
+ */
 export function calculateLineTotal(
 	terms: CatalogClientTerms,
 	quantity: string,
 ) {
-	const moqPrice = getOfferMoqPrice(terms);
-	const moq = toNumber(terms.moq) ?? 0;
-	const step = toNumber(terms.step);
-	const stepPrice = getOfferStepPrice(terms);
-	const quantityNumber =
-		toNumber(normalizeCartQuantity(quantity, terms)) ?? moq;
-
-	if (
-		step &&
-		step > 0 &&
-		stepPrice === null &&
-		quantityNumber > moq + epsilon
-	) {
+	const unitPrice = getPerUnitPrice(terms);
+	if (unitPrice === null) {
 		throw new PricingConfigurationError(
-			`Los términos definen un step (${step}) sin precio de step, por lo que no se puede calcular el total para la cantidad ${quantityNumber} (MOQ ${moq}).`,
+			`Los términos #${terms.id} no tienen precio por unidad ni un precio de mínimo del que derivarlo.`,
 		);
 	}
 
-	if (!step || step <= 0 || stepPrice === null || quantityNumber <= moq) {
-		return toMoneyString(moqPrice);
-	}
-
-	const steps = Math.ceil((quantityNumber - moq - epsilon) / step);
-	return toMoneyString(moqPrice + Math.max(0, steps) * stepPrice);
+	const quantityNumber =
+		toNumber(normalizeCartQuantity(quantity, terms)) ??
+		toNumber(terms.moq) ??
+		0;
+	return toMoneyString(unitPrice * quantityNumber);
 }
 
 // Callers own item ordering: the store sorts by name for display, while the

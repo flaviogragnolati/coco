@@ -15,7 +15,6 @@ import {
 	requiredDecimalString,
 	validateDateRange,
 	validateDiscountPercentRange,
-	validateStepCoherence,
 } from "./_crud-schema-helpers";
 
 const productReferenceSchema = z.object({
@@ -34,12 +33,12 @@ export const currencySchema = z.enum(["ARS", "USD", "EUR", "BRL"]);
 
 const productClientTermsInputFieldsSchema = z.object({
 	productId: productIdSchema,
-	moq: requiredDecimalString("MOQ", 4),
-	moqPrice: requiredDecimalString("Precio MOQ", 2),
-	step: optionalDecimalString("Step", 4),
-	stepPrice: optionalDecimalString("Precio step", 2),
-	max: optionalDecimalString("Maximo", 4),
-	unitPrice: optionalDecimalString("Precio unitario", 2),
+	// The only client price an admin enters; the minimum and step prices are
+	// derived from it on save.
+	unitPrice: requiredDecimalString("Precio por unidad", 2),
+	moq: requiredDecimalString("Mínimo", 4),
+	step: optionalDecimalString("Paso", 4),
+	max: optionalDecimalString("Máximo", 4),
 	marketPrice: optionalDecimalString("Precio de góndola", 2),
 	discountPercent: optionalNonNegativeDecimalString("Descuento (%)", 2),
 	currency: currencySchema.default("ARS"),
@@ -51,7 +50,6 @@ const productClientTermsInputFieldsSchema = z.object({
 export const productClientTermsCreateInputSchema =
 	productClientTermsInputFieldsSchema
 		.superRefine(validateDateRange)
-		.superRefine(validateStepCoherence)
 		.superRefine(validateDiscountPercentRange);
 
 export const productClientTermsUpdateInputSchema =
@@ -60,7 +58,6 @@ export const productClientTermsUpdateInputSchema =
 			id: productClientTermsIdSchema,
 		})
 		.superRefine(validateDateRange)
-		.superRefine(validateStepCoherence)
 		.superRefine(validateDiscountPercentRange);
 
 export const productClientTermsDeleteInputSchema = z.object({

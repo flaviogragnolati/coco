@@ -29,7 +29,7 @@ import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import {
 	formatCurrency,
 	formatQuantity,
-	productUnitLabelMap,
+	formatUnitLabel,
 } from "~/shared/common/commerce.helpers";
 import { api } from "~/trpc/react";
 import { ProductPriceBlock } from "./product-price-block";
@@ -106,11 +106,11 @@ export function ProductDetailsDialog({
 						<div className="flex flex-wrap gap-2">
 							<Badge variant="secondary">{product.terms.currency}</Badge>
 							<Badge variant="outline">
-								{productUnitLabelMap[product.unit]}
+								{formatUnitLabel(1, product.unit, product)}
 							</Badge>
 							{product.terms.max ? (
 								<Badge variant="outline">
-									Máx {formatQuantity(product.terms.max, product.unit)}
+									Máx {formatQuantity(product.terms.max, product.unit, product)}
 								</Badge>
 							) : null}
 						</div>
@@ -211,14 +211,22 @@ export function ProductDetailsDialog({
 										<div className="flex items-center justify-between gap-3">
 											<span className="text-muted-foreground">MOQ</span>
 											<span className="font-medium">
-												{formatQuantity(product.terms.moq, product.unit)}
+												{formatQuantity(
+													product.terms.moq,
+													product.unit,
+													product,
+												)}
 											</span>
 										</div>
 										<div className="flex items-center justify-between gap-3">
 											<span className="text-muted-foreground">Step</span>
 											<span className="font-medium">
 												{product.terms.step
-													? formatQuantity(product.terms.step, product.unit)
+													? formatQuantity(
+															product.terms.step,
+															product.unit,
+															product,
+														)
 													: "Sin incrementos"}
 											</span>
 										</div>
@@ -226,7 +234,11 @@ export function ProductDetailsDialog({
 											<span className="text-muted-foreground">Máximo</span>
 											<span className="font-medium">
 												{product.terms.max
-													? formatQuantity(product.terms.max, product.unit)
+													? formatQuantity(
+															product.terms.max,
+															product.unit,
+															product,
+														)
 													: "Sin máximo"}
 											</span>
 										</div>
@@ -241,6 +253,7 @@ export function ProductDetailsDialog({
 													}
 													onDecrement={() => onDecrement(activeCartItem)}
 													onIncrement={() => onIncrement(activeCartItem)}
+													presentation={activeCartItem.product}
 													terms={activeCartItem.terms}
 													unit={activeCartItem.product.unit}
 													value={activeCartItem.quantity}

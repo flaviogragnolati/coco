@@ -33,7 +33,7 @@ const clientTermsSearchFields = (terms: ProductClientTermsListItem) => [
 	terms.product.name,
 	terms.currency,
 	terms.moq,
-	terms.moqPrice,
+	terms.unitPrice ?? terms.moqPrice,
 ];
 
 // The three panels' hard-delete wording tracks each service's relation guard:

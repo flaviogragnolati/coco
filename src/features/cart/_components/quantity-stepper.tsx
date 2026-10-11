@@ -14,7 +14,10 @@ import {
 	canDecrementQuantity,
 	canIncrementQuantity,
 	formatQuantity,
+	formatQuantityInput,
 	normalizeCartQuantity,
+	type ProductPresentation,
+	parseQuantityInput,
 } from "~/shared/common/commerce.helpers";
 
 type QuantityStepperProps = {
@@ -22,6 +25,7 @@ type QuantityStepperProps = {
 	disabled?: boolean;
 	terms: CatalogClientTerms;
 	unit: CatalogProductUnit;
+	presentation?: ProductPresentation | null;
 	value: string;
 	onCommit: (quantity: string) => void;
 	onDecrement: () => void;
@@ -33,22 +37,28 @@ export function QuantityStepper({
 	disabled,
 	terms,
 	unit,
+	presentation,
 	value,
 	onCommit,
 	onDecrement,
 	onIncrement,
 }: QuantityStepperProps) {
-	const [draft, setDraft] = useState(value);
+	const [draft, setDraft] = useState(() => formatQuantityInput(value));
 	const canIncrement = canIncrementQuantity(value, terms);
 	const canDecrement = canDecrementQuantity(value, terms);
 
 	useEffect(() => {
-		setDraft(value);
+		setDraft(formatQuantityInput(value));
 	}, [value]);
 
+	// Unreadable input keeps the current quantity instead of snapping to the
+	// minimum.
 	const commitDraft = () => {
-		const normalized = normalizeCartQuantity(draft, terms);
-		setDraft(normalized);
+		const normalized = normalizeCartQuantity(
+			parseQuantityInput(draft) ?? value,
+			terms,
+		);
+		setDraft(formatQuantityInput(normalized));
 		onCommit(normalized);
 	};
 
@@ -89,7 +99,7 @@ export function QuantityStepper({
 				<PlusIcon />
 			</Button>
 			<span className="min-w-16 text-muted-foreground text-xs">
-				{formatQuantity(value, unit)}
+				{formatQuantity(value, unit, presentation)}
 			</span>
 		</div>
 	);

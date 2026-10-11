@@ -9,10 +9,14 @@ import type {
 	catalogProductDetailSchema,
 	catalogProductListItemSchema,
 	catalogProductUnitSchema,
+	productPresentationContainerSchema,
 } from "~/schemas/catalog.schemas";
 
 export type CatalogCurrency = z.output<typeof catalogCurrencySchema>;
 export type CatalogProductUnit = z.output<typeof catalogProductUnitSchema>;
+export type CatalogProductPresentationContainer = z.output<
+	typeof productPresentationContainerSchema
+>;
 export type CatalogBrandSummary = z.output<typeof catalogBrandSummarySchema>;
 export type CatalogCategorySummary = z.output<
 	typeof catalogCategorySummarySchema

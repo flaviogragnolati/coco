@@ -104,7 +104,7 @@ export function CartLineRow({
 					<div className="flex items-center justify-between gap-2">
 						{readOnly ? (
 							<span className="text-muted-foreground text-xs">
-								{formatQuantity(item.quantity, item.product.unit)}
+								{formatQuantity(item.quantity, item.product.unit, item.product)}
 							</span>
 						) : (
 							<QuantityStepper
@@ -112,6 +112,7 @@ export function CartLineRow({
 								onCommit={(quantity) => onQuantityCommit?.(item, quantity)}
 								onDecrement={() => onDecrement?.(item)}
 								onIncrement={() => onIncrement?.(item)}
+								presentation={item.product}
 								terms={item.terms}
 								unit={item.product.unit}
 								value={item.quantity}
@@ -150,18 +151,19 @@ export function CartLineRow({
 				</p>
 				<div className="flex flex-wrap gap-2">
 					<Badge variant="info">
-						MOQ {formatQuantity(item.terms.moq, item.product.unit)}
+						MOQ{" "}
+						{formatQuantity(item.terms.moq, item.product.unit, item.product)}
 					</Badge>
 					<Badge variant="secondary">
 						Step{" "}
 						{item.terms.step
-							? formatQuantity(item.terms.step, item.product.unit)
+							? formatQuantity(item.terms.step, item.product.unit, item.product)
 							: "sin incrementos"}
 					</Badge>
 				</div>
 				{readOnly ? (
 					<span className="text-muted-foreground text-sm">
-						{formatQuantity(item.quantity, item.product.unit)}
+						{formatQuantity(item.quantity, item.product.unit, item.product)}
 					</span>
 				) : (
 					<QuantityStepper
@@ -169,6 +171,7 @@ export function CartLineRow({
 						onCommit={(quantity) => onQuantityCommit?.(item, quantity)}
 						onDecrement={() => onDecrement?.(item)}
 						onIncrement={() => onIncrement?.(item)}
+						presentation={item.product}
 						terms={item.terms}
 						unit={item.product.unit}
 						value={item.quantity}

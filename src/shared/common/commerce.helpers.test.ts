@@ -6,11 +6,14 @@ import {
 	calculateLineTotal,
 	formatCurrency,
 	formatQuantity,
+	formatQuantityInput,
+	formatUnitLabel,
 	getMarketSaving,
 	getPerUnitPrice,
 	isFixedQuantity,
 	normalizeCartQuantity,
 	PricingConfigurationError,
+	parseQuantityInput,
 	selectProductImage,
 } from "./commerce.helpers";
 
@@ -51,6 +54,8 @@ function item(
 			name,
 			description: null,
 			unit: "kg",
+			presentationContainer: null,
+			presentationSize: null,
 			brandName: null,
 			imageUrl: null,
 		},
@@ -267,104 +272,200 @@ test.each([
 
 test.each([
 	[
-		"at the minimum it is the minimum price",
+		"at the minimum it is the unit price times the minimum",
 		"100",
-		{ moq: "100", moqPrice: "500" },
+		{ moq: "100", unitPrice: "5" },
 		"500.00",
 	],
 	[
-		"below the minimum it is still the minimum price",
+		"below the minimum it is still the minimum's price",
 		"40",
-		{ moq: "100", moqPrice: "500" },
+		{ moq: "100", unitPrice: "5" },
 		"500.00",
 	],
 	[
-		"above the minimum each step adds its price",
+		"above the minimum it is the unit price times the quantity",
+		"1000",
+		{ moq: "100", unitPrice: "5", step: "10" },
+		"5000.00",
+	],
+	[
+		"half a kilo steps price each half",
+		"1.5",
+		{ moq: "0.5", unitPrice: "19500", step: "0.5" },
+		"29250.00",
+	],
+	[
+		"a quantity off the step grid is priced at the next allowed one",
+		"1.2",
+		{ moq: "0.5", unitPrice: "19500", step: "0.5" },
+		"29250.00",
+	],
+	[
+		"stored minimum and step prices never override the unit price",
+		"3",
+		{
+			moq: "1",
+			moqPrice: "999",
+			unitPrice: "100",
+			step: "1",
+			stepPrice: "1",
+		},
+		"300.00",
+	],
+	[
+		"without a step every quantity is priced as the minimum",
+		"1000",
+		{ moq: "100", unitPrice: "5" },
+		"500.00",
+	],
+	[
+		"legacy terms without a unit price derive it from the minimum",
 		"1000",
 		{ moq: "100", moqPrice: "500", step: "10", stepPrice: "50" },
 		"5000.00",
 	],
 	[
-		"a step price without a step is never applied",
+		"a discount comes off the unit price",
 		"1000",
-		{ moq: "100", moqPrice: "500", stepPrice: "50" },
-		"500.00",
-	],
-	[
-		"a step without a step price still prices the minimum block",
-		"100",
-		{ moq: "100", moqPrice: "500", step: "10" },
-		"500.00",
-	],
-	[
-		"a discount comes off the minimum block",
-		"100",
-		{ moq: "100", moqPrice: "500", discountPercent: "25" },
-		"375.00",
-	],
-	[
-		"a discount comes off every step as well as the minimum",
-		"1000",
-		{
-			moq: "100",
-			moqPrice: "500",
-			step: "10",
-			stepPrice: "50",
-			discountPercent: "25",
-		},
+		{ moq: "100", unitPrice: "5", step: "10", discountPercent: "25" },
 		"3750.00",
+	],
+	[
+		"a discount on half kilos",
+		"1.5",
+		{ moq: "0.5", unitPrice: "19500", step: "0.5", discountPercent: "10" },
+		"26325.00",
 	],
 	[
 		"a zero discount prices exactly like no discount",
 		"1000",
-		{
-			moq: "100",
-			moqPrice: "500",
-			step: "10",
-			stepPrice: "50",
-			discountPercent: "0",
-		},
+		{ moq: "100", unitPrice: "5", step: "10", discountPercent: "0" },
 		"5000.00",
 	],
 	[
 		"a null discount prices exactly like no discount",
 		"1000",
-		{
-			moq: "100",
-			moqPrice: "500",
-			step: "10",
-			stepPrice: "50",
-			discountPercent: null,
-		},
+		{ moq: "100", unitPrice: "5", step: "10", discountPercent: null },
 		"5000.00",
 	],
 ] as const)("calculateLineTotal: %s", (_name, quantity, overrides, expected) => {
 	expect(calculateLineTotal(terms(overrides), quantity)).toBe(expected);
 });
 
-// The review's 10x-undercharge scenario: the terms let the quantity grow in
-// steps but price no step, so the flat minimum price used to be returned for
-// ten times the goods.
-test("calculateLineTotal refuses to price a step it has no price for", () => {
+test("calculateLineTotal refuses terms with no price to multiply by", () => {
 	expect(() =>
 		calculateLineTotal(
-			terms({ moq: "100", moqPrice: "500", step: "10", stepPrice: null }),
-			"1000",
+			terms({ moq: "0", moqPrice: "500", unitPrice: null }),
+			"10",
+		),
+	).toThrow(PricingConfigurationError);
+	expect(() =>
+		calculateLineTotal(
+			terms({ moqPrice: "invalid", unitPrice: null, discountPercent: "25" }),
+			"10",
 		),
 	).toThrow(PricingConfigurationError);
 });
 
-test("a discount does not turn the missing-step-price error into a price", () => {
-	expect(() =>
-		calculateLineTotal(
-			terms({
-				moq: "100",
-				moqPrice: "500",
-				step: "10",
-				stepPrice: null,
-				discountPercent: "25",
-			}),
-			"1000",
-		),
-	).toThrow(PricingConfigurationError);
+test.each([
+	["a half step accepts one and a half", "1.5", "1.5"],
+	["a half step rounds a quantity up to the next half", "1.2", "1.5"],
+	["a half step clamps below the minimum", "0.2", "0.5"],
+	["a whole quantity stays a valid multiple", "2", "2"],
+] as const)("normalizeCartQuantity on half kilos: %s", (_name, quantity, expected) => {
+	expect(
+		normalizeCartQuantity(quantity, terms({ moq: "0.5", step: "0.5" })),
+	).toBe(expected);
+});
+
+const frasco = {
+	presentationContainer: "frasco",
+	presentationSize: "370 g",
+} as const;
+
+test.each([
+	["one jar", "1", "piece", frasco, "1 frasco 370 g"],
+	["two jars", "2", "piece", frasco, "2 frascos 370 g"],
+	[
+		"one can",
+		"1",
+		"piece",
+		{ presentationContainer: "bidon", presentationSize: "5 L" },
+		"1 bidón 5 L",
+	],
+	[
+		"two cans",
+		"2",
+		"piece",
+		{ presentationContainer: "bidon", presentationSize: "5 L" },
+		"2 bidones 5 L",
+	],
+	[
+		"a bag without size",
+		"1",
+		"piece",
+		{ presentationContainer: "bolsa", presentationSize: null },
+		"1 bolsa",
+	],
+	[
+		"bags without size",
+		"3",
+		"piece",
+		{ presentationContainer: "bolsa", presentationSize: "" },
+		"3 bolsas",
+	],
+	["one unit without presentation", "1", "piece", null, "1 unidad"],
+	["units without presentation", "16", "piece", null, "16 unidades"],
+	["boxes", "3", "box", undefined, "3 cajas"],
+	["half kilos", "1.5", "kg", undefined, "1,5 kg"],
+	["one kilo", "1", "kg", undefined, "1 kg"],
+	["weight ignores a stray presentation", "0.5", "kg", frasco, "0,5 kg"],
+	[
+		"a size without container falls back to the unit",
+		"2",
+		"piece",
+		{ presentationContainer: null, presentationSize: "370 g" },
+		"2 unidades",
+	],
+] as const)("formatQuantity: %s", (_name, value, unit, presentation, expected) => {
+	expect(formatQuantity(value, unit, presentation)).toBe(expected);
+});
+
+test("formatUnitLabel is the noun alone, agreeing with the quantity", () => {
+	expect(formatUnitLabel("1", "piece", frasco)).toBe("frasco 370 g");
+	expect(formatUnitLabel("2", "piece", frasco)).toBe("frascos 370 g");
+	expect(formatUnitLabel("0.5", "kg")).toBe("kg");
+	expect(formatUnitLabel("12", "other")).toBe("unidades");
+});
+
+test.each([
+	["a decimal comma", "1,5", 1.5],
+	["a decimal dot", "1.5", 1.5],
+	["a whole number", "2", 2],
+	["surrounding spaces", " 0,5 ", 0.5],
+	["a leading comma", ",5", 0.5],
+	["es-AR grouping with a decimal comma", "1.000,5", 1000.5],
+	["several dots as grouping", "1.000.000", 1000000],
+	["empty input", "", null],
+	["letters", "uno", null],
+	["two commas", "1,5,0", null],
+	["a negative sign", "-1", null],
+] as const)("parseQuantityInput: %s", (_name, text, expected) => {
+	expect(parseQuantityInput(text)).toBe(expected);
+});
+
+test("a typed decimal comma reaches the half-kilo grid", () => {
+	const halves = terms({ moq: "0.5", step: "0.5" });
+	const parsed = parseQuantityInput("1,5");
+
+	expect(parsed).not.toBeNull();
+	expect(normalizeCartQuantity(parsed ?? 0, halves)).toBe("1.5");
+});
+
+test("formatQuantityInput shows es-AR decimals without grouping", () => {
+	expect(formatQuantityInput("1.5")).toBe("1,5");
+	expect(formatQuantityInput("1500")).toBe("1500");
+	expect(formatQuantityInput("0.5000")).toBe("0,5");
+	expect(parseQuantityInput(formatQuantityInput("1234.5"))).toBe(1234.5);
 });

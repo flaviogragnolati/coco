@@ -96,7 +96,7 @@ Mutable reference data is not trusted to preserve history.
 
 - `UserOrder.billingAddressSnapshot`, `UserOrder.shippingAddressSnapshot` (nullable), `UserOrder.termsSnapshot` + `acceptedTermsAt`
 - `UserOrderItem.productSnapshot`, `UserOrderItem.priceSnapshot` (required)
-- `CartItem.productSnapshot` (required)
+- `CartItem.productSnapshot` (required); its `product` carries `unit`, `presentationContainer` and `presentationSize`, and checkout writes the product's current presentation into the order item's copy. Snapshots older than the presentation lack both fields and display the unit
 - `Shipment.destinationAddressSnapshot`, `Shipment.destinationContactSnapshot` (nullable)
 - `UserTransaction.requestSnapshot`, `UserTransaction.responseSnapshot` (payment gateway exchange)
 
@@ -160,10 +160,10 @@ Operations no longer execute on creation. A draft is created with its parameters
 | --- | --- | --- | --- |
 | `Brand` | Product brand metadata | Has many `Product` | Optional brand association |
 | `Category` | *Category*: the catalog group a product is listed under | Has many `Product` (`onDelete: Restrict`) | Admin CRUD at `/admin/categories`: `name`, `sortOrder` (display order, lowest first), `active`/`deleted` flags. The `category` migration inserts the six initial rows. Soft delete keeps the products' reference; hard delete is refused while any product references it. The catalog DTO exposes only an active, non-deleted category (`{ id, name, sortOrder }`), otherwise `null` |
-| `Product` | Catalog item | Optional `Brand`; `Category` (required by the app, nullable column — modeling limit 13); optional `defaultSupplier`; has many client terms, supplier terms, and local constraints; back-relation `homeOfferSpotlightOf` | `defaultSupplier` is a hint, not the only sourcing path. `homeOfferRank` (nullable, indexed) pins the product's position in the home offers grid; null means the automatic ranking decides |
+| `Product` | Catalog item | Optional `Brand`; `Category` (required by the app, nullable column — modeling limit 13); optional `defaultSupplier`; has many client terms, supplier terms, and local constraints; back-relation `homeOfferSpotlightOf` | `defaultSupplier` is a hint, not the only sourcing path. `homeOfferRank` (nullable, indexed) pins the product's position in the home offers grid; null means the automatic ranking decides. The *Presentation* is `presentationContainer` (`ProductPresentationContainer`: botella, bidon, frasco, bolsa, paquete, unidad) plus free-text `presentationSize`, both nullable; weight units (`kg`, `gr`, `lb`) never carry one, enforced by the admin input schema |
 | `Supplier` | Supplier master data | Has many `ProductSupplierTerms`, `Lot`, `SupplierOrder`; optional default relation from `Product` | Address/contact structures remain JSON for now |
-| `ProductClientTerms` | Customer-facing sell terms | Belongs to `Product`; referenced by `CartItem` | Source of MOQ, step, max, price, currency, and the offer discount used at request time — see the pricing columns below |
-| `ProductSupplierTerms` | Supplier-facing buy terms | Belongs to `Product` and `Supplier`; referenced by `LotItem` | Source of sourcing MOQ and buy-side price logic; still carries `refPrice` (see modeling limit 11) |
+| `ProductClientTerms` | Customer-facing sell terms | Belongs to `Product`; referenced by `CartItem` | Source of the unit price, MOQ, step, max, currency, and the offer discount used at request time — see the pricing columns below. Price changes edit the row in place: closing it invalidates the open carts and checkouts that reference it |
+| `ProductSupplierTerms` | Supplier-facing buy terms | Belongs to `Product` and `Supplier`; referenced by `LotItem` | Source of sourcing MOQ and buy-side price logic; still carries `refPrice` (see modeling limit 11). `supplierPresentation` (nullable text) is how the supplier packs the product ("caja de 10 kg"): admin-only, never shown to customers |
 | `ProductLocalConstraints` | Context-sensitive restrictions | Belongs to `Product` | Flexible JSON-based rule container, interpreted in app code |
 | `Destination` | Internal warehouse or operational destination | Referenced by `LotItem` and optionally by `Operation` | Not the same as the end-user address |
 | `PickupPoint` | Customer-facing *Pickup point*: where end-user shipments arrive and each customer collects | Referenced by `UserOrder.pickupPointId` and `Shipment.pickupPointId` (both `Restrict`) | Admin CRUD at `/admin/pickup-points`. Address, free-text `hours`, optional `instructions` and map URL; `active`/`deleted` flags. Checkout offers only active points; deactivating keeps serving the orders that chose it; hard delete refused while referenced (ADR 0011). Not a `Destination` and not an `Address` |
@@ -171,19 +171,21 @@ Operations no longer execute on creation. A draft is created with its parameters
 
 #### `ProductClientTerms` pricing columns
 
-The row carries four money columns and one percentage, and only two of them ever reach a charge:
+The row carries four money columns and one percentage. `calculateLineTotal` charges offer unit price × normalized quantity, where the offer unit price is `unitPrice` with the discount applied:
 
 | Column | Type | Meaning | Enters `calculateLineTotal`? |
 | --- | --- | --- | --- |
-| `moqPrice` | `Decimal(18,2)`, required | Price of the whole MOQ block | Yes |
-| `stepPrice` | `Decimal(18,2)`, nullable | Price of one step above the MOQ; required whenever `step` is set | Yes |
-| `unitPrice` | `Decimal(18,2)`, nullable | **Coco's own** per-unit price, for display and comparison. Falls back to `moqPrice / moq` when absent | No — display only |
+| `unitPrice` | `Decimal(18,2)`, nullable | **Coco's own** price per unit, the charged price and the only client price the admin enters (required by the admin input). Null only on legacy rows, which fall back to `moqPrice / moq` | Yes |
+| `moqPrice` | `Decimal(18,2)`, required | Derived: `unitPrice × moq`, stored by every writer (admin service, seed, data migration) for history and supplier-side reads | Only as the legacy fallback |
+| `stepPrice` | `Decimal(18,2)`, nullable | Derived: `unitPrice × step`; null when `step` is | No |
 | `marketPrice` | `Decimal(18,2)`, nullable | The per-unit price other shops charge. An unverified admin claim, used to state what a customer saves | **No, ever** (ADR 0008) |
-| `discountPercent` | `Decimal(5,2)`, nullable, `[0, 100)` | Discount off Coco's own price | Yes — applied to `moqPrice` **and** `stepPrice` alike |
+| `discountPercent` | `Decimal(5,2)`, nullable, `[0, 100)` | Discount off Coco's own price | Yes — applied to the unit price, so to any quantity |
+
+Quantities are `Decimal(18,4)` end to end. Products sold by the kg use a 0,5 minimum and step; products sold by the unit, 1. The minimum and step remain separate columns, which the admin form proposes equal.
 
 `unitPrice` was named `refPrice` until 2026-07-31. It always meant Coco's per-unit price; the admin label "Precio de referencia" was the lie the rename fixes, and `marketPrice` now carries the reference-price meaning. Existing values carried over unchanged.
 
-The discount is an attribute of the terms row, not a promotion entity (ADR 0008): it has no validity window of its own, does not stack, and needs no precedence rule — it is vigente exactly while its terms row is, and ending an offer is closing those terms. Discounting `stepPrice` too is deliberate: discounting only the MOQ block would make the marginal step cost more than the minimum.
+The discount is an attribute of the terms row, not a promotion entity (ADR 0008): it has no validity window of its own, does not stack, and needs no precedence rule — it is vigente exactly while its terms row is, and ending an offer is closing those terms. It comes off the unit price, so every quantity, the minimum included, is discounted alike.
 
 ### Customer request and commercial records
 

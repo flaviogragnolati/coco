@@ -43,6 +43,8 @@ const operationsProductClientTermsSelect = {
 			id: true,
 			name: true,
 			unit: true,
+			presentationContainer: true,
+			presentationSize: true,
 			deleted: true,
 			brand: {
 				select: {

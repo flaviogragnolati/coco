@@ -3,6 +3,7 @@ import type {
 	ProductListInput,
 	ProductUnit,
 } from "~/shared/common/admin-crud/product.types";
+import type { CatalogProductPresentationContainer as ProductPresentationContainer } from "~/shared/common/catalog.types";
 
 type AdminDbClient = Prisma.TransactionClient;
 
@@ -29,6 +30,8 @@ export const productListSelect = {
 	name: true,
 	description: true,
 	unit: true,
+	presentationContainer: true,
+	presentationSize: true,
 	cartImageUrl: true,
 	brand: {
 		select: productBrandReferenceSelect,
@@ -52,6 +55,8 @@ export const productDetailSelect = {
 	cardImageUrl: true,
 	images: true,
 	unit: true,
+	presentationContainer: true,
+	presentationSize: true,
 	brand: {
 		select: productBrandReferenceSelect,
 	},
@@ -73,6 +78,8 @@ const productRelationCountSelect = {
 	cardImageUrl: true,
 	images: true,
 	unit: true,
+	presentationContainer: true,
+	presentationSize: true,
 	brand: {
 		select: productBrandReferenceSelect,
 	},
@@ -100,6 +107,8 @@ export type ProductWriteInput = {
 	cardImageUrl?: string;
 	images: string[];
 	unit: ProductUnit;
+	presentationContainer?: ProductPresentationContainer;
+	presentationSize?: string;
 	brandId?: number;
 	categoryId: number;
 	defaultSupplierId?: number;
@@ -195,6 +204,8 @@ export async function createProduct(
 			cardImageUrl: input.cardImageUrl ?? null,
 			images: input.images,
 			unit: input.unit,
+			presentationContainer: input.presentationContainer ?? null,
+			presentationSize: input.presentationSize ?? null,
 			brandId: input.brandId ?? null,
 			categoryId: input.categoryId,
 			defaultSupplierId: input.defaultSupplierId ?? null,
@@ -218,6 +229,8 @@ export async function updateProduct(
 			cardImageUrl: input.cardImageUrl ?? null,
 			images: input.images,
 			unit: input.unit,
+			presentationContainer: input.presentationContainer ?? null,
+			presentationSize: input.presentationSize ?? null,
 			brandId: input.brandId ?? null,
 			categoryId: input.categoryId,
 			defaultSupplierId: input.defaultSupplierId ?? null,

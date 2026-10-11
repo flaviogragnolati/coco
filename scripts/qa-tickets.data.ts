@@ -116,9 +116,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		feature:
 			"Normalización de cantidades (mínimo, paso, máximo y coma decimal)",
 		steps:
-			'Precondiciones: catálogo de Quintal cargado y sin productos demo. Los productos por kg tienen mínimo 0,5 y paso 0,5; los que se venden por unidad, mínimo 1 y paso 1. Ninguno trae máximo, así que el caso lo carga desde el admin. Sesión Admin y sesión Cliente.\n1) En `/admin/product-terms`, pestaña "Cliente", click en "Editar" sobre los términos vigentes de un producto de Quintal por kg (por ejemplo "Almendra non pareil 20/22"), cargar 2 en "Maximo" y guardar.\n2) Como Cliente, agregar ese producto desde `/products` y abrir `/cart`.\n3) Con la cantidad en el mínimo, intentar bajar con "−".\n4) Subir con "+" hasta que el botón se deshabilite, anotando cada valor.\n5) Tipear "1,5" en el campo de cantidad y salir del campo. Después tipear "1,3" y salir, y por último "5" y salir.\n6) Agregar un producto de Quintal por unidad (por ejemplo "Aceite de oliva extra virgen botella 1 L"), subir con "+" dos veces y bajar con "−" hasta el mínimo.\n7) Restaurar: en `/admin/product-terms`, editar los términos del paso 1, dejar "Maximo" vacío y guardar. Quitar los dos productos del carrito.',
+			'Precondiciones: catálogo de Quintal cargado y sin productos demo. Los productos por kg tienen mínimo 0,5 y paso 0,5; los que se venden por unidad, mínimo 1 y paso 1. Ninguno trae máximo, así que el caso lo carga desde el admin. Sesión Admin y sesión Cliente.\n1) En `/admin/product-terms`, pestaña "Cliente", click en "Editar" sobre los términos vigentes de un producto de Quintal por kg (por ejemplo "Almendra non pareil 20/22"), cargar 2 en "Máximo" y guardar.\n2) Como Cliente, agregar ese producto desde `/products` y abrir `/cart`.\n3) Con la cantidad en el mínimo, intentar bajar con "−".\n4) Subir con "+" hasta que el botón se deshabilite, anotando cada valor.\n5) Tipear "1,5" en el campo de cantidad y salir del campo. Después tipear "1,3" y salir, y por último "5" y salir.\n6) Agregar un producto de Quintal por unidad (por ejemplo "Aceite de oliva extra virgen botella 1 L"), subir con "+" dos veces y bajar con "−" hasta el mínimo.\n7) Restaurar: en `/admin/product-terms`, editar los términos del paso 1, dejar "Máximo" vacío y guardar. Quitar los dos productos del carrito.',
 		expectedResult:
-			'El producto por kg entra con 0,5 y "−" está deshabilitado: nunca baja del mínimo.\n"+" sube de a 0,5 (0,5 → 1 → 1,5 → 2) y se deshabilita en 2, el máximo.\nAl perder el foco, "1,5" queda tal cual (la coma es el separador decimal), "1,3" se corrige a 1,5 (el múltiplo válido siguiente) y "5" baja a 2, el máximo (toast "Ajustamos la cantidad..." si lo corrige el servidor).\nEl producto por unidad entra con 1, sube y baja de a 1 y no baja de 1.\nCon "Maximo" vacío otra vez, el producto por kg ya no tiene tope.',
+			'El producto por kg entra con 0,5 y "−" está deshabilitado: nunca baja del mínimo.\n"+" sube de a 0,5 (0,5 → 1 → 1,5 → 2) y se deshabilita en 2, el máximo.\nAl perder el foco, "1,5" queda tal cual (la coma es el separador decimal), "1,3" se corrige a 1,5 (el múltiplo válido siguiente) y "5" baja a 2, el máximo (toast "Ajustamos la cantidad..." si lo corrige el servidor).\nEl producto por unidad entra con 1, sube y baja de a 1 y no baja de 1.\nCon "Máximo" vacío otra vez, el producto por kg ya no tiene tope.',
 		isRegressionPath: false,
 	},
 	{
@@ -128,21 +128,21 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Admin + Cliente",
 		feature: "Cantidad bloqueada en el mínimo (términos sin step)",
 		steps:
-			'Precondiciones: catálogo de Quintal cargado y sin productos demo. Ningún producto viene con cantidad fija: la arma el admin vaciando el step. Sesión Admin y sesión Cliente.\n1) En `/admin/product-terms`, pestaña "Cliente", click en "Editar" sobre los términos vigentes de un producto de Quintal por unidad (por ejemplo "Pasta de maní Entre Nuts 370 g"). Anotar "Step" y "Precio step", vaciar los dos campos y guardar.\n2) Como Cliente, agregar ese producto desde `/products` y abrir `/cart`.\n3) Intentar cambiar la cantidad con "−" y "+", y tipeando "3" en el campo y saliendo de él.\n4) Restaurar: en `/admin/product-terms`, editar los mismos términos, volver a cargar los valores anotados en "Step" y "Precio step" y guardar.\n5) Recargar `/cart` y click en "+". Quitar el producto del carrito.',
+			'Precondiciones: catálogo de Quintal cargado y sin productos demo. Ningún producto viene con cantidad fija: la arma el admin vaciando el step. Sesión Admin y sesión Cliente.\n1) En `/admin/product-terms`, pestaña "Cliente", click en "Editar" sobre los términos vigentes de un producto de Quintal por unidad (por ejemplo "Pasta de maní Entre Nuts 370 g"). Anotar "Paso", vaciar el campo y guardar.\n2) Como Cliente, agregar ese producto desde `/products` y abrir `/cart`.\n3) Intentar cambiar la cantidad con "−" y "+", y tipeando "3" en el campo y saliendo de él.\n4) Restaurar: en `/admin/product-terms`, editar los mismos términos, volver a cargar el valor anotado en "Paso" y guardar.\n5) Recargar `/cart` y click en "+". Quitar el producto del carrito.',
 		expectedResult:
-			'Los términos se guardan sin step (toast "Términos de cliente actualizados").\nEn `/cart` la cantidad queda fija en el mínimo y los botones "−"/"+" están deshabilitados; "3" vuelve al mínimo al perder el foco.\nCon el step restaurado, "+" vuelve a sumar de a 1.',
+			'Los términos se guardan sin step (toast "Términos de cliente actualizados").\nEn `/cart` la cantidad queda fija en el mínimo y los botones "−"/"+" están deshabilitados; "3" vuelve al mínimo al perder el foco.\nCon el paso restaurado, "+" vuelve a sumar de a 1.',
 		isRegressionPath: false,
 	},
 	{
 		code: 9,
 		section: SECTION_B,
-		title: "Subtotal por bloque, no lineal",
+		title: "Subtotal = precio por unidad × cantidad",
 		actor: "Cliente",
-		feature: "Precio por bloque (moqPrice + bloques × stepPrice)",
+		feature: "Precio por unidad (precio por unidad × cantidad, coma decimal)",
 		steps:
-			"1) Producto con MOQ, step y stepPrice conocidos.\n2) Llevar la cantidad a MOQ + 2 steps.\n3) Verificar el subtotal de la línea.",
+			'1) Producto por kg con mínimo y paso 0,5 y precio por unidad conocido.\n2) Escribir "1,5" en la cantidad y salir del campo.\n3) Verificar la cantidad y el subtotal de la línea.',
 		expectedResult:
-			"Subtotal = moqPrice + 2 × stepPrice (no cantidad × precio unitario). Los totales del resumen se muestran por moneda.",
+			"La cantidad queda en 1,5 kg y el subtotal es 1,5 × precio por unidad, con el descuento aplicado si lo hay. Los totales del resumen se muestran por moneda.",
 		isRegressionPath: false,
 	},
 	{

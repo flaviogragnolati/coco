@@ -33,7 +33,10 @@ const baseOverrides: QuintalOverrides = {
 		freightPerPiece: 0,
 		roundUpTo: null,
 	},
-	clientTerms: { moq: "1", step: "1", max: null },
+	clientTerms: {
+		kg: { moq: "0.5", step: "0.5", max: null },
+		piece: { moq: "1", step: "1", max: null },
+	},
 	clientTermsOverrides: {},
 	excludedCategories: [],
 	categoryLabels: {
@@ -201,6 +204,7 @@ describe("parseQuintalSheet", () => {
 			key: "almendra--non-pareil-20-22",
 			name: "Almendra non pareil 20/22",
 			unit: "kg",
+			presentation: null,
 			category: "ALMENDRA",
 			sourceRows: [10],
 			supplierTerms: {
@@ -210,12 +214,13 @@ describe("parseQuintalSheet", () => {
 				stepPrice: "195000.00",
 				refPrice: "19500.00",
 				priceSource: "listed",
+				supplierPresentation: "10 kg",
 			},
 			clientTerms: {
-				moq: "1.0000",
-				moqPrice: "19500.00",
-				step: "1.0000",
-				stepPrice: "19500.00",
+				moq: "0.5000",
+				moqPrice: "9750.00",
+				step: "0.5000",
+				stepPrice: "9750.00",
 				max: null,
 				unitPrice: "19500.00",
 			},
@@ -223,9 +228,12 @@ describe("parseQuintalSheet", () => {
 			bulkTiers: [],
 			fractionSurcharge: null,
 		});
-		expect(product.description).toBe(
-			"Almendra non pareil 20/22. Presentación del proveedor: 10 kg.",
-		);
+	});
+
+	it("keeps the supplier presentation out of the description", () => {
+		const product = onlyProduct(parse(almendra));
+
+		expect(product.description).toBe("Almendra non pareil 20/22.");
 	});
 
 	it("applies freight, VAT, margin and rounding to the client price", () => {
@@ -339,7 +347,57 @@ describe("parseQuintalSheet", () => {
 
 		expect(product.unit).toBe("piece");
 		expect(product.supplierTerms.moq).toBe("6.0000");
-		expect(product.clientTerms.unitPrice).toBe("19000.00");
+		expect(product.supplierTerms.supplierPresentation).toBe("6 unidades");
+		expect(product.clientTerms).toMatchObject({
+			moq: "1.0000",
+			step: "1.0000",
+			unitPrice: "19000.00",
+		});
+		expect(product.presentation).toEqual({
+			presentationContainer: "botella",
+			presentationSize: "1 L",
+		});
+	});
+
+	it("leaves the presentation to the admin when no container is named", () => {
+		const product = onlyProduct(
+			parse([
+				[9, { B: "ALMENDRA" }],
+				[10, { B: "Bocaditos", C: "Promo x 36u", E: "27500.0" }],
+			]),
+		);
+
+		expect(product.presentation).toBeNull();
+		expect(product.supplierTerms.supplierPresentation).toBe("36 unidades");
+	});
+
+	it("names the container from the supplier wording when the name lacks it", () => {
+		const product = onlyProduct(
+			parse(
+				[
+					[9, { B: "ALMENDRA" }],
+					[
+						10,
+						{ B: "Pecan Negro", C: "Bolsita 500gr", D: "14000", E: "13500" },
+					],
+				],
+				{
+					overrides: {
+						nameOverrides: {
+							"almendra--pecan-negro": "Nuez pecán con chocolate negro 500 g",
+						},
+						priceResolutions: {
+							10: { use: "pack", reason: "precio de la bolsita" },
+						},
+					},
+				},
+			),
+		);
+
+		expect(product.presentation).toEqual({
+			presentationContainer: "bolsa",
+			presentationSize: "500 g",
+		});
 	});
 
 	it("rejects a bare count outside a by-unit category", () => {

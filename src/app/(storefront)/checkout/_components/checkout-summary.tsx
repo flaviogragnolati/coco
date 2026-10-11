@@ -103,7 +103,11 @@ export function CheckoutSummary({
 								key={item.productClientTermsId}
 							>
 								<span className="shrink-0 text-muted-foreground">
-									{formatQuantity(item.quantity, item.product.unit)}
+									{formatQuantity(
+										item.quantity,
+										item.product.unit,
+										item.product,
+									)}
 								</span>
 								<span className="min-w-0 flex-1 truncate">
 									{item.product.name}

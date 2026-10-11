@@ -9,6 +9,7 @@ import { supplierIdSchema } from "~/schemas/admin/supplier.schemas";
 import { toDateTimeLocalValue } from "~/shared/common/date.helpers";
 import {
 	dateInputSchema,
+	nullishText,
 	optionalDateInputSchema,
 	optionalDecimalString,
 	requiredDecimalString,
@@ -43,6 +44,7 @@ const productSupplierTermsInputFieldsSchema = z.object({
 	stepPrice: optionalDecimalString("Precio step", 2),
 	max: optionalDecimalString("Maximo", 4),
 	refPrice: optionalDecimalString("Precio de referencia", 2),
+	supplierPresentation: nullishText,
 	currency: currencySchema.default("ARS"),
 	active: z.boolean().default(true),
 	fromDate: dateInputSchema.default(() => toDateTimeLocalValue(new Date())),
@@ -77,6 +79,7 @@ export const productSupplierTermsListItemSchema = z.object({
 	stepPrice: decimalOutputSchema.nullable(),
 	max: decimalOutputSchema.nullable(),
 	refPrice: decimalOutputSchema.nullable(),
+	supplierPresentation: z.string().nullable(),
 	currency: currencySchema,
 	active: z.boolean(),
 	deleted: z.boolean(),

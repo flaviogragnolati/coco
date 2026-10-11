@@ -323,6 +323,25 @@ export function ProductSupplierTermsFormDialog({
 								/>
 								<FieldError errors={[errors.refPrice]} />
 							</Field>
+							<Field
+								className="md:col-span-3"
+								data-invalid={Boolean(errors.supplierPresentation)}
+							>
+								<FieldLabel htmlFor="product-supplier-terms-presentation">
+									Presentación del proveedor <OptionalHint />
+								</FieldLabel>
+								<Input
+									aria-invalid={Boolean(errors.supplierPresentation)}
+									disabled={isSubmitting}
+									id="product-supplier-terms-presentation"
+									placeholder="caja de 10 kg"
+									{...form.register("supplierPresentation")}
+								/>
+								<FieldDescription>
+									Cómo empaca el proveedor. Dato interno: el cliente no lo ve.
+								</FieldDescription>
+								<FieldError errors={[errors.supplierPresentation]} />
+							</Field>
 						</FieldGroup>
 					</FieldSet>
 

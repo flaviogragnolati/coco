@@ -13,6 +13,8 @@ export const defaultProductFormValues: Omit<ProductFormValues, "categoryId"> & {
 	cardImageUrl: "",
 	images: [],
 	unit: "piece",
+	presentationContainer: undefined,
+	presentationSize: "",
 	brandAssignment: { mode: "none" },
 	categoryId: undefined,
 	defaultSupplierId: undefined,
@@ -29,6 +31,8 @@ export function productDetailToFormValues(
 		cardImageUrl: product.cardImageUrl ?? "",
 		images: product.images,
 		unit: product.unit,
+		presentationContainer: product.presentationContainer ?? undefined,
+		presentationSize: product.presentationSize ?? "",
 		brandAssignment: product.brand
 			? {
 					mode: "existing",

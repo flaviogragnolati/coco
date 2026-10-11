@@ -225,12 +225,12 @@ Another current catalog product proposed alongside the one a customer is looking
 _Avoid_: Related product, category, recommendation
 
 **Client terms**:
-The active customer-facing commercial terms for a product: minimum order quantity and its price, optional step and step price, optional unit price, optional market price, optional offer discount, currency, and validity window. The single price source for catalog and cart.
+The active customer-facing commercial terms for a product: unit price, minimum order quantity, optional step and maximum, optional market price, optional offer discount, currency, and validity window. The minimum and step prices are stored beside them but derived from the unit price, never entered. The single price source for catalog and cart; a price change edits them in place, because closing them invalidates open carts.
 _Avoid_: Pricing, price terms
 
 **Unit price**:
-The per-unit price of a product under its client terms, used for display and comparison. Optional: when it is absent it is derived from the MOQ price and the MOQ. Spanish-facing UI labels it "Precio unitario".
-_Avoid_: Reference price, refPrice, precio de referencia
+The price charged per unit of a product (per kg, per jar) under its client terms, and the only client price an admin enters: a line totals unit price × quantity, with the offer discount applied. The MOQ price and step price are derived from it. Legacy terms without one fall back to MOQ price ÷ MOQ. Spanish-facing UI labels it "Precio por unidad".
+_Avoid_: Reference price, refPrice, precio de referencia, MOQ price
 
 **Market price**:
 The per-unit price the same product sells for outside Coco, loaded by an admin; it feeds the market-saving offers ranking and is not shown to customers. It is never charged and never prices a cart. Spanish-facing UI labels it "Precio de góndola".
@@ -241,7 +241,7 @@ What a customer saves per unit, and per MOQ block, by buying at the offer price 
 _Avoid_: Discount, descuento, savings claim
 
 **Offer discount**:
-A percentage on client terms that lowers what the customer actually pays, applied to the MOQ price and the step price alike. It has no validity of its own — it lives and dies with the terms that carry it (ADR 0008). Spanish-facing UI labels it "Descuento".
+A percentage on client terms that lowers what the customer actually pays, applied to the unit price and therefore to any quantity. It has no validity of its own — it lives and dies with the terms that carry it (ADR 0008). Spanish-facing UI labels it "Descuento".
 _Avoid_: Promotion, coupon, campaign
 
 **Offer price**:
@@ -249,8 +249,12 @@ The amount a customer pays once the offer discount is applied to the client term
 _Avoid_: Final price, sale price, discounted price, total operación
 
 **MOQ (minimum order quantity)**:
-The smallest purchasable quantity of a product and the unit in which demand is added; priced as a block by the client terms, with optional step increments above it.
-_Avoid_: Minimum, batch size
+The smallest purchasable quantity of a product, in its unit: 0,5 for products sold by the kg, 1 for products sold by the unit. Above it the quantity grows by the step, which the admin form proposes equal to the minimum; both are kept as separate fields. Priced like any quantity, unit price × quantity. Spanish-facing UI labels it "Mínimo".
+_Avoid_: Batch size, block
+
+**Presentation**:
+The package a customer buys a product sold by the unit in: a container from a closed list (botella, bidón, frasco, bolsa, paquete, unidad) plus a free-text size ("0,5 L", "370 g"). Quantities are counted in it with automatic plural ("2 frascos 370 g"); without one a piece counts in "unidad"/"unidades". Weight units (kg, gr, lb) never carry one. The order snapshot freezes it; older orders show the unit. Spanish-facing UI labels it "Presentación". Distinct from the supplier presentation, how the supplier packs it, which lives on the supplier terms and is admin-only.
+_Avoid_: Format, envase (for the whole presentation), supplier presentation
 
 **Fixed quantity**:
 Client terms with no step: the MOQ is the only purchasable quantity, so the customer cannot raise or lower it. Spanish-facing UI labels it "Cantidad fija".

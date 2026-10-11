@@ -16,6 +16,8 @@ const homeOfferProductSelect = {
 	name: true,
 	description: true,
 	unit: true,
+	presentationContainer: true,
+	presentationSize: true,
 	cardImageUrl: true,
 	cartImageUrl: true,
 	homeOfferRank: true,

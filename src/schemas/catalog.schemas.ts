@@ -12,6 +12,15 @@ export const catalogProductUnitSchema = z.enum([
 	"other",
 ]);
 
+export const productPresentationContainerSchema = z.enum([
+	"botella",
+	"bidon",
+	"frasco",
+	"bolsa",
+	"paquete",
+	"unidad",
+]);
+
 export const catalogBrandSummarySchema = z.object({
 	id: z.number().int().positive(),
 	name: z.string(),
@@ -43,6 +52,8 @@ export const catalogProductListItemSchema = z.object({
 	name: z.string(),
 	description: z.string().nullable(),
 	unit: catalogProductUnitSchema,
+	presentationContainer: productPresentationContainerSchema.nullable(),
+	presentationSize: z.string().nullable(),
 	brand: catalogBrandSummarySchema.nullable(),
 	category: catalogCategorySummarySchema.nullable(),
 	imageUrl: z.string().nullable(),

@@ -79,7 +79,7 @@ export function HomeOfferQuantity({ offer }: { offer: HomeOffer }) {
 		return (
 			<p className="flex items-center gap-1.5 font-medium text-sm text-success">
 				<CheckIcon aria-hidden="true" className="size-4 shrink-0" />
-				{getOfferInCartLabel(cartQuantity, offer.unit)}
+				{getOfferInCartLabel(cartQuantity, offer.unit, offer)}
 			</p>
 		);
 	}
@@ -87,7 +87,7 @@ export function HomeOfferQuantity({ offer }: { offer: HomeOffer }) {
 	if (isFixedQuantity(terms)) {
 		return (
 			<p className="font-medium text-sm">
-				{getOfferFixedQuantityLabel(terms, offer.unit)}
+				{getOfferFixedQuantityLabel(terms, offer.unit, offer)}
 			</p>
 		);
 	}
@@ -104,6 +104,7 @@ export function HomeOfferQuantity({ offer }: { offer: HomeOffer }) {
 				onIncrement={() =>
 					state.setQuantity(getNextQuantity(state.quantity, terms))
 				}
+				presentation={offer}
 				terms={terms}
 				unit={offer.unit}
 				value={state.quantity}
