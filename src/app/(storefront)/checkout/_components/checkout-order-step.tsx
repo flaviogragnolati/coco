@@ -3,7 +3,6 @@
 import { PackageSearchIcon, PencilIcon } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -99,13 +98,14 @@ export function CheckoutOrderStep({
 				</div>
 				<Separator />
 				<div className="flex flex-col gap-2">
-					<span className="text-muted-foreground text-xs">Total estimado</span>
 					{cart.totals.map((total) => (
 						<div
 							className="flex items-center justify-between gap-3"
 							key={total.currency}
 						>
-							<Badge variant="info">{total.currency}</Badge>
+							<span className="text-muted-foreground text-xs">
+								Total estimado
+							</span>
 							<span className="font-heading font-semibold text-lg">
 								{formatCurrency(total.amount, total.currency)}
 							</span>

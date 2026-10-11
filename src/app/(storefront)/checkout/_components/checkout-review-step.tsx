@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -122,7 +121,7 @@ export function CheckoutReviewStep({
 								className="flex items-center justify-between gap-3"
 								key={total.currency}
 							>
-								<Badge variant="info">{total.currency}</Badge>
+								<span className="text-muted-foreground text-xs">Total</span>
 								<span className="font-heading font-semibold">
 									{formatCurrency(total.amount, total.currency)}
 								</span>

@@ -107,15 +107,14 @@ export function CartSheet({
 				{hasHydrated && hasItems ? (
 					<SheetFooter className="border-t pt-4">
 						<div className="flex flex-col gap-2">
-							<span className="text-muted-foreground text-xs">
-								Totales estimados
-							</span>
 							{cart.totals.map((total) => (
 								<div
 									className="flex items-center justify-between gap-3"
 									key={total.currency}
 								>
-									<span className="text-xs">{total.currency}</span>
+									<span className="text-muted-foreground text-xs">
+										Total estimado
+									</span>
 									<span className="font-heading font-semibold text-lg">
 										{formatCurrency(total.amount, total.currency)}
 									</span>
