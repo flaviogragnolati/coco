@@ -6,11 +6,17 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import type { CatalogProductUnit } from "~/shared/common/catalog.types";
 import { productUnitLabelMap } from "~/shared/common/commerce.helpers";
-import type { CatalogBrandFacet, CatalogFilters } from "./catalog-filtering";
+import type {
+	CatalogBrandFacet,
+	CatalogCategoryChip,
+	CatalogFilters,
+} from "./catalog-filtering";
 
 type CatalogActiveFiltersProps = {
 	filters: CatalogFilters;
 	brands: CatalogBrandFacet[];
+	categories: CatalogCategoryChip[];
+	onRemoveCategory: () => void;
 	onRemoveBrand: (id: number) => void;
 	onRemoveUnit: (unit: CatalogProductUnit) => void;
 	onRemoveSearch: () => void;
@@ -53,6 +59,8 @@ function priceLabel(filters: CatalogFilters): string | null {
 export function CatalogActiveFilters({
 	filters,
 	brands,
+	categories,
+	onRemoveCategory,
 	onRemoveBrand,
 	onRemoveUnit,
 	onRemoveSearch,
@@ -62,6 +70,7 @@ export function CatalogActiveFilters({
 }: CatalogActiveFiltersProps) {
 	const hasActive =
 		filters.search.trim().length > 0 ||
+		filters.categoryId !== null ||
 		filters.brandIds.length > 0 ||
 		filters.units.length > 0 ||
 		filters.minPrice !== "" ||
@@ -72,6 +81,7 @@ export function CatalogActiveFilters({
 
 	const brandLabel = (id: number) =>
 		brands.find((brand) => brand.id === id)?.label ?? `Marca ${id}`;
+	const category = categories.find((chip) => chip.id === filters.categoryId);
 	const price = priceLabel(filters);
 
 	return (
@@ -81,6 +91,9 @@ export function CatalogActiveFilters({
 					label={`Búsqueda: ${filters.search.trim()}`}
 					onRemove={onRemoveSearch}
 				/>
+			) : null}
+			{category ? (
+				<FilterChip label={category.label} onRemove={onRemoveCategory} />
 			) : null}
 			{filters.brandIds.map((id) => (
 				<FilterChip

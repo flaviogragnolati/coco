@@ -1,4 +1,5 @@
 import type {
+	CatalogCategorySummary,
 	CatalogProductListItem,
 	CatalogProductUnit,
 } from "~/shared/common/catalog.types";
@@ -24,6 +25,7 @@ export type CatalogFilters = {
 	minPrice: string;
 	maxPrice: string;
 	inCartOnly: boolean;
+	categoryId: number | null;
 };
 
 export const emptyCatalogFilters: CatalogFilters = {
@@ -33,6 +35,7 @@ export const emptyCatalogFilters: CatalogFilters = {
 	minPrice: "",
 	maxPrice: "",
 	inCartOnly: false,
+	categoryId: null,
 };
 
 export type CatalogBrandFacet = { id: number; label: string; count: number };
@@ -41,6 +44,7 @@ export type CatalogUnitFacet = {
 	label: string;
 	count: number;
 };
+export type CatalogCategoryChip = { id: number; label: string };
 
 export function normalizeSearch(value: string) {
 	return value
@@ -117,6 +121,13 @@ export function filterCatalog(
 		}
 
 		if (units.size > 0 && !units.has(product.unit)) return false;
+
+		if (
+			filters.categoryId !== null &&
+			product.category?.id !== filters.categoryId
+		) {
+			return false;
+		}
 
 		const price = productPrice(product);
 		if (minPrice !== null && price < minPrice) return false;
@@ -244,6 +255,38 @@ export function computeBrandFacets(
 	return Array.from(brandMap.entries())
 		.map(([id, { label, count }]) => ({ id, label, count }))
 		.sort((left, right) => left.label.localeCompare(right.label, "es"));
+}
+
+/**
+ * Pass the whole catalog, not the filtered list, so the chips stay put while
+ * other filters narrow the grid. Fewer than two categories split nothing, so
+ * none are offered.
+ */
+export function computeCategoryChips(
+	products: CatalogProductListItem[],
+): CatalogCategoryChip[] {
+	const categories = new Map<number, CatalogCategorySummary>();
+	for (const product of products) {
+		if (product.category) categories.set(product.category.id, product.category);
+	}
+	if (categories.size < 2) return [];
+
+	return Array.from(categories.values())
+		.sort(
+			(left, right) =>
+				left.sortOrder - right.sortOrder ||
+				left.name.localeCompare(right.name, "es") ||
+				left.id - right.id,
+		)
+		.map(({ id, name }) => ({ id, label: name }));
+}
+
+/** A category the chips do not offer filters nothing; a stale URL reads as "Todos". */
+export function resolveCategoryId(
+	chips: CatalogCategoryChip[],
+	categoryId: number | null,
+): number | null {
+	return chips.some((chip) => chip.id === categoryId) ? categoryId : null;
 }
 
 export function computeUnitFacets(

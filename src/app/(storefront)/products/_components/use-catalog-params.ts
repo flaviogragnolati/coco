@@ -48,6 +48,12 @@ function parseUnits(value: string | null): CatalogProductUnit[] {
 		);
 }
 
+function parsePositiveId(value: string | null): number | null {
+	if (!value || !/^[1-9]\d*$/.test(value)) return null;
+	const id = Number(value);
+	return Number.isSafeInteger(id) ? id : null;
+}
+
 function isSort(value: string | null): value is CatalogSort {
 	return value !== null && SORT_VALUES.includes(value as CatalogSort);
 }
@@ -117,6 +123,7 @@ export function useCatalogParams() {
 			minPrice: searchParams.get("min") ?? "",
 			maxPrice: searchParams.get("max") ?? "",
 			inCartOnly: searchParams.get("inCart") === "1",
+			categoryId: parsePositiveId(searchParams.get("categoria")),
 		}),
 		[searchParams],
 	);
@@ -154,15 +161,7 @@ export function useCatalogParams() {
 		? rawPerPage
 		: DEFAULT_PER_PAGE;
 
-	const rawProductId = searchParams.get("product");
-	const parsedProductId =
-		rawProductId && /^[1-9]\d*$/.test(rawProductId)
-			? Number(rawProductId)
-			: null;
-	const productId =
-		parsedProductId !== null && Number.isSafeInteger(parsedProductId)
-			? parsedProductId
-			: null;
+	const productId = parsePositiveId(searchParams.get("product"));
 
 	const setBrandIds = useCallback(
 		(ids: number[]) =>
@@ -189,6 +188,11 @@ export function useCatalogParams() {
 	);
 	const setInCartOnly = useCallback(
 		(value: boolean) => commit({ inCart: value ? "1" : null, page: null }),
+		[commit],
+	);
+	const setCategoryId = useCallback(
+		(id: number | null) =>
+			commit({ categoria: id === null ? null : String(id), page: null }),
 		[commit],
 	);
 	const setSort = useCallback(
@@ -243,6 +247,7 @@ export function useCatalogParams() {
 			min: null,
 			max: null,
 			inCart: null,
+			categoria: null,
 			sort: null,
 			page: null,
 		});
@@ -264,6 +269,7 @@ export function useCatalogParams() {
 		setMaxPrice,
 		setPriceRange,
 		setInCartOnly,
+		setCategoryId,
 		setSort,
 		setView,
 		setPage,
