@@ -232,6 +232,10 @@ _Avoid_: Pricing, price terms
 The price charged per unit of a product (per kg, per jar) under its client terms, and the only client price an admin enters: a line totals unit price × quantity, with the offer discount applied. The MOQ price and step price are derived from it. Legacy terms without one fall back to MOQ price ÷ MOQ. Spanish-facing UI labels it "Precio por unidad".
 _Avoid_: Reference price, refPrice, precio de referencia, MOQ price
 
+**Price sheet**:
+The spreadsheet an admin downloads to update the unit price and category of existing products in bulk, then uploads edited. Rows match products by id and never create one. It applies all or nothing after a preview: one row error blocks the whole file, rows that change nothing are ignored, a variation above ±30 % is flagged without blocking, and the apply is refused if prices or categories moved since the preview. Prices are edited on the current client terms in place. Spanish-facing UI labels it "Planilla de precios".
+_Avoid_: Price list, import, lista de precios
+
 **Market price**:
 The per-unit price the same product sells for outside Coco, loaded by an admin; it feeds the market-saving offers ranking and is not shown to customers. It is never charged and never prices a cart. Spanish-facing UI labels it "Precio de góndola".
 _Avoid_: Reference price, list price, precio de referencia

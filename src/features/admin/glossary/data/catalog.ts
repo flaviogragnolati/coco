@@ -78,6 +78,21 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		href: "/admin/product-terms",
 	},
 	{
+		slug: "concepto-planilla-de-precios",
+		kind: "concept",
+		section: "catalog",
+		label: "Planilla de precios",
+		term: "Price sheet",
+		definition:
+			"La planilla (.xlsx) que descarga el administrador en Términos de producto para actualizar en bloque el precio por unidad y la categoría de productos existentes; se sube editada como .xlsx o .csv. Cruza los productos por id y nunca crea ninguno. Es todo o nada: con una fila con error no se aplica nada. Las filas sin cambio se ignoran y una variación de más de ±30 % se marca sin bloquear. El precio se edita en los términos vigentes, sin cerrarlos, y cada cambio queda en el registro de auditoría.",
+		aliases: [
+			"Lista de precios",
+			"Importación de precios",
+			"Actualización masiva",
+		],
+		href: "/admin/product-terms",
+	},
+	{
 		slug: "concepto-precio-de-gondola",
 		kind: "concept",
 		section: "catalog",
