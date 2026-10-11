@@ -54,8 +54,8 @@ export function PurchasePrice({
 					)}
 				>
 					{price.amount}
-				</span>
-				<span className="text-muted-foreground text-sm">{price.unitLabel}</span>
+				</span>{" "}
+				<span className="text-muted-foreground text-sm">{price.unitLabel}</span>{" "}
 				{price.previousAmount ? (
 					<del className="text-muted-foreground text-sm">
 						{price.previousAmount}
