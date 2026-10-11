@@ -26,6 +26,7 @@ import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
 import { productCreateInputSchema } from "~/schemas/admin/product.schemas";
 import type { BrandListItem } from "~/shared/common/admin-crud/brand.types";
+import type { CategoryListItem } from "~/shared/common/admin-crud/category.types";
 import type { CrudModalMode } from "~/shared/common/admin-crud/crud.types";
 import type {
 	ProductBrandAssignment,
@@ -90,10 +91,12 @@ export function ProductFormDialog({
 	mode,
 	product,
 	brands,
+	categories,
 	suppliers,
 	isLoadingProduct,
 	isSubmitting,
 	isLoadingBrands,
+	isLoadingCategories,
 	isLoadingSuppliers,
 	onOpenChange,
 	onSubmit,
@@ -102,10 +105,12 @@ export function ProductFormDialog({
 	mode: CrudModalMode;
 	product?: ProductDetail;
 	brands: BrandListItem[];
+	categories: CategoryListItem[];
 	suppliers: SupplierListItem[];
 	isLoadingProduct?: boolean;
 	isSubmitting?: boolean;
 	isLoadingBrands?: boolean;
+	isLoadingCategories?: boolean;
 	isLoadingSuppliers?: boolean;
 	onOpenChange: (open: boolean) => void;
 	onSubmit: (values: ProductFormValues) => void;
@@ -292,6 +297,35 @@ export function ProductFormDialog({
 								))}
 							</Select>
 							<FieldError errors={[errors.unit]} />
+						</Field>
+						<Field data-invalid={Boolean(errors.categoryId)}>
+							<FieldLabel htmlFor="product-category">Categoría</FieldLabel>
+							<Select
+								aria-invalid={Boolean(errors.categoryId)}
+								disabled={isSubmitting || isLoadingCategories}
+								id="product-category"
+								{...form.register("categoryId", {
+									setValueAs: (value) => (value ? Number(value) : undefined),
+								})}
+							>
+								<option value="">Seleccioná una categoría</option>
+								{categories.map((category) => (
+									<option key={category.id} value={category.id}>
+										{category.name}
+										{category.deleted
+											? " (eliminada)"
+											: category.active
+												? ""
+												: " (inactiva)"}
+									</option>
+								))}
+							</Select>
+							<FieldDescription>
+								{isLoadingCategories
+									? "Cargando categorías..."
+									: "Agrupa el producto en el catálogo."}
+							</FieldDescription>
+							<FieldError errors={[errors.categoryId]} />
 						</Field>
 						<Field data-invalid={Boolean(errors.defaultSupplierId)}>
 							<FieldLabel htmlFor="product-default-supplier">

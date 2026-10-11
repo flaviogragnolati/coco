@@ -16,6 +16,7 @@ import {
 	RotateCcwIcon,
 	RouteIcon,
 	ScrollTextIcon,
+	ShapesIcon,
 	ShoppingBagIcon,
 	ShoppingCartIcon,
 	SparklesIcon,
@@ -77,6 +78,7 @@ export const adminNavGroups: AdminNavGroup[] = [
 		label: "Catálogo",
 		items: [
 			{ title: "Productos", href: "/admin/products", icon: ShoppingBagIcon },
+			{ title: "Categorías", href: "/admin/categories", icon: ShapesIcon },
 			{ title: "Marcas", href: "/admin/brands", icon: TagsIcon },
 			{ title: "Proveedores", href: "/admin/suppliers", icon: FactoryIcon },
 			{

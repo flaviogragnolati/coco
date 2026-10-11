@@ -181,7 +181,7 @@ export type SimilarProductReference = Pick<
  * Products to propose alongside `current`: same brand first, same unit second,
  * each tier ordered by how close its price is to the current product's.
  *
- * The catalog has no category, so the relation is derived rather than declared.
+ * The relation is derived from brand and unit, not declared.
  * It never falls through to unrelated products: returning fewer than `limit`
  * results — or none — is the intended behavior, because padding the list would
  * make "Productos similares" a lie.

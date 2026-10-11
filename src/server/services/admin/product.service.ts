@@ -33,6 +33,7 @@ import {
 	selectProductImage,
 } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
+import { toCatalogCategory } from "../_base/catalog-category.mapper";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import type { AdminMutationActor } from "./_base/admin-audit";
 import { writeAdminAuditLog } from "./_base/admin-audit";
@@ -43,6 +44,7 @@ import {
 	findOtherProductsUsingImages,
 	findProductBrandById,
 	findProductById,
+	findProductCategoryById,
 	findProductSupplierById,
 	getProductRelationCounts,
 	getProductStats,
@@ -81,6 +83,7 @@ function mapPreviewCatalogProduct(
 		description: record.description,
 		unit: record.unit,
 		brand: record.brand,
+		category: toCatalogCategory(record.category),
 		imageUrl: selectProductImage(record, "catalog"),
 		createdAt: record.createdAt,
 		terms: termsToClientTerms(terms),
@@ -217,6 +220,27 @@ async function resolveBrandId(
 	}
 }
 
+async function resolveCategoryId(
+	categoryId: number,
+	dbClient: Parameters<AdminDb["$transaction"]>[0] extends (
+		tx: infer T,
+	) => unknown
+		? T
+		: never,
+	currentCategoryId?: number,
+) {
+	const category = await findProductCategoryById(dbClient, categoryId);
+	if (!category) throwNotFound("Categoría");
+	if (category.deleted && category.id !== currentCategoryId) {
+		throw new AdminCrudError(
+			"CONFLICT",
+			"No se puede asignar una categoría eliminada",
+		);
+	}
+
+	return category.id;
+}
+
 async function resolveDefaultSupplierId(
 	defaultSupplierId: number | undefined,
 	dbClient: Parameters<AdminDb["$transaction"]>[0] extends (
@@ -244,8 +268,11 @@ async function resolveDefaultSupplierId(
 
 function toProductWriteInput(
 	input: ProductCreateInput | ProductUpdateInput,
-	brandId?: number,
-	defaultSupplierId?: number,
+	references: {
+		brandId?: number;
+		categoryId: number;
+		defaultSupplierId?: number;
+	},
 ): ProductWriteInput {
 	return {
 		name: input.name,
@@ -254,8 +281,7 @@ function toProductWriteInput(
 		cardImageUrl: input.cardImageUrl,
 		images: input.images,
 		unit: input.unit,
-		brandId,
-		defaultSupplierId,
+		...references,
 		active: input.active,
 	};
 }
@@ -364,6 +390,7 @@ export async function create(
 ) {
 	return database.$transaction(async (tx) => {
 		const brandId = await resolveBrandId(input.brandAssignment, actor, tx);
+		const categoryId = await resolveCategoryId(input.categoryId, tx);
 		const defaultSupplierId = await resolveDefaultSupplierId(
 			input.defaultSupplierId,
 			tx,
@@ -371,7 +398,7 @@ export async function create(
 
 		const product = await createProduct(
 			tx,
-			toProductWriteInput(input, brandId, defaultSupplierId),
+			toProductWriteInput(input, { brandId, categoryId, defaultSupplierId }),
 		);
 		const parsed = parseDetail(product);
 
@@ -410,6 +437,11 @@ export async function update(
 			tx,
 			before.brand?.id,
 		);
+		const categoryId = await resolveCategoryId(
+			input.categoryId,
+			tx,
+			before.category?.id,
+		);
 		const defaultSupplierId = await resolveDefaultSupplierId(
 			input.defaultSupplierId,
 			tx,
@@ -418,7 +450,7 @@ export async function update(
 
 		const product = await updateProduct(tx, {
 			id: input.id,
-			...toProductWriteInput(input, brandId, defaultSupplierId),
+			...toProductWriteInput(input, { brandId, categoryId, defaultSupplierId }),
 		});
 		const after = parseDetail(product);
 

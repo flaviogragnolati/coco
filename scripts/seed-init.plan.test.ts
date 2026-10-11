@@ -16,16 +16,30 @@ const catalog: SeedInitCatalog = {
 	supplierName: "Quintal",
 	listDate,
 	products: [
-		{ key: "almendra--guara", name: "Almendra guara" },
-		{ key: "nuez--pecan", name: "Nuez pecán" },
+		{
+			key: "almendra--guara",
+			name: "Almendra guara",
+			categoryName: "Frutos secos",
+		},
+		{
+			key: "nuez--pecan",
+			name: "Nuez pecán",
+			categoryName: "Mixes y snacks",
+		},
 	],
 };
+
+const categories = [
+	{ id: 1, name: "Frutos secos", deleted: false },
+	{ id: 2, name: "Mixes y snacks", deleted: false },
+];
 
 const emptyState: SeedInitState = {
 	suppliers: [],
 	products: [],
 	supplierTerms: [],
 	clientTerms: [],
+	categories,
 };
 
 const quintal = { id: 7, name: "Quintal", active: true, deleted: false };
@@ -71,6 +85,7 @@ const loadedState: SeedInitState = {
 	products: [product(1, "Almendra guara"), product(2, "Nuez pecán")],
 	supplierTerms: [supplierTerms(1), supplierTerms(2)],
 	clientTerms: [terms(1), terms(2)],
+	categories,
 };
 
 describe("planSeedInit", () => {
@@ -310,6 +325,40 @@ describe("planSeedInit", () => {
 		expect(plan.products[0]).toMatchObject({ action: "create" });
 		expect(plan.warnings).toEqual([
 			expect.stringContaining('"Almendra guara premium" (id 1)'),
+		]);
+	});
+
+	it("creates each product in its catalog category", () => {
+		const plan = planSeedInit(catalog, emptyState, now);
+
+		expect(plan.products).toEqual([
+			expect.objectContaining({ action: "create", categoryId: 1 }),
+			expect.objectContaining({ action: "create", categoryId: 2 }),
+		]);
+	});
+
+	it("fails when a category to create into is missing or deleted", () => {
+		expect(() =>
+			planSeedInit(
+				catalog,
+				{
+					...emptyState,
+					categories: [
+						{ id: 1, name: "Frutos secos", deleted: false },
+						{ id: 2, name: "Mixes y snacks", deleted: true },
+					],
+				},
+				now,
+			),
+		).toThrow('falta la categoría "Mixes y snacks"');
+	});
+
+	it("does not need the categories when it creates nothing", () => {
+		const plan = planSeedInit(catalog, { ...loadedState, categories: [] }, now);
+
+		expect(plan.products.map((decision) => decision.action)).toEqual([
+			"keep",
+			"keep",
 		]);
 	});
 });

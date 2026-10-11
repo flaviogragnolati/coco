@@ -159,7 +159,8 @@ Operations no longer execute on creation. A draft is created with its parameters
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
 | `Brand` | Product brand metadata | Has many `Product` | Optional brand association |
-| `Product` | Catalog item | Optional `Brand`; optional `defaultSupplier`; has many client terms, supplier terms, and local constraints; back-relation `homeOfferSpotlightOf` | `defaultSupplier` is a hint, not the only sourcing path. `homeOfferRank` (nullable, indexed) pins the product's position in the home offers grid; null means the automatic ranking decides |
+| `Category` | *Category*: the catalog group a product is listed under | Has many `Product` (`onDelete: Restrict`) | Admin CRUD at `/admin/categories`: `name`, `sortOrder` (display order, lowest first), `active`/`deleted` flags. The `category` migration inserts the six initial rows. Soft delete keeps the products' reference; hard delete is refused while any product references it. The catalog DTO exposes only an active, non-deleted category (`{ id, name, sortOrder }`), otherwise `null` |
+| `Product` | Catalog item | Optional `Brand`; `Category` (required by the app, nullable column — modeling limit 13); optional `defaultSupplier`; has many client terms, supplier terms, and local constraints; back-relation `homeOfferSpotlightOf` | `defaultSupplier` is a hint, not the only sourcing path. `homeOfferRank` (nullable, indexed) pins the product's position in the home offers grid; null means the automatic ranking decides |
 | `Supplier` | Supplier master data | Has many `ProductSupplierTerms`, `Lot`, `SupplierOrder`; optional default relation from `Product` | Address/contact structures remain JSON for now |
 | `ProductClientTerms` | Customer-facing sell terms | Belongs to `Product`; referenced by `CartItem` | Source of MOQ, step, max, price, currency, and the offer discount used at request time — see the pricing columns below |
 | `ProductSupplierTerms` | Supplier-facing buy terms | Belongs to `Product` and `Supplier`; referenced by `LotItem` | Source of sourcing MOQ and buy-side price logic; still carries `refPrice` (see modeling limit 11) |
@@ -694,6 +695,10 @@ Documented in the architecture doc's closure (§21.10), owned by future work, no
 ### 12. `HomeOfferSettings` is a singleton by convention, not by constraint
 
 The database allows more than one row; `id Int @id @default(1)` and an upsert on `id: 1` in the data layer are what keep there being exactly one. Anything reading the settings must go through that upsert so a fresh database returns the defaults instead of nothing. Curation is split on purpose: the spotlight, criterion and grid size live on this row, while a pinned position lives on the product it pins (`Product.homeOfferRank`).
+
+### 13. `Product.categoryId` is nullable until the backfill runs
+
+Every product needs a category: the admin create and update schemas, `db:seed:init` and `db:seed:test` all require one. The column is still nullable because the products that existed before the `category` migration have none until `pnpm db:backfill:categories --apply` fills the Quintal ones and the demo products are purged. Once the backfill reports zero products left without a category, a follow-up migration sets `categoryId` to `NOT NULL`.
 
 ## Implementation Map
 

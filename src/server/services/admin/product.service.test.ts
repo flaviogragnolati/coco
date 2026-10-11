@@ -13,6 +13,7 @@ vi.mock("~/server/services/logging/app-logger.service", () => ({
 vi.mock("./product.data", () => ({
 	findOtherProductsUsingImages: vi.fn(),
 	findProductById: vi.fn(),
+	findProductCategoryById: vi.fn(),
 	getProductRelationCounts: vi.fn(),
 	hardDeleteProduct: vi.fn(),
 	softDeleteProduct: vi.fn(),
@@ -33,6 +34,8 @@ const OLD_CARD = `${BLOB}/products/old-card.png`;
 const NEW_CARD = `${BLOB}/products/new-card.png`;
 const GALLERY = `${BLOB}/products/gallery.png`;
 
+const FRUTOS_SECOS = { id: 1, name: "Frutos secos", deleted: false };
+
 const actor = { id: "admin-1", name: "Admin Uno", role: "admin" as const };
 
 function product(overrides: Partial<data.ProductDetailRecord> = {}) {
@@ -45,6 +48,7 @@ function product(overrides: Partial<data.ProductDetailRecord> = {}) {
 		images: [GALLERY],
 		unit: "kg" as const,
 		brand: null,
+		category: FRUTOS_SECOS,
 		defaultSupplier: null,
 		active: true,
 		deleted: false,
@@ -60,6 +64,7 @@ const updateInput = {
 	images: [GALLERY],
 	unit: "kg" as const,
 	brandAssignment: { mode: "none" as const },
+	categoryId: FRUTOS_SECOS.id,
 	active: true,
 };
 
@@ -88,6 +93,47 @@ beforeEach(() => {
 		product({ cardImageUrl: NEW_CARD }),
 	);
 	vi.mocked(data.findOtherProductsUsingImages).mockResolvedValue([]);
+	vi.mocked(data.findProductCategoryById).mockResolvedValue(FRUTOS_SECOS);
+});
+
+describe("product admin service category", () => {
+	it("saves the chosen category", async () => {
+		const { db } = database();
+
+		await service.update(updateInput, actor, db);
+
+		expect(data.updateProduct).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ categoryId: FRUTOS_SECOS.id }),
+		);
+	});
+
+	it("refuses to move a product into a deleted category", async () => {
+		vi.mocked(data.findProductCategoryById).mockResolvedValue({
+			id: 9,
+			name: "Vieja",
+			deleted: true,
+		});
+		const { db } = database();
+
+		await expect(
+			service.update({ ...updateInput, categoryId: 9 }, actor, db),
+		).rejects.toThrow("No se puede asignar una categoría eliminada");
+		expect(data.updateProduct).not.toHaveBeenCalled();
+	});
+
+	it("keeps a category deleted after the product was assigned to it", async () => {
+		const deleted = { ...FRUTOS_SECOS, deleted: true };
+		vi.mocked(data.findProductById).mockResolvedValue(
+			product({ category: deleted }),
+		);
+		vi.mocked(data.findProductCategoryById).mockResolvedValue(deleted);
+		const { db } = database();
+
+		await service.update(updateInput, actor, db);
+
+		expect(data.updateProduct).toHaveBeenCalled();
+	});
 });
 
 describe("product admin service image cleanup", () => {

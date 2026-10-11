@@ -2,6 +2,10 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "../generated/prisma/client";
+import {
+	CATALOG_CATEGORY_NAMES,
+	type CatalogCategoryName,
+} from "../scripts/lib/catalog-categories";
 import { assertNotProduction } from "../scripts/lib/seed-environment";
 
 assertNotProduction("db:seed:test", process.env);
@@ -65,6 +69,7 @@ const requiredTables = [
 	"address",
 	"payment_method",
 	"brand",
+	"category",
 	"product",
 	"supplier",
 	"carrier",
@@ -899,6 +904,19 @@ async function upsertBrand(
 	return tx.brand.create({ data });
 }
 
+/** The `category` migration inserts these; a database reset without it gets them here. */
+async function findOrCreateCategory(
+	tx: Tx,
+	name: CatalogCategoryName,
+	sortOrder: number,
+) {
+	const existing = await tx.category.findFirst({
+		where: { name, deleted: false },
+		orderBy: { id: "asc" },
+	});
+	return existing ?? tx.category.create({ data: { name, sortOrder } });
+}
+
 async function upsertSupplier(
 	tx: Tx,
 	input: {
@@ -987,6 +1005,7 @@ async function upsertProduct(
 		description: string;
 		unit: "kg" | "lb" | "piece" | "box" | "gr" | "other";
 		brandId?: number;
+		categoryId: number;
 		defaultSupplierId?: number;
 		active?: boolean;
 		deleted?: boolean;
@@ -1001,6 +1020,7 @@ async function upsertProduct(
 		description: input.description,
 		unit: input.unit,
 		brandId: input.brandId ?? null,
+		categoryId: input.categoryId,
 		defaultSupplierId: input.defaultSupplierId ?? null,
 		active: input.active ?? true,
 		deleted: input.deleted ?? false,
@@ -1302,6 +1322,11 @@ async function seedMasterData(tx: Tx) {
 		}),
 	};
 
+	const categories = {} as Record<CatalogCategoryName, { id: number }>;
+	for (const [index, name] of CATALOG_CATEGORY_NAMES.entries()) {
+		categories[name] = await findOrCreateCategory(tx, name, index + 1);
+	}
+
 	const suppliers = {
 		valleVerde: await upsertSupplier(tx, {
 			name: "Cooperativa Valle Verde",
@@ -1412,6 +1437,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Tomate perita fresco",
 			description: "Cajones mayoristas de tomate perita fresco.",
 			unit: "kg",
+			categoryId: categories["Frutas desecadas"].id,
 			brandId: brands.andes.id,
 			defaultSupplierId: suppliers.valleVerde.id,
 			cardImageUrl:
@@ -1422,6 +1448,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Aceite de oliva extra virgen 5L",
 			description: "Bidon de aceite de oliva para gastronomia.",
 			unit: "piece",
+			categoryId: categories["Aceites y despensa"].id,
 			brandId: brands.pampa.id,
 			defaultSupplierId: suppliers.packNorte.id,
 			cardImageUrl:
@@ -1431,6 +1458,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Arroz largo fino bolsa 25kg",
 			description: "Bolsa mayorista de arroz largo fino.",
 			unit: "box",
+			categoryId: categories["Aceites y despensa"].id,
 			brandId: brands.pampa.id,
 			defaultSupplierId: suppliers.packNorte.id,
 		}),
@@ -1438,6 +1466,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Queso cremoso horma",
 			description: "Horma refrigerada para rotiserias y hoteles.",
 			unit: "kg",
+			categoryId: categories["Aceites y despensa"].id,
 			brandId: brands.rio.id,
 			defaultSupplierId: suppliers.lacteosSur.id,
 		}),
@@ -1445,6 +1474,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Yerba mate paquete 1kg x10",
 			description: "Caja de diez paquetes de yerba mate.",
 			unit: "box",
+			categoryId: categories["Aceites y despensa"].id,
 			brandId: brands.pampa.id,
 			defaultSupplierId: suppliers.packNorte.id,
 		}),
@@ -1452,6 +1482,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Dulce de leche familiar 400g x12",
 			description: "Caja de dulce de leche familiar.",
 			unit: "box",
+			categoryId: categories["Aceites y despensa"].id,
 			brandId: brands.rio.id,
 			defaultSupplierId: suppliers.lacteosSur.id,
 		}),
@@ -1459,6 +1490,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Manzana roja premium",
 			description: "Manzana roja seleccionada para consumo institucional.",
 			unit: "kg",
+			categoryId: categories["Frutas desecadas"].id,
 			brandId: brands.andes.id,
 			defaultSupplierId: suppliers.valleVerde.id,
 		}),
@@ -1466,6 +1498,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Bandeja compostable grande x100",
 			description: "Pack de bandejas compostables para take away.",
 			unit: "box",
+			categoryId: categories["Aceites y despensa"].id,
 			brandId: brands.pampa.id,
 			defaultSupplierId: suppliers.packNorte.id,
 		}),
@@ -1474,6 +1507,7 @@ async function seedMasterData(tx: Tx) {
 			description:
 				"Combo cerrado que solo se vende de a 12: sus terminos no tienen step.",
 			unit: "box",
+			categoryId: categories["Aceites y despensa"].id,
 			brandId: brands.pampa.id,
 			defaultSupplierId: suppliers.packNorte.id,
 		}),
@@ -1481,6 +1515,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Snack estacional de verano",
 			description: "Producto demo inactivo para probar filtros.",
 			unit: "piece",
+			categoryId: categories["Mixes y snacks"].id,
 			brandId: brands.pampa.id,
 			defaultSupplierId: suppliers.packNorte.id,
 			active: false,
@@ -1489,6 +1524,7 @@ async function seedMasterData(tx: Tx) {
 			name: "Mix de frutos secos discontinuado",
 			description: "Producto demo soft-deleted para administracion.",
 			unit: "other",
+			categoryId: categories["Mixes y snacks"].id,
 			brandId: brands.andes.id,
 			defaultSupplierId: suppliers.parana.id,
 			active: false,

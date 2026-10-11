@@ -17,6 +17,7 @@ test.each([
 		description: "Caja de yerba",
 		unit: "box",
 		brand: { id: 2, name: "Coco" },
+		category: null,
 		imageUrl: "/yerba.jpg",
 		createdAt: new Date("2026-06-01"),
 		terms: {

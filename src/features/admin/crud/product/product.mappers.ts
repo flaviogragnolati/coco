@@ -3,7 +3,10 @@ import type {
 	ProductFormValues,
 } from "~/shared/common/admin-crud/product.types";
 
-export const defaultProductFormValues: ProductFormValues = {
+/** No category preselected: the admin must pick one. */
+export const defaultProductFormValues: Omit<ProductFormValues, "categoryId"> & {
+	categoryId?: number;
+} = {
 	name: "",
 	description: "",
 	cartImageUrl: "",
@@ -11,13 +14,14 @@ export const defaultProductFormValues: ProductFormValues = {
 	images: [],
 	unit: "piece",
 	brandAssignment: { mode: "none" },
+	categoryId: undefined,
 	defaultSupplierId: undefined,
 	active: true,
 };
 
 export function productDetailToFormValues(
 	product: ProductDetail,
-): ProductFormValues {
+): typeof defaultProductFormValues {
 	return {
 		name: product.name,
 		description: product.description ?? "",
@@ -31,6 +35,7 @@ export function productDetailToFormValues(
 					brandId: product.brand.id,
 				}
 			: { mode: "none" },
+		categoryId: product.category?.id,
 		defaultSupplierId: product.defaultSupplier?.id,
 		active: product.active,
 	};

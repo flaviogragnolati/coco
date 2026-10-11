@@ -12,6 +12,12 @@ const productBrandReferenceSelect = {
 	deleted: true,
 } satisfies Prisma.BrandSelect;
 
+const productCategoryReferenceSelect = {
+	id: true,
+	name: true,
+	deleted: true,
+} satisfies Prisma.CategorySelect;
+
 const productSupplierReferenceSelect = {
 	id: true,
 	name: true,
@@ -26,6 +32,9 @@ export const productListSelect = {
 	cartImageUrl: true,
 	brand: {
 		select: productBrandReferenceSelect,
+	},
+	category: {
+		select: productCategoryReferenceSelect,
 	},
 	defaultSupplier: {
 		select: productSupplierReferenceSelect,
@@ -46,6 +55,9 @@ export const productDetailSelect = {
 	brand: {
 		select: productBrandReferenceSelect,
 	},
+	category: {
+		select: productCategoryReferenceSelect,
+	},
 	defaultSupplier: {
 		select: productSupplierReferenceSelect,
 	},
@@ -63,6 +75,9 @@ const productRelationCountSelect = {
 	unit: true,
 	brand: {
 		select: productBrandReferenceSelect,
+	},
+	category: {
+		select: productCategoryReferenceSelect,
 	},
 	defaultSupplier: {
 		select: productSupplierReferenceSelect,
@@ -86,6 +101,7 @@ export type ProductWriteInput = {
 	images: string[];
 	unit: ProductUnit;
 	brandId?: number;
+	categoryId: number;
 	defaultSupplierId?: number;
 	active: boolean;
 };
@@ -180,6 +196,7 @@ export async function createProduct(
 			images: input.images,
 			unit: input.unit,
 			brandId: input.brandId ?? null,
+			categoryId: input.categoryId,
 			defaultSupplierId: input.defaultSupplierId ?? null,
 			active: input.active,
 			deleted: false,
@@ -202,6 +219,7 @@ export async function updateProduct(
 			images: input.images,
 			unit: input.unit,
 			brandId: input.brandId ?? null,
+			categoryId: input.categoryId,
 			defaultSupplierId: input.defaultSupplierId ?? null,
 			active: input.active,
 		},
@@ -256,6 +274,13 @@ export async function findProductBrandById(db: AdminDbClient, id: number) {
 	return db.brand.findUnique({
 		where: { id },
 		select: productBrandReferenceSelect,
+	});
+}
+
+export async function findProductCategoryById(db: AdminDbClient, id: number) {
+	return db.category.findUnique({
+		where: { id },
+		select: productCategoryReferenceSelect,
 	});
 }
 

@@ -204,6 +204,10 @@ _Avoid_: Order timeline, tracking screen
 The customer-facing set of purchasable products, each surfaced with its current client terms. Distinct from the internal admin Product record.
 _Avoid_: Store, product list
 
+**Category**:
+The catalog group a product belongs to, such as "Frutos secos" or "Suplementos", with the position it is listed in. Every product has exactly one; an admin maintains them, and an inactive or deleted category is hidden from customers while its products stay purchasable. Not the heading of a supplier's price list, which only feeds the mapping. Spanish-facing UI labels it "Categoría".
+_Avoid_: Rubro, family, heading
+
 **Featured offer**:
 A current catalog product shown in the home offers grid, either pinned by an admin or chosen by the offers ranking. Pinned ones come first and the ranking fills the rest, so the grid is never empty and never stale. Spanish-facing UI labels it "Oferta destacada".
 _Avoid_: Promotion, operation, oferta protagonista, pedido abierto
@@ -217,7 +221,7 @@ The order in which non-pinned current products compete for the home grid: by mon
 _Avoid_: Sort, top offers, query
 
 **Similar product**:
-Another current catalog product proposed alongside the one a customer is looking at, related by shared brand first and shared unit second. The relation is derived, not declared: the catalog has no category, so nothing in the data marks two products as similar. Spanish-facing UI labels it "Productos similares".
+Another current catalog product proposed alongside the one a customer is looking at, related by shared brand first and shared unit second. The relation is derived, not declared: nothing in the data marks two products as similar. Spanish-facing UI labels it "Productos similares".
 _Avoid_: Related product, category, recommendation
 
 **Client terms**:

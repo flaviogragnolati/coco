@@ -190,6 +190,20 @@ model Brand {
   @@map("brand")
 }
 
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  sortOrder Int
+  active    Boolean  @default(true)
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  products Product[]
+
+  @@map("category")
+}
+
 model Product {
   id                Int         @id @default(autoincrement())
   name              String
@@ -201,12 +215,14 @@ model Product {
   deleted           Boolean     @default(false)
   unit              ProductUnit
   brandId           Int?
+  categoryId        Int? // required by the app; NOT NULL once every product is backfilled
   defaultSupplierId Int?
   homeOfferRank     Int? // pinned position in the home offers grid; null means the automatic ranking decides
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @default(now()) @updatedAt
 
   brand                   Brand?                    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category                Category?                 @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   defaultSupplier         Supplier?                 @relation(fields: [defaultSupplierId], references: [id], onDelete: SetNull)
   productClientTerms      ProductClientTerms[]
   productSupplierTerms    ProductSupplierTerms[]
@@ -214,6 +230,7 @@ model Product {
   homeOfferSpotlightOf    HomeOfferSettings[]
 
   @@index([brandId])
+  @@index([categoryId])
   @@index([defaultSupplierId])
   @@index([homeOfferRank])
   @@map("product")
