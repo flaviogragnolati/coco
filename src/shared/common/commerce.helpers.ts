@@ -125,6 +125,41 @@ export function formatQuantity(
 	return `${formatted} ${formatUnitLabel(value, unit, presentation)}`;
 }
 
+const quantityInputFormatter = new Intl.NumberFormat("es-AR", {
+	maximumFractionDigits: 4,
+	minimumFractionDigits: 0,
+	useGrouping: false,
+});
+
+/**
+ * Reads a quantity typed in es-AR ("1,5") or with a dot ("1.5"). A comma makes
+ * every dot a thousands separator ("1.000,5"); without one, a single dot is the
+ * decimal point and several are separators. Null for anything else.
+ */
+export function parseQuantityInput(text: string): number | null {
+	const compact = text.trim().replace(/\s+/g, "");
+	if (!compact) return null;
+
+	let canonical = compact;
+	if (compact.includes(",")) {
+		canonical = compact.replace(/\./g, "").replace(",", ".");
+	} else if ((compact.match(/\./g) ?? []).length > 1) {
+		canonical = compact.replace(/\./g, "");
+	}
+	if (!/^\d+(?:\.\d+)?$|^\.\d+$/.test(canonical)) return null;
+
+	const parsed = Number(canonical);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** A quantity as the input shows it: es-AR decimals, no grouping ("1,5"). */
+export function formatQuantityInput(value: string | number) {
+	const amount = toNumber(value);
+	return amount === null
+		? String(value)
+		: quantityInputFormatter.format(amount);
+}
+
 export function toQuantityString(value: number) {
 	return decimalFormatter.format(Number(value.toFixed(4)));
 }

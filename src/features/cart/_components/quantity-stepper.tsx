@@ -14,8 +14,10 @@ import {
 	canDecrementQuantity,
 	canIncrementQuantity,
 	formatQuantity,
+	formatQuantityInput,
 	normalizeCartQuantity,
 	type ProductPresentation,
+	parseQuantityInput,
 } from "~/shared/common/commerce.helpers";
 
 type QuantityStepperProps = {
@@ -41,17 +43,22 @@ export function QuantityStepper({
 	onDecrement,
 	onIncrement,
 }: QuantityStepperProps) {
-	const [draft, setDraft] = useState(value);
+	const [draft, setDraft] = useState(() => formatQuantityInput(value));
 	const canIncrement = canIncrementQuantity(value, terms);
 	const canDecrement = canDecrementQuantity(value, terms);
 
 	useEffect(() => {
-		setDraft(value);
+		setDraft(formatQuantityInput(value));
 	}, [value]);
 
+	// Unreadable input keeps the current quantity instead of snapping to the
+	// minimum.
 	const commitDraft = () => {
-		const normalized = normalizeCartQuantity(draft, terms);
-		setDraft(normalized);
+		const normalized = normalizeCartQuantity(
+			parseQuantityInput(draft) ?? value,
+			terms,
+		);
+		setDraft(formatQuantityInput(normalized));
 		onCommit(normalized);
 	};
 

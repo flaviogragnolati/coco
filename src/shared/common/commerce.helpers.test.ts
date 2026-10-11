@@ -6,12 +6,14 @@ import {
 	calculateLineTotal,
 	formatCurrency,
 	formatQuantity,
+	formatQuantityInput,
 	formatUnitLabel,
 	getMarketSaving,
 	getPerUnitPrice,
 	isFixedQuantity,
 	normalizeCartQuantity,
 	PricingConfigurationError,
+	parseQuantityInput,
 	selectProductImage,
 } from "./commerce.helpers";
 
@@ -435,4 +437,35 @@ test("formatUnitLabel is the noun alone, agreeing with the quantity", () => {
 	expect(formatUnitLabel("2", "piece", frasco)).toBe("frascos 370 g");
 	expect(formatUnitLabel("0.5", "kg")).toBe("kg");
 	expect(formatUnitLabel("12", "other")).toBe("unidades");
+});
+
+test.each([
+	["a decimal comma", "1,5", 1.5],
+	["a decimal dot", "1.5", 1.5],
+	["a whole number", "2", 2],
+	["surrounding spaces", " 0,5 ", 0.5],
+	["a leading comma", ",5", 0.5],
+	["es-AR grouping with a decimal comma", "1.000,5", 1000.5],
+	["several dots as grouping", "1.000.000", 1000000],
+	["empty input", "", null],
+	["letters", "uno", null],
+	["two commas", "1,5,0", null],
+	["a negative sign", "-1", null],
+] as const)("parseQuantityInput: %s", (_name, text, expected) => {
+	expect(parseQuantityInput(text)).toBe(expected);
+});
+
+test("a typed decimal comma reaches the half-kilo grid", () => {
+	const halves = terms({ moq: "0.5", step: "0.5" });
+	const parsed = parseQuantityInput("1,5");
+
+	expect(parsed).not.toBeNull();
+	expect(normalizeCartQuantity(parsed ?? 0, halves)).toBe("1.5");
+});
+
+test("formatQuantityInput shows es-AR decimals without grouping", () => {
+	expect(formatQuantityInput("1.5")).toBe("1,5");
+	expect(formatQuantityInput("1500")).toBe("1500");
+	expect(formatQuantityInput("0.5000")).toBe("0,5");
+	expect(parseQuantityInput(formatQuantityInput("1234.5"))).toBe(1234.5);
 });

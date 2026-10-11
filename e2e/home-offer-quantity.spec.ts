@@ -54,7 +54,8 @@ test("a home offer adds the quantity chosen on its card", async ({ page }) => {
 			JSON.parse(localStorage.getItem("coco.cart.v1") ?? "{}").state.items,
 		).map((item) => (item as { quantity: string }).quantity),
 	);
-	expect(quantities).toEqual([chosen]);
+	// The input shows es-AR decimals ("1,5"); the cart stores "1.5".
+	expect(quantities).toEqual([chosen.replace(",", ".")]);
 
 	await page
 		.getByRole("button", { name: "Cerrar", exact: true })
