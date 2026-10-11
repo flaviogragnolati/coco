@@ -29,6 +29,8 @@ function mapListItem(
 		name: record.name,
 		description: record.description,
 		unit: record.unit,
+		presentationContainer: record.presentationContainer,
+		presentationSize: record.presentationSize,
 		brand: record.brand,
 		imageUrl: selectProductImage(record, "catalog"),
 		createdAt: record.createdAt,

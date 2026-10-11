@@ -191,20 +191,23 @@ model Brand {
 }
 
 model Product {
-  id                Int         @id @default(autoincrement())
-  name              String
-  description       String?     @db.Text
-  cartImageUrl      String?     @db.Text
-  cardImageUrl      String?     @db.Text
-  images            String[]    @db.Text
-  active            Boolean     @default(true)
-  deleted           Boolean     @default(false)
-  unit              ProductUnit
-  brandId           Int?
-  defaultSupplierId Int?
-  homeOfferRank     Int? // pinned position in the home offers grid; null means the automatic ranking decides
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @default(now()) @updatedAt
+  id                    Int                           @id @default(autoincrement())
+  name                  String
+  description           String?                       @db.Text
+  cartImageUrl          String?                       @db.Text
+  cardImageUrl          String?                       @db.Text
+  images                String[]                      @db.Text
+  active                Boolean                       @default(true)
+  deleted               Boolean                       @default(false)
+  unit                  ProductUnit
+  // The package a customer buys; null for weight units (kg, gr, lb)
+  presentationContainer ProductPresentationContainer?
+  presentationSize      String?                       @db.Text // free text, e.g. "0,5 L", "370 g"
+  brandId               Int?
+  defaultSupplierId     Int?
+  homeOfferRank         Int? // pinned position in the home offers grid; null means the automatic ranking decides
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @default(now()) @updatedAt
 
   brand                   Brand?                    @relation(fields: [brandId], references: [id], onDelete: SetNull)
   defaultSupplier         Supplier?                 @relation(fields: [defaultSupplierId], references: [id], onDelete: SetNull)
@@ -226,6 +229,15 @@ enum ProductUnit {
   box
   gr
   other
+}
+
+enum ProductPresentationContainer {
+  botella
+  bidon
+  frasco
+  bolsa
+  paquete
+  unidad
 }
 
 // Singleton: always read and written through an upsert on `id: 1`.
@@ -330,11 +342,11 @@ model ProductClientTerms {
   id              Int       @id @default(autoincrement())
   productId       Int
   moq             Decimal   @db.Decimal(18, 4) // minimum order quantity for the product
-  moqPrice        Decimal   @db.Decimal(18, 2) // price for the minimum order quantity
+  moqPrice        Decimal   @db.Decimal(18, 2) // derived: unitPrice × moq, stored by the server
   step            Decimal?  @db.Decimal(18, 4) // step quantity for the product, increase over the moq (ex: if moq is 10 and step is 5, the allowed order quantities are 10, 15, 20, etc.)
-  stepPrice       Decimal?  @db.Decimal(18, 2) // price for the step quantity
+  stepPrice       Decimal?  @db.Decimal(18, 2) // derived: unitPrice × step, stored by the server
   max             Decimal?  @db.Decimal(18, 4) // maximum order quantity for the product, null means no maximum
-  unitPrice       Decimal?  @db.Decimal(18, 2) // our own per-unit price, for display and comparison (ex: "$10/kg")
+  unitPrice       Decimal?  @db.Decimal(18, 2) // the charged price per unit: line total = unitPrice × quantity; null only on legacy rows (moqPrice / moq)
   marketPrice     Decimal?  @db.Decimal(18, 2) // per-unit price other shops charge; an unverified admin claim, never billed
   discountPercent Decimal?  @db.Decimal(5, 2) // discount off our own price, charged inside calculateLineTotal (ADR 0008)
   currency        Currency  @default(ARS)
@@ -353,22 +365,23 @@ model ProductClientTerms {
 }
 
 model ProductSupplierTerms {
-  id         Int       @id @default(autoincrement())
-  productId  Int
-  supplierId Int
-  moq        Decimal   @db.Decimal(18, 4)
-  moqPrice   Decimal   @db.Decimal(18, 2)
-  step       Decimal?  @db.Decimal(18, 4)
-  stepPrice  Decimal?  @db.Decimal(18, 2)
-  max        Decimal?  @db.Decimal(18, 4)
-  refPrice   Decimal?  @db.Decimal(18, 2) // calculated reference price for the product, used for display purposes (ex: "$10/kg")
-  currency   Currency  @default(ARS)
-  active     Boolean   @default(true)
-  deleted    Boolean   @default(false)
-  fromDate   DateTime  @default(now())
-  toDate     DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @default(now()) @updatedAt
+  id                   Int       @id @default(autoincrement())
+  productId            Int
+  supplierId           Int
+  moq                  Decimal   @db.Decimal(18, 4)
+  moqPrice             Decimal   @db.Decimal(18, 2)
+  step                 Decimal?  @db.Decimal(18, 4)
+  stepPrice            Decimal?  @db.Decimal(18, 2)
+  max                  Decimal?  @db.Decimal(18, 4)
+  refPrice             Decimal?  @db.Decimal(18, 2) // calculated reference price for the product, used for display purposes (ex: "$10/kg")
+  supplierPresentation String?   @db.Text // how the supplier packs it (ex: "caja de 10 kg"); admin only, never shown to customers
+  currency             Currency  @default(ARS)
+  active               Boolean   @default(true)
+  deleted              Boolean   @default(false)
+  fromDate             DateTime  @default(now())
+  toDate               DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @default(now()) @updatedAt
 
   product  Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
   supplier Supplier  @relation(fields: [supplierId], references: [id], onDelete: Restrict)

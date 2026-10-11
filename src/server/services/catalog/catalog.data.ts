@@ -32,6 +32,8 @@ const catalogProductBaseSelect = {
 	name: true,
 	description: true,
 	unit: true,
+	presentationContainer: true,
+	presentationSize: true,
 	cardImageUrl: true,
 	cartImageUrl: true,
 	createdAt: true,

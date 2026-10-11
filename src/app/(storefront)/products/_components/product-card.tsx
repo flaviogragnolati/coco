@@ -86,6 +86,7 @@ export function ProductCard({
 								onCommit={(quantity) => onQuantityCommit(cartItem, quantity)}
 								onDecrement={() => onDecrement(cartItem)}
 								onIncrement={() => onIncrement(cartItem)}
+								presentation={cartItem.product}
 								terms={cartItem.terms}
 								unit={cartItem.product.unit}
 								value={cartItem.quantity}

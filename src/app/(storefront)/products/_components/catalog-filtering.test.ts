@@ -51,6 +51,8 @@ function makeProduct(overrides: ProductOverrides = {}): CatalogProductListItem {
 		description:
 			overrides.description === undefined ? null : overrides.description,
 		unit: overrides.unit ?? "piece",
+		presentationContainer: null,
+		presentationSize: null,
 		brand: overrides.brand === undefined ? null : overrides.brand,
 		imageUrl: null,
 		createdAt: overrides.createdAt ?? new Date("2024-01-01"),

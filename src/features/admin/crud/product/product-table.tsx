@@ -10,6 +10,7 @@ import type {
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
 import type { ProductListItem } from "~/shared/common/admin-crud/product.types";
+import { formatUnitLabel } from "~/shared/common/commerce.helpers";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 const unitLabelMap: Record<ProductListItem["unit"], string> = {
@@ -36,6 +37,9 @@ const productColumns: CrudColumn<ProductListItem>[] = [
 				<span className="font-medium text-foreground">{product.name}</span>
 				<span className="text-muted-foreground text-xs">
 					{unitLabelMap[product.unit]}
+					{product.presentationContainer
+						? ` · ${formatUnitLabel(1, product.unit, product)}`
+						: ""}
 				</span>
 			</div>
 		),

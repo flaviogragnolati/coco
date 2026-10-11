@@ -25,6 +25,8 @@ const offer: HomeOffer = {
 	fromDate: new Date("2026-06-01"),
 	toDate: null,
 	unit: "kg",
+	presentationContainer: null,
+	presentationSize: null,
 	brandName: "Coco",
 	imageUrl: null,
 	moq: "10",

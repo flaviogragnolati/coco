@@ -52,6 +52,8 @@ const cart = {
 					name: "Tomate",
 					description: null,
 					unit: "kg",
+					presentationContainer: null,
+					presentationSize: null,
 					brand: null,
 					cardImageUrl: null,
 					cartImageUrl: null,

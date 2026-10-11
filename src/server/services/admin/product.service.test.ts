@@ -44,6 +44,8 @@ function product(overrides: Partial<data.ProductDetailRecord> = {}) {
 		cardImageUrl: OLD_CARD,
 		images: [GALLERY],
 		unit: "kg" as const,
+		presentationContainer: null,
+		presentationSize: null,
 		brand: null,
 		defaultSupplier: null,
 		active: true,
@@ -59,6 +61,8 @@ const updateInput = {
 	cardImageUrl: NEW_CARD,
 	images: [GALLERY],
 	unit: "kg" as const,
+	presentationContainer: undefined,
+	presentationSize: undefined,
 	brandAssignment: { mode: "none" as const },
 	active: true,
 };

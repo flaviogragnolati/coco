@@ -20,7 +20,12 @@ export function ProductPriceBlock({
 	product: CatalogProductListItem;
 	variant?: ProductPriceBlockVariant;
 }) {
-	const offer = { ...product.terms, unit: product.unit };
+	const offer = {
+		...product.terms,
+		unit: product.unit,
+		presentationContainer: product.presentationContainer,
+		presentationSize: product.presentationSize,
+	};
 	const blockPrice = getOfferBlockPrice(offer);
 	const strikethroughPrice = getOfferBlockStrikethroughPrice(offer);
 	const discountLabel = getOfferDiscountLabel(offer);
@@ -46,7 +51,7 @@ export function ProductPriceBlock({
 					) : null}
 				</span>
 				<span className="text-muted-foreground text-xs">
-					MOQ {formatQuantity(product.terms.moq, product.unit)}
+					MOQ {formatQuantity(product.terms.moq, product.unit, product)}
 				</span>
 			</div>
 		);
@@ -56,12 +61,12 @@ export function ProductPriceBlock({
 		<div className="flex flex-col gap-2 rounded-2xl bg-muted/40 p-3">
 			<div className="flex flex-wrap gap-2">
 				<Badge variant="info">
-					MOQ {formatQuantity(product.terms.moq, product.unit)}
+					MOQ {formatQuantity(product.terms.moq, product.unit, product)}
 				</Badge>
 				<Badge variant="secondary">{product.terms.currency}</Badge>
 				{product.terms.max ? (
 					<Badge variant="outline">
-						Máx {formatQuantity(product.terms.max, product.unit)}
+						Máx {formatQuantity(product.terms.max, product.unit, product)}
 					</Badge>
 				) : null}
 			</div>
@@ -85,7 +90,8 @@ export function ProductPriceBlock({
 					) : null}
 				</div>
 				<span className="text-muted-foreground text-xs">
-					por bloque MOQ de {formatQuantity(product.terms.moq, product.unit)}
+					por bloque MOQ de{" "}
+					{formatQuantity(product.terms.moq, product.unit, product)}
 				</span>
 				{perUnitLabel ? (
 					<span className="text-muted-foreground text-xs">{perUnitLabel}</span>

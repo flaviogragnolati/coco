@@ -6,12 +6,13 @@ import {
 	calculateLineTotal,
 	formatCurrency,
 	formatQuantity,
+	formatUnitLabel,
 	getBaseUnitPrice,
 	getMarketSaving,
 	getOfferMoqPrice,
 	getPerUnitPrice,
 	normalizeCartQuantity,
-	productUnitLabelMap,
+	type ProductPresentation,
 	toNumber,
 } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
@@ -25,7 +26,8 @@ type OfferPricing = Pick<
 	| "moqPrice"
 	| "unit"
 	| "unitPrice"
->;
+> &
+	ProductPresentation;
 
 // Customers never see a market-price comparison while this is off; the market
 // price still feeds the offers ranking and the admin.
@@ -48,19 +50,19 @@ export function getOfferBlockPrice(offer: OfferPricing) {
 export function getOfferQuantityLabel(
 	quantity: string,
 	unit: CatalogProductUnit,
+	presentation?: ProductPresentation | null,
 ) {
-	const label = formatQuantity(quantity, unit);
-	if (toNumber(quantity) === 1) return label;
-	if (unit === "box") return label.replace(/caja$/, "cajas");
-	if (unit === "piece" || unit === "other")
-		return label.replace(/unidad$/, "unidades");
-	return label;
+	return formatQuantity(quantity, unit, presentation);
+}
+
+function perUnitLabel(offer: OfferPricing) {
+	return formatUnitLabel(1, offer.unit, offer);
 }
 
 export function getOfferHeadlinePrice(offer: OfferPricing) {
 	return {
 		amount: formatCurrency(getPerUnitPrice(offer) ?? 0, offer.currency),
-		unitLabel: `por ${productUnitLabelMap[offer.unit]}`,
+		unitLabel: `por ${perUnitLabel(offer)}`,
 	};
 }
 
@@ -74,16 +76,18 @@ export function getOfferTotalLabel(
 export function getOfferFixedQuantityLabel(
 	terms: CatalogClientTerms,
 	unit: CatalogProductUnit,
+	presentation?: ProductPresentation | null,
 ) {
 	const quantity = normalizeCartQuantity(terms.moq, terms);
-	return `${getOfferQuantityLabel(quantity, unit)} · ${getOfferTotalLabel(terms, quantity)}`;
+	return `${getOfferQuantityLabel(quantity, unit, presentation)} · ${getOfferTotalLabel(terms, quantity)}`;
 }
 
 export function getOfferInCartLabel(
 	quantity: string,
 	unit: CatalogProductUnit,
+	presentation?: ProductPresentation | null,
 ) {
-	return `Ya tenés ${getOfferQuantityLabel(quantity, unit)} en tu pedido`;
+	return `Ya tenés ${getOfferQuantityLabel(quantity, unit, presentation)} en tu pedido`;
 }
 
 // Strike through Coco's undiscounted headline price, never the market price.
@@ -101,14 +105,14 @@ export function getOfferDiscountLabel(offer: OfferPricing) {
 export function getMarketSavingLabel(offer: OfferPricing) {
 	const saving = getMarketSaving(offer);
 	if (saving === null) return null;
-	return `Ahorrás ${formatCurrency(saving.perUnit, offer.currency)} por ${productUnitLabelMap[offer.unit]} vs. góndola`;
+	return `Ahorrás ${formatCurrency(saving.perUnit, offer.currency)} por ${perUnitLabel(offer)} vs. góndola`;
 }
 
 export function getOfferUnitReference(offer: OfferPricing) {
 	const perUnitPrice = getPerUnitPrice(offer);
 	if (perUnitPrice === null) return null;
 
-	return `≈ ${formatCurrency(perUnitPrice, offer.currency)} / ${productUnitLabelMap[offer.unit]}`;
+	return `≈ ${formatCurrency(perUnitPrice, offer.currency)} / ${perUnitLabel(offer)}`;
 }
 
 export function getMarketComparison(offer: OfferPricing) {
@@ -116,7 +120,7 @@ export function getMarketComparison(offer: OfferPricing) {
 	const saving = getMarketSaving(offer);
 	if (marketPrice === null || saving === null) return null;
 
-	const reference = `En otros comercios ≈ ${formatCurrency(marketPrice, offer.currency)} / ${productUnitLabelMap[offer.unit]}`;
+	const reference = `En otros comercios ≈ ${formatCurrency(marketPrice, offer.currency)} / ${perUnitLabel(offer)}`;
 	if (saving.perBlock <= 0) return reference;
 
 	return `${reference} · ahorrás ${formatCurrency(saving.perBlock, offer.currency)}`;

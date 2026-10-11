@@ -10,6 +10,8 @@ export const defaultProductFormValues: ProductFormValues = {
 	cardImageUrl: "",
 	images: [],
 	unit: "piece",
+	presentationContainer: undefined,
+	presentationSize: "",
 	brandAssignment: { mode: "none" },
 	defaultSupplierId: undefined,
 	active: true,
@@ -25,6 +27,8 @@ export function productDetailToFormValues(
 		cardImageUrl: product.cardImageUrl ?? "",
 		images: product.images,
 		unit: product.unit,
+		presentationContainer: product.presentationContainer ?? undefined,
+		presentationSize: product.presentationSize ?? "",
 		brandAssignment: product.brand
 			? {
 					mode: "existing",

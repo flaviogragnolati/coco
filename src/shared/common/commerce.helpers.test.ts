@@ -6,6 +6,7 @@ import {
 	calculateLineTotal,
 	formatCurrency,
 	formatQuantity,
+	formatUnitLabel,
 	getMarketSaving,
 	getPerUnitPrice,
 	isFixedQuantity,
@@ -51,6 +52,8 @@ function item(
 			name,
 			description: null,
 			unit: "kg",
+			presentationContainer: null,
+			presentationSize: null,
 			brandName: null,
 			imageUrl: null,
 		},
@@ -372,4 +375,64 @@ test.each([
 	expect(
 		normalizeCartQuantity(quantity, terms({ moq: "0.5", step: "0.5" })),
 	).toBe(expected);
+});
+
+const frasco = {
+	presentationContainer: "frasco",
+	presentationSize: "370 g",
+} as const;
+
+test.each([
+	["one jar", "1", "piece", frasco, "1 frasco 370 g"],
+	["two jars", "2", "piece", frasco, "2 frascos 370 g"],
+	[
+		"one can",
+		"1",
+		"piece",
+		{ presentationContainer: "bidon", presentationSize: "5 L" },
+		"1 bidón 5 L",
+	],
+	[
+		"two cans",
+		"2",
+		"piece",
+		{ presentationContainer: "bidon", presentationSize: "5 L" },
+		"2 bidones 5 L",
+	],
+	[
+		"a bag without size",
+		"1",
+		"piece",
+		{ presentationContainer: "bolsa", presentationSize: null },
+		"1 bolsa",
+	],
+	[
+		"bags without size",
+		"3",
+		"piece",
+		{ presentationContainer: "bolsa", presentationSize: "" },
+		"3 bolsas",
+	],
+	["one unit without presentation", "1", "piece", null, "1 unidad"],
+	["units without presentation", "16", "piece", null, "16 unidades"],
+	["boxes", "3", "box", undefined, "3 cajas"],
+	["half kilos", "1.5", "kg", undefined, "1,5 kg"],
+	["one kilo", "1", "kg", undefined, "1 kg"],
+	["weight ignores a stray presentation", "0.5", "kg", frasco, "0,5 kg"],
+	[
+		"a size without container falls back to the unit",
+		"2",
+		"piece",
+		{ presentationContainer: null, presentationSize: "370 g" },
+		"2 unidades",
+	],
+] as const)("formatQuantity: %s", (_name, value, unit, presentation, expected) => {
+	expect(formatQuantity(value, unit, presentation)).toBe(expected);
+});
+
+test("formatUnitLabel is the noun alone, agreeing with the quantity", () => {
+	expect(formatUnitLabel("1", "piece", frasco)).toBe("frasco 370 g");
+	expect(formatUnitLabel("2", "piece", frasco)).toBe("frascos 370 g");
+	expect(formatUnitLabel("0.5", "kg")).toBe("kg");
+	expect(formatUnitLabel("12", "other")).toBe("unidades");
 });

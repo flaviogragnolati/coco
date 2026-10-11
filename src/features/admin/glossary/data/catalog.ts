@@ -1,4 +1,7 @@
-import { productUnitLabelMap } from "~/shared/common/commerce.helpers";
+import {
+	productPresentationContainerLabelMap,
+	productUnitLabelMap,
+} from "~/shared/common/commerce.helpers";
 import type { GlossaryEntry } from "../glossary.types";
 
 export const catalogGlossaryEntries: GlossaryEntry[] = [
@@ -59,7 +62,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "MOQ (cantidad mínima de compra)",
 		term: "MOQ (minimum order quantity)",
 		definition:
-			"La cantidad más chica que se puede comprar de un producto y la unidad en la que se suma demanda. Se cobra como bloque según los términos de cliente, con incrementos opcionales por paso.",
+			"La cantidad más chica que se puede comprar de un producto, en su unidad: 0,5 en los productos por kg y 1 en los que se venden por unidad. Por encima, la cantidad crece de a un paso, que el formulario propone igual al mínimo; sin paso, el mínimo es la única cantidad. Se cobra como cualquier cantidad: precio unitario por cantidad.",
 		aliases: ["Mínimo", "Tamaño de lote"],
 		href: "/admin/product-terms",
 	},
@@ -70,8 +73,8 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Precio unitario",
 		term: "Unit price",
 		definition:
-			"El precio por unidad de un producto según sus términos de cliente, usado para mostrar y comparar. Es opcional: cuando falta se deriva del precio del MOQ y el MOQ.",
-		aliases: ["Precio de referencia", "refPrice"],
+			"El precio que se cobra por cada unidad del producto (por kg, por frasco) y el único precio de cliente que carga el administrador: el total de una línea es precio unitario por cantidad, con el descuento de oferta aplicado. El precio del mínimo y el del paso se derivan de él al guardar. Los términos viejos sin precio unitario lo derivan del precio del mínimo dividido el mínimo.",
+		aliases: ["Precio de referencia", "refPrice", "Precio MOQ"],
 		href: "/admin/product-terms",
 	},
 	{
@@ -92,7 +95,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Descuento de oferta",
 		term: "Offer discount",
 		definition:
-			"Un porcentaje sobre los términos de cliente que baja lo que el cliente realmente paga, aplicado por igual al precio del MOQ y al precio de paso. No tiene vigencia propia: vive y muere con los términos que lo llevan (ADR 0008).",
+			"Un porcentaje sobre los términos de cliente que baja lo que el cliente realmente paga, aplicado al precio unitario y por lo tanto a cualquier cantidad. No tiene vigencia propia: vive y muere con los términos que lo llevan (ADR 0008).",
 		aliases: ["Promoción", "Cupón", "Campaña"],
 		href: "/admin/product-terms",
 	},
@@ -120,6 +123,29 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		href: "/admin/product-terms",
 	},
 
+	{
+		slug: "concepto-presentacion",
+		kind: "concept",
+		section: "catalog",
+		label: "Presentación",
+		term: "Presentation",
+		definition:
+			'El envase en que el cliente compra un producto que se vende por unidad: un envase de una lista cerrada (botella, bidón, frasco, bolsa, paquete, unidad) y un tamaño libre ("0,5 L", "370 g"). Las cantidades se cuentan en ella con plural automático ("2 frascos 370 g"). Los productos por peso no llevan. El pedido la guarda en su snapshot; los pedidos viejos muestran la unidad. Distinta de la presentación del proveedor, que es interna.',
+		aliases: ["Envase", "Formato", "Presentación del proveedor"],
+		href: "/admin/products",
+	},
+	{
+		slug: "concepto-presentacion-del-proveedor",
+		kind: "concept",
+		section: "catalog",
+		label: "Presentación del proveedor",
+		term: "Supplier presentation",
+		definition:
+			'Cómo empaca el proveedor lo que le compramos ("caja de 10 kg", "12 frascos de 370 g"). Vive en los términos de proveedor y solo se ve en el admin: nunca llega al cliente.',
+		aliases: ["Presentación", "Pack del proveedor"],
+		href: "/admin/product-terms",
+	},
+
 	// --- Entidades -----------------------------------------------------------
 	{
 		slug: "entidad-producto",
@@ -127,7 +153,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		section: "catalog",
 		label: "Producto",
 		definition:
-			"El registro interno de un producto: nombre, marca, unidad, imágenes y proveedor por defecto. Lo que el cliente ve es el catálogo, que lo combina con sus términos vigentes.",
+			"El registro interno de un producto: nombre, marca, unidad, presentación, imágenes y proveedor por defecto. Lo que el cliente ve es el catálogo, que lo combina con sus términos vigentes.",
 		occurrences: [{ code: "Product", db: "product" }],
 		href: "/admin/products",
 	},
@@ -191,7 +217,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Términos de cliente",
 		term: "Client terms",
 		definition:
-			"Los términos comerciales vigentes de cara al cliente para un producto: MOQ y su precio, paso y precio de paso opcionales, precio unitario, precio de góndola y descuento de oferta opcionales, moneda y ventana de validez. Única fuente de precio para catálogo y carrito.",
+			"Los términos comerciales vigentes de cara al cliente para un producto: precio unitario, mínimo, paso y máximo opcionales, precio de góndola y descuento de oferta opcionales, moneda y ventana de validez. El precio del mínimo y el del paso se derivan del unitario. Única fuente de precio para catálogo y carrito.",
 		aliases: ["Precios", "Términos de precio"],
 		occurrences: [{ code: "ProductClientTerms", db: "product_client_terms" }],
 		href: "/admin/product-terms",
@@ -202,7 +228,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		section: "catalog",
 		label: "Términos de proveedor",
 		definition:
-			"Los términos de compra de un producto a un proveedor: mínimo, precio, paso y ventana de validez. Es lo que un ítem de lote referencia al pedir.",
+			"Los términos de compra de un producto a un proveedor: mínimo, precio, paso, presentación del proveedor y ventana de validez. Es lo que un ítem de lote referencia al pedir.",
 		occurrences: [
 			{ code: "ProductSupplierTerms", db: "product_supplier_terms" },
 		],
@@ -285,6 +311,93 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		definition:
 			"Unidad sin categoría propia; se muestra igual que pieza pero indica que el producto no encaja en las anteriores.",
 		occurrences: [{ code: "ProductUnit.other", db: "product.unit" }],
+		href: "/admin/products",
+	},
+
+	// --- Estados: envase de la presentación ---------------------------------
+	{
+		slug: "estado-envase-botella",
+		kind: "status",
+		section: "catalog",
+		label: productPresentationContainerLabelMap.botella.one,
+		definition: "El producto se vende por botella.",
+		occurrences: [
+			{
+				code: "ProductPresentationContainer.botella",
+				db: "product.presentationContainer",
+			},
+		],
+		href: "/admin/products",
+	},
+	{
+		slug: "estado-envase-bidon",
+		kind: "status",
+		section: "catalog",
+		label: productPresentationContainerLabelMap.bidon.one,
+		definition: "El producto se vende por bidón.",
+		occurrences: [
+			{
+				code: "ProductPresentationContainer.bidon",
+				db: "product.presentationContainer",
+			},
+		],
+		href: "/admin/products",
+	},
+	{
+		slug: "estado-envase-frasco",
+		kind: "status",
+		section: "catalog",
+		label: productPresentationContainerLabelMap.frasco.one,
+		definition: "El producto se vende por frasco.",
+		occurrences: [
+			{
+				code: "ProductPresentationContainer.frasco",
+				db: "product.presentationContainer",
+			},
+		],
+		href: "/admin/products",
+	},
+	{
+		slug: "estado-envase-bolsa",
+		kind: "status",
+		section: "catalog",
+		label: productPresentationContainerLabelMap.bolsa.one,
+		definition: "El producto se vende por bolsa.",
+		occurrences: [
+			{
+				code: "ProductPresentationContainer.bolsa",
+				db: "product.presentationContainer",
+			},
+		],
+		href: "/admin/products",
+	},
+	{
+		slug: "estado-envase-paquete",
+		kind: "status",
+		section: "catalog",
+		label: productPresentationContainerLabelMap.paquete.one,
+		definition: "El producto se vende por paquete.",
+		occurrences: [
+			{
+				code: "ProductPresentationContainer.paquete",
+				db: "product.presentationContainer",
+			},
+		],
+		href: "/admin/products",
+	},
+	{
+		slug: "estado-envase-unidad",
+		kind: "status",
+		section: "catalog",
+		label: productPresentationContainerLabelMap.unidad.one,
+		definition:
+			"El producto se vende por unidad suelta, sin un envase que nombrar.",
+		occurrences: [
+			{
+				code: "ProductPresentationContainer.unidad",
+				db: "product.presentationContainer",
+			},
+		],
 		href: "/admin/products",
 	},
 

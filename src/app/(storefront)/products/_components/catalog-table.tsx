@@ -104,7 +104,7 @@ export function CatalogTable({
 								</TableCell>
 								<TableCell>
 									<Badge variant="info">
-										{formatQuantity(product.terms.moq, product.unit)}
+										{formatQuantity(product.terms.moq, product.unit, product)}
 									</Badge>
 								</TableCell>
 								<TableCell>
@@ -116,6 +116,7 @@ export function CatalogTable({
 											}
 											onDecrement={() => onDecrement(cartItem)}
 											onIncrement={() => onIncrement(cartItem)}
+											presentation={cartItem.product}
 											terms={cartItem.terms}
 											unit={cartItem.product.unit}
 											value={cartItem.quantity}

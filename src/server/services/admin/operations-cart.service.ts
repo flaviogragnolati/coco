@@ -82,6 +82,8 @@ function buildProductSnapshot(terms: OperationsProductClientTermsRecord) {
 			id: terms.product.id,
 			name: terms.product.name,
 			unit: terms.product.unit,
+			presentationContainer: terms.product.presentationContainer,
+			presentationSize: terms.product.presentationSize,
 			deleted: terms.product.deleted,
 			brand: terms.product.brand
 				? {

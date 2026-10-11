@@ -26,6 +26,7 @@ import { HomeOfferCard } from "~/features/home/_components/home-offer-card";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
 import type { CartItem } from "~/shared/common/cart.types";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
+import { formatUnitLabel } from "~/shared/common/commerce.helpers";
 
 type ProductPreviewDialogProps = {
 	errorMessage?: string;
@@ -135,7 +136,9 @@ function ProductDetailPreview({ preview }: { preview: ProductPreview }) {
 					<div className="grid gap-3 text-sm sm:grid-cols-2">
 						<div>
 							<p className="text-muted-foreground text-xs">Unidad</p>
-							<p className="font-medium">{adminProduct.unit}</p>
+							<p className="font-medium">
+								{formatUnitLabel(1, adminProduct.unit, adminProduct)}
+							</p>
 						</div>
 						<div>
 							<p className="text-muted-foreground text-xs">

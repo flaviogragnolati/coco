@@ -39,6 +39,7 @@ import {
 	selectProductImage,
 } from "~/shared/common/commerce.helpers";
 import { readPickupPointSnapshot } from "~/shared/common/delivery-display";
+import { withSnapshotPresentation } from "~/shared/common/product-snapshot";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
 import {
@@ -102,6 +103,9 @@ function toCartItem(item: CheckoutCartItemRecord): CartItem {
 			name: item.productClientTerms.product.name,
 			description: item.productClientTerms.product.description,
 			unit: item.productClientTerms.product.unit,
+			presentationContainer:
+				item.productClientTerms.product.presentationContainer,
+			presentationSize: item.productClientTerms.product.presentationSize,
 			brandName: item.productClientTerms.product.brand?.name ?? null,
 			imageUrl: selectProductImage(item.productClientTerms.product, "cart"),
 		},
@@ -788,7 +792,10 @@ export async function confirmAndPay(
 				items: cart.cartItems.map((item) => ({
 					sourceCartItemId: item.id,
 					quantity: item.quantity.toString(),
-					productSnapshot: item.productSnapshot,
+					productSnapshot: withSnapshotPresentation(
+						item.productSnapshot,
+						item.productClientTerms.product,
+					),
 					priceSnapshot: buildPriceSnapshot(item),
 				})),
 			}));

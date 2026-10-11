@@ -3,6 +3,7 @@ import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 import {
 	catalogCurrencySchema,
 	catalogProductUnitSchema,
+	productPresentationContainerSchema,
 } from "~/schemas/catalog.schemas";
 
 export const homeOffersCriterionSchema = z.enum([
@@ -17,6 +18,8 @@ export const homeOfferSchema = z.object({
 	productName: z.string(),
 	productDescription: z.string().nullable(),
 	unit: catalogProductUnitSchema,
+	presentationContainer: productPresentationContainerSchema.nullable(),
+	presentationSize: z.string().nullable(),
 	brandName: z.string().nullable(),
 	imageUrl: z.string().nullable(),
 	moq: decimalOutputSchema,

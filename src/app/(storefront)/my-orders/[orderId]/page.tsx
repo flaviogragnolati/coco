@@ -28,6 +28,7 @@ import {
 	orderStatusChipConfigMap,
 	paymentStatusLabelMap,
 } from "~/shared/common/order-display";
+import { readSnapshotQuantityUnit } from "~/shared/common/product-snapshot";
 import type { UserOrderItemTimeline } from "~/shared/common/tracking.types";
 import { api } from "~/trpc/server";
 import { ExternalPaymentPanel } from "./_components/external-payment-panel";
@@ -51,11 +52,6 @@ function getString(value: unknown, fallback = "-") {
 
 function getProductName(item: OrderDetail["items"][number]) {
 	return getString(getNestedRecord(item.productSnapshot, "product")?.name);
-}
-
-function getProductUnit(item: OrderDetail["items"][number]) {
-	const unit = getNestedRecord(item.productSnapshot, "product")?.unit;
-	return typeof unit === "string" ? unit : "other";
 }
 
 function getLineTotal(item: OrderDetail["items"][number]) {
@@ -85,7 +81,8 @@ function getAddressLine(snapshot: unknown) {
 }
 
 function itemQuantityLabel(item: OrderDetail["items"][number]) {
-	return formatQuantity(item.quantity, getProductUnit(item) as never);
+	const { unit, presentation } = readSnapshotQuantityUnit(item.productSnapshot);
+	return formatQuantity(item.quantity, unit, presentation);
 }
 
 export default async function OrderDetailPage({

@@ -2,6 +2,7 @@ import type { CartSnapshot } from "./cart.types";
 import type {
 	CatalogClientTerms,
 	CatalogCurrency,
+	CatalogProductPresentationContainer,
 	CatalogProductUnit,
 } from "./catalog.types";
 
@@ -13,6 +14,40 @@ export const productUnitLabelMap: Record<CatalogProductUnit, string> = {
 	other: "unidad",
 	piece: "unidad",
 };
+
+type CountNoun = { one: string; other: string };
+
+const countableUnitNouns: Partial<Record<CatalogProductUnit, CountNoun>> = {
+	box: { one: "caja", other: "cajas" },
+	other: { one: "unidad", other: "unidades" },
+	piece: { one: "unidad", other: "unidades" },
+};
+
+export const productPresentationContainerLabelMap: Record<
+	CatalogProductPresentationContainer,
+	CountNoun
+> = {
+	botella: { one: "botella", other: "botellas" },
+	bidon: { one: "bidón", other: "bidones" },
+	frasco: { one: "frasco", other: "frascos" },
+	bolsa: { one: "bolsa", other: "bolsas" },
+	paquete: { one: "paquete", other: "paquetes" },
+	unidad: { one: "unidad", other: "unidades" },
+};
+
+/**
+ * The package a customer buys, as stored on the product and copied into the
+ * order snapshot. Old snapshots lack both fields, hence optional.
+ */
+export type ProductPresentation = {
+	presentationContainer?: CatalogProductPresentationContainer | null;
+	presentationSize?: string | null;
+};
+
+/** Sold by weight: these never carry a presentation. */
+export function isWeightUnit(unit: CatalogProductUnit) {
+	return unit === "kg" || unit === "gr" || unit === "lb";
+}
 
 const quantityFormatter = new Intl.NumberFormat("es-AR", {
 	maximumFractionDigits: 4,
@@ -53,14 +88,41 @@ export function formatCurrency(
 	}).format(amount);
 }
 
+/**
+ * The noun a quantity is counted in, agreeing with it in number: "kg",
+ * "frasco 370 g" / "frascos 370 g", "unidad" / "unidades". A presentation
+ * replaces the unit noun, except on weight units, which never carry one.
+ */
+export function formatUnitLabel(
+	quantity: string | number,
+	unit: CatalogProductUnit,
+	presentation?: ProductPresentation | null,
+) {
+	const amount = toNumber(quantity);
+	const form =
+		amount !== null && Math.abs(amount - 1) < epsilon ? "one" : "other";
+	const container = isWeightUnit(unit)
+		? null
+		: presentation?.presentationContainer;
+
+	if (container) {
+		const noun = productPresentationContainerLabelMap[container][form];
+		const size = presentation?.presentationSize?.trim();
+		return size ? `${noun} ${size}` : noun;
+	}
+
+	return countableUnitNouns[unit]?.[form] ?? productUnitLabelMap[unit];
+}
+
 export function formatQuantity(
 	value: string | number,
 	unit: CatalogProductUnit,
+	presentation?: ProductPresentation | null,
 ) {
 	const amount = toNumber(value);
 	const formatted =
 		amount === null ? String(value) : quantityFormatter.format(amount);
-	return `${formatted} ${productUnitLabelMap[unit]}`;
+	return `${formatted} ${formatUnitLabel(value, unit, presentation)}`;
 }
 
 export function toQuantityString(value: number) {

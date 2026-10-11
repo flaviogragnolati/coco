@@ -15,6 +15,7 @@ import {
 	canIncrementQuantity,
 	formatQuantity,
 	normalizeCartQuantity,
+	type ProductPresentation,
 } from "~/shared/common/commerce.helpers";
 
 type QuantityStepperProps = {
@@ -22,6 +23,7 @@ type QuantityStepperProps = {
 	disabled?: boolean;
 	terms: CatalogClientTerms;
 	unit: CatalogProductUnit;
+	presentation?: ProductPresentation | null;
 	value: string;
 	onCommit: (quantity: string) => void;
 	onDecrement: () => void;
@@ -33,6 +35,7 @@ export function QuantityStepper({
 	disabled,
 	terms,
 	unit,
+	presentation,
 	value,
 	onCommit,
 	onDecrement,
@@ -89,7 +92,7 @@ export function QuantityStepper({
 				<PlusIcon />
 			</Button>
 			<span className="min-w-16 text-muted-foreground text-xs">
-				{formatQuantity(value, unit)}
+				{formatQuantity(value, unit, presentation)}
 			</span>
 		</div>
 	);

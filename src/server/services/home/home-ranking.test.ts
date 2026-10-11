@@ -22,6 +22,8 @@ function offer(
 		productClientTermsId: input.productClientTermsId ?? input.productId,
 		productName: input.productName ?? `Producto ${input.productId}`,
 		unit: input.unit ?? "kg",
+		presentationContainer: null,
+		presentationSize: null,
 		brandName: input.brandName ?? null,
 		imageUrl: input.imageUrl ?? null,
 		moq: input.moq ?? "10",

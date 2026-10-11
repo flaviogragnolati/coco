@@ -70,6 +70,8 @@ function buildProductSnapshot(terms: CartProductClientTermsRecord) {
 			name: terms.product.name,
 			description: terms.product.description,
 			unit: terms.product.unit,
+			presentationContainer: terms.product.presentationContainer,
+			presentationSize: terms.product.presentationSize,
 			brandName: terms.product.brand?.name ?? null,
 			imageUrl: selectProductImage(terms.product, "cart"),
 		},
@@ -88,6 +90,9 @@ function toCartItem(item: CartRecord["cartItems"][number]): CartItem {
 			name: item.productClientTerms.product.name,
 			description: item.productClientTerms.product.description,
 			unit: item.productClientTerms.product.unit,
+			presentationContainer:
+				item.productClientTerms.product.presentationContainer,
+			presentationSize: item.productClientTerms.product.presentationSize,
 			brandName: item.productClientTerms.product.brand?.name ?? null,
 			imageUrl: selectProductImage(item.productClientTerms.product, "cart"),
 		},
