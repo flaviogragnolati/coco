@@ -1,4 +1,8 @@
 import { isTermsWindowCurrent } from "~/server/services/_base/terms-validity";
+import {
+	categoryIdsByName,
+	type ExistingCategory,
+} from "./lib/catalog-categories";
 
 /**
  * Decides what `db:seed:init` creates. Insert-only by construction: every
@@ -35,12 +39,13 @@ export type SeedInitState = {
 	products: ExistingProduct[];
 	supplierTerms: ExistingSupplierTerms[];
 	clientTerms: ExistingTerms[];
+	categories: ExistingCategory[];
 };
 
 export type SeedInitCatalog = {
 	supplierName: string;
 	listDate: Date;
-	products: Array<{ key: string; name: string }>;
+	products: Array<{ key: string; name: string; categoryName: string }>;
 };
 
 export type TermsDecision =
@@ -49,7 +54,7 @@ export type TermsDecision =
 	| { action: "skip"; reason: string };
 
 export type ProductDecision =
-	| { key: string; name: string; action: "create" }
+	| { key: string; name: string; action: "create"; categoryId: number }
 	| {
 			key: string;
 			name: string;
@@ -123,12 +128,26 @@ export function planSeedInit(
 		);
 	}
 
+	const created = catalog.products.filter(
+		(product) =>
+			!state.products.some((existing) => existing.name === product.name),
+	);
+	const categoryIds = categoryIdsByName(
+		state.categories,
+		created.map((product) => product.categoryName),
+	);
+
 	const products = catalog.products.map((product): ProductDecision => {
 		const namesakes = state.products.filter(
 			(existing) => existing.name === product.name,
 		);
 		if (namesakes.length === 0) {
-			return { key: product.key, name: product.name, action: "create" };
+			return {
+				key: product.key,
+				name: product.name,
+				action: "create",
+				categoryId: categoryIds.get(product.categoryName) as number,
+			};
 		}
 
 		const own = supplier

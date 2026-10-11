@@ -1,6 +1,7 @@
 /**
  * `pnpm db:seed:init`: loads Quintal, its products and their supplier and client
- * terms from `scripts/quintal-catalog.data.ts`.
+ * terms from `scripts/quintal-catalog.data.ts`. Each new product goes into the
+ * category `resolveQuintalCategory` gives it; the categories must already exist.
  *
  * Safe for production: it only ever inserts. What already exists is kept as is,
  * whatever an admin changed in it, so a rerun over a loaded database creates
@@ -11,6 +12,7 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { type Prisma, PrismaClient } from "~/prisma/client";
+import { resolveQuintalCategory } from "./quintal-catalog.categories";
 import { quintalCatalog } from "./quintal-catalog.data";
 import { quintalCatalogSchema } from "./quintal-catalog.schema";
 import { planSeedInit, type SeedInitPlan } from "./seed-init.plan";
@@ -58,7 +60,10 @@ async function loadState(tx: Prisma.TransactionClient, catalog: Catalog) {
 		where: { productId: { in: productIds } },
 		select: window,
 	});
-	return { suppliers, products, supplierTerms, clientTerms };
+	const categories = await tx.category.findMany({
+		select: { id: true, name: true, deleted: true },
+	});
+	return { suppliers, products, supplierTerms, clientTerms, categories };
 }
 
 async function applyPlan(
@@ -93,16 +98,19 @@ async function applyPlan(
 				).id;
 
 	const toCreate = plan.products.flatMap((decision) =>
-		decision.action === "create" ? [productOf(decision.key)] : [],
+		decision.action === "create"
+			? [{ product: productOf(decision.key), categoryId: decision.categoryId }]
+			: [],
 	);
 	const created = toCreate.length
 		? await tx.product.createManyAndReturn({
-				data: toCreate.map((product) => ({
+				data: toCreate.map(({ product, categoryId }) => ({
 					name: product.name,
 					description: product.description,
 					unit: product.unit,
 					active: true,
 					brandId: null,
+					categoryId,
 					defaultSupplierId: supplierId,
 				})),
 				select: { id: true, name: true },
@@ -220,9 +228,25 @@ function printSummary(
 	}
 }
 
+function withCategoryNames(catalog: Catalog) {
+	const unmapped: string[] = [];
+	const products = catalog.products.map((product) => {
+		const categoryName = resolveQuintalCategory(product);
+		if (!categoryName) unmapped.push(`${product.key} (${product.category})`);
+		return { key: product.key, name: product.name, categoryName: categoryName ?? "" };
+	});
+	if (unmapped.length > 0) {
+		throw new Error(
+			`Productos sin categoría en quintalCategoryOverrides: ${unmapped.join(", ")}`,
+		);
+	}
+	return products;
+}
+
 async function main() {
 	const catalog = quintalCatalogSchema.parse(quintalCatalog);
 	const listDate = new Date(catalog.source.listDate);
+	const products = withCategoryNames(catalog);
 
 	const { plan, result } = await db.$transaction(
 		async (tx) => {
@@ -231,7 +255,7 @@ async function main() {
 				{
 					supplierName: catalog.supplier.name,
 					listDate,
-					products: catalog.products,
+					products,
 				},
 				state,
 				new Date(),

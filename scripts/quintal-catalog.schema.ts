@@ -5,6 +5,7 @@ import {
 	supplierAddressSchema,
 	supplierContactInfoSchema,
 } from "~/schemas/admin/supplier.schemas";
+import type { CatalogCategoryName } from "./lib/catalog-categories";
 
 export const QUINTAL_SUPPLIER_NAME = "Quintal";
 export const QUINTAL_SHEET_NAME = "Lista WEB";
@@ -231,4 +232,15 @@ export type QuintalOverrides = {
 			country: string;
 		};
 	};
+};
+
+/**
+ * Applied when a product is loaded, not by the parser, so the data file keeps
+ * the sheet's own heading in `category`.
+ */
+export type QuintalCategoryOverrides = {
+	/** Category heading (as written) → catalog category of its products. */
+	categoryMap: Record<string, CatalogCategoryName>;
+	/** Product key → catalog category, overriding its heading's. */
+	categoryExceptions: Record<string, CatalogCategoryName>;
 };

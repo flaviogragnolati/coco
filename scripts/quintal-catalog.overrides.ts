@@ -1,4 +1,7 @@
-import type { QuintalOverrides } from "./quintal-catalog.schema";
+import type {
+	QuintalCategoryOverrides,
+	QuintalOverrides,
+} from "./quintal-catalog.schema";
 
 /**
  * Every decision the parser cannot read from Quintal's sheet. Change it here and
@@ -175,5 +178,63 @@ export const quintalOverrides: QuintalOverrides = {
 			postalCode: "0000",
 			country: "AR",
 		},
+	},
+};
+
+/**
+ * The six catalog categories, by sheet heading. A heading left out (COCO) has
+ * every product listed in `categoryExceptions`. Applied by `db:seed:init` and
+ * `categories:backfill`; the parser does not read it.
+ */
+export const quintalCategoryOverrides: QuintalCategoryOverrides = {
+	categoryMap: {
+		ALMENDRA: "Frutos secos",
+		AVELLANAS: "Frutos secos",
+		"CASTAÑAS DE CAJÚ": "Frutos secos",
+		MANI: "Frutos secos",
+		NUEZ: "Frutos secos",
+		PISTACHOS: "Frutos secos",
+		"MIX DE FRUTOS SECOS": "Mixes y snacks",
+		"BANANA CHIPS": "Mixes y snacks",
+		"MAIZ FRITO": "Mixes y snacks",
+		ARANDANOS: "Frutas desecadas",
+		CIRUELA: "Frutas desecadas",
+		DATILES: "Frutas desecadas",
+		DURAZNO: "Frutas desecadas",
+		"EMPAQUE MIXTO": "Frutas desecadas",
+		"FRUTA CUBETEADA": "Frutas desecadas",
+		"HIGOS SECOS": "Frutas desecadas",
+		"PASA DE UVA SIN SEMILLAS": "Frutas desecadas",
+		PERA: "Frutas desecadas",
+		TOMATE: "Frutas desecadas",
+		SEMILLAS: "Semillas y granola",
+		GRANOLA: "Semillas y granola",
+		"ACEITE OLIVA EXTRA VIRGEN": "Aceites y despensa",
+		CACAO: "Aceites y despensa",
+		CHOCOLATE: "Aceites y despensa",
+		"SAL ROSADA DEL HIMALAYA": "Aceites y despensa",
+		"HONGO SECO": "Aceites y despensa",
+		FLORES: "Aceites y despensa",
+		OTROS: "Suplementos",
+	},
+	categoryExceptions: {
+		"semillas--pinones": "Frutos secos",
+		"almendra--almendras-banadas-con-chocolate-c-leche-argenfrut":
+			"Mixes y snacks",
+		"mani--mani-banado-en-chocolate-semiamargo": "Mixes y snacks",
+		"nuez--pecan-garapinada": "Mixes y snacks",
+		"nuez--pecan-chocolate-negro": "Mixes y snacks",
+		"nuez--pecan-chocolate-blanco": "Mixes y snacks",
+		"otros--bocaditos": "Mixes y snacks",
+		"coco--coco-rallado-fino-med-fat": "Frutas desecadas",
+		"coco--coco-rallado-fino-high-fat": "Frutas desecadas",
+		"coco--coco-en-escamas": "Frutas desecadas",
+		"coco--aceite-coco-entre-nuts-200cc-virgen": "Aceites y despensa",
+		"coco--aceite-coco-entre-nuts-360cc-virgen": "Aceites y despensa",
+		"coco--harina-de-coco": "Aceites y despensa",
+		"almendra--harina-de-almendra-c-p-rebajada": "Aceites y despensa",
+		"almendra--harina-de-almenda-sin-piel-importada-espana":
+			"Aceites y despensa",
+		"mani--pasta-de-mani-entre-nuts": "Aceites y despensa",
 	},
 };
