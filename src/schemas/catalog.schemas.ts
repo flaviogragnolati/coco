@@ -17,6 +17,12 @@ export const catalogBrandSummarySchema = z.object({
 	name: z.string(),
 });
 
+export const catalogCategorySummarySchema = z.object({
+	id: z.number().int().positive(),
+	name: z.string(),
+	sortOrder: z.number().int(),
+});
+
 export const catalogClientTermsSchema = z.object({
 	id: z.number().int().positive(),
 	moq: decimalOutputSchema,
@@ -38,6 +44,7 @@ export const catalogProductListItemSchema = z.object({
 	description: z.string().nullable(),
 	unit: catalogProductUnitSchema,
 	brand: catalogBrandSummarySchema.nullable(),
+	category: catalogCategorySummarySchema.nullable(),
 	imageUrl: z.string().nullable(),
 	createdAt: z.date(),
 	terms: catalogClientTermsSchema,

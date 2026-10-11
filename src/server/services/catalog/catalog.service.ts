@@ -10,6 +10,7 @@ import type {
 	CatalogProductListItem,
 } from "~/shared/common/catalog.types";
 import { selectProductImage } from "~/shared/common/commerce.helpers";
+import { toCatalogCategory } from "../_base/catalog-category.mapper";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import {
 	type CatalogProductDetailRecord,
@@ -30,6 +31,7 @@ function mapListItem(
 		description: record.description,
 		unit: record.unit,
 		brand: record.brand,
+		category: toCatalogCategory(record.category),
 		imageUrl: selectProductImage(record, "catalog"),
 		createdAt: record.createdAt,
 		terms: termsToClientTerms(terms),

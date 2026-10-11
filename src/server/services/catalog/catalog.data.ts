@@ -11,6 +11,14 @@ const catalogBrandSelect = {
 	name: true,
 } satisfies Prisma.BrandSelect;
 
+const catalogCategorySelect = {
+	id: true,
+	name: true,
+	sortOrder: true,
+	active: true,
+	deleted: true,
+} satisfies Prisma.CategorySelect;
+
 const catalogClientTermsSelect = {
 	id: true,
 	moq: true,
@@ -38,6 +46,9 @@ const catalogProductBaseSelect = {
 	brand: {
 		select: catalogBrandSelect,
 	},
+	category: {
+		select: catalogCategorySelect,
+	},
 } satisfies Prisma.ProductSelect;
 
 const catalogProductListSelect = {
@@ -54,6 +65,10 @@ const catalogProductDetailSelect = {
 		select: catalogClientTermsSelect,
 	},
 } satisfies Prisma.ProductSelect;
+
+export type CatalogCategoryRecord = Prisma.CategoryGetPayload<{
+	select: typeof catalogCategorySelect;
+}>;
 
 export type CatalogProductListRecord = Prisma.ProductGetPayload<{
 	select: typeof catalogProductListSelect;

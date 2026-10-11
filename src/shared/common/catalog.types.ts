@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import type {
 	catalogBrandSummarySchema,
+	catalogCategorySummarySchema,
 	catalogClientTermsSchema,
 	catalogCurrencySchema,
 	catalogProductDetailInputSchema,
@@ -13,6 +14,9 @@ import type {
 export type CatalogCurrency = z.output<typeof catalogCurrencySchema>;
 export type CatalogProductUnit = z.output<typeof catalogProductUnitSchema>;
 export type CatalogBrandSummary = z.output<typeof catalogBrandSummarySchema>;
+export type CatalogCategorySummary = z.output<
+	typeof catalogCategorySummarySchema
+>;
 export type CatalogClientTerms = z.output<typeof catalogClientTermsSchema>;
 export type CatalogProductListItem = z.output<
 	typeof catalogProductListItemSchema
