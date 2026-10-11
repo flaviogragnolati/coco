@@ -128,8 +128,9 @@ export function ProductClientTermsFormDialog({
 			: `${formatCurrency(offerUnitPrice, currency)} por ${unitLabel}`;
 	}, [currency, discountPercent, moq, unitLabel, unitPrice]);
 
-	// Proposes the unit's usual quantities until the admin types their own, and
-	// keeps the step equal to the minimum unless it was set apart on purpose.
+	// On create, proposes the unit's usual quantities until the admin types their
+	// own, and keeps the step equal to the minimum unless it was set apart on
+	// purpose. Editing never touches a stored step: it may be fixed or custom.
 	const proposeQuantities = (nextUnit: typeof unit) => {
 		if (mode !== "create" || !nextUnit) return;
 		const { dirtyFields } = form.formState;
@@ -139,7 +140,7 @@ export function ProductClientTermsFormDialog({
 	};
 	const moqField = form.register("moq", {
 		onChange: (event: { target: { value: string } }) => {
-			if (!form.formState.dirtyFields.step) {
+			if (mode === "create" && !form.formState.dirtyFields.step) {
 				form.setValue("step", event.target.value);
 			}
 		},

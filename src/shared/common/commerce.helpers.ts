@@ -164,8 +164,16 @@ export function toQuantityString(value: number) {
 	return decimalFormatter.format(Number(value.toFixed(4)));
 }
 
+/**
+ * Cents rounded half up, like the Decimal prices the server stores. The
+ * 12-digit pass drops binary noise first: 10.01 × 0.5 is 5.00499… as a float
+ * and must still charge 5.01.
+ */
 export function toMoneyString(value: number) {
-	return moneyValueFormatter.format(Number(value.toFixed(2)));
+	const cents = Number((Math.abs(value) * 100).toPrecision(12));
+	return moneyValueFormatter.format(
+		(Math.sign(value) * Math.round(cents)) / 100,
+	);
 }
 
 /**

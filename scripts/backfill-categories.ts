@@ -79,23 +79,34 @@ async function loadInput(tx: Prisma.TransactionClient, force: boolean) {
 	};
 }
 
-async function applyPlan(
-	tx: Prisma.TransactionClient,
-	plan: BackfillPlan,
-	force: boolean,
-) {
+async function applyPlan(tx: Prisma.TransactionClient, plan: BackfillPlan) {
+	// Grouped by the category each product had when planned, so a change made
+	// during the run fails the count check instead of being overwritten.
+	const groups = new Map<
+		string,
+		{ categoryId: number; previousCategoryId: number | null; ids: number[] }
+	>();
+	for (const decision of plan.decisions) {
+		if (decision.action !== "assign") continue;
+		const key = `${decision.categoryId}:${decision.previousCategoryId}`;
+		const group = groups.get(key) ?? {
+			categoryId: decision.categoryId,
+			previousCategoryId: decision.previousCategoryId,
+			ids: [],
+		};
+		group.ids.push(decision.productId);
+		groups.set(key, group);
+	}
+
 	let updated = 0;
-	for (const [categoryId, productIds] of plan.assignments) {
+	for (const { categoryId, previousCategoryId, ids } of groups.values()) {
 		const result = await tx.product.updateMany({
-			where: {
-				id: { in: productIds },
-				...(force ? {} : { categoryId: null }),
-			},
+			where: { id: { in: ids }, categoryId: previousCategoryId },
 			data: { categoryId },
 		});
-		if (result.count !== productIds.length) {
+		if (result.count !== ids.length) {
 			throw new Error(
-				`Se esperaban ${productIds.length} productos para la categoría ${categoryId} y se actualizaron ${result.count}: alguien los cambió durante el backfill.`,
+				`Se esperaban ${ids.length} productos para la categoría ${categoryId} y se actualizaron ${result.count}: alguien los cambió durante el backfill.`,
 			);
 		}
 		updated += result.count;
@@ -157,7 +168,7 @@ async function main() {
 	const { plan, updated } = await db.$transaction(
 		async (tx) => {
 			const plan = planCategoryBackfill(await loadInput(tx, force));
-			const updated = apply ? await applyPlan(tx, plan, force) : 0;
+			const updated = apply ? await applyPlan(tx, plan) : 0;
 			return { plan, updated };
 		},
 		{ maxWait: 30_000, timeout: 120_000 },

@@ -338,6 +338,18 @@ test.each([
 		"26325.00",
 	],
 	[
+		"half a cent rounds up, like the stored minimum price",
+		"0.5",
+		{ moq: "0.5", unitPrice: "10.01", step: "0.5" },
+		"5.01",
+	],
+	[
+		"a discounted half cent rounds up too",
+		"0.5",
+		{ moq: "0.5", unitPrice: "1999", step: "0.5", discountPercent: "15" },
+		"849.58",
+	],
+	[
 		"a zero discount prices exactly like no discount",
 		"1000",
 		{ moq: "100", unitPrice: "5", step: "10", discountPercent: "0" },

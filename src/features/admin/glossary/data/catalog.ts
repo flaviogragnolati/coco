@@ -59,22 +59,27 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		slug: "concepto-moq",
 		kind: "concept",
 		section: "catalog",
-		label: "MOQ (cantidad mínima de compra)",
+		label: "Mínimo (MOQ)",
 		term: "MOQ (minimum order quantity)",
 		definition:
 			"La cantidad más chica que se puede comprar de un producto, en su unidad: 0,5 en los productos por kg y 1 en los que se venden por unidad. Por encima, la cantidad crece de a un paso, que el formulario propone igual al mínimo; sin paso, el mínimo es la única cantidad. Se cobra como cualquier cantidad: precio unitario por cantidad.",
-		aliases: ["Mínimo", "Tamaño de lote"],
+		aliases: ["MOQ", "Cantidad mínima de compra", "Tamaño de lote"],
 		href: "/admin/product-terms",
 	},
 	{
 		slug: "concepto-precio-unitario",
 		kind: "concept",
 		section: "catalog",
-		label: "Precio unitario",
+		label: "Precio por unidad",
 		term: "Unit price",
 		definition:
 			"El precio que se cobra por cada unidad del producto (por kg, por frasco) y el único precio de cliente que carga el administrador: el total de una línea es precio unitario por cantidad, con el descuento de oferta aplicado. El precio del mínimo y el del paso se derivan de él al guardar. Los términos viejos sin precio unitario lo derivan del precio del mínimo dividido el mínimo.",
-		aliases: ["Precio de referencia", "refPrice", "Precio MOQ"],
+		aliases: [
+			"Precio unitario",
+			"Precio de referencia",
+			"refPrice",
+			"Precio MOQ",
+		],
 		href: "/admin/product-terms",
 	},
 	{

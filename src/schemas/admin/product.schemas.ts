@@ -12,6 +12,7 @@ import {
 	productPresentationContainerSchema,
 } from "~/schemas/catalog.schemas";
 import { homeOfferSchema } from "~/schemas/home.schemas";
+import { isWeightUnit } from "~/shared/common/commerce.helpers";
 import { nullishText, optionalUrl, requiredText } from "./_crud-schema-helpers";
 
 const imageUrlSchema = z.string().trim().url("Ingresá una URL válida");
@@ -62,8 +63,6 @@ export const productBrandAssignmentSchema = z.discriminatedUnion("mode", [
 	}),
 ]);
 
-const productWeightUnits: ReadonlySet<string> = new Set(["kg", "gr", "lb"]);
-
 /** The select's empty option means "no container". */
 const optionalPresentationContainer = z
 	.union([productPresentationContainerSchema, z.literal("")])
@@ -72,13 +71,13 @@ const optionalPresentationContainer = z
 
 function validatePresentation(
 	value: {
-		unit: string;
+		unit: Parameters<typeof isWeightUnit>[0];
 		presentationContainer?: string;
 		presentationSize?: string;
 	},
 	ctx: z.RefinementCtx,
 ) {
-	if (productWeightUnits.has(value.unit)) {
+	if (isWeightUnit(value.unit)) {
 		if (value.presentationContainer || value.presentationSize) {
 			ctx.addIssue({
 				code: "custom",

@@ -71,7 +71,24 @@ wired with `--conditions=react-server`):
   file drifts. What the sheet cannot say (display names, variant splits, volume
   tier and surcharge targets, client pricing) lives in
   `scripts/quintal-catalog.overrides.ts`. The Excel is never committed. Client
-  price today is the list price (no margin, no VAT) with MOQ and step 1.
+  price today is the list price (no margin, no VAT), charged per unit; per-kg
+  products sell from 0,5 in steps of 0,5, per-unit products from 1 in steps of 1.
+- `pnpm db:purge-demo [--apply] [--confirm-production]` — deletes every order,
+  cart, payment attempt, operation and shipment plus the demo catalog of
+  `prisma/seed.ts`; users, Quintal, categories, QA tickets and configuration
+  stay. Dry run by default; `--apply` deletes in one transaction, and needs
+  `--confirm-production` when `APP_ENV` resolves to `production`.
+- `pnpm db:migrate-unit-pricing [--apply]` — moves existing data to unit
+  pricing: Quintal per-kg client terms to minimum and step 0,5 (edited in
+  place, never closed), presentations inferred from per-unit product names, and
+  "Presentación del proveedor: …" from descriptions into the supplier terms.
+  Dry run by default; a rerun plans nothing.
+
+On the shared database, run them in this order: `pnpm db:migrate`,
+`db:purge-demo`, `db:migrate-unit-pricing`, `db:backfill:categories`, each as a
+dry run first and then with `--apply`; then `pnpm qa:seed`. Once the backfill
+leaves no product without a category, a later migration makes
+`product.categoryId` NOT NULL.
 
 ## Conventions
 

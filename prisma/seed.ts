@@ -7,6 +7,7 @@ import {
 	type CatalogCategoryName,
 } from "../scripts/lib/catalog-categories";
 import { assertNotProduction } from "../scripts/lib/seed-environment";
+import { deriveClientTermsPrices } from "../src/server/services/_base/client-terms-prices";
 
 assertNotProduction("db:seed:test", process.env);
 
@@ -1064,13 +1065,15 @@ async function upsertProductClientTerms(
 		},
 		orderBy: { id: "asc" },
 	});
-	const unitPrice = decimal(input.unitPrice);
 	const data = {
 		productId: input.productId,
 		moq: input.moq,
-		moqPrice: unitPrice.mul(input.moq).toFixed(2),
 		step: input.step ?? null,
-		stepPrice: input.step ? unitPrice.mul(input.step).toFixed(2) : null,
+		...deriveClientTermsPrices({
+			unitPrice: input.unitPrice,
+			moq: input.moq,
+			step: input.step ?? null,
+		}),
 		max: input.max ?? null,
 		unitPrice: input.unitPrice,
 		marketPrice: input.marketPrice ?? null,

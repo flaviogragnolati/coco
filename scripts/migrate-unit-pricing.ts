@@ -37,7 +37,14 @@ if (!DATABASE_URL) {
 	);
 }
 
-const apply = process.argv.includes("--apply");
+const args = process.argv.slice(2);
+const unknownArgs = args.filter((arg) => arg !== "--apply");
+if (unknownArgs.length > 0) {
+	throw new Error(
+		`Argumentos desconocidos: ${unknownArgs.join(" ")}. Uso: pnpm db:migrate-unit-pricing [--apply]`,
+	);
+}
+const apply = args.includes("--apply");
 
 const db = new PrismaClient({
 	adapter: new PrismaPg({ connectionString: DATABASE_URL }),

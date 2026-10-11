@@ -14,7 +14,11 @@ import type {
 } from "~/shared/common/admin-crud/category.types";
 import type { AdminMutationActor } from "./_base/admin-audit";
 import { writeAdminAuditLog } from "./_base/admin-audit";
-import { AdminCrudError, throwNotFound } from "./_base/admin-crud.errors";
+import {
+	AdminCrudError,
+	throwConflict,
+	throwNotFound,
+} from "./_base/admin-crud.errors";
 import {
 	type CategoryDetailRecord,
 	type CategoryRelationCountRecord,
@@ -39,6 +43,24 @@ function parseDetail(record: CategoryDetailRecord): CategoryDetail {
 function buildRelationBlockMessage(record: CategoryRelationCountRecord) {
 	const productCount = record._count.products;
 	return `No se puede eliminar definitivamente "${record.name}" porque tiene ${productCount} producto${productCount === 1 ? "" : "s"} relacionado${productCount === 1 ? "" : "s"}.`;
+}
+
+// Seeds and backfills look categories up by name, so two live rows with one
+// name would make them refuse to run.
+async function assertNameAvailable(
+	tx: Pick<AdminDb, "category">,
+	name: string,
+	exceptId?: number,
+) {
+	const clash = await tx.category.findFirst({
+		where: {
+			name: { equals: name.trim(), mode: "insensitive" },
+			deleted: false,
+			...(exceptId === undefined ? {} : { id: { not: exceptId } }),
+		},
+		select: { id: true },
+	});
+	if (clash) throwConflict(`Ya existe una categoría llamada "${name.trim()}"`);
 }
 
 export async function list(input: CategoryListInput, database: AdminDb) {
@@ -67,6 +89,7 @@ export async function create(
 	database: AdminDb,
 ) {
 	return database.$transaction(async (tx) => {
+		await assertNameAvailable(tx, input.name);
 		const category = await createCategory(tx, input);
 		const parsed = parseDetail(category);
 
@@ -99,6 +122,7 @@ export async function update(
 			);
 		}
 
+		await assertNameAvailable(tx, input.name, input.id);
 		const category = await updateCategory(tx, input);
 		const after = parseDetail(category);
 

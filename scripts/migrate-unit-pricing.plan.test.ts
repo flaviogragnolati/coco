@@ -373,3 +373,38 @@ describe("splitSupplierPresentation", () => {
 		expect(splitSupplierPresentation("Almendra non pareil.")).toBeNull();
 	});
 });
+
+describe("planUnitPricing after an admin edit", () => {
+	it("keeps a minimum and step the admin set on a Quintal kilo", () => {
+		const plan = planUnitPricing(
+			{
+				...state,
+				clientTerms: [
+					clientTerms(11, 1, {
+						moq: "2.0000",
+						moqPrice: "39000.00",
+						step: "1.0000",
+						stepPrice: "19500.00",
+					}),
+				],
+			},
+			now,
+		);
+
+		expect(plan.clientTerms).toEqual([]);
+	});
+
+	it("warns when the minimum used to cost something other than unit price × minimum", () => {
+		const plan = planUnitPricing(
+			{
+				...state,
+				clientTerms: [clientTerms(11, 1, { moqPrice: "18000.00" })],
+			},
+			now,
+		);
+
+		expect(plan.warnings).toEqual(
+			expect.arrayContaining([expect.stringContaining("#11")]),
+		);
+	});
+});

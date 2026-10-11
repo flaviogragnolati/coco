@@ -1,5 +1,10 @@
 import { Prisma } from "~/prisma/client";
-import type { CatalogProductPresentationContainer } from "~/shared/common/catalog.types";
+import { deriveClientTermsPrices } from "~/server/services/_base/client-terms-prices";
+import type {
+	CatalogProductPresentationContainer,
+	CatalogProductUnit,
+} from "~/shared/common/catalog.types";
+import { isWeightUnit } from "~/shared/common/commerce.helpers";
 import { inferPresentationFromName } from "./lib/infer-presentation";
 
 /**
@@ -17,7 +22,7 @@ type Flags = { active: boolean; deleted: boolean };
 export type MigrationProduct = {
 	id: number;
 	name: string;
-	unit: string;
+	unit: CatalogProductUnit;
 	description: string | null;
 	defaultSupplierId: number | null;
 	deleted: boolean;
@@ -96,7 +101,6 @@ export type UnitPricingPlan = {
 };
 
 const HALF_KILO = "0.5000";
-const WEIGHT_UNITS = new Set(["kg", "gr", "lb"]);
 
 const SUPPLIER_SENTENCE = /\s*Presentación del proveedor: (.+?)\.(?=\s|$)/;
 
@@ -106,13 +110,6 @@ function decimal(value: Decimalish) {
 
 function quantityText(value: Prisma.Decimal) {
 	return value.toFixed(4);
-}
-
-function priceOf(unitPrice: Decimalish, quantity: Decimalish) {
-	return decimal(unitPrice)
-		.times(quantity)
-		.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
-		.toFixed(2);
 }
 
 function sameDecimal(left: Decimalish | null, right: Decimalish | null) {
@@ -156,7 +153,25 @@ function planClientTerms(
 		return null;
 	}
 
-	const halfKilo = isQuintal && product.unit === "kg";
+	if (
+		terms.unitPrice !== null &&
+		!sameDecimal(
+			deriveClientTermsPrices({ unitPrice: terms.unitPrice, moq: terms.moq })
+				.moqPrice,
+			terms.moqPrice,
+		)
+	) {
+		warnings.push(
+			`Términos de cliente #${terms.id} de "${product.name}": el mínimo se cobraba ${terms.moqPrice.toString()} y ahora se cobra precio por unidad × mínimo; revisar el precio por unidad.`,
+		);
+	}
+
+	// Only the seed's old default moves: a minimum or step an admin set stays.
+	const halfKilo =
+		isQuintal &&
+		product.unit === "kg" &&
+		sameDecimal(terms.moq, "1") &&
+		sameDecimal(terms.step, "1");
 	const moq = halfKilo ? HALF_KILO : quantityText(decimal(terms.moq));
 	const step = halfKilo
 		? HALF_KILO
@@ -167,8 +182,7 @@ function planClientTerms(
 		moq,
 		step,
 		unitPrice,
-		moqPrice: priceOf(unitPrice, moq),
-		stepPrice: step === null ? null : priceOf(unitPrice, step),
+		...deriveClientTermsPrices({ unitPrice, moq, step }),
 	};
 
 	const unchanged =
@@ -284,7 +298,7 @@ export function planUnitPricing(
 	for (const product of productsById.values()) {
 		if (
 			!isQuintalProduct(product) ||
-			WEIGHT_UNITS.has(product.unit) ||
+			isWeightUnit(product.unit) ||
 			product.presentationContainer !== null
 		)
 			continue;

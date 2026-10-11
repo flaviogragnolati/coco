@@ -12,7 +12,8 @@ export const categoryCreateInputSchema = z.object({
 	sortOrder: z
 		.number({ error: "Ingresá el orden" })
 		.int("El orden debe ser un número entero")
-		.min(0, "El orden no puede ser negativo"),
+		.min(0, "El orden no puede ser negativo")
+		.max(9999, "El orden no puede superar 9999"),
 	active: z.boolean().default(true),
 });
 
