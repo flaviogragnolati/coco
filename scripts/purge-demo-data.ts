@@ -178,6 +178,7 @@ const kept: Record<
 		count: (tx) => tx.pickupPoint.count(),
 	},
 	Destination: { label: "Destinos", count: (tx) => tx.destination.count() },
+	Category: { label: "Categorías", count: (tx) => tx.category.count() },
 	Channel: { label: "Canales", count: (tx) => tx.channel.count() },
 	HomeOfferSettings: {
 		label: "Configuración del home",

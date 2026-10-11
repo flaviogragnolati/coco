@@ -60,6 +60,7 @@ export const KEPT_MODELS = [
 	"Carrier",
 	"PickupPoint",
 	"Destination",
+	"Category",
 	"Channel",
 	"HomeOfferSettings",
 	"AuditLog",
