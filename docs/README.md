@@ -53,7 +53,14 @@ wired with `--conditions=react-server`):
   changed, and a rerun creates nothing. Safe for production; run it after the
   deploy. Products are matched by name with Quintal as default supplier, so a
   product renamed in the admin is created again under its list name on the next
-  run; the summary lists Quintal products whose names left the catalog.
+  run; the summary lists Quintal products whose names left the catalog. Each new
+  product goes into the category `quintalCategoryOverrides` maps it to; the run
+  fails if that category row is missing.
+- `pnpm db:backfill:categories [--apply] [--force]` — assigns the catalog
+  category to existing Quintal products. Dry run by default; `--apply` writes in
+  one transaction, and only products without a category unless `--force`.
+  Products it cannot match to the Quintal catalog (demo data, renamed products)
+  are listed and left alone.
 - `pnpm db:seed:test` — the demo dataset for development, fixtures, and QA
   (`prisma/seed.ts`). It rewrites demo data and refuses to run when `APP_ENV`
   resolves to `production`. `APP_ENV` falls back to `NODE_ENV`, so a local `.env`

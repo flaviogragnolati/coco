@@ -127,9 +127,21 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		section: "catalog",
 		label: "Producto",
 		definition:
-			"El registro interno de un producto: nombre, marca, unidad, imágenes y proveedor por defecto. Lo que el cliente ve es el catálogo, que lo combina con sus términos vigentes.",
+			"El registro interno de un producto: nombre, categoría, marca, unidad, imágenes y proveedor por defecto. Lo que el cliente ve es el catálogo, que lo combina con sus términos vigentes.",
 		occurrences: [{ code: "Product", db: "product" }],
 		href: "/admin/products",
+	},
+	{
+		slug: "entidad-categoria",
+		kind: "entity",
+		section: "catalog",
+		label: "Categoría",
+		term: "Category",
+		definition:
+			"El grupo del catálogo al que pertenece cada producto (frutos secos, mixes y snacks, etc.), con el orden en que se muestra. Cada producto tiene exactamente una; una categoría inactiva o eliminada deja de mostrarse al cliente.",
+		aliases: ["Rubro", "Familia", "Cabecera"],
+		occurrences: [{ code: "Category", db: "category" }],
+		href: "/admin/categories",
 	},
 	{
 		slug: "entidad-marca",
