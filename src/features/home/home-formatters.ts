@@ -17,7 +17,7 @@ import {
 } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
 
-type OfferPricing = Pick<
+export type OfferPricing = Pick<
 	HomeOffer,
 	| "currency"
 	| "discountPercent"
