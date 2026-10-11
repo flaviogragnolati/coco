@@ -25,7 +25,6 @@ import { PurchaseActionButton } from "~/features/catalog/_components/purchase-pa
 import { HomeOfferCard } from "~/features/home/_components/home-offer-card";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
 import type { CartItem } from "~/shared/common/cart.types";
-import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import { formatUnitLabel } from "~/shared/common/commerce.helpers";
 
 type ProductPreviewDialogProps = {
@@ -38,9 +37,7 @@ type ProductPreviewDialogProps = {
 
 const ignoreCartItem = (_item: CartItem) => undefined;
 const ignoreCartQuantity = (_item: CartItem, _quantity: string) => undefined;
-const ignoreProductId = (_productId: number) => undefined;
 const ignoreRemove = (_productClientTermsId: number) => undefined;
-const ignoreProduct = (_product: CatalogProductListItem) => undefined;
 const ignore = () => undefined;
 
 function PreviewUnavailable({
@@ -200,14 +197,11 @@ export function ProductPreviewDialog({
 								{preview.catalogProduct ? (
 									<div className="max-w-sm">
 										<ProductCard
-											cartItem={preview.cartItem ?? undefined}
 											disabled
-											onAdd={ignoreProduct}
-											onDecrement={ignoreCartItem}
-											onDetails={ignoreProductId}
-											onIncrement={ignoreCartItem}
-											onQuantityCommit={ignoreCartQuantity}
-											onRemove={ignoreRemove}
+											inCartQuantity={null}
+											onAdd={ignore}
+											onDetails={ignore}
+											onViewInCart={ignore}
 											product={preview.catalogProduct}
 										/>
 									</div>

@@ -1,29 +1,19 @@
 "use client";
 
-import {
-	LayoutGridIcon,
-	SearchIcon,
-	SlidersHorizontalIcon,
-	TableIcon,
-	XIcon,
-} from "lucide-react";
+import { SearchIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import type { CatalogSort } from "./catalog-filtering";
 import { ProductSortSelect } from "./product-sort-select";
-import type { CatalogView } from "./use-catalog-params";
 
 type CatalogToolbarProps = {
 	search: string;
 	hasSearch: boolean;
 	sort: CatalogSort;
-	view: CatalogView;
 	total: number;
 	onSearchChange: (value: string) => void;
 	onSortChange: (sort: CatalogSort) => void;
-	onViewChange: (view: CatalogView) => void;
 	onOpenFilters: () => void;
 };
 
@@ -31,11 +21,9 @@ export function CatalogToolbar({
 	search,
 	hasSearch,
 	sort,
-	view,
 	total,
 	onSearchChange,
 	onSortChange,
-	onViewChange,
 	onOpenFilters,
 }: CatalogToolbarProps) {
 	return (
@@ -78,30 +66,12 @@ export function CatalogToolbar({
 				<p className="text-muted-foreground text-xs">
 					{total} {total === 1 ? "producto" : "productos"}
 				</p>
-				<div className="flex items-center gap-2">
-					<ProductSortSelect
-						className="w-52"
-						onChange={onSortChange}
-						showRelevance={hasSearch}
-						value={sort}
-					/>
-					<ToggleGroup
-						onValueChange={(value) => {
-							if (value) onViewChange(value as CatalogView);
-						}}
-						spacing={0}
-						type="single"
-						value={view}
-						variant="outline"
-					>
-						<ToggleGroupItem aria-label="Vista de tarjetas" value="cards">
-							<LayoutGridIcon />
-						</ToggleGroupItem>
-						<ToggleGroupItem aria-label="Vista de tabla" value="table">
-							<TableIcon />
-						</ToggleGroupItem>
-					</ToggleGroup>
-				</div>
+				<ProductSortSelect
+					className="w-52"
+					onChange={onSortChange}
+					showRelevance={hasSearch}
+					value={sort}
+				/>
 			</div>
 		</div>
 	);

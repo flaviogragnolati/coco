@@ -1,148 +1,89 @@
 "use client";
 
-import { CheckIcon, EyeIcon, ShoppingCartIcon, Trash2Icon } from "lucide-react";
-
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "~/components/ui/card";
-import { QuantityStepper } from "~/features/cart/_components/quantity-stepper";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { ProductImage } from "~/features/catalog/_components/product-image";
-import { cn } from "~/lib/utils";
-import type { CartItem } from "~/shared/common/cart.types";
+import { getOfferDiscountLabel } from "~/features/home/home-formatters";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
-import { formatCurrency } from "~/shared/common/commerce.helpers";
-import { ProductPriceBlock } from "./product-price-block";
+import {
+	CatalogProductPurchase,
+	type CatalogPurchaseHandlers,
+} from "./catalog-product-purchase";
 
-type ProductCardProps = {
-	cartItem?: CartItem;
+type ProductCardProps = CatalogPurchaseHandlers & {
 	disabled?: boolean;
+	/** The quantity already in the order, or `null` when it is not there. */
+	inCartQuantity: string | null;
 	product: CatalogProductListItem;
-	onAdd: (product: CatalogProductListItem) => void;
 	onDetails: (productId: number) => void;
-	onDecrement: (item: CartItem) => void;
-	onIncrement: (item: CartItem) => void;
-	onQuantityCommit: (item: CartItem, quantity: string) => void;
-	onRemove: (productClientTermsId: number) => void;
 };
 
 export function ProductCard({
-	cartItem,
 	disabled,
+	inCartQuantity,
 	product,
 	onAdd,
 	onDetails,
-	onDecrement,
-	onIncrement,
-	onQuantityCommit,
-	onRemove,
+	onViewInCart,
 }: ProductCardProps) {
+	const discount = getOfferDiscountLabel({
+		...product.terms,
+		unit: product.unit,
+	});
 	return (
-		<Card
-			className={cn(
-				"overflow-hidden transition-shadow",
-				cartItem && "ring-2 ring-success/40",
-			)}
-		>
-			<ProductImage
-				className="flex aspect-4/3 w-full items-center justify-center bg-center bg-cover bg-muted text-muted-foreground"
-				imageUrl={product.imageUrl}
-				name={product.name}
-			/>
-			<CardHeader>
-				<CardTitle className="line-clamp-2">{product.name}</CardTitle>
-				<CardDescription>
-					{product.brand?.name ?? "Marca disponible próximamente"}
-				</CardDescription>
-				{cartItem ? (
-					<CardAction>
-						<Badge variant="success">
-							<CheckIcon data-icon="inline-start" />
-							En tu pedido
-						</Badge>
-					</CardAction>
+		<Card className="h-full gap-0 overflow-hidden py-0">
+			<div className="relative">
+				<button
+					aria-label={`Ver ${product.name}`}
+					className="block w-full focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+					onClick={() => onDetails(product.id)}
+					type="button"
+				>
+					<ProductImage
+						className="flex aspect-4/3 w-full items-center justify-center bg-center bg-cover bg-muted text-muted-foreground"
+						imageUrl={product.imageUrl}
+						name={product.name}
+					/>
+				</button>
+				{discount ? (
+					<Badge className="absolute top-4 left-4" variant="highlight">
+						{discount}
+					</Badge>
 				) : null}
+			</div>
+			<CardHeader className="gap-1 pt-5">
+				{product.brand ? (
+					<p className="font-semibold text-muted-foreground text-xs uppercase tracking-widest">
+						{product.brand.name}
+					</p>
+				) : null}
+				<CardTitle>
+					<h2 className="line-clamp-2 font-heading text-lg">
+						<button
+							className="rounded-sm text-left hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+							onClick={() => onDetails(product.id)}
+							type="button"
+						>
+							{product.name}
+						</button>
+					</h2>
+				</CardTitle>
 			</CardHeader>
-			<CardContent className="flex flex-col gap-3">
-				<p className="line-clamp-3 min-h-12 text-muted-foreground text-xs/relaxed">
+			<CardContent className="flex flex-1 flex-col gap-4 pt-3 pb-5">
+				<p className="line-clamp-3 text-muted-foreground text-xs/relaxed">
 					{product.description ??
 						"Producto disponible para sumar demanda a una compra mayorista compartida."}
 				</p>
-				<ProductPriceBlock product={product} variant="card" />
+				<CatalogProductPurchase
+					addLabel="Agregar"
+					disabled={disabled}
+					inCartQuantity={inCartQuantity}
+					key={product.terms.id}
+					onAdd={onAdd}
+					onViewInCart={onViewInCart}
+					product={product}
+				/>
 			</CardContent>
-			<CardFooter className="flex flex-col gap-3">
-				{cartItem ? (
-					<>
-						<div className="flex w-full items-center justify-between gap-2">
-							<QuantityStepper
-								disabled={disabled}
-								onCommit={(quantity) => onQuantityCommit(cartItem, quantity)}
-								onDecrement={() => onDecrement(cartItem)}
-								onIncrement={() => onIncrement(cartItem)}
-								presentation={cartItem.product}
-								terms={cartItem.terms}
-								unit={cartItem.product.unit}
-								value={cartItem.quantity}
-							/>
-							<Button
-								aria-label={`Quitar ${product.name}`}
-								disabled={disabled}
-								onClick={() => onRemove(cartItem.productClientTermsId)}
-								size="icon-sm"
-								type="button"
-								variant="ghost"
-							>
-								<Trash2Icon />
-							</Button>
-						</div>
-						<div className="flex w-full items-center justify-between gap-2">
-							<span className="text-muted-foreground text-xs">Subtotal</span>
-							<span className="font-heading font-semibold">
-								{formatCurrency(cartItem.lineTotal, cartItem.terms.currency)}
-							</span>
-						</div>
-						<Button
-							className="w-full"
-							disabled={disabled}
-							onClick={() => onDetails(product.id)}
-							type="button"
-							variant="outline"
-						>
-							<EyeIcon data-icon="inline-start" />
-							Ver detalles
-						</Button>
-					</>
-				) : (
-					<div className="flex w-full items-center gap-2">
-						<Button
-							className="flex-1"
-							disabled={disabled}
-							onClick={() => onAdd(product)}
-							type="button"
-						>
-							<ShoppingCartIcon data-icon="inline-start" />
-							Agregar
-						</Button>
-						<Button
-							aria-label="Ver detalles"
-							disabled={disabled}
-							onClick={() => onDetails(product.id)}
-							size="icon"
-							type="button"
-							variant="outline"
-						>
-							<EyeIcon />
-						</Button>
-					</div>
-				)}
-			</CardFooter>
 		</Card>
 	);
 }
