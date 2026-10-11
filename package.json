@@ -14,6 +14,7 @@
 		"db:push": "prisma db push",
 		"db:seed:init": "tsx scripts/seed-init.ts",
 		"db:seed:test": "tsx prisma/seed.ts",
+		"db:purge-demo": "tsx scripts/purge-demo-data.ts",
 		"catalog:quintal": "tsx scripts/quintal-catalog-parse.ts",
 		"db:studio": "prisma studio",
 		"dev": "next dev",
