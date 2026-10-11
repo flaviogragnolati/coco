@@ -71,33 +71,6 @@ export function validateDateRange(
 }
 
 /**
- * `step` and `stepPrice` only mean something together: a step without a price
- * makes quantities above the MOQ unpriceable, and a price without a step is
- * never applied. Chain on the exported create/update schemas, never on the base
- * object (`.superRefine` returns a `ZodEffects`, which cannot be `.extend`ed).
- */
-export function validateStepCoherence(
-	value: { step?: string; stepPrice?: string },
-	ctx: z.RefinementCtx,
-) {
-	if (value.step && !value.stepPrice) {
-		ctx.addIssue({
-			code: "custom",
-			message: "Precio step es obligatorio cuando se define un step",
-			path: ["stepPrice"],
-		});
-	}
-
-	if (value.stepPrice && !value.step) {
-		ctx.addIssue({
-			code: "custom",
-			message: "Step es obligatorio cuando se define un precio step",
-			path: ["step"],
-		});
-	}
-}
-
-/**
  * The upper bound is exclusive: 100% off is a giveaway, not a discount, and it
  * would price a line at zero all the way through to Mercado Pago.
  */

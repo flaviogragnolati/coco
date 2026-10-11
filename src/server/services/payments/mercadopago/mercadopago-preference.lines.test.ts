@@ -1,4 +1,5 @@
 import { beforeAll, expect, test, vi } from "vitest";
+import { buildMercadoPagoPreferenceItems } from "./mercadopago-preference.decision";
 
 // The service is `server-only` and pulls in the Mercado Pago SDK through
 // `createMercadoPagoClient`, which reads the access token from the environment.
@@ -79,4 +80,23 @@ test("the market price never reaches the amount charged", () => {
 	const [line] = buildPreferenceLines(cart({ marketPrice: "9999" }));
 
 	expect(line?.lineTotal).toBe("500.00");
+});
+
+// Mercado Pago only takes whole item quantities, so a fractional kilo travels
+// as one item priced at the whole line.
+test("a fractional quantity is one item priced at the line total", () => {
+	const halves = cart({
+		moq: "0.5",
+		moqPrice: "9750",
+		step: "0.5",
+		stepPrice: "9750",
+		unitPrice: "19500",
+	});
+	halves.cartItems[0].quantity = "1.5";
+
+	const lines = buildPreferenceLines(halves);
+	expect(lines[0]?.lineTotal).toBe("29250.00");
+	expect(buildMercadoPagoPreferenceItems(lines)).toEqual([
+		expect.objectContaining({ quantity: 1, unit_price: 29250 }),
+	]);
 });

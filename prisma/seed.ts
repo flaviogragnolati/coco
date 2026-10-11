@@ -184,15 +184,14 @@ function assertQuantityAtMost(input: {
 	}
 }
 
+// Mirrors `calculateLineTotal` in commerce.helpers: offer unit price × quantity.
 function calculateLineTotal(terms: SeedClientTerms, quantity: string) {
-	const requested = decimal(quantity);
-
-	if (requested.lte(terms.moq)) return terms.moqPrice.toFixed(2);
-	if (!terms.step || !terms.stepPrice) return terms.moqPrice.toFixed(2);
-
-	const extraQuantity = requested.minus(terms.moq);
-	const steps = extraQuantity.div(terms.step).ceil();
-	return terms.moqPrice.plus(steps.mul(terms.stepPrice)).toFixed(2);
+	const unitPrice = terms.unitPrice ?? terms.moqPrice.div(terms.moq);
+	const discount = decimal(terms.discountPercent?.toString() ?? "0").div(100);
+	return unitPrice
+		.mul(decimal("1").minus(discount))
+		.mul(decimal(quantity))
+		.toFixed(2);
 }
 
 function selectProductImage(product: SeedProduct) {
@@ -1024,11 +1023,9 @@ async function upsertProductClientTerms(
 	input: {
 		productId: number;
 		moq: string;
-		moqPrice: string;
 		step?: string;
-		stepPrice?: string;
 		max?: string;
-		unitPrice?: string;
+		unitPrice: string;
 		marketPrice?: string;
 		discountPercent?: string;
 		active?: boolean;
@@ -1047,14 +1044,15 @@ async function upsertProductClientTerms(
 		},
 		orderBy: { id: "asc" },
 	});
+	const unitPrice = decimal(input.unitPrice);
 	const data = {
 		productId: input.productId,
 		moq: input.moq,
-		moqPrice: input.moqPrice,
+		moqPrice: unitPrice.mul(input.moq).toFixed(2),
 		step: input.step ?? null,
-		stepPrice: input.stepPrice ?? null,
+		stepPrice: input.step ? unitPrice.mul(input.step).toFixed(2) : null,
 		max: input.max ?? null,
-		unitPrice: input.unitPrice ?? null,
+		unitPrice: input.unitPrice,
 		marketPrice: input.marketPrice ?? null,
 		discountPercent: input.discountPercent ?? null,
 		currency: "ARS" as const,
@@ -1500,9 +1498,7 @@ async function seedMasterData(tx: Tx) {
 		tomate: await upsertProductClientTerms(tx, {
 			productId: products.tomate.id,
 			moq: "20.0000",
-			moqPrice: "24000.00",
 			step: "10.0000",
-			stepPrice: "11000.00",
 			max: "500.0000",
 			unitPrice: "1200.00",
 			marketPrice: "1650.00",
@@ -1512,9 +1508,7 @@ async function seedMasterData(tx: Tx) {
 		aceite: await upsertProductClientTerms(tx, {
 			productId: products.aceite.id,
 			moq: "2.0000",
-			moqPrice: "90000.00",
 			step: "1.0000",
-			stepPrice: "44000.00",
 			max: "30.0000",
 			unitPrice: "45000.00",
 			fromDate: CURRENT_FROM_DATE,
@@ -1522,9 +1516,7 @@ async function seedMasterData(tx: Tx) {
 		arroz: await upsertProductClientTerms(tx, {
 			productId: products.arroz.id,
 			moq: "5.0000",
-			moqPrice: "180000.00",
 			step: "1.0000",
-			stepPrice: "34000.00",
 			max: "80.0000",
 			unitPrice: "36000.00",
 			fromDate: CURRENT_FROM_DATE,
@@ -1532,9 +1524,7 @@ async function seedMasterData(tx: Tx) {
 		queso: await upsertProductClientTerms(tx, {
 			productId: products.queso.id,
 			moq: "10.0000",
-			moqPrice: "95000.00",
 			step: "5.0000",
-			stepPrice: "44000.00",
 			max: "120.0000",
 			unitPrice: "9500.00",
 			marketPrice: "11800.00",
@@ -1543,9 +1533,7 @@ async function seedMasterData(tx: Tx) {
 		yerba: await upsertProductClientTerms(tx, {
 			productId: products.yerba.id,
 			moq: "3.0000",
-			moqPrice: "132000.00",
 			step: "1.0000",
-			stepPrice: "42000.00",
 			max: "100.0000",
 			unitPrice: "44000.00",
 			fromDate: CURRENT_FROM_DATE,
@@ -1553,9 +1541,7 @@ async function seedMasterData(tx: Tx) {
 		dulce: await upsertProductClientTerms(tx, {
 			productId: products.dulce.id,
 			moq: "6.0000",
-			moqPrice: "90000.00",
 			step: "6.0000",
-			stepPrice: "84000.00",
 			max: "72.0000",
 			unitPrice: "15000.00",
 			fromDate: CURRENT_FROM_DATE,
@@ -1563,9 +1549,7 @@ async function seedMasterData(tx: Tx) {
 		manzana: await upsertProductClientTerms(tx, {
 			productId: products.manzana.id,
 			moq: "25.0000",
-			moqPrice: "42500.00",
 			step: "25.0000",
-			stepPrice: "40000.00",
 			max: "300.0000",
 			unitPrice: "1700.00",
 			fromDate: CURRENT_FROM_DATE,
@@ -1573,37 +1557,30 @@ async function seedMasterData(tx: Tx) {
 		bandejaFuture: await upsertProductClientTerms(tx, {
 			productId: products.bandeja.id,
 			moq: "4.0000",
-			moqPrice: "64000.00",
 			step: "2.0000",
-			stepPrice: "30000.00",
 			max: "40.0000",
 			unitPrice: "16000.00",
 			fromDate: FUTURE_FROM_DATE,
 		}),
-		// Fixed quantity: omitting step/stepPrice normalizes them to null, which is
+		// Fixed quantity: omitting step normalizes it to null, which is
 		// what pins the quantity at MOQ and disables the -/+ controls.
 		cantidadFija: await upsertProductClientTerms(tx, {
 			productId: products.comboFijo.id,
 			moq: "12.0000",
-			moqPrice: "36000.00",
 			unitPrice: "3000.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		snackInactive: await upsertProductClientTerms(tx, {
 			productId: products.snackInactivo.id,
 			moq: "10.0000",
-			moqPrice: "25000.00",
 			step: "10.0000",
-			stepPrice: "24000.00",
 			unitPrice: "2500.00",
 			fromDate: CURRENT_FROM_DATE,
 		}),
 		mixExpired: await upsertProductClientTerms(tx, {
 			productId: products.mixDeleted.id,
 			moq: "10.0000",
-			moqPrice: "50000.00",
 			step: "5.0000",
-			stepPrice: "24000.00",
 			unitPrice: "5000.00",
 			fromDate: EXPIRED_FROM_DATE,
 			toDate: EXPIRED_TO_DATE,

@@ -36,28 +36,32 @@ const productClientTermsColumns: CrudColumn<ProductClientTermsListItem>[] = [
 		),
 	},
 	{
-		key: "moq",
-		header: "MOQ",
+		key: "unitPrice",
+		header: "Precio por unidad",
 		cell: (terms) => (
 			<span className="font-mono text-xs">
-				{terms.moq} / {terms.moqPrice} {terms.currency}
+				{terms.unitPrice ?? "-"} {terms.currency}
+			</span>
+		),
+	},
+	{
+		key: "moq",
+		header: "Mínimo",
+		cell: (terms) => (
+			<span className="font-mono text-xs">
+				{terms.moq} / {terms.moqPrice}
 			</span>
 		),
 	},
 	{
 		key: "step",
-		header: "Step",
+		header: "Paso",
 		cell: (terms) => (
 			<span className="text-muted-foreground text-xs">
-				{terms.step ? `${terms.step} / ${terms.stepPrice ?? "-"} ` : "Sin step"}
+				{terms.step
+					? `${terms.step} / ${terms.stepPrice ?? "-"}`
+					: "Cantidad fija"}
 			</span>
-		),
-	},
-	{
-		key: "unitPrice",
-		header: "Unitario",
-		cell: (terms) => (
-			<span className="font-mono text-xs">{terms.unitPrice ?? "-"}</span>
 		),
 	},
 	{

@@ -34,12 +34,12 @@ import type {
 } from "~/shared/common/admin-crud/product-client-terms.types";
 import {
 	formatCurrency,
-	getOfferMoqPrice,
 	getPerUnitPrice,
 	productUnitLabelMap,
 	toNumber,
 } from "~/shared/common/commerce.helpers";
 import {
+	defaultClientQuantityFor,
 	defaultProductClientTermsFormValues,
 	productClientTermsDetailToFormValues,
 } from "./product-client-terms.mappers";
@@ -91,37 +91,59 @@ export function ProductClientTermsFormDialog({
 	const productId = form.watch("productId");
 	const currency = form.watch("currency") ?? "ARS";
 	const moq = form.watch("moq") ?? "";
-	const moqPrice = form.watch("moqPrice") ?? "";
+	const step = form.watch("step") ?? "";
 	const unitPrice = form.watch("unitPrice") ?? "";
 	const discountPercent = form.watch("discountPercent") ?? "";
 
 	const unit = products.find((product) => product.id === productId)?.unit;
 	const unitLabel = unit ? productUnitLabelMap[unit] : "unidad";
 
+	const derivedPrices = useMemo(() => {
+		const price = toNumber(unitPrice);
+		if (price === null) return null;
+
+		const parts: string[] = [];
+		const moqNumber = toNumber(moq);
+		if (moqNumber !== null) {
+			parts.push(`${formatCurrency(price * moqNumber, currency)} el mínimo`);
+		}
+		const stepNumber = toNumber(step);
+		if (stepNumber !== null) {
+			parts.push(`${formatCurrency(price * stepNumber, currency)} cada paso`);
+		}
+		return parts.length > 0 ? parts.join(" · ") : null;
+	}, [currency, moq, step, unitPrice]);
+
 	const offerPreview = useMemo(() => {
 		if ((toNumber(discountPercent) ?? 0) <= 0) return null;
 
-		const terms = {
+		const offerUnitPrice = getPerUnitPrice({
 			moq,
-			moqPrice,
+			moqPrice: "",
 			unitPrice: unitPrice || null,
 			discountPercent,
-		};
-		const parts: string[] = [];
+		});
+		return offerUnitPrice === null
+			? null
+			: `${formatCurrency(offerUnitPrice, currency)} por ${unitLabel}`;
+	}, [currency, discountPercent, moq, unitLabel, unitPrice]);
 
-		if (toNumber(moqPrice) !== null) {
-			parts.push(`${formatCurrency(getOfferMoqPrice(terms), currency)} el MOQ`);
-		}
-
-		const offerUnitPrice = getPerUnitPrice(terms);
-		if (offerUnitPrice !== null) {
-			parts.push(
-				`${formatCurrency(offerUnitPrice, currency)} por ${unitLabel}`,
-			);
-		}
-
-		return parts.length > 0 ? parts.join(" · ") : null;
-	}, [currency, discountPercent, moq, moqPrice, unitLabel, unitPrice]);
+	// Proposes the unit's usual quantities until the admin types their own, and
+	// keeps the step equal to the minimum unless it was set apart on purpose.
+	const proposeQuantities = (nextUnit: typeof unit) => {
+		if (mode !== "create" || !nextUnit) return;
+		const { dirtyFields } = form.formState;
+		const quantity = defaultClientQuantityFor(nextUnit);
+		if (!dirtyFields.moq) form.setValue("moq", quantity);
+		if (!dirtyFields.step) form.setValue("step", quantity);
+	};
+	const moqField = form.register("moq", {
+		onChange: (event: { target: { value: string } }) => {
+			if (!form.formState.dirtyFields.step) {
+				form.setValue("step", event.target.value);
+			}
+		},
+	});
 
 	useEffect(() => {
 		if (!open) return;
@@ -221,12 +243,15 @@ export function ProductClientTermsFormDialog({
 							disabled={isSubmitting || isLoadingProducts}
 							id="product-client-terms-product"
 							invalid={Boolean(errors.productId)}
-							onChange={(productId) =>
+							onChange={(productId) => {
 								form.setValue("productId", productId, {
 									shouldDirty: true,
 									shouldValidate: true,
-								})
-							}
+								});
+								proposeQuantities(
+									products.find((product) => product.id === productId)?.unit,
+								);
+							}}
 							products={products}
 							value={form.watch("productId")}
 						/>
@@ -236,29 +261,26 @@ export function ProductClientTermsFormDialog({
 					<FieldSet>
 						<FieldLegend>Cantidades y precios</FieldLegend>
 						<FieldGroup className="grid gap-4 md:grid-cols-3">
-							<Field data-invalid={Boolean(errors.moq)}>
-								<FieldLabel htmlFor="product-client-terms-moq">MOQ</FieldLabel>
-								<Input
-									aria-invalid={Boolean(errors.moq)}
-									disabled={isSubmitting}
-									id="product-client-terms-moq"
-									inputMode="decimal"
-									{...form.register("moq")}
-								/>
-								<FieldError errors={[errors.moq]} />
-							</Field>
-							<Field data-invalid={Boolean(errors.moqPrice)}>
-								<FieldLabel htmlFor="product-client-terms-moq-price">
-									Precio MOQ
+							<Field data-invalid={Boolean(errors.unitPrice)}>
+								<FieldLabel htmlFor="product-client-terms-unit-price">
+									Precio por {unitLabel}
 								</FieldLabel>
 								<Input
-									aria-invalid={Boolean(errors.moqPrice)}
+									aria-invalid={Boolean(errors.unitPrice)}
 									disabled={isSubmitting}
-									id="product-client-terms-moq-price"
+									id="product-client-terms-unit-price"
 									inputMode="decimal"
-									{...form.register("moqPrice")}
+									{...form.register("unitPrice")}
 								/>
-								<FieldError errors={[errors.moqPrice]} />
+								<FieldDescription>
+									Lo que se cobra: el total es este precio por la cantidad.
+									{derivedPrices ? (
+										<span className="mt-1 block font-medium text-foreground">
+											{derivedPrices}
+										</span>
+									) : null}
+								</FieldDescription>
+								<FieldError errors={[errors.unitPrice]} />
 							</Field>
 							<Field data-invalid={Boolean(errors.currency)}>
 								<FieldLabel htmlFor="product-client-terms-currency">
@@ -278,9 +300,22 @@ export function ProductClientTermsFormDialog({
 								</Select>
 								<FieldError errors={[errors.currency]} />
 							</Field>
+							<Field data-invalid={Boolean(errors.moq)}>
+								<FieldLabel htmlFor="product-client-terms-moq">
+									Mínimo ({unitLabel})
+								</FieldLabel>
+								<Input
+									aria-invalid={Boolean(errors.moq)}
+									disabled={isSubmitting}
+									id="product-client-terms-moq"
+									inputMode="decimal"
+									{...moqField}
+								/>
+								<FieldError errors={[errors.moq]} />
+							</Field>
 							<Field data-invalid={Boolean(errors.step)}>
 								<FieldLabel htmlFor="product-client-terms-step">
-									Step <OptionalHint />
+									Paso ({unitLabel}) <OptionalHint />
 								</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.step)}
@@ -289,24 +324,14 @@ export function ProductClientTermsFormDialog({
 									inputMode="decimal"
 									{...form.register("step")}
 								/>
+								<FieldDescription>
+									Vacío: el cliente solo puede pedir el mínimo.
+								</FieldDescription>
 								<FieldError errors={[errors.step]} />
-							</Field>
-							<Field data-invalid={Boolean(errors.stepPrice)}>
-								<FieldLabel htmlFor="product-client-terms-step-price">
-									Precio step <OptionalHint />
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(errors.stepPrice)}
-									disabled={isSubmitting}
-									id="product-client-terms-step-price"
-									inputMode="decimal"
-									{...form.register("stepPrice")}
-								/>
-								<FieldError errors={[errors.stepPrice]} />
 							</Field>
 							<Field data-invalid={Boolean(errors.max)}>
 								<FieldLabel htmlFor="product-client-terms-max">
-									Maximo <OptionalHint />
+									Máximo ({unitLabel}) <OptionalHint />
 								</FieldLabel>
 								<Input
 									aria-invalid={Boolean(errors.max)}
@@ -316,22 +341,6 @@ export function ProductClientTermsFormDialog({
 									{...form.register("max")}
 								/>
 								<FieldError errors={[errors.max]} />
-							</Field>
-							<Field data-invalid={Boolean(errors.unitPrice)}>
-								<FieldLabel htmlFor="product-client-terms-unit-price">
-									Precio unitario <OptionalHint />
-								</FieldLabel>
-								<Input
-									aria-invalid={Boolean(errors.unitPrice)}
-									disabled={isSubmitting}
-									id="product-client-terms-unit-price"
-									inputMode="decimal"
-									{...form.register("unitPrice")}
-								/>
-								<FieldDescription>
-									Nuestro precio por {unitLabel}, para mostrar y comparar.
-								</FieldDescription>
-								<FieldError errors={[errors.unitPrice]} />
 							</Field>
 							<Field data-invalid={Boolean(errors.marketPrice)}>
 								<FieldLabel htmlFor="product-client-terms-market-price">
@@ -363,8 +372,8 @@ export function ProductClientTermsFormDialog({
 									{...form.register("discountPercent")}
 								/>
 								<FieldDescription>
-									Baja lo que paga el cliente: se aplica al precio MOQ y al
-									precio step.
+									Baja lo que paga el cliente: se aplica al precio por{" "}
+									{unitLabel}.
 									{offerPreview ? (
 										<span className="mt-1 block font-medium text-foreground">
 											Queda en {offerPreview}

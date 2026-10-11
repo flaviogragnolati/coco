@@ -6,6 +6,7 @@ import {
 	calculateLineTotal,
 	formatCurrency,
 	formatQuantity,
+	getBaseUnitPrice,
 	getMarketSaving,
 	getOfferMoqPrice,
 	getPerUnitPrice,
@@ -57,14 +58,9 @@ export function getOfferQuantityLabel(
 }
 
 export function getOfferHeadlinePrice(offer: OfferPricing) {
-	const perUnitPrice = getPerUnitPrice(offer);
-	const hasUnitPrice =
-		toNumber(offer.unitPrice) !== null && perUnitPrice !== null;
 	return {
-		amount: hasUnitPrice
-			? formatCurrency(perUnitPrice ?? 0, offer.currency)
-			: getOfferBlockPrice(offer),
-		unitLabel: `por ${hasUnitPrice ? productUnitLabelMap[offer.unit] : getOfferQuantityLabel(offer.moq, offer.unit)}`,
+		amount: formatCurrency(getPerUnitPrice(offer) ?? 0, offer.currency),
+		unitLabel: `por ${productUnitLabelMap[offer.unit]}`,
 	};
 }
 
@@ -93,7 +89,7 @@ export function getOfferInCartLabel(
 // Strike through Coco's undiscounted headline price, never the market price.
 export function getOfferStrikethroughPrice(offer: OfferPricing) {
 	if (getEffectiveDiscountPercent(offer) === null) return null;
-	return formatCurrency(offer.unitPrice ?? offer.moqPrice, offer.currency);
+	return formatCurrency(getBaseUnitPrice(offer) ?? 0, offer.currency);
 }
 
 export function getOfferDiscountLabel(offer: OfferPricing) {
@@ -128,5 +124,8 @@ export function getMarketComparison(offer: OfferPricing) {
 
 export function getOfferBlockStrikethroughPrice(offer: OfferPricing) {
 	if (getEffectiveDiscountPercent(offer) === null) return null;
-	return formatCurrency(offer.moqPrice, offer.currency);
+	return formatCurrency(
+		(getBaseUnitPrice(offer) ?? 0) * (toNumber(offer.moq) ?? 0),
+		offer.currency,
+	);
 }

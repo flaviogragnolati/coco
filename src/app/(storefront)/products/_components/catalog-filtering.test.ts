@@ -63,13 +63,13 @@ test("normalizeSearch strips accents, case and whitespace", () => {
 	expect(normalizeSearch("AZÚCAR")).toBe("azucar");
 });
 
-test("productPrice prefers unitPrice over moqPrice", () => {
+test("productPrice is the unit price, derived from the minimum on legacy terms", () => {
 	const withUnitPrice = makeProduct({
 		terms: { moqPrice: "100", unitPrice: "12" },
 	});
 	const withoutUnitPrice = makeProduct({ terms: { moqPrice: "100" } });
 	expect(productPrice(withUnitPrice)).toBe(12);
-	expect(productPrice(withoutUnitPrice)).toBe(100);
+	expect(productPrice(withoutUnitPrice)).toBe(10);
 });
 
 test("productPrice ranks products by their discounted offer price", () => {
@@ -80,7 +80,7 @@ test("productPrice ranks products by their discounted offer price", () => {
 		terms: { moqPrice: "100", discountPercent: "25" },
 	});
 	expect(productPrice(discountedUnitPrice)).toBe(9);
-	expect(productPrice(discountedBlockPrice)).toBe(75);
+	expect(productPrice(discountedBlockPrice)).toBe(7.5);
 });
 
 test("matchScore ranks name prefix over brand and description", () => {
@@ -147,9 +147,9 @@ test("filterCatalog narrows by unit membership", () => {
 
 test("filterCatalog narrows by price range", () => {
 	const products = [
-		makeProduct({ name: "Cheap", terms: { moqPrice: "50" } }),
-		makeProduct({ name: "Mid", terms: { moqPrice: "150" } }),
-		makeProduct({ name: "Pricey", terms: { moqPrice: "300" } }),
+		makeProduct({ name: "Cheap", terms: { unitPrice: "50" } }),
+		makeProduct({ name: "Mid", terms: { unitPrice: "150" } }),
+		makeProduct({ name: "Pricey", terms: { unitPrice: "300" } }),
 	];
 	const result = filterCatalog(products, {
 		search: "",

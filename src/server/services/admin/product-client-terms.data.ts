@@ -1,4 +1,5 @@
 import type { Prisma } from "~/prisma/client";
+import { deriveClientTermsPrices } from "~/server/services/_base/client-terms-prices";
 import type {
 	ProductClientTermsCreateInput,
 	ProductClientTermsListInput,
@@ -166,11 +167,10 @@ export async function createProductClientTerms(
 		data: {
 			productId: input.productId,
 			moq: input.moq,
-			moqPrice: input.moqPrice,
 			step: input.step ?? null,
-			stepPrice: input.stepPrice ?? null,
+			...deriveClientTermsPrices(input),
 			max: input.max ?? null,
-			unitPrice: input.unitPrice ?? null,
+			unitPrice: input.unitPrice,
 			marketPrice: input.marketPrice ?? null,
 			discountPercent: input.discountPercent ?? null,
 			currency: input.currency,
@@ -192,11 +192,10 @@ export async function updateProductClientTerms(
 		data: {
 			productId: input.productId,
 			moq: input.moq,
-			moqPrice: input.moqPrice,
 			step: input.step ?? null,
-			stepPrice: input.stepPrice ?? null,
+			...deriveClientTermsPrices(input),
 			max: input.max ?? null,
-			unitPrice: input.unitPrice ?? null,
+			unitPrice: input.unitPrice,
 			marketPrice: input.marketPrice ?? null,
 			discountPercent: input.discountPercent ?? null,
 			currency: input.currency,

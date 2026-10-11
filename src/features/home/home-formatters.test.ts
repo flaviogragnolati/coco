@@ -28,21 +28,23 @@ const offer: HomeOffer = {
 	brandName: "Coco",
 	imageUrl: null,
 	moq: "10",
-	moqPrice: "20000",
+	moqPrice: "15000",
 	unitPrice: "1500",
 	marketPrice: null,
 	discountPercent: null,
 	currency: "ARS",
 };
 
-test("the headline uses the unit price when supplied and otherwise the MOQ block", () => {
+test("the headline is always the unit price, derived from the minimum on legacy terms", () => {
 	expect(getOfferHeadlinePrice(offer)).toEqual({
 		amount: "$ 1.500",
 		unitLabel: "por kg",
 	});
-	expect(getOfferHeadlinePrice({ ...offer, unitPrice: null })).toEqual({
-		amount: "$ 20.000",
-		unitLabel: "por 10 kg",
+	expect(
+		getOfferHeadlinePrice({ ...offer, unitPrice: null, moqPrice: "20000" }),
+	).toEqual({
+		amount: "$ 2.000",
+		unitLabel: "por kg",
 	});
 });
 
@@ -50,16 +52,13 @@ test("discount and strike-through apply to the same headline basis", () => {
 	const discounted = { ...offer, discountPercent: "25" };
 	expect(getOfferHeadlinePrice(discounted).amount).toBe("$ 1.125");
 	expect(getOfferStrikethroughPrice(discounted)).toBe("$ 1.500");
-	expect(getOfferBlockPrice(discounted)).toBe("$ 15.000");
+	expect(getOfferBlockPrice(discounted)).toBe("$ 11.250");
 	expect(getOfferTotalLabel(homeOfferTerms(discounted), "10")).toBe(
-		"Total $ 15.000",
+		"Total $ 11.250",
 	);
-	expect(getOfferHeadlinePrice({ ...discounted, unitPrice: null }).amount).toBe(
-		"$ 15.000",
-	);
-	expect(getOfferStrikethroughPrice({ ...discounted, unitPrice: null })).toBe(
-		"$ 20.000",
-	);
+	const legacy = { ...discounted, unitPrice: null, moqPrice: "20000" };
+	expect(getOfferHeadlinePrice(legacy).amount).toBe("$ 1.500");
+	expect(getOfferStrikethroughPrice(legacy)).toBe("$ 2.000");
 	expect(getOfferDiscountLabel(discounted)).toBe("-25%");
 });
 
@@ -111,10 +110,10 @@ test("discount labels normalize decimals and hide zero discounts", () => {
 	expect(getOfferStrikethroughPrice(offer)).toBeNull();
 });
 
-test("catalog strike-through retains its MOQ price basis", () => {
+test("catalog strike-through is the undiscounted price of the minimum", () => {
 	expect(
 		getOfferBlockStrikethroughPrice({ ...offer, discountPercent: "25" }),
-	).toBe("$ 20.000");
+	).toBe("$ 15.000");
 	expect(getOfferBlockStrikethroughPrice(offer)).toBeNull();
 });
 
@@ -130,22 +129,32 @@ test("quantities use plural countable units", () => {
 			unit: "piece",
 			unitPrice: null,
 		}).unitLabel,
-	).toBe("por 3 unidades");
+	).toBe("por unidad");
 });
 
-const stepped = { ...offer, step: "5", stepPrice: "9000", max: "20" };
+const stepped = { ...offer, step: "5", stepPrice: "7500", max: "20" };
 
-test("the total follows the chosen quantity in steps above the MOQ", () => {
+test("the total is the unit price times the chosen quantity", () => {
 	const terms = homeOfferTerms(stepped);
-	expect(getOfferTotalLabel(terms, "10")).toBe("Total $ 20.000");
-	expect(getOfferTotalLabel(terms, "15")).toBe("Total $ 29.000");
-	expect(getOfferTotalLabel(terms, "20")).toBe("Total $ 38.000");
+	expect(getOfferTotalLabel(terms, "10")).toBe("Total $ 15.000");
+	expect(getOfferTotalLabel(terms, "15")).toBe("Total $ 22.500");
+	expect(getOfferTotalLabel(terms, "20")).toBe("Total $ 30.000");
 	expect(
 		getOfferTotalLabel(
 			homeOfferTerms({ ...stepped, discountPercent: "10" }),
 			"15",
 		),
-	).toBe("Total $ 26.100");
+	).toBe("Total $ 20.250");
+});
+
+test("half kilos total at the unit price", () => {
+	const halves = homeOfferTerms({
+		...offer,
+		moq: "0.5",
+		step: "0.5",
+		unitPrice: "19500",
+	});
+	expect(getOfferTotalLabel(halves, "1.5")).toBe("Total $ 29.250");
 });
 
 test("a fixed quantity states the only quantity and its total", () => {
@@ -154,7 +163,7 @@ test("a fixed quantity states the only quantity and its total", () => {
 			homeOfferTerms({ ...offer, moq: "12", unit: "piece" }),
 			"piece",
 		),
-	).toBe("12 unidades · Total $ 20.000");
+	).toBe("12 unidades · Total $ 18.000");
 });
 
 test("the in-cart notice names the quantity already in the order", () => {
