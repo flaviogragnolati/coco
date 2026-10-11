@@ -85,8 +85,11 @@ export function ProductsClient({
 	);
 
 	const cartItems = cartActions.cart.items;
-	const cartItemsByTermsId = useMemo(
-		() => new Map(cartItems.map((item) => [item.productClientTermsId, item])),
+	const cartQuantities = useMemo(
+		() =>
+			new Map(
+				cartItems.map((item) => [item.productClientTermsId, item.quantity]),
+			),
 		[cartItems],
 	);
 	const inCartTermsIds = useMemo(
@@ -133,11 +136,6 @@ export function ProductsClient({
 		}
 	}, [productsQuery.isLoading, params.page, pageCount, params.setPage]);
 
-	const selectedCartItem =
-		params.productId === null
-			? undefined
-			: cartItems.find((item) => item.product.id === params.productId);
-
 	const handleAdd = (product: CatalogProductListItem, quantity: string) => {
 		cartActions.setItem(catalogProductToCartItem(product, quantity));
 		openMiniCart();
@@ -156,7 +154,7 @@ export function ProductsClient({
 	};
 
 	const gridProps = {
-		cartItemsByTermsId,
+		cartQuantities,
 		disabled: cartActions.isPending || !hasHydrated,
 		onAdd: handleAdd,
 		onDetails: params.setProductId,
@@ -284,20 +282,14 @@ export function ProductsClient({
 			</Sheet>
 
 			<ProductDetailsDialog
-				cartItem={selectedCartItem}
-				disabled={cartActions.isPending}
-				inCartTermsIds={inCartTermsIds}
-				onAdd={(product) => handleAdd(product, product.terms.moq)}
-				onDecrement={cartActions.decrement}
+				cartQuantities={cartQuantities}
+				disabled={gridProps.disabled}
+				onAdd={handleAdd}
 				onDetails={params.setProductId}
-				onIncrement={cartActions.increment}
 				onOpenChange={(open) => {
 					if (!open) params.setProductId(null);
 				}}
-				onQuantityCommit={(item, quantity) =>
-					cartActions.updateQuantity(item, quantity)
-				}
-				onRemove={cartActions.removeItem}
+				onViewInCart={openMiniCart}
 				open={params.productId !== null}
 				productId={params.productId}
 			/>

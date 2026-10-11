@@ -1,16 +1,9 @@
 "use client";
 
-import {
-	AlertCircleIcon,
-	CheckIcon,
-	ImageIcon,
-	ShoppingCartIcon,
-	Trash2Icon,
-} from "lucide-react";
+import { AlertCircleIcon, ImageIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
 	Dialog,
@@ -21,60 +14,42 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
-import { QuantityStepper } from "~/features/cart/_components/quantity-stepper";
 import { ProductImage } from "~/features/catalog/_components/product-image";
 import { cn } from "~/lib/utils";
-import type { CartItem } from "~/shared/common/cart.types";
-import type { CatalogProductListItem } from "~/shared/common/catalog.types";
-import {
-	formatCurrency,
-	formatQuantity,
-	formatUnitLabel,
-} from "~/shared/common/commerce.helpers";
 import { api } from "~/trpc/react";
-import { ProductPriceBlock } from "./product-price-block";
+import {
+	CatalogProductPurchase,
+	type CatalogPurchaseHandlers,
+} from "./catalog-product-purchase";
 import { SimilarProductsSection } from "./similar-products-section";
 
-type ProductDetailsDialogProps = {
-	cartItem?: CartItem;
+type ProductDetailsDialogProps = CatalogPurchaseHandlers & {
+	/** Quantities already in the order, by terms id. */
+	cartQuantities: Map<number, string>;
 	disabled?: boolean;
-	inCartTermsIds: Set<number>;
 	open: boolean;
 	productId: number | null;
-	onAdd: (product: CatalogProductListItem) => void;
-	onDecrement: (item: CartItem) => void;
 	onDetails: (productId: number) => void;
-	onIncrement: (item: CartItem) => void;
 	onOpenChange: (open: boolean) => void;
-	onQuantityCommit: (item: CartItem, quantity: string) => void;
-	onRemove: (productClientTermsId: number) => void;
 };
 
 const thumbnailSkeletonKeys = ["a", "b", "c"];
 
 export function ProductDetailsDialog({
-	cartItem,
+	cartQuantities,
 	disabled,
-	inCartTermsIds,
 	open,
 	productId,
 	onAdd,
-	onDecrement,
 	onDetails,
-	onIncrement,
 	onOpenChange,
-	onQuantityCommit,
-	onRemove,
+	onViewInCart,
 }: ProductDetailsDialogProps) {
 	const detailQuery = api.catalog.getProductDetail.useQuery(
 		{ id: productId ?? 0 },
 		{ enabled: open && productId !== null },
 	);
 	const product = detailQuery.data;
-	const activeCartItem =
-		product && cartItem?.productClientTermsId === product.terms.id
-			? cartItem
-			: undefined;
 
 	const bodyRef = useRef<HTMLDivElement>(null);
 	const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -102,33 +77,14 @@ export function ProductDetailsDialog({
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent className="grid max-h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-[min(56rem,calc(100%-2rem))]">
 				<DialogHeader className="pr-10">
-					{product ? (
-						<div className="flex flex-wrap gap-2">
-							<Badge variant="secondary">{product.terms.currency}</Badge>
-							<Badge variant="outline">
-								{formatUnitLabel(1, product.unit, product)}
-							</Badge>
-							{product.terms.max ? (
-								<Badge variant="outline">
-									Máx {formatQuantity(product.terms.max, product.unit, product)}
-								</Badge>
-							) : null}
-						</div>
+					{product?.brand ? (
+						<p className="font-semibold text-muted-foreground text-xs uppercase tracking-widest">
+							{product.brand.name}
+						</p>
 					) : null}
 					<DialogTitle className="font-semibold text-xl leading-snug">
 						{product?.name ?? "Detalle de producto"}
 					</DialogTitle>
-					{product ? (
-						<div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
-							{product.brand?.name ?? "Sin marca"}
-							{activeCartItem ? (
-								<Badge variant="success">
-									<CheckIcon data-icon="inline-start" />
-									En tu pedido
-								</Badge>
-							) : null}
-						</div>
-					) : null}
 					<DialogDescription>
 						Información comercial vigente para sumarte a una compra mayorista
 						compartida.
@@ -206,88 +162,27 @@ export function ProductDetailsDialog({
 										{product.description ??
 											"Producto disponible para pedidos mayoristas compartidos."}
 									</p>
-									<ProductPriceBlock product={product} variant="detail" />
-									<div className="grid gap-2 rounded-2xl bg-card p-3 text-xs ring-1 ring-foreground/5 dark:ring-foreground/10">
-										<div className="flex items-center justify-between gap-3">
-											<span className="text-muted-foreground">MOQ</span>
-											<span className="font-medium">
-												{formatQuantity(
-													product.terms.moq,
-													product.unit,
-													product,
-												)}
-											</span>
-										</div>
-										<div className="flex items-center justify-between gap-3">
-											<span className="text-muted-foreground">Step</span>
-											<span className="font-medium">
-												{product.terms.step
-													? formatQuantity(
-															product.terms.step,
-															product.unit,
-															product,
-														)
-													: "Sin incrementos"}
-											</span>
-										</div>
-										<div className="flex items-center justify-between gap-3">
-											<span className="text-muted-foreground">Máximo</span>
-											<span className="font-medium">
-												{product.terms.max
-													? formatQuantity(
-															product.terms.max,
-															product.unit,
-															product,
-														)
-													: "Sin máximo"}
-											</span>
-										</div>
-									</div>
-									{activeCartItem ? (
-										<div className="flex flex-col gap-3 rounded-2xl bg-card p-3 ring-1 ring-foreground/5 dark:ring-foreground/10">
-											<div className="flex items-center justify-between gap-2">
-												<QuantityStepper
-													disabled={disabled}
-													onCommit={(quantity) =>
-														onQuantityCommit(activeCartItem, quantity)
-													}
-													onDecrement={() => onDecrement(activeCartItem)}
-													onIncrement={() => onIncrement(activeCartItem)}
-													presentation={activeCartItem.product}
-													terms={activeCartItem.terms}
-													unit={activeCartItem.product.unit}
-													value={activeCartItem.quantity}
-												/>
-												<Button
-													aria-label={`Quitar ${product.name}`}
-													disabled={disabled}
-													onClick={() =>
-														onRemove(activeCartItem.productClientTermsId)
-													}
-													size="icon-sm"
-													type="button"
-													variant="ghost"
-												>
-													<Trash2Icon />
-												</Button>
-											</div>
-											<div className="flex items-center justify-between gap-2">
-												<span className="text-muted-foreground text-xs">
-													Subtotal
-												</span>
-												<span className="font-heading font-semibold">
-													{formatCurrency(
-														activeCartItem.lineTotal,
-														activeCartItem.terms.currency,
-													)}
-												</span>
-											</div>
-										</div>
-									) : null}
+									<CatalogProductPurchase
+										disabled={disabled}
+										inCartQuantity={
+											cartQuantities.get(product.terms.id) ?? null
+										}
+										key={product.terms.id}
+										onAdd={(selected, quantity) => {
+											onAdd(selected, quantity);
+											onOpenChange(false);
+										}}
+										onViewInCart={() => {
+											onOpenChange(false);
+											onViewInCart();
+										}}
+										product={product}
+										showDiscount
+									/>
 								</div>
 							</div>
 							<SimilarProductsSection
-								inCartTermsIds={inCartTermsIds}
+								cartQuantities={cartQuantities}
 								onSelect={onDetails}
 								product={product}
 							/>
@@ -303,19 +198,6 @@ export function ProductDetailsDialog({
 					>
 						Cerrar
 					</Button>
-					{product && !activeCartItem ? (
-						<Button
-							disabled={disabled}
-							onClick={() => {
-								onAdd(product);
-								onOpenChange(false);
-							}}
-							type="button"
-						>
-							<ShoppingCartIcon data-icon="inline-start" />
-							Sumar al pedido
-						</Button>
-					) : null}
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

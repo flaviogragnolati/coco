@@ -9,7 +9,7 @@ import { selectSimilarProducts } from "./catalog-filtering";
 import { ProductMiniCard } from "./product-mini-card";
 
 type SimilarProductsSectionProps = {
-	inCartTermsIds: Set<number>;
+	cartQuantities: Map<number, string>;
 	product: CatalogProductDetail;
 	onSelect: (productId: number) => void;
 };
@@ -17,7 +17,7 @@ type SimilarProductsSectionProps = {
 const skeletonKeys = ["a", "b", "c"];
 
 export function SimilarProductsSection({
-	inCartTermsIds,
+	cartQuantities,
 	product,
 	onSelect,
 }: SimilarProductsSectionProps) {
@@ -53,7 +53,7 @@ export function SimilarProductsSection({
 			<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
 				{similar.map((candidate) => (
 					<ProductMiniCard
-						inCart={inCartTermsIds.has(candidate.terms.id)}
+						inCart={cartQuantities.has(candidate.terms.id)}
 						key={candidate.id}
 						onSelect={onSelect}
 						product={candidate}

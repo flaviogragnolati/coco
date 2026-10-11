@@ -1,19 +1,19 @@
 "use client";
 
-import type { CartItem } from "~/shared/common/cart.types";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import type { CatalogPurchaseHandlers } from "./catalog-product-purchase";
 import { ProductCard } from "./product-card";
 
 type ProductGridProps = CatalogPurchaseHandlers & {
-	cartItemsByTermsId: Map<number, CartItem>;
+	/** Quantities already in the order, by terms id. */
+	cartQuantities: Map<number, string>;
 	disabled?: boolean;
 	products: CatalogProductListItem[];
 	onDetails: (productId: number) => void;
 };
 
 export function ProductGrid({
-	cartItemsByTermsId,
+	cartQuantities,
 	disabled,
 	products,
 	onAdd,
@@ -25,9 +25,7 @@ export function ProductGrid({
 			{products.map((product) => (
 				<ProductCard
 					disabled={disabled}
-					inCartQuantity={
-						cartItemsByTermsId.get(product.terms.id)?.quantity ?? null
-					}
+					inCartQuantity={cartQuantities.get(product.terms.id) ?? null}
 					key={product.id}
 					onAdd={onAdd}
 					onDetails={onDetails}
