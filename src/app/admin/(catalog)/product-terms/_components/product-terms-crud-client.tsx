@@ -8,6 +8,7 @@ import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell
 import type { CrudEntityCopy } from "~/features/admin/crud/_lib/crud-entity-copy";
 import { useCrudEntityPage } from "~/features/admin/crud/_lib/use-crud-entity-page";
 import { useCrudPageState } from "~/features/admin/crud/_lib/use-crud-page-state";
+import { PriceSheetActions } from "~/features/admin/crud/price-sheet/price-sheet-actions";
 import { ProductClientTermsFormDialog } from "~/features/admin/crud/product-client-terms/product-client-terms-form-dialog";
 import { ProductClientTermsTable } from "~/features/admin/crud/product-client-terms/product-client-terms-table";
 import { ProductLocalConstraintsFormDialog } from "~/features/admin/crud/product-local-constraints/product-local-constraints-form-dialog";
@@ -585,8 +586,20 @@ function ProductLocalConstraintsPanel() {
 }
 
 export function ProductTermsCrudClient() {
+	const utils = api.useUtils();
+
 	return (
 		<CrudPageShell
+			actions={
+				<PriceSheetActions
+					onApplied={async () => {
+						await Promise.all([
+							utils.admin.productClientTerms.invalidate(),
+							utils.admin.product.invalidate(),
+						]);
+					}}
+				/>
+			}
 			description="Administración de términos comerciales y restricciones locales de producto en una vista agrupada."
 			title="Términos de producto"
 		>
