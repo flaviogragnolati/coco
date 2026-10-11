@@ -65,6 +65,12 @@ importers:
       dotenv:
         specifier: ^17.3.1
         version: 17.4.2
+      fast-xml-parser:
+        specifier: ^5.11.2
+        version: 5.11.2
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       immer:
         specifier: ^11.1.4
         version: 11.1.8
@@ -147,12 +153,6 @@ importers:
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20260323.1
         version: 7.0.0-dev.20260323.1
-      fast-xml-parser:
-        specifier: ^5.11.2
-        version: 5.11.2
-      fflate:
-        specifier: ^0.8.3
-        version: 0.8.3
       madge:
         specifier: ^8.0.0
         version: 8.0.0(typescript@5.9.3)

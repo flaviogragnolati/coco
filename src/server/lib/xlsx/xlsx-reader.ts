@@ -14,6 +14,8 @@ export type XlsxRow = {
 	row: number;
 	/** Column letter → cached value as text; empty cells are absent. */
 	cells: XlsxCellValues;
+	/** Columns whose cached value is a number, written in its canonical `1234.5` form. */
+	numericColumns?: string[];
 };
 
 export type XlsxMergeRange = {
@@ -116,8 +118,8 @@ function unzipEntries(bytes: Uint8Array, paths: string[]) {
 
 function resolveSheetPath(
 	files: Record<string, Uint8Array>,
-	sheetName: string,
-): string {
+	sheetName: string | undefined,
+): { name: string; path: string } {
 	const workbookBytes = files[WORKBOOK_PATH];
 	const relsBytes = files[WORKBOOK_RELS_PATH];
 	if (!workbookBytes || !relsBytes) {
@@ -128,11 +130,19 @@ function resolveSheetPath(
 	const sheets = asNodes(
 		asNode(asNode(workbook.workbook)?.sheets)?.sheet ?? [],
 	);
-	const sheet = sheets.find((node) => attribute(node, "name") === sheetName);
+	const sheet =
+		sheetName === undefined
+			? sheets[0]
+			: sheets.find((node) => attribute(node, "name") === sheetName);
 	if (!sheet) {
 		const names = sheets.map((node) => attribute(node, "name")).join(", ");
-		throw new Error(`Sheet "${sheetName}" not found (sheets: ${names})`);
+		throw new Error(
+			sheetName === undefined
+				? "The workbook has no sheets"
+				: `Sheet "${sheetName}" not found (sheets: ${names})`,
+		);
 	}
+	const name = attribute(sheet, "name") ?? "";
 
 	const relationshipId = attribute(sheet, "r:id");
 	const rels = parseXml(strFromU8(relsBytes), WORKBOOK_RELS_PATH);
@@ -141,16 +151,16 @@ function resolveSheetPath(
 	).find((node) => attribute(node, "Id") === relationshipId);
 	const target = relationship ? attribute(relationship, "Target") : undefined;
 	if (!target) {
-		throw new Error(`Sheet "${sheetName}" has no worksheet relationship`);
+		throw new Error(`Sheet "${name}" has no worksheet relationship`);
 	}
 
 	const path = target.startsWith("/")
 		? target.slice(1)
 		: `xl/${target.replace(/^\.\//, "")}`;
 	if (!WORKSHEET_PATH.test(path)) {
-		throw new Error(`Sheet "${sheetName}" points outside xl/worksheets`);
+		throw new Error(`Sheet "${name}" points outside xl/worksheets`);
 	}
-	return path;
+	return { name, path };
 }
 
 function readSharedStrings(files: Record<string, Uint8Array>): string[] {
@@ -184,8 +194,17 @@ function cellValue(cell: XmlNode, sharedStrings: string[]): string {
 	return raw;
 }
 
-export function readXlsxSheet(bytes: Uint8Array, sheetName: string): XlsxSheet {
-	const sheetPath = resolveSheetPath(
+function isNumericCell(cell: XmlNode) {
+	const type = attribute(cell, "t");
+	return type === undefined || type === "n";
+}
+
+/** Reads the named sheet, or the first one in workbook order when no name is given. */
+export function readXlsxSheet(
+	bytes: Uint8Array,
+	sheetName?: string,
+): XlsxSheet {
+	const { name, path: sheetPath } = resolveSheetPath(
 		unzipEntries(bytes, [WORKBOOK_PATH, WORKBOOK_RELS_PATH]),
 		sheetName,
 	);
@@ -201,6 +220,7 @@ export function readXlsxSheet(bytes: Uint8Array, sheetName: string): XlsxSheet {
 	const rows: XlsxRow[] = [];
 	for (const rowNode of asNodes(asNode(worksheet?.sheetData)?.row ?? [])) {
 		const cells: XlsxCellValues = {};
+		const numericColumns: string[] = [];
 		let rowNumber = Number(attribute(rowNode, "r"));
 		for (const cell of asNodes(rowNode.c ?? [])) {
 			const reference = attribute(cell, "r");
@@ -208,9 +228,16 @@ export function readXlsxSheet(bytes: Uint8Array, sheetName: string): XlsxSheet {
 			const { column, row } = splitReference(reference);
 			rowNumber = row;
 			const value = cellValue(cell, sharedStrings);
-			if (value !== "") cells[column] = value;
+			if (value === "") continue;
+			cells[column] = value;
+			if (isNumericCell(cell)) numericColumns.push(column);
 		}
-		if (Object.keys(cells).length > 0) rows.push({ row: rowNumber, cells });
+		if (Object.keys(cells).length === 0) continue;
+		rows.push(
+			numericColumns.length > 0
+				? { row: rowNumber, cells, numericColumns }
+				: { row: rowNumber, cells },
+		);
 	}
 
 	const merges = asNodes(
@@ -233,5 +260,5 @@ export function readXlsxSheet(bytes: Uint8Array, sheetName: string): XlsxSheet {
 		];
 	});
 
-	return { name: sheetName, rows, merges };
+	return { name, rows, merges };
 }

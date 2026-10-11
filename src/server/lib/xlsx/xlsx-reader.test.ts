@@ -79,6 +79,22 @@ describe("readXlsxSheet", () => {
 		});
 	});
 
+	it("reads the first sheet in workbook order when no name is given", () => {
+		const sheet = readXlsxSheet(workbook(validParts));
+
+		expect(sheet.name).toBe("Otra");
+		expect(sheet.rows).toEqual([]);
+	});
+
+	it("lists the columns holding a cached number", () => {
+		const sheet = readXlsxSheet(workbook(validParts), "Lista WEB");
+		const [header, product, other] = sheet.rows;
+
+		expect(header?.numericColumns).toBeUndefined();
+		expect(product?.numericColumns).toEqual(["D", "E"]);
+		expect(other?.numericColumns).toBeUndefined();
+	});
+
 	it("returns merged ranges", () => {
 		const sheet = readXlsxSheet(workbook(validParts), "Lista WEB");
 

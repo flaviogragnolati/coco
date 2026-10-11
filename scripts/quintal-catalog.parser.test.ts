@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { XlsxMergeRange, XlsxSheet } from "./lib/xlsx-reader";
+import type { XlsxMergeRange, XlsxSheet } from "~/server/lib/xlsx/xlsx-reader";
 import {
 	displayLabel,
 	parseDetail,
