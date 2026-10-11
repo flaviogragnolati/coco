@@ -1,0 +1,53 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-open-tickets-2026-10-11-report.md"
+      change: "Execution record section added (2026-10-11)"
+  references_added: []
+  traceability_delta:
+    - {item: "B12", implemented_by: "891012e"}
+    - {item: "qa_ticket#89", implemented_by: "1e2e06d"}
+    - {item: "qa_ticket#88", implemented_by: "8b0c343"}
+    - {item: "qa_ticket#87", implemented_by: "3acb582"}
+    - {item: "qa_ticket#84,#85", implemented_by: "18bb23d"}
+    - {item: "qa_ticket#86", implemented_by: "006a157"}
+    - {item: "mini review fixes", implemented_by: "e8a03fc, b0d10e6"}
+    - {item: "B11", implemented_by: "not started (design grill)"}
+  decisions_added_or_updated:
+    - "product.categoryId nullable in the DB, required by the app until a NOT NULL migration after backfill and purge"
+    - "Catalog category param is ?categoria=<category id>"
+    - "Money rounds half up to cents on client and server"
+    - "Unit pricing script converts only Quintal kg terms still at moq 1 / step 1"
+    - "Price sheet apply: per-row conditional price updates within a 180 s transaction; category moves batched"
+    - "Checkout terms bumped to checkout-v3 to drop the MOQ block sentence"
+    - "Demo purge keeps unlinked payment provider events and categories"
+  risks_added_or_updated:
+    - "8 Quintal per-unit products have no inferable presentation until set in the admin"
+    - "quintal-catalog.data.ts was transformed without the source xlsx; --check not run"
+    - "Home market-saving ranking now compares kg products at a 0,5 minimum"
+  stale_artifacts:
+    - path: "docs/qa/qa-ciclo-de-vida.md"
+      proposed_change: "Cases 19 and 32 depend on demo data; precondition 'pnpm db:seed:test' restores demo data after the purge"
+  blockers: []
+  warnings:
+    - "q-review-code: pass with findings in both waves (standards and specification axes); blockers none, findings fixed or recorded"
+    - "q-review-comments: pass with findings, applied"
+    - "Playwright e2e not run (needs server and database)"
+    - "Migrations and data scripts not applied; the shared database is unchanged"
+  required_user_actions:
+    - "Run, in order with dry runs first: pnpm db:migrate, db:purge-demo, db:migrate-unit-pricing, db:backfill:categories, qa:seed"
+    - "Review the doubtful category mappings before the backfill"
+    - "Set the presentation of the 8 uninferred per-unit products"
+    - "Confirm the checkout-v3 terms wording"
+    - "Run pnpm test:e2e against a seeded environment, then push main"
+  next_recommended_action: "Apply migrations and data scripts on the shared DB, run e2e, then q-code-grill-design for B11"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true
