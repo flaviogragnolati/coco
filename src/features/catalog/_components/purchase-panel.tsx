@@ -118,7 +118,6 @@ type PurchasePanelProps = {
 	disabled?: boolean;
 	size?: "default" | "hero";
 	showDiscount?: boolean;
-	className?: string;
 };
 
 /**
@@ -136,11 +135,10 @@ export function PurchasePanel({
 	disabled,
 	size = "default",
 	showDiscount,
-	className,
 }: PurchasePanelProps) {
 	const mode = getPurchasePanelMode(terms, inCartQuantity);
 	return (
-		<div className={cn("mt-auto flex flex-col gap-3", className)}>
+		<div className="mt-auto flex flex-col gap-3">
 			<PurchasePrice
 				pricing={toOfferPricing(terms, unit, presentation)}
 				showDiscount={showDiscount}
