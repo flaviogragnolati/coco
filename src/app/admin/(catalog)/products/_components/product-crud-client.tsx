@@ -20,6 +20,7 @@ const productSearchFields = (product: ProductListItem) => [
 	product.id,
 	product.name,
 	product.description,
+	product.category?.name ?? null,
 	product.brand?.name ?? null,
 	product.defaultSupplier?.name ?? null,
 ];
@@ -29,10 +30,10 @@ const productCopy: CrudEntityCopy<ProductListItem> = {
 	pageShell: {
 		title: "Productos",
 		description:
-			"Administración de catálogo, imágenes, unidad comercial y relación opcional con marca y proveedor por defecto.",
+			"Administración de catálogo, imágenes, unidad comercial, categoría y relación opcional con marca y proveedor por defecto.",
 	},
 	createButtonLabel: "Agregar nuevo",
-	searchPlaceholder: "ID, nombre, marca o proveedor",
+	searchPlaceholder: "ID, nombre, categoría, marca o proveedor",
 	statusLabels: { active: "Activos", inactive: "Inactivos" },
 	stats: {
 		total: { label: "Total", description: "Incluye productos eliminados" },
@@ -81,6 +82,9 @@ export function ProductCrudClient() {
 	});
 	const statsQuery = api.admin.product.getStats.useQuery();
 	const brandsQuery = api.admin.brand.list.useQuery({ includeDeleted: true });
+	const categoriesQuery = api.admin.category.list.useQuery({
+		includeDeleted: true,
+	});
 	const suppliersQuery = api.admin.supplier.list.useQuery({
 		includeDeleted: true,
 	});
@@ -103,6 +107,7 @@ export function ProductCrudClient() {
 			utils.admin.product.getPreview.invalidate(),
 			utils.admin.brand.list.invalidate(),
 			utils.admin.brand.getStats.invalidate(),
+			utils.admin.category.list.invalidate(),
 		]);
 	};
 
@@ -197,7 +202,9 @@ export function ProductCrudClient() {
 			renderFormDialog={() => (
 				<ProductFormDialog
 					brands={brandsQuery.data ?? []}
+					categories={categoriesQuery.data ?? []}
 					isLoadingBrands={brandsQuery.isLoading}
+					isLoadingCategories={categoriesQuery.isLoading}
 					isLoadingProduct={page.isLoadingDetail}
 					isLoadingSuppliers={suppliersQuery.isLoading}
 					isSubmitting={page.isFormSubmitting}

@@ -41,6 +41,19 @@ const productColumns: CrudColumn<ProductListItem>[] = [
 		),
 	},
 	{
+		key: "category",
+		header: "Categoría",
+		cell: (product) =>
+			product.category ? (
+				<span className="text-muted-foreground text-xs">
+					{product.category.name}
+					{product.category.deleted ? " (eliminada)" : ""}
+				</span>
+			) : (
+				<span className="text-destructive text-xs">Sin categoría</span>
+			),
+	},
+	{
 		key: "brand",
 		header: "Marca",
 		cell: (product) => (

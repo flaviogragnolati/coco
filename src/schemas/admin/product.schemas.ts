@@ -4,6 +4,7 @@ import {
 	brandIdSchema,
 	brandInlineCreateInputSchema,
 } from "~/schemas/admin/brand.schemas";
+import { categoryIdSchema } from "~/schemas/admin/category.schemas";
 import { supplierIdSchema } from "~/schemas/admin/supplier.schemas";
 import { cartItemSchema } from "~/schemas/cart.schemas";
 import { catalogProductDetailSchema } from "~/schemas/catalog.schemas";
@@ -14,6 +15,12 @@ const imageUrlSchema = z.string().trim().url("Ingresá una URL válida");
 
 const productReferenceBrandSchema = z.object({
 	id: brandIdSchema,
+	name: z.string(),
+	deleted: z.boolean(),
+});
+
+const productReferenceCategorySchema = z.object({
+	id: categoryIdSchema,
 	name: z.string(),
 	deleted: z.boolean(),
 });
@@ -60,6 +67,9 @@ export const productCreateInputSchema = z.object({
 	images: z.array(imageUrlSchema).default([]),
 	unit: productUnitSchema,
 	brandAssignment: productBrandAssignmentSchema,
+	categoryId: z
+		.number({ error: "Elegí una categoría" })
+		.pipe(categoryIdSchema),
 	defaultSupplierId: supplierIdSchema.optional(),
 	active: z.boolean().default(true),
 });
@@ -87,6 +97,7 @@ export const productListItemSchema = z.object({
 	unit: productUnitSchema,
 	cartImageUrl: z.string().nullable(),
 	brand: productReferenceBrandSchema.nullable(),
+	category: productReferenceCategorySchema.nullable(),
 	defaultSupplier: productReferenceSupplierSchema.nullable(),
 	active: z.boolean(),
 	deleted: z.boolean(),
@@ -102,6 +113,7 @@ export const productDetailSchema = z.object({
 	images: z.array(z.string()),
 	unit: productUnitSchema,
 	brand: productReferenceBrandSchema.nullable(),
+	category: productReferenceCategorySchema.nullable(),
 	defaultSupplier: productReferenceSupplierSchema.nullable(),
 	active: z.boolean(),
 	deleted: z.boolean(),
