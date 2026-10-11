@@ -48,7 +48,10 @@ export async function GET(request: Request, context: EvidenceRouteContext) {
 			},
 		});
 	} catch (error) {
-		return adminRouteErrorResponse(error);
+		return adminRouteErrorResponse(
+			error,
+			"No se pudo procesar la evidencia de QA",
+		);
 	}
 }
 
@@ -66,6 +69,9 @@ export async function DELETE(request: Request, context: EvidenceRouteContext) {
 			await removeImageEvidence(evidenceId.data, auth.actor, db),
 		);
 	} catch (error) {
-		return adminRouteErrorResponse(error);
+		return adminRouteErrorResponse(
+			error,
+			"No se pudo procesar la evidencia de QA",
+		);
 	}
 }

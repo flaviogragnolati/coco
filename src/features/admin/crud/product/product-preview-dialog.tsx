@@ -252,6 +252,7 @@ export function ProductPreviewDialog({
 													onViewInCart={ignore}
 												/>
 											}
+											ignoreCart
 											offer={preview.homeOffer}
 										/>
 									</div>

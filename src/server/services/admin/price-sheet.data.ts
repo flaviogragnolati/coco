@@ -109,12 +109,17 @@ export async function updatePriceSheetTermsPrice(
 	return count;
 }
 
-export async function updatePriceSheetProductCategory(
+/** Moves products still in `from` to `to`; fewer rows than ids means some moved meanwhile. */
+export async function updatePriceSheetProductCategories(
 	db: AdminDbClient,
-	input: { productId: number; from: number | null; to: number },
+	input: { productIds: number[]; from: number | null; to: number },
 ) {
 	const { count } = await db.product.updateMany({
-		where: { id: input.productId, deleted: false, categoryId: input.from },
+		where: {
+			id: { in: input.productIds },
+			deleted: false,
+			categoryId: input.from,
+		},
 		data: { categoryId: input.to },
 	});
 	return count;

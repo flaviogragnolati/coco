@@ -14,10 +14,12 @@ import {
 export function HomeOfferCard({
 	offer,
 	action,
+	ignoreCart,
 	size = "default",
 }: {
 	offer: HomeOffer;
 	action?: ReactNode;
+	ignoreCart?: boolean;
 	size?: "default" | "hero";
 }) {
 	const discount = getOfferDiscountLabel(offer);
@@ -63,7 +65,12 @@ export function HomeOfferCard({
 			</CardHeader>
 			<CardContent className="flex flex-1 flex-col pt-4 pb-5">
 				<HomeOfferQuantityProvider offer={offer}>
-					<HomeOfferPurchasePanel action={action} offer={offer} size={size} />
+					<HomeOfferPurchasePanel
+						action={action}
+						ignoreCart={ignoreCart}
+						offer={offer}
+						size={size}
+					/>
 				</HomeOfferQuantityProvider>
 			</CardContent>
 		</Card>

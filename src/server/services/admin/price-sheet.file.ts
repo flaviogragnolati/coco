@@ -52,8 +52,14 @@ function columnIndex(letters: string) {
 	return index - 1;
 }
 
+// 2000 rows of six columns stay far below this once inflated; the reader's
+// general cap would let a 2 MB upload parse 20 MB of XML per part.
+const XLSX_MAX_ENTRY_BYTES = 5 * 1024 * 1024;
+
 function xlsxGrid(bytes: Uint8Array): GridRow[] {
-	return readXlsxSheet(bytes).rows.map((row) => {
+	return readXlsxSheet(bytes, undefined, {
+		maxEntryBytes: XLSX_MAX_ENTRY_BYTES,
+	}).rows.map((row) => {
 		const numeric = new Set(row.numericColumns ?? []);
 		const cells: (PriceSheetCell | undefined)[] = [];
 		for (const [letters, text] of Object.entries(row.cells)) {

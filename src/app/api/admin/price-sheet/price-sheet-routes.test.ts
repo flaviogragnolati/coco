@@ -122,6 +122,28 @@ describe("price sheet routes", () => {
 		expect(previewPriceSheet).not.toHaveBeenCalled();
 	});
 
+	it("stops reading a streamed body without Content-Length past the cap", async () => {
+		let pulled = 0;
+		const body = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				pulled += 1;
+				controller.enqueue(new Uint8Array(1024 * 1024));
+			},
+		});
+		const request = new Request(`${BASE}/preview`, {
+			method: "POST",
+			body,
+			headers: { "content-type": "multipart/form-data; boundary=x" },
+			duplex: "half",
+		} as RequestInit);
+
+		const response = await previewPost(request);
+
+		expect(response.status).toBe(413);
+		expect(pulled).toBeLessThan(10);
+		expect(previewPriceSheet).not.toHaveBeenCalled();
+	});
+
 	it("maps a sheet error to 400 with its message", async () => {
 		vi.mocked(previewPriceSheet).mockRejectedValue(
 			new AdminCrudError("BAD_REQUEST", "El archivo está vacío."),

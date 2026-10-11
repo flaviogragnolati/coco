@@ -91,7 +91,10 @@ export function ProductDetailsDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="-mx-1 flex min-h-0 flex-col gap-5 overflow-y-auto px-1">
+				<div
+					className="-mx-1 flex min-h-0 flex-col gap-5 overflow-y-auto px-1"
+					ref={bodyRef}
+				>
 					{detailQuery.isLoading ? (
 						<div className="grid gap-5 md:grid-cols-[18rem_1fr]">
 							<div className="flex flex-col gap-3">

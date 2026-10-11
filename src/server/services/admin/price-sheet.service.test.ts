@@ -5,7 +5,7 @@ vi.mock("./price-sheet.data", () => ({
 	findPriceSheetProducts: vi.fn(),
 	listPriceSheetCategories: vi.fn(),
 	listPriceSheetDownloadProducts: vi.fn(),
-	updatePriceSheetProductCategory: vi.fn(),
+	updatePriceSheetProductCategories: vi.fn(),
 	updatePriceSheetTermsPrice: vi.fn(),
 }));
 vi.mock("./_base/admin-audit", () => ({
@@ -69,7 +69,7 @@ beforeEach(() => {
 		{ ...oils, active: true },
 	]);
 	vi.mocked(data.updatePriceSheetTermsPrice).mockResolvedValue(1);
-	vi.mocked(data.updatePriceSheetProductCategory).mockResolvedValue(1);
+	vi.mocked(data.updatePriceSheetProductCategories).mockResolvedValue(1);
 });
 
 const FILE = "id;precio nuevo;categoría\n1;1.500;\n2;;Aceites y despensa\n";
@@ -93,8 +93,8 @@ describe("applyPriceSheet", () => {
 			stepPrice: "750.00",
 			now: expect.any(Date),
 		});
-		expect(data.updatePriceSheetProductCategory).toHaveBeenCalledWith(tx, {
-			productId: 2,
+		expect(data.updatePriceSheetProductCategories).toHaveBeenCalledWith(tx, {
+			productIds: [2],
 			from: 1,
 			to: 2,
 		});
@@ -162,7 +162,7 @@ describe("applyPriceSheet", () => {
 			service.applyPriceSheet(sheet(file), [], actor, database),
 		).rejects.toMatchObject({ code: "BAD_REQUEST" });
 		expect(data.updatePriceSheetTermsPrice).not.toHaveBeenCalled();
-		expect(data.updatePriceSheetProductCategory).not.toHaveBeenCalled();
+		expect(data.updatePriceSheetProductCategories).not.toHaveBeenCalled();
 	});
 
 	it("aborts the transaction when a row moved under the conditional update", async () => {

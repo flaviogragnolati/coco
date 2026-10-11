@@ -57,6 +57,9 @@ export async function POST(
 		);
 		return NextResponse.json(metadata, { status: 201 });
 	} catch (error) {
-		return adminRouteErrorResponse(error);
+		return adminRouteErrorResponse(
+			error,
+			"No se pudo procesar la evidencia de QA",
+		);
 	}
 }

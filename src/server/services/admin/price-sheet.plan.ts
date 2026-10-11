@@ -77,20 +77,23 @@ function resolveCategory(
 	categoriesByLabel: Map<string, PriceSheetCategory[]>,
 ) {
 	const matches = categoriesByLabel.get(normalizeLabel(text)) ?? [];
-	const [category] = matches;
-	if (!category) {
+	const [inactive] = matches;
+	if (!inactive) {
 		return { ok: false as const, error: `No existe la categoría "${text}"` };
 	}
-	if (matches.length > 1) {
+	// An inactive namesake never makes an active category ambiguous.
+	const active = matches.filter((category) => category.active);
+	const [category] = active;
+	if (!category) {
+		return {
+			ok: false as const,
+			error: `La categoría "${inactive.name}" está inactiva`,
+		};
+	}
+	if (active.length > 1) {
 		return {
 			ok: false as const,
 			error: `Hay más de una categoría llamada "${text}"`,
-		};
-	}
-	if (!category.active) {
-		return {
-			ok: false as const,
-			error: `La categoría "${category.name}" está inactiva`,
 		};
 	}
 	return { ok: true as const, category };
@@ -187,7 +190,13 @@ export function planPriceSheet(
 
 		let category: PriceSheetPreviewRow["category"] = null;
 		let categoryChange: PriceSheetChange["category"] = null;
-		if (row.category) {
+		// The product's own category, as downloaded, is no change even when it is
+		// inactive or deleted now: a price-only edit must not trip over it.
+		const keepsCategory =
+			usable?.category != null &&
+			normalizeLabel(row.category?.text ?? "") ===
+				normalizeLabel(usable.category.name);
+		if (row.category && !keepsCategory) {
 			const resolved = resolveCategory(row.category.text, categoriesByLabel);
 			if (!resolved.ok) {
 				errors.push(resolved.error);

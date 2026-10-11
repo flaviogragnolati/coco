@@ -96,12 +96,16 @@ function stringItemText(item: XmlNode): string {
 class XlsxEntryTooLargeError extends Error {}
 
 /** fflate allocates each entry's declared size up front, hence the cap before inflating. */
-function unzipEntries(bytes: Uint8Array, paths: string[]) {
+function unzipEntries(
+	bytes: Uint8Array,
+	paths: string[],
+	maxEntryBytes = XLSX_MAX_ENTRY_BYTES,
+) {
 	const filter = (file: UnzipFileInfo) => {
 		const wanted = paths.includes(file.name);
-		if (wanted && file.originalSize > XLSX_MAX_ENTRY_BYTES) {
+		if (wanted && file.originalSize > maxEntryBytes) {
 			throw new XlsxEntryTooLargeError(
-				`${file.name} expands to ${file.originalSize} bytes, above the ${XLSX_MAX_ENTRY_BYTES} byte limit`,
+				`${file.name} expands to ${file.originalSize} bytes, above the ${maxEntryBytes} byte limit`,
 			);
 		}
 		return wanted;
@@ -203,12 +207,21 @@ function isNumericCell(cell: XmlNode) {
 export function readXlsxSheet(
 	bytes: Uint8Array,
 	sheetName?: string,
+	options: { maxEntryBytes?: number } = {},
 ): XlsxSheet {
 	const { name, path: sheetPath } = resolveSheetPath(
-		unzipEntries(bytes, [WORKBOOK_PATH, WORKBOOK_RELS_PATH]),
+		unzipEntries(
+			bytes,
+			[WORKBOOK_PATH, WORKBOOK_RELS_PATH],
+			options.maxEntryBytes,
+		),
 		sheetName,
 	);
-	const files = unzipEntries(bytes, [SHARED_STRINGS_PATH, sheetPath]);
+	const files = unzipEntries(
+		bytes,
+		[SHARED_STRINGS_PATH, sheetPath],
+		options.maxEntryBytes,
+	);
 	const sheetBytes = files[sheetPath];
 	if (!sheetBytes) throw new Error(`${sheetPath} is missing from the file`);
 

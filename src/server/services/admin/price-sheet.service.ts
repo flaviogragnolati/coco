@@ -1,4 +1,8 @@
 import { randomUUID } from "node:crypto";
+import {
+	priceSheetApplyResultSchema,
+	priceSheetPreviewSchema,
+} from "~/schemas/admin/price-sheet.schemas";
 import type { db } from "~/server/db";
 import { writeXlsxSheet } from "~/server/lib/xlsx/xlsx-writer";
 import { deriveClientTermsPrices } from "~/server/services/_base/client-terms-prices";
@@ -19,7 +23,7 @@ import {
 	listPriceSheetCategories,
 	listPriceSheetDownloadProducts,
 	type PriceSheetProductRecord,
-	updatePriceSheetProductCategory,
+	updatePriceSheetProductCategories,
 	updatePriceSheetTermsPrice,
 } from "./price-sheet.data";
 import {
@@ -133,7 +137,7 @@ export async function previewPriceSheet(
 ): Promise<PriceSheetPreview> {
 	const rows = readRowsOrThrow(file);
 	const { plan } = await loadPlan(database, rows, new Date());
-	return plan;
+	return priceSheetPreviewSchema.parse(plan);
 }
 
 /**
@@ -150,95 +154,114 @@ export async function applyPriceSheet(
 ): Promise<PriceSheetApplyResult> {
 	const rows = readRowsOrThrow(file);
 
-	return database.$transaction(async (tx) => {
-		const now = new Date();
-		const { plan, recordsById } = await loadPlan(tx, rows, now);
+	return database.$transaction(
+		async (tx) => {
+			const now = new Date();
+			const { plan, recordsById } = await loadPlan(tx, rows, now);
 
-		if (plan.errorCount > 0) {
-			throw new AdminCrudError(
-				"BAD_REQUEST",
-				"La planilla tiene errores. Corregilos y volvé a subirla.",
-			);
-		}
-		if (stalePriceSheetProductIds(expected, plan.changes).length > 0) {
-			throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
-		}
-		if (plan.changes.length === 0) {
-			throw new AdminCrudError(
-				"BAD_REQUEST",
-				"La planilla no tiene cambios para aplicar.",
-			);
-		}
+			if (plan.errorCount > 0) {
+				throw new AdminCrudError(
+					"BAD_REQUEST",
+					"La planilla tiene errores. Corregilos y volvé a subirla.",
+				);
+			}
+			if (stalePriceSheetProductIds(expected, plan.changes).length > 0) {
+				throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
+			}
+			if (plan.changes.length === 0) {
+				throw new AdminCrudError(
+					"BAD_REQUEST",
+					"La planilla no tiene cambios para aplicar.",
+				);
+			}
 
-		const batchId = randomUUID();
-		const audits: Parameters<typeof writeAdminAuditLogs>[1] = [];
-		let priceCount = 0;
-		let categoryCount = 0;
+			const batchId = randomUUID();
+			const audits: Parameters<typeof writeAdminAuditLogs>[1] = [];
+			let priceCount = 0;
+			let categoryCount = 0;
+			const categoryMoves = new Map<
+				string,
+				{ from: number | null; to: number; productIds: number[] }
+			>();
 
-		for (const change of plan.changes) {
-			const record = recordsById.get(change.productId);
-			if (!record) throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
-			const metadata = {
-				batchId,
-				fileName: file.name,
-				productId: record.id,
-			};
+			for (const change of plan.changes) {
+				const record = recordsById.get(change.productId);
+				if (!record) throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
+				const metadata = {
+					batchId,
+					fileName: file.name,
+					productId: record.id,
+				};
 
-			if (change.price) {
-				const [terms] = record.productClientTerms;
-				if (!terms || terms.id !== change.termsId) {
+				if (change.price) {
+					const [terms] = record.productClientTerms;
+					if (!terms || terms.id !== change.termsId) {
+						throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
+					}
+					const derived = deriveClientTermsPrices({
+						unitPrice: change.price.to,
+						moq: terms.moq,
+						step: terms.step,
+					});
+					const written = await updatePriceSheetTermsPrice(tx, {
+						terms,
+						unitPrice: change.price.to,
+						...derived,
+						now,
+					});
+					if (written !== 1)
+						throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
+
+					audits.push({
+						action: "productClientTerms.priceSheetUpdate",
+						actor,
+						entityType: "productClientTerms",
+						entityId: String(terms.id),
+						before: {
+							unitPrice: terms.unitPrice?.toFixed(2) ?? null,
+							moqPrice: terms.moqPrice.toFixed(2),
+							stepPrice: terms.stepPrice?.toFixed(2) ?? null,
+						},
+						after: { unitPrice: change.price.to, ...derived },
+						metadata,
+					});
+					priceCount += 1;
+				}
+
+				if (change.category) {
+					const key = `${change.category.from}:${change.category.to}`;
+					const group = categoryMoves.get(key) ?? {
+						...change.category,
+						productIds: [],
+					};
+					group.productIds.push(record.id);
+					categoryMoves.set(key, group);
+
+					audits.push({
+						action: "product.priceSheetUpdate",
+						actor,
+						entityType: "product",
+						entityId: String(record.id),
+						before: { categoryId: change.category.from },
+						after: { categoryId: change.category.to },
+						metadata,
+					});
+					categoryCount += 1;
+				}
+			}
+
+			for (const move of categoryMoves.values()) {
+				const written = await updatePriceSheetProductCategories(tx, move);
+				if (written !== move.productIds.length) {
 					throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
 				}
-				const derived = deriveClientTermsPrices({
-					unitPrice: change.price.to,
-					moq: terms.moq,
-					step: terms.step,
-				});
-				const written = await updatePriceSheetTermsPrice(tx, {
-					terms,
-					unitPrice: change.price.to,
-					...derived,
-					now,
-				});
-				if (written !== 1) throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
-
-				audits.push({
-					action: "productClientTerms.priceSheetUpdate",
-					actor,
-					entityType: "productClientTerms",
-					entityId: String(terms.id),
-					before: {
-						unitPrice: terms.unitPrice?.toFixed(2) ?? null,
-						moqPrice: terms.moqPrice.toFixed(2),
-						stepPrice: terms.stepPrice?.toFixed(2) ?? null,
-					},
-					after: { unitPrice: change.price.to, ...derived },
-					metadata,
-				});
-				priceCount += 1;
 			}
 
-			if (change.category) {
-				const written = await updatePriceSheetProductCategory(tx, {
-					productId: record.id,
-					...change.category,
-				});
-				if (written !== 1) throw new AdminCrudError("CONFLICT", STALE_MESSAGE);
-
-				audits.push({
-					action: "product.priceSheetUpdate",
-					actor,
-					entityType: "product",
-					entityId: String(record.id),
-					before: { categoryId: change.category.from },
-					after: { categoryId: change.category.to },
-					metadata,
-				});
-				categoryCount += 1;
-			}
-		}
-
-		await writeAdminAuditLogs(tx, audits);
-		return { priceCount, categoryCount };
-	});
+			await writeAdminAuditLogs(tx, audits);
+			return priceSheetApplyResultSchema.parse({ priceCount, categoryCount });
+		},
+		// Each price is its own conditional update, so a full sheet can outlast
+		// the default 60 s against the remote database.
+		{ timeout: 180_000 },
+	);
 }

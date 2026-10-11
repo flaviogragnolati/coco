@@ -208,6 +208,34 @@ describe("planPriceSheet", () => {
 		expect(result.canApply).toBe(false);
 	});
 
+	it.each([
+		["inactive", { id: 3, name: "Suplementos" }],
+		["deleted", { id: 9, name: "Infusiones" }],
+		["shared with another category", { id: 4, name: "Semillas" }],
+	])("leaves the product's own %s category alone on a price-only edit", (_state, category) => {
+		const result = planPriceSheet(
+			[row("1", "1100", category.name)],
+			[product(1, { category })],
+			categories,
+		);
+
+		expect(result.errorCount).toBe(0);
+		expect(result.changes).toEqual([
+			expect.objectContaining({ productId: 1, category: null }),
+		]);
+	});
+
+	it("an inactive namesake does not make the active category ambiguous", () => {
+		const result = planPriceSheet(
+			[row("1", null, "Suplementos")],
+			[product(1)],
+			[...categories, { id: 6, name: "Suplementos", active: true }],
+		);
+
+		expect(result.errorCount).toBe(0);
+		expect(result.changes[0]?.category).toEqual({ from: 1, to: 6 });
+	});
+
 	it("marks every occurrence of a repeated id", () => {
 		const result = plan(row("1", "1100"), row("2", "1100"), row("1", "1200"));
 

@@ -10,7 +10,7 @@ const STATUS_BY_CODE = {
 
 export function adminRouteErrorResponse(
 	error: unknown,
-	fallbackMessage = "No se pudo procesar la evidencia de QA",
+	fallbackMessage: string,
 ) {
 	if (error instanceof AdminCrudError) {
 		return NextResponse.json(

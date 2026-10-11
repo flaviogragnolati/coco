@@ -53,10 +53,13 @@ export function useHomeOfferCartQuantity(offer: HomeOffer) {
 export function HomeOfferPurchasePanel({
 	offer,
 	action,
+	ignoreCart = false,
 	size,
 }: {
 	offer: HomeOffer;
 	action?: ReactNode;
+	/** Shows the not-in-order state whatever the viewer's own order holds. */
+	ignoreCart?: boolean;
 	size?: "default" | "hero";
 }) {
 	const state = useContext(HomeOfferQuantityContext);
@@ -72,7 +75,7 @@ export function HomeOfferPurchasePanel({
 		<PurchasePanel
 			action={action}
 			disabled={!hasHydrated}
-			inCartQuantity={cartQuantity}
+			inCartQuantity={ignoreCart ? null : cartQuantity}
 			onQuantityChange={state.setQuantity}
 			presentation={offer}
 			quantity={state.quantity}

@@ -5,10 +5,10 @@
  * Interim placeholder until the legal text is provided (ADR 0009 is deferred).
  */
 export const CHECKOUT_TERMS = {
-	version: "checkout-v2",
+	version: "checkout-v3",
 	text: `TEXTO DE PRUEBA — Estos términos son un borrador para el entorno de pruebas y no tienen validez legal.
 
-1. Objeto. Al confirmar el pedido, el cliente compra los productos detallados en el resumen, en las cantidades y precios que allí figuran. Los precios se calculan por bloque de compra mínima (MOQ) y sus incrementos, e incluyen los impuestos indicados.
+1. Objeto. Al confirmar el pedido, el cliente compra los productos detallados en el resumen, en las cantidades y precios que allí figuran. Cada línea se cobra al precio por unidad multiplicado por la cantidad, e incluye los impuestos indicados.
 
 2. Compra agrupada. Los pedidos se agrupan con los de otros clientes para comprar al proveedor. Por eso la fecha de entrega es estimada y depende del cierre de la operación de compra.
 

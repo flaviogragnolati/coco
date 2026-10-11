@@ -195,8 +195,11 @@ export function PriceSheetPreviewDialog({
 		>
 			<div className="flex flex-col gap-3">
 				{isLoading ? (
-					<p className="flex items-center gap-2 text-muted-foreground text-sm">
-						<Loader2Icon className="size-4 animate-spin" />
+					<p
+						className="flex items-center gap-2 text-muted-foreground text-sm"
+						role="status"
+					>
+						<Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
 						Leyendo la planilla…
 					</p>
 				) : null}
