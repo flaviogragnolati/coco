@@ -13,6 +13,7 @@
 		"db:migrate": "prisma migrate deploy",
 		"db:push": "prisma db push",
 		"db:seed:init": "tsx scripts/seed-init.ts",
+		"db:migrate-unit-pricing": "tsx scripts/migrate-unit-pricing.ts",
 		"db:seed:test": "tsx prisma/seed.ts",
 		"catalog:quintal": "tsx scripts/quintal-catalog-parse.ts",
 		"db:studio": "prisma studio",
