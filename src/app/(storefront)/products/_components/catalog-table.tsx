@@ -20,7 +20,7 @@ import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import {
 	formatCurrency,
 	formatQuantity,
-	productUnitLabelMap,
+	formatUnitLabel,
 } from "~/shared/common/commerce.helpers";
 import { ProductPriceBlock } from "./product-price-block";
 
@@ -95,7 +95,7 @@ export function CatalogTable({
 										</span>
 										<span className="text-muted-foreground text-xs">
 											{product.brand?.name ?? "Sin marca"} ·{" "}
-											{productUnitLabelMap[product.unit]}
+											{formatUnitLabel(1, product.unit, product)}
 										</span>
 									</div>
 								</TableCell>

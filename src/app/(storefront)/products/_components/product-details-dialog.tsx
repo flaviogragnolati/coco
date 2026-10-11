@@ -29,7 +29,7 @@ import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import {
 	formatCurrency,
 	formatQuantity,
-	productUnitLabelMap,
+	formatUnitLabel,
 } from "~/shared/common/commerce.helpers";
 import { api } from "~/trpc/react";
 import { ProductPriceBlock } from "./product-price-block";
@@ -106,7 +106,7 @@ export function ProductDetailsDialog({
 						<div className="flex flex-wrap gap-2">
 							<Badge variant="secondary">{product.terms.currency}</Badge>
 							<Badge variant="outline">
-								{productUnitLabelMap[product.unit]}
+								{formatUnitLabel(1, product.unit, product)}
 							</Badge>
 							{product.terms.max ? (
 								<Badge variant="outline">
