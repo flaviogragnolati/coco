@@ -1,0 +1,72 @@
+schema_version: '1.0'
+stage_result:
+  skill_id: q-code-implement
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+  - artifact_id: IP-QUINTAL-LAUNCH-20261016
+    artifact_type: implementation-plan
+    version: '1.0'
+    path: docs/development-workflow/plans/quintal-launch-catalog-reset.md
+    lifecycle: Working
+    source_item_id: REQ-QUINTAL-LAUNCH-20261016
+    change: User-approved plan implemented and shared database replaced; acceptance,
+      checks, reviews, backup and residual risks recorded in original plan.
+  references_added:
+  - source_id: QUINTAL-LAUNCH-XLSX-20261011
+    location: https://docs.google.com/spreadsheets/d/16S1ivbmXSI378E5b6xDsZeXDe_L2cK-A/edit?gid=452922195#gid=452922195
+    version: '2026-10-11T22:24:01.667Z'
+    sha256: 22661c07c5264cc5e64baf45effd43244ad34ffd9f1b80df1a54140caf6c1f26
+  traceability_delta:
+  - item: REQ-QUINTAL-LAUNCH-20261016
+    refined_by: IP-QUINTAL-LAUNCH-20261016@1.0
+    implemented_by: Working-tree changes and verified shared-database reset on 2026-10-16
+    acceptance: 27 products, 54 exact terms; all old products removed; accounts/configuration/QA
+      preserved; no operational rows.
+  decisions_added_or_updated:
+  - User approved implementation on 2026-10-16; preserve the previously aligned scope
+    and source.
+  - Use all-table exclusive locks for the brief reset maintenance interval in observed
+    empty operatoria; populated environments additionally require admissions/jobs
+    stopped.
+  - Keep a private restored-and-verified custom PostgreSQL dump; require backup and
+    exact target flags for CLI apply.
+  - Reject PostgreSQL routing query overrides, missing database paths and ambiguous
+    inherited ports before connecting.
+  risks_added_or_updated:
+  - Prior 88 products and 176 terms were intentionally deleted; restore backup to
+    recover their prior edits/images.
+  - Source price formula caches are imported; source financial assumptions are retained
+    without independent commercial validation.
+  stale_artifacts: []
+  blockers: []
+  warnings:
+  - 'q-review-code: standards pass and specification pass after fixing the destination-identity
+    P1; re-reviewed by independent reviewer.'
+  - 'q-review-comments: pass, 9 keep, 0 remove/rewrite/add.'
+  - Full suite 1753 passed and 4 integration tests skipped by default; those 4 passed
+    separately against isolated local PostgreSQL.
+  - Typecheck, Biome on 22 affected code/data files, source regeneration check, and
+    git diff --check passed.
+  - Backup restored with matching counts/content digests for all 44 tables; full reset
+    rehearsed on restored copy before shared application.
+  - Isolated PostgreSQL 18.6 versus shared 17.11; final replacement, public-service
+    smoke and seed idempotency verified on shared 17.11.
+  - Existing pg runtime warnings about SSL modes/concurrent query calls remain; no
+    check failed.
+  - Private backup retained at tmp/backups/quintal-20261016-before-reset/neondb.dump
+    (ignored by Git, mode 600); hash b2c1a3312e796da975fbce471b058d063431bad280c678086b49898192a66d34.
+  - No browser/build validation required for data/scripts-only change; public catalog/detail/pricing
+    service smoke passed without creating payments or orders.
+  - No staging, commit, push or deployment performed; pre-existing docs/README.md
+    edits preserved.
+  required_user_actions: []
+  next_recommended_action: Review the working-tree diff and retain the private backup
+    according to the project retention policy; implementation and shared reset are
+    complete.
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

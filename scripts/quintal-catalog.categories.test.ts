@@ -29,54 +29,37 @@ describe("resolveQuintalCategory", () => {
 		);
 
 		expect(totals).toEqual({
-			"Frutos secos": 24,
-			"Mixes y snacks": 15,
-			"Frutas desecadas": 21,
-			"Semillas y granola": 8,
-			"Aceites y despensa": 15,
-			Suplementos: 5,
+			"Frutos secos": 9,
+			"Mixes y snacks": 4,
+			"Frutas desecadas": 6,
+			"Semillas y granola": 3,
+			"Aceites y despensa": 5,
+			Suplementos: 0,
 		});
 	});
 
-	it("lets a product exception win over its heading", () => {
-		expect(namesIn("Frutos secos")).toContain("Piñones");
-		expect(namesIn("Mixes y snacks")).toEqual(
-			expect.arrayContaining([
-				"Bocaditos",
-				"Nuez pecán garapiñada 500 g",
-				"Maní bañado en chocolate semiamargo",
-			]),
-		);
-		expect(namesIn("Aceites y despensa")).toEqual(
-			expect.arrayContaining([
-				"Pasta de maní Entre Nuts 370 g",
-				"Harina de coco",
-				"Aceite de coco virgen Entre Nuts 200 cc",
-			]),
-		);
-		expect(namesIn("Suplementos")).not.toContain("Bocaditos");
+	it("keeps legacy heading mappings and exceptions usable", () => {
+		expect(
+			resolveQuintalCategory({
+				key: "semillas--pinones",
+				category: "SEMILLAS",
+			}),
+		).toBe("Frutos secos");
+		expect(
+			resolveQuintalCategory({ key: "otros--bocaditos", category: "OTROS" }),
+		).toBe("Mixes y snacks");
+		for (const [category, name] of Object.entries(
+			quintalCategoryOverrides.categoryMap,
+		))
+			expect(resolveQuintalCategory({ key: "legacy--fixture", category })).toBe(
+				name,
+			);
 	});
 
 	it("returns null for a heading nobody mapped", () => {
 		expect(
 			resolveQuintalCategory({ key: "nuevo--producto", category: "NUEVO" }),
 		).toBeNull();
-	});
-
-	it("keeps no stale heading or product key", () => {
-		const headings = new Set(products.map((product) => product.category));
-		const keys = new Set(products.map((product) => product.key));
-
-		expect(
-			Object.keys(quintalCategoryOverrides.categoryMap).filter(
-				(heading) => !headings.has(heading),
-			),
-		).toEqual([]);
-		expect(
-			Object.keys(quintalCategoryOverrides.categoryExceptions).filter(
-				(key) => !keys.has(key),
-			),
-		).toEqual([]);
 	});
 });
 

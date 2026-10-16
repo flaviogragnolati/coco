@@ -55,6 +55,19 @@ const validParts = {
 };
 
 describe("readXlsxSheet", () => {
+	it("reports formulas without cached results, including otherwise empty rows", () => {
+		const sheet = readXlsxSheet(
+			workbook({
+				...validParts,
+				"xl/worksheets/sheet2.xml":
+					'<worksheet><sheetData><row r="2"><c r="Z2"><f>1+1</f></c></row></sheetData></worksheet>',
+			}),
+			"Lista WEB",
+		);
+		expect(sheet.rows).toEqual([
+			{ row: 2, cells: {}, uncachedFormulaColumns: ["Z"] },
+		]);
+	});
 	it("resolves the sheet by name through the workbook relationships", () => {
 		const sheet = readXlsxSheet(workbook(validParts), "Lista WEB");
 

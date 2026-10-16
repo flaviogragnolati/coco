@@ -95,7 +95,7 @@ export const quintalProductSchema = z
 		name: z.string().trim().min(1),
 		description: z.string().min(1),
 		unit: z.enum(["kg", "piece"]),
-		/** Only products sold by the unit; inferred from the name. */
+		/** Only products sold by the unit. */
 		presentation: presentationSchema.nullable(),
 		supplierTerms: supplierTermsSchema,
 		clientTerms: clientTermsSchema,
@@ -156,12 +156,31 @@ export const quintalCatalogSchema = z.object({
 	source: z.object({
 		fileName: z.string().min(1),
 		sha256: z.string().regex(/^[0-9a-f]{64}$/),
-		sheet: z.literal(QUINTAL_SHEET_NAME),
+		sheet: z.enum([QUINTAL_SHEET_NAME, "Catalogo"]),
+		profile: z.enum(["quintal-list", "coco-launch"]).optional(),
+		sourceUrl: z.url().optional(),
+		sourceModifiedAt: z.iso.datetime().optional(),
 		listDate: z.iso.datetime(),
 		pricesIncludeVat: z.literal(false),
 		currency: z.literal("ARS"),
 		paymentTerms: z.string().min(1),
 	}),
+	importReference: z
+		.object({
+			criteriaRows: z.array(
+				z.object({
+					row: sourceRowSchema,
+					cells: z.record(z.string(), z.string()),
+				}),
+			),
+			productRows: z.array(
+				z.object({
+					row: sourceRowSchema,
+					cells: z.record(z.string(), z.string()),
+				}),
+			),
+		})
+		.optional(),
 	supplier: z.object({
 		name: z.literal(QUINTAL_SUPPLIER_NAME),
 		description: z.string().min(1),

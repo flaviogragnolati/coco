@@ -197,12 +197,12 @@ describe("planCategoryBackfill", () => {
 
 		expect(plan.leftWithoutCategory).toBe(0);
 		expect(plan.assignedPerCategory).toEqual([
-			{ name: "Frutos secos", count: 24 },
-			{ name: "Mixes y snacks", count: 15 },
-			{ name: "Frutas desecadas", count: 21 },
-			{ name: "Semillas y granola", count: 8 },
-			{ name: "Aceites y despensa", count: 15 },
-			{ name: "Suplementos", count: 5 },
+			{ name: "Frutos secos", count: 9 },
+			{ name: "Mixes y snacks", count: 4 },
+			{ name: "Frutas desecadas", count: 6 },
+			{ name: "Semillas y granola", count: 3 },
+			{ name: "Aceites y despensa", count: 5 },
+			{ name: "Suplementos", count: 0 },
 		]);
 	});
 });

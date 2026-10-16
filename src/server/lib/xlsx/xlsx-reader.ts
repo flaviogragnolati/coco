@@ -16,6 +16,7 @@ export type XlsxRow = {
 	cells: XlsxCellValues;
 	/** Columns whose cached value is a number, written in its canonical `1234.5` form. */
 	numericColumns?: string[];
+	uncachedFormulaColumns?: string[];
 };
 
 export type XlsxMergeRange = {
@@ -234,23 +235,31 @@ export function readXlsxSheet(
 	for (const rowNode of asNodes(asNode(worksheet?.sheetData)?.row ?? [])) {
 		const cells: XlsxCellValues = {};
 		const numericColumns: string[] = [];
+		const uncachedFormulaColumns: string[] = [];
 		let rowNumber = Number(attribute(rowNode, "r"));
 		for (const cell of asNodes(rowNode.c ?? [])) {
 			const reference = attribute(cell, "r");
 			if (!reference) throw new Error("Cell without a reference");
 			const { column, row } = splitReference(reference);
+			if (cell.f !== undefined && textOf(cell.v) === "")
+				uncachedFormulaColumns.push(column);
 			rowNumber = row;
 			const value = cellValue(cell, sharedStrings);
 			if (value === "") continue;
 			cells[column] = value;
 			if (isNumericCell(cell)) numericColumns.push(column);
 		}
-		if (Object.keys(cells).length === 0) continue;
+		if (Object.keys(cells).length === 0 && uncachedFormulaColumns.length === 0)
+			continue;
 		rows.push(
 			numericColumns.length > 0
 				? { row: rowNumber, cells, numericColumns }
 				: { row: rowNumber, cells },
 		);
+		if (uncachedFormulaColumns.length) {
+			const lastRow = rows[rows.length - 1];
+			if (lastRow) lastRow.uncachedFormulaColumns = uncachedFormulaColumns;
+		}
 	}
 
 	const merges = asNodes(

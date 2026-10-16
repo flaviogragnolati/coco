@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { Prisma } from "~/prisma/client";
+import { launchExpected } from "./fixtures/quintal-launch.expected";
 import { quintalCatalog } from "./quintal-catalog.data";
 import { normalizeText, quintalCatalogSchema } from "./quintal-catalog.schema";
 
@@ -12,11 +13,17 @@ describe("quintal catalog data", () => {
 		expect(quintalCatalogSchema.safeParse(quintalCatalog).success).toBe(true);
 	});
 
-	it("pins the product count, OTROS included", () => {
-		expect(products).toHaveLength(88);
+	it("matches every approved launch product and both sets of purchase terms", () => {
 		expect(
-			products.filter((product) => product.category === "OTROS"),
-		).toHaveLength(6);
+			products.map((p) => [
+				p.name,
+				p.unit,
+				p.clientTerms.unitPrice,
+				p.clientTerms.moq,
+				p.supplierTerms.moq,
+				p.supplierTerms.moqPrice,
+			]),
+		).toEqual(launchExpected);
 	});
 
 	it("has unique keys and case-insensitively unique names", () => {
@@ -57,15 +64,17 @@ describe("quintal catalog data", () => {
 
 	it.each(
 		products.map((product) => [product.key, product] as const),
-	)("%s: the customer pays the list price, by the half kilo or the unit", (_key, product) => {
+	)("%s: the customer pays the final price with the explicit purchase step", (_key, product) => {
 		const terms = product.clientTerms;
-		const quantity = product.unit === "kg" ? "0.5000" : "1.0000";
+		const quantity = terms.moq;
 		const priceOf = (amount: string) =>
 			decimal(terms.unitPrice)
 				.times(amount)
 				.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
-		expect(terms.unitPrice).toBe(product.supplierTerms.refPrice);
+		expect(decimal(terms.unitPrice).gt(product.supplierTerms.refPrice)).toBe(
+			true,
+		);
 		expect(terms.moq).toBe(quantity);
 		expect(terms.step).toBe(quantity);
 		expect(terms.max).toBeNull();
@@ -94,32 +103,24 @@ describe("quintal catalog data", () => {
 				.map((product) => [product.name, product.presentation]),
 		).toEqual([
 			[
+				"Aceite de oliva extra virgen 0,5 L",
+				{ presentationContainer: "botella", presentationSize: "0,5 L" },
+			],
+			[
+				"Aceite de oliva extra virgen 1 L",
+				{ presentationContainer: "botella", presentationSize: "1 L" },
+			],
+			[
+				"Aceite de oliva extra virgen 5 L",
+				{ presentationContainer: "bidon", presentationSize: "5 L" },
+			],
+			[
 				"Pasta de maní Entre Nuts 370 g",
 				{ presentationContainer: "frasco", presentationSize: "370 g" },
 			],
 			[
-				"Nuez pecán garapiñada 500 g",
-				{ presentationContainer: "bolsa", presentationSize: "500 g" },
-			],
-			[
-				"Nuez pecán con chocolate negro 500 g",
-				{ presentationContainer: "bolsa", presentationSize: "500 g" },
-			],
-			[
-				"Nuez pecán con chocolate blanco 500 g",
-				{ presentationContainer: "bolsa", presentationSize: "500 g" },
-			],
-			[
-				"Aceite de oliva extra virgen botella 0,5 L PET",
-				{ presentationContainer: "botella", presentationSize: "0,5 L" },
-			],
-			[
-				"Aceite de oliva extra virgen botella 1 L",
-				{ presentationContainer: "botella", presentationSize: "1 L" },
-			],
-			[
-				"Aceite de oliva extra virgen bidón 5 L",
-				{ presentationContainer: "bidon", presentationSize: "5 L" },
+				"Sal rosada del Himalaya",
+				{ presentationContainer: "bolsa", presentationSize: "1 kg" },
 			],
 		]);
 	});

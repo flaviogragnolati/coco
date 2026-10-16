@@ -1,0 +1,2356 @@
+{
+	"sheet": {
+		"name": "Catalogo",
+		"rows": [
+			{
+				"row": 1,
+				"cells": {
+					"A": "Catálo"
+				}
+			},
+			{
+				"row": 2,
+				"cells": {
+					"B": "CATÁLOGO COCO PARA CARGAR"
+				}
+			},
+			{
+				"row": 3,
+				"cells": {
+					"B": "26 productos de lanzamiento. Octubre 2026. Cada precio publicado muestra cómo se compone: precio de Quintal + flete cobrado (el real × el multiplicador) + packaging, más el markup, redondeado. La fila \"Criterio\" explica cada columna. Las columnas del proveedor son internas: no se muestran al usuario."
+				}
+			},
+			{
+				"row": 5,
+				"cells": {
+					"B": "Producto",
+					"F": "Unidad y compra",
+					"K": "Precio de Quintal y merma",
+					"N": "Flete real (por unidad de medida)",
+					"R": "Flete cobrado al usuario",
+					"T": "Packaging",
+					"U": "Costo y precio publicado",
+					"AA": "Compra mínima",
+					"AD": "Proveedor (interno)",
+					"AG": "Notas"
+				}
+			},
+			{
+				"row": 6,
+				"cells": {
+					"B": "N°",
+					"C": "Producto (nombre publicado)",
+					"D": "Categoría",
+					"E": "Proveedor",
+					"F": "Unidad de medida",
+					"G": "Presentación de la unidad",
+					"H": "Peso bruto por unidad (kg)",
+					"I": "Paso de compra",
+					"J": "Mínimo de compra por usuario",
+					"K": "Precio Quintal por unidad ($)",
+					"L": "Merma estimada (%)",
+					"M": "Costo de la merma ($)",
+					"N": "Tarifa del transporte ($)",
+					"O": "Costo fijo por envío, repartido ($)",
+					"P": "Seguro, 1% del valor declarado ($)",
+					"Q": "FLETE REAL TOTAL por unidad ($)",
+					"R": "FLETE COBRADO al usuario (real × multiplicador) ($)",
+					"S": "Ingreso por duplicar el flete ($)",
+					"T": "Packaging por unidad ($)",
+					"U": "COSTO REAL PUESTO EN USHUAIA ($)",
+					"V": "Costo facturado: Quintal + flete cobrado + packaging ($)",
+					"W": "Markup ($)",
+					"X": "Precio sin redondear ($)",
+					"Y": "Redondeo ($)",
+					"Z": "PRECIO PUBLICADO ($ por unidad de medida)",
+					"AA": "Peso bruto de la compra mínima (kg)",
+					"AB": "Flete cobrado en la compra mínima ($)",
+					"AC": "Precio de la compra mínima ($)",
+					"AD": "Pack del proveedor (interno)",
+					"AE": "Mínimo del proveedor, en unidades de medida (interno)",
+					"AF": "Precio Quintal del pack ($) (interno)",
+					"AG": "Notas"
+				}
+			},
+			{
+				"row": 7,
+				"cells": {
+					"C": "Nombre que ve el usuario.",
+					"D": "Define el filtro por categoría del catálogo.",
+					"E": "Dato para el sistema; publicarlo es una decisión aparte.",
+					"F": "kg = se fracciona; unidad = se vende cerrado.",
+					"G": "Cómo se nombra la unidad en la ficha y en el pedido.",
+					"H": "1 si es por kg. Si es por unidad: peso del envase lleno (estimado donde se indica en Notas).",
+					"I": "500 g si el kg publicado supera $20.000; si no, 1 kg; lo cerrado, de a 1.",
+					"J": "Igual al paso.",
+					"K": "Lista de Quintal, octubre 2026. Sin IVA, de contado, por la unidad de venta.",
+					"L": "Pérdida estimada al fraccionar o por daños (hoja Criterios). Supuesto: medir.",
+					"M": "Quintal ÷ (1 − merma) − Quintal. Costo extra de la mercadería que se pierde.",
+					"N": "$650 por kg bruto × el peso de la unidad.",
+					"O": "$30 mil por envío (aduana + despacho de Quintal) ÷ 150 kg de referencia × el peso de la unidad.",
+					"P": "1% del precio de Quintal (valor declarado).",
+					"Q": "Suma de las tres partes. Es lo que le cuesta a CoCo. Cambia con el peso de cada presentación.",
+					"R": "Flete real × 2. Es lo que se le cobra al usuario por el flete.",
+					"S": "Flete cobrado − flete real. Ingreso de CoCo, además del markup.",
+					"T": "$150 por kg fraccionado (bolsa + etiqueta); $150 por unidad cerrada.",
+					"U": "Quintal + merma + flete real + packaging. Lo que le cuesta a CoCo.",
+					"V": "Quintal + merma (si el precio la cubre) + flete cobrado + packaging. Base del markup.",
+					"W": "30% sobre el costo facturado, igual para todos.",
+					"X": "Costo facturado + markup.",
+					"Y": "Lo que suma redondear hacia arriba.",
+					"Z": "Redondeado hacia arriba a múltiplos de $50.",
+					"AA": "Peso de la unidad × mínimo de compra.",
+					"AB": "Flete cobrado por unidad × mínimo de compra.",
+					"AC": "Precio publicado × mínimo de compra.",
+					"AD": "Cómo lo vende Quintal.",
+					"AE": "Lo que Quintal exige comprar, en unidades de medida.",
+					"AF": "Precio de Quintal × mínimo del proveedor."
+				}
+			},
+			{
+				"row": 8,
+				"cells": {
+					"B": "1.0",
+					"C": "Almendra Non Pareil 25/27",
+					"D": "Frutos secos",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "0.5",
+					"J": "0.5",
+					"K": "22500.0",
+					"L": "0.02",
+					"M": "459.1836735",
+					"N": "650",
+					"O": "200",
+					"P": "225",
+					"Q": "1075",
+					"R": "2150",
+					"S": "1075",
+					"T": "150",
+					"U": "24184.18367",
+					"V": "25259.18367",
+					"W": "7577.755102",
+					"X": "32836.93878",
+					"Y": "13.06122449",
+					"Z": "32850",
+					"AA": "0.5",
+					"AB": "1075",
+					"AC": "16425",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "225000",
+					"AG": "Quintal también la vende en 5 kg a $23.500/kg (menos capital parado)."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 9,
+				"cells": {
+					"B": "2.0",
+					"C": "Nuez mariposa extra light",
+					"D": "Frutos secos",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "11500.0",
+					"L": "0.02",
+					"M": "234.6938776",
+					"N": "650",
+					"O": "200",
+					"P": "115",
+					"Q": "965",
+					"R": "1930",
+					"S": "965",
+					"T": "150",
+					"U": "12849.69388",
+					"V": "13814.69388",
+					"W": "4144.408163",
+					"X": "17959.10204",
+					"Y": "40.89795918",
+					"Z": "18000",
+					"AA": "1",
+					"AB": "1930",
+					"AC": "18000",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "115000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 10,
+				"cells": {
+					"B": "3.0",
+					"C": "Nuez cuartos extra light",
+					"D": "Frutos secos",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "10500.0",
+					"L": "0.02",
+					"M": "214.2857143",
+					"N": "650",
+					"O": "200",
+					"P": "105",
+					"Q": "955",
+					"R": "1910",
+					"S": "955",
+					"T": "150",
+					"U": "11819.28571",
+					"V": "12774.28571",
+					"W": "3832.285714",
+					"X": "16606.57143",
+					"Y": "43.42857143",
+					"Z": "16650",
+					"AA": "1",
+					"AB": "1910",
+					"AC": "16650",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "105000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 11,
+				"cells": {
+					"B": "4.0",
+					"C": "Castaña de cajú tostada (sin sal o salada)",
+					"D": "Frutos secos",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "0.5",
+					"J": "0.5",
+					"K": "14900.0",
+					"L": "0.02",
+					"M": "304.0816327",
+					"N": "650",
+					"O": "200",
+					"P": "149",
+					"Q": "999",
+					"R": "1998",
+					"S": "999",
+					"T": "150",
+					"U": "16353.08163",
+					"V": "17352.08163",
+					"W": "5205.62449",
+					"X": "22557.70612",
+					"Y": "42.29387755",
+					"Z": "22600",
+					"AA": "0.5",
+					"AB": "999",
+					"AC": "11300",
+					"AD": "Bolsa de 5 kg",
+					"AE": "5.0",
+					"AF": "74500"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 12,
+				"cells": {
+					"B": "5.0",
+					"C": "Pistacho con cáscara Riojano",
+					"D": "Frutos secos",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "0.5",
+					"J": "0.5",
+					"K": "24000.0",
+					"L": "0.02",
+					"M": "489.7959184",
+					"N": "650",
+					"O": "200",
+					"P": "240",
+					"Q": "1090",
+					"R": "2180",
+					"S": "1090",
+					"T": "150",
+					"U": "25729.79592",
+					"V": "26819.79592",
+					"W": "8045.938776",
+					"X": "34865.73469",
+					"Y": "34.26530612",
+					"Z": "34900",
+					"AA": "0.5",
+					"AB": "1090",
+					"AC": "17450",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "240000",
+					"AG": "El precio por kilo incluye la cáscara."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 13,
+				"cells": {
+					"B": "6.0",
+					"C": "Avellana Chile 13-15",
+					"D": "Frutos secos",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "0.5",
+					"J": "0.5",
+					"K": "26400.0",
+					"L": "0.02",
+					"M": "538.7755102",
+					"N": "650",
+					"O": "200",
+					"P": "264",
+					"Q": "1114",
+					"R": "2228",
+					"S": "1114",
+					"T": "150",
+					"U": "28202.77551",
+					"V": "29316.77551",
+					"W": "8795.032653",
+					"X": "38111.80816",
+					"Y": "38.19183673",
+					"Z": "38150",
+					"AA": "0.5",
+					"AB": "1114",
+					"AC": "19075",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "264000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 14,
+				"cells": {
+					"B": "7.0",
+					"C": "Pecan premium",
+					"D": "Frutos secos",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "0.5",
+					"J": "0.5",
+					"K": "19900.0",
+					"L": "0.02",
+					"M": "406.122449",
+					"N": "650",
+					"O": "200",
+					"P": "199",
+					"Q": "1049",
+					"R": "2098",
+					"S": "1049",
+					"T": "150",
+					"U": "21505.12245",
+					"V": "22554.12245",
+					"W": "6766.236735",
+					"X": "29320.35918",
+					"Y": "29.64081633",
+					"Z": "29350",
+					"AA": "0.5",
+					"AB": "1049",
+					"AC": "14675",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "199000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 15,
+				"cells": {
+					"B": "8.0",
+					"C": "Maní tostado salado",
+					"D": "Frutos secos",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "2750.0",
+					"L": "0.02",
+					"M": "56.12244898",
+					"N": "650",
+					"O": "200",
+					"P": "27.5",
+					"Q": "877.5",
+					"R": "1755",
+					"S": "877.5",
+					"T": "150",
+					"U": "3833.622449",
+					"V": "4711.122449",
+					"W": "1413.336735",
+					"X": "6124.459184",
+					"Y": "25.54081633",
+					"Z": "6150",
+					"AA": "1",
+					"AB": "1755",
+					"AC": "6150",
+					"AD": "Bolsa de 5 kg",
+					"AE": "5.0",
+					"AF": "13750"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 16,
+				"cells": {
+					"B": "9.0",
+					"C": "Mix de frutos secos económico",
+					"D": "Mixes y snacks",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "7300.0",
+					"L": "0.02",
+					"M": "148.9795918",
+					"N": "650",
+					"O": "200",
+					"P": "73",
+					"Q": "923",
+					"R": "1846",
+					"S": "923",
+					"T": "150",
+					"U": "8521.979592",
+					"V": "9444.979592",
+					"W": "2833.493878",
+					"X": "12278.47347",
+					"Y": "21.52653061",
+					"Z": "12300",
+					"AA": "1",
+					"AB": "1846",
+					"AC": "12300",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "73000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 17,
+				"cells": {
+					"B": "10.0",
+					"C": "Mix de frutos secos deportivo",
+					"D": "Mixes y snacks",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "10400.0",
+					"L": "0.02",
+					"M": "212.244898",
+					"N": "650",
+					"O": "200",
+					"P": "104",
+					"Q": "954",
+					"R": "1908",
+					"S": "954",
+					"T": "150",
+					"U": "11716.2449",
+					"V": "12670.2449",
+					"W": "3801.073469",
+					"X": "16471.31837",
+					"Y": "28.68163265",
+					"Z": "16500",
+					"AA": "1",
+					"AB": "1908",
+					"AC": "16500",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "104000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 18,
+				"cells": {
+					"B": "11.0",
+					"C": "Mix de frutos secos antioxidante premium",
+					"D": "Mixes y snacks",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "0.5",
+					"J": "0.5",
+					"K": "17200.0",
+					"L": "0.02",
+					"M": "351.0204082",
+					"N": "650",
+					"O": "200",
+					"P": "172",
+					"Q": "1022",
+					"R": "2044",
+					"S": "1022",
+					"T": "150",
+					"U": "18723.02041",
+					"V": "19745.02041",
+					"W": "5923.506122",
+					"X": "25668.52653",
+					"Y": "31.47346939",
+					"Z": "25700",
+					"AA": "0.5",
+					"AB": "1022",
+					"AC": "12850",
+					"AD": "Bolsa de 10 kg",
+					"AE": "10.0",
+					"AF": "172000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 19,
+				"cells": {
+					"B": "12.0",
+					"C": "Banana chips",
+					"D": "Mixes y snacks",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "9900.0",
+					"L": "0.02",
+					"M": "202.0408163",
+					"N": "650",
+					"O": "200",
+					"P": "99",
+					"Q": "949",
+					"R": "1898",
+					"S": "949",
+					"T": "150",
+					"U": "11201.04082",
+					"V": "12150.04082",
+					"W": "3645.012245",
+					"X": "15795.05306",
+					"Y": "4.946938776",
+					"Z": "15800",
+					"AA": "1",
+					"AB": "1898",
+					"AC": "15800",
+					"AD": "Caja de 6,8 kg",
+					"AE": "6.8",
+					"AF": "67320"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 20,
+				"cells": {
+					"B": "13.0",
+					"C": "Pasa de uva Flame sin semilla",
+					"D": "Frutas desecadas",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "4000.0",
+					"L": "0.02",
+					"M": "81.63265306",
+					"N": "650",
+					"O": "200",
+					"P": "40",
+					"Q": "890",
+					"R": "1780",
+					"S": "890",
+					"T": "150",
+					"U": "5121.632653",
+					"V": "6011.632653",
+					"W": "1803.489796",
+					"X": "7815.122449",
+					"Y": "34.87755102",
+					"Z": "7850",
+					"AA": "1",
+					"AB": "1780",
+					"AC": "7850",
+					"AD": "Caja de 10 kg",
+					"AE": "10.0",
+					"AF": "40000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 21,
+				"cells": {
+					"B": "14.0",
+					"C": "Pasa de uva rubia premium 2026",
+					"D": "Frutas desecadas",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "6700.0",
+					"L": "0.02",
+					"M": "136.7346939",
+					"N": "650",
+					"O": "200",
+					"P": "67",
+					"Q": "917",
+					"R": "1834",
+					"S": "917",
+					"T": "150",
+					"U": "7903.734694",
+					"V": "8820.734694",
+					"W": "2646.220408",
+					"X": "11466.9551",
+					"Y": "33.04489796",
+					"Z": "11500",
+					"AA": "1",
+					"AB": "1834",
+					"AC": "11500",
+					"AD": "Caja de 9 kg",
+					"AE": "9.0",
+					"AF": "60300"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 22,
+				"cells": {
+					"B": "15.0",
+					"C": "Dátil Egipto",
+					"D": "Frutas desecadas",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "0.5",
+					"J": "0.5",
+					"K": "5400.0",
+					"L": "0.02",
+					"M": "110.2040816",
+					"N": "650",
+					"O": "200",
+					"P": "54",
+					"Q": "904",
+					"R": "1808",
+					"S": "904",
+					"T": "150",
+					"U": "6564.204082",
+					"V": "7468.204082",
+					"W": "2240.461224",
+					"X": "9708.665306",
+					"Y": "41.33469388",
+					"Z": "9750",
+					"AA": "0.5",
+					"AB": "904",
+					"AC": "4875",
+					"AD": "Caja de 5 kg",
+					"AE": "5.0",
+					"AF": "27000",
+					"AG": "De a 500 g por indicación de Nico, aunque por precio le tocaría de a 1 kg."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 23,
+				"cells": {
+					"B": "16.0",
+					"C": "Dátil Medjool",
+					"D": "Frutas desecadas",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "0.5",
+					"J": "0.5",
+					"K": "20500.0",
+					"L": "0.02",
+					"M": "418.3673469",
+					"N": "650",
+					"O": "200",
+					"P": "205",
+					"Q": "1055",
+					"R": "2110",
+					"S": "1055",
+					"T": "150",
+					"U": "22123.36735",
+					"V": "23178.36735",
+					"W": "6953.510204",
+					"X": "30131.87755",
+					"Y": "18.12244898",
+					"Z": "30150",
+					"AA": "0.5",
+					"AB": "1055",
+					"AC": "15075",
+					"AD": "Caja de 5 kg",
+					"AE": "5.0",
+					"AF": "102500"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 24,
+				"cells": {
+					"B": "17.0",
+					"C": "Ciruela sin carozo grande",
+					"D": "Frutas desecadas",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "8700.0",
+					"L": "0.02",
+					"M": "177.5510204",
+					"N": "650",
+					"O": "200",
+					"P": "87",
+					"Q": "937",
+					"R": "1874",
+					"S": "937",
+					"T": "150",
+					"U": "9964.55102",
+					"V": "10901.55102",
+					"W": "3270.465306",
+					"X": "14172.01633",
+					"Y": "27.98367347",
+					"Z": "14200",
+					"AA": "1",
+					"AB": "1874",
+					"AC": "14200",
+					"AD": "Caja de 5 kg",
+					"AE": "5.0",
+					"AF": "43500"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 25,
+				"cells": {
+					"B": "18.0",
+					"C": "Empaque mixto sin carozo (frutas secas surtidas)",
+					"D": "Frutas desecadas",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "10900.0",
+					"L": "0.02",
+					"M": "222.4489796",
+					"N": "650",
+					"O": "200",
+					"P": "109",
+					"Q": "959",
+					"R": "1918",
+					"S": "959",
+					"T": "150",
+					"U": "12231.44898",
+					"V": "13190.44898",
+					"W": "3957.134694",
+					"X": "17147.58367",
+					"Y": "2.416326531",
+					"Z": "17150",
+					"AA": "1",
+					"AB": "1918",
+					"AC": "17150",
+					"AD": "Caja de 5 kg",
+					"AE": "5.0",
+					"AF": "54500"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 26,
+				"cells": {
+					"B": "19.0",
+					"C": "Mix de semillas premium (sésamo, girasol, lino, chía)",
+					"D": "Semillas y granola",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "4000.0",
+					"L": "0.02",
+					"M": "81.63265306",
+					"N": "650",
+					"O": "200",
+					"P": "40",
+					"Q": "890",
+					"R": "1780",
+					"S": "890",
+					"T": "150",
+					"U": "5121.632653",
+					"V": "6011.632653",
+					"W": "1803.489796",
+					"X": "7815.122449",
+					"Y": "34.87755102",
+					"Z": "7850",
+					"AA": "1",
+					"AB": "1780",
+					"AC": "7850",
+					"AD": "Bolsa de 5 kg",
+					"AE": "5.0",
+					"AF": "20000"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 27,
+				"cells": {
+					"B": "20.0",
+					"C": "Granola Kuati tradicional",
+					"D": "Semillas y granola",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "8900.0",
+					"L": "0.02",
+					"M": "181.6326531",
+					"N": "650",
+					"O": "200",
+					"P": "89",
+					"Q": "939",
+					"R": "1878",
+					"S": "939",
+					"T": "150",
+					"U": "10170.63265",
+					"V": "11109.63265",
+					"W": "3332.889796",
+					"X": "14442.52245",
+					"Y": "7.47755102",
+					"Z": "14450",
+					"AA": "1",
+					"AB": "1878",
+					"AC": "14450",
+					"AD": "Caja de 5 kg",
+					"AE": "5.0",
+					"AF": "44500"
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 28,
+				"cells": {
+					"B": "21.0",
+					"C": "Coco rallado fino",
+					"D": "Semillas y granola",
+					"E": "Quintal",
+					"F": "kg",
+					"G": "kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "8600.0",
+					"L": "0.02",
+					"M": "175.5102041",
+					"N": "650",
+					"O": "200",
+					"P": "86",
+					"Q": "936",
+					"R": "1872",
+					"S": "936",
+					"T": "150",
+					"U": "9861.510204",
+					"V": "10797.5102",
+					"W": "3239.253061",
+					"X": "14036.76327",
+					"Y": "13.23673469",
+					"Z": "14050",
+					"AA": "1",
+					"AB": "1872",
+					"AC": "14050",
+					"AD": "Bolsa de 5 kg",
+					"AE": "5.0",
+					"AF": "43000",
+					"AG": "Confirmar con Quintal qué variante (Med Fat o High Fat) trae el pack de 5 kg."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 29,
+				"cells": {
+					"B": "22.0",
+					"C": "Aceite de oliva extra virgen 0,5 L",
+					"D": "Aceites y despensa",
+					"E": "Quintal",
+					"F": "unidad",
+					"G": "botella 0,5 L",
+					"H": "0.5",
+					"I": "1.0",
+					"J": "1",
+					"K": "11700.0",
+					"L": "0.005",
+					"M": "58.79396985",
+					"N": "325",
+					"O": "100",
+					"P": "117",
+					"Q": "542",
+					"R": "1084",
+					"S": "542",
+					"T": "150",
+					"U": "12450.79397",
+					"V": "12992.79397",
+					"W": "3897.838191",
+					"X": "16890.63216",
+					"Y": "9.367839196",
+					"Z": "16900",
+					"AA": "0.5",
+					"AB": "1084",
+					"AC": "16900",
+					"AD": "Pack de 12 botellas",
+					"AE": "12.0",
+					"AF": "140400",
+					"AG": "Botella PET. Peso bruto estimado."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 30,
+				"cells": {
+					"B": "23.0",
+					"C": "Aceite de oliva extra virgen 1 L",
+					"D": "Aceites y despensa",
+					"E": "Quintal",
+					"F": "unidad",
+					"G": "botella 1 L",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "21000.0",
+					"L": "0.005",
+					"M": "105.5276382",
+					"N": "650",
+					"O": "200",
+					"P": "210",
+					"Q": "1060",
+					"R": "2120",
+					"S": "1060",
+					"T": "150",
+					"U": "22315.52764",
+					"V": "23375.52764",
+					"W": "7012.658291",
+					"X": "30388.18593",
+					"Y": "11.81407035",
+					"Z": "30400",
+					"AA": "1",
+					"AB": "2120",
+					"AC": "30400",
+					"AD": "Pack de 6 botellas",
+					"AE": "6.0",
+					"AF": "126000",
+					"AG": "Peso bruto estimado (si la botella es de vidrio, ~1,4 kg)."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 31,
+				"cells": {
+					"B": "24.0",
+					"C": "Aceite de oliva extra virgen 5 L",
+					"D": "Aceites y despensa",
+					"E": "Quintal",
+					"F": "unidad",
+					"G": "bidón 5 L",
+					"H": "4.8",
+					"I": "1.0",
+					"J": "1",
+					"K": "95000.0",
+					"L": "0.005",
+					"M": "477.3869347",
+					"N": "3120",
+					"O": "960",
+					"P": "950",
+					"Q": "5030",
+					"R": "10060",
+					"S": "5030",
+					"T": "150",
+					"U": "100657.3869",
+					"V": "105687.3869",
+					"W": "31706.21608",
+					"X": "137393.603",
+					"Y": "6.396984925",
+					"Z": "137400",
+					"AA": "4.8",
+					"AB": "10060",
+					"AC": "137400",
+					"AD": "Pack de 2 bidones",
+					"AE": "2.0",
+					"AF": "190000",
+					"AG": "El usuario compra de a 1; Quintal vende de a 2. Peso bruto estimado."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 32,
+				"cells": {
+					"B": "25.0",
+					"C": "Pasta de maní Entre Nuts 370 g",
+					"D": "Aceites y despensa",
+					"E": "Quintal",
+					"F": "unidad",
+					"G": "frasco 370 g",
+					"H": "0.6",
+					"I": "1.0",
+					"J": "1",
+					"K": "2700.0",
+					"L": "0.005",
+					"M": "13.5678392",
+					"N": "390",
+					"O": "120",
+					"P": "27",
+					"Q": "537",
+					"R": "1074",
+					"S": "537",
+					"T": "150",
+					"U": "3400.567839",
+					"V": "3937.567839",
+					"W": "1181.270352",
+					"X": "5118.838191",
+					"Y": "31.16180905",
+					"Z": "5150",
+					"AA": "0.6",
+					"AB": "1074",
+					"AC": "5150",
+					"AD": "Pack de 12 frascos",
+					"AE": "12.0",
+					"AF": "32400",
+					"AG": "Peso bruto estimado (frasco de vidrio)."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 33,
+				"cells": {
+					"B": "26.0",
+					"C": "Sal rosada del Himalaya",
+					"D": "Aceites y despensa",
+					"E": "Quintal",
+					"F": "unidad",
+					"G": "bolsa 1 kg",
+					"H": "1.0",
+					"I": "1.0",
+					"J": "1",
+					"K": "3800.0",
+					"L": "0.005",
+					"M": "19.09547739",
+					"N": "650",
+					"O": "200",
+					"P": "38",
+					"Q": "888",
+					"R": "1776",
+					"S": "888",
+					"T": "150",
+					"U": "4857.095477",
+					"V": "5745.095477",
+					"W": "1723.528643",
+					"X": "7468.624121",
+					"Y": "31.3758794",
+					"Z": "7500",
+					"AA": "1",
+					"AB": "1776",
+					"AC": "7500",
+					"AD": "Bolsa de 1 kg",
+					"AE": "1.0",
+					"AF": "3800",
+					"AG": "Se compra en bolsas de 1 kg, sin mínimo de pack."
+				},
+				"numericColumns": [
+					"B",
+					"H",
+					"I",
+					"J",
+					"K",
+					"L",
+					"M",
+					"N",
+					"O",
+					"P",
+					"Q",
+					"R",
+					"S",
+					"T",
+					"U",
+					"V",
+					"W",
+					"X",
+					"Y",
+					"Z",
+					"AA",
+					"AB",
+					"AC",
+					"AE",
+					"AF"
+				]
+			},
+			{
+				"row": 35,
+				"cells": {
+					"B": "Cómo leer el catálogo"
+				}
+			},
+			{
+				"row": 36,
+				"cells": {
+					"B": "El precio publicado es por kg aunque el paso sea de 500 g; para lo cerrado es por botella, bidón, frasco o bolsa. El total de la compra es precio × cantidad."
+				}
+			},
+			{
+				"row": 37,
+				"cells": {
+					"B": "El flete real se calcula por kilo bruto de cada presentación: por eso una botella de 0,5 L paga menos que un bidón de 5 L, y 500 g pagan la mitad que 1 kg."
+				}
+			},
+			{
+				"row": 38,
+				"cells": {
+					"B": "Al usuario se le cobra el flete real × el multiplicador (hoy ×2). La diferencia es ingreso de CoCo. El markup se aplica sobre el costo facturado, que incluye el flete cobrado."
+				}
+			},
+			{
+				"row": 39,
+				"cells": {
+					"B": "Paso de compra: el selector arranca en el mínimo y sube de a un paso. El usuario solo compra en múltiplos del paso."
+				}
+			},
+			{
+				"row": 40,
+				"cells": {
+					"B": "Las columnas del proveedor pueden ser mayores que el mínimo del usuario (el aceite de 5 L se compra de a 1 y Quintal lo vende de a 2)."
+				}
+			},
+			{
+				"row": 41,
+				"cells": {
+					"B": "Si el sistema ya tiene los campos \"MOQ\" y \"presentación del proveedor\": el MOQ es el mínimo y el paso del usuario; la presentación del proveedor son las columnas internas."
+				}
+			}
+		],
+		"merges": [
+			{
+				"ref": "B5:E5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "B",
+				"endColumn": "E"
+			},
+			{
+				"ref": "F5:J5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "F",
+				"endColumn": "J"
+			},
+			{
+				"ref": "K5:M5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "K",
+				"endColumn": "M"
+			},
+			{
+				"ref": "N5:Q5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "N",
+				"endColumn": "Q"
+			},
+			{
+				"ref": "R5:S5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "R",
+				"endColumn": "S"
+			},
+			{
+				"ref": "U5:Z5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "U",
+				"endColumn": "Z"
+			},
+			{
+				"ref": "AA5:AC5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "AA",
+				"endColumn": "AC"
+			},
+			{
+				"ref": "AD5:AF5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "AD",
+				"endColumn": "AF"
+			}
+		]
+	},
+	"criteriaSheet": {
+		"name": "Criterios",
+		"rows": [
+			{
+				"row": 2,
+				"cells": {
+					"B": "CRITERIOS DE PRECIO"
+				}
+			},
+			{
+				"row": 3,
+				"cells": {
+					"B": "Parámetros y reglas con los que se compone cada precio publicado. Octubre 2026. Fuente: planilla de costos v6 (hojas 2 y 5)."
+				}
+			},
+			{
+				"row": 5,
+				"cells": {
+					"B": "Parámetro",
+					"C": "Valor",
+					"D": "Notas"
+				}
+			},
+			{
+				"row": 6,
+				"cells": {
+					"B": "Markup sobre el costo puesto",
+					"C": "0.3",
+					"D": "Un solo porcentaje para todos los productos. Decisión de Nico: 30%."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 7,
+				"cells": {
+					"B": "Flete: tarifa del transporte $/kg bruto",
+					"C": "650.0",
+					"D": "Lo que cobra el transporte de Buenos Aires a Ushuaia por kilo bruto."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 8,
+				"cells": {
+					"B": "Flete: costo fijo por envío (aduana) $",
+					"C": "10000.0",
+					"D": "Se paga en cada envío (hoy, uno por semana). Se reparte en el envío de referencia."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 9,
+				"cells": {
+					"B": "Flete: seguro sobre valor declarado",
+					"C": "0.01",
+					"D": "Sobre el precio de Quintal de la mercadería."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 10,
+				"cells": {
+					"B": "Kilos del envío de referencia",
+					"C": "150.0",
+					"D": "Supuesto: promedio de kilos por envío semanal. Reemplazar con el dato real."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 11,
+				"cells": {
+					"B": "Packaging real $/kg (productos fraccionados)",
+					"C": "150.0",
+					"D": "Bolsa + etiqueta propia. Costo real: no se duplica."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 12,
+				"cells": {
+					"B": "Packaging por unidad cerrada $",
+					"C": "150.0",
+					"D": "Etiqueta y manipuleo de lo que se vende cerrado. Supuesto: confirmar."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 13,
+				"cells": {
+					"B": "IVA sobre compras",
+					"C": "0.0",
+					"D": "Quintal factura sin IVA y en Tierra del Fuego se factura sin IVA."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 14,
+				"cells": {
+					"B": "Redondeo del precio $",
+					"C": "50.0",
+					"D": "Hacia arriba, a múltiplos de este valor."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 15,
+				"cells": {
+					"B": "Multiplicador del flete cobrado al usuario",
+					"C": "2.0",
+					"D": "Cuántas veces el flete real se le cobra al usuario. La diferencia es ingreso de CoCo. El markup se aplica sobre el flete cobrado."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 16,
+				"cells": {
+					"B": "Despacho de Quintal al transporte, por envío $",
+					"C": "20000.0",
+					"D": "Lo que cobra Quintal por despachar el pedido al transporte (dato de Nico: confirmar). Se suma al costo fijo por envío y, como parte del flete, se cobra multiplicado."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 17,
+				"cells": {
+					"B": "Merma estimada en productos fraccionados (kg)",
+					"C": "0.02",
+					"D": "SUPUESTO. Pérdida al fraccionar. Se mide pesando lo comprado contra lo vendido en cada ciclo."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 18,
+				"cells": {
+					"B": "Merma estimada en productos cerrados",
+					"C": "0.005",
+					"D": "SUPUESTO. Roturas y daños en el viaje."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 19,
+				"cells": {
+					"B": "Incluir la merma en el precio (1 = sí, 0 = no)",
+					"C": "1.0",
+					"D": "1: el precio cubre la merma. 0: no se traslada al precio."
+				},
+				"numericColumns": ["C"]
+			},
+			{
+				"row": 22,
+				"cells": {
+					"B": "Cómo se compone el precio"
+				}
+			},
+			{
+				"row": 23,
+				"cells": {
+					"B": "1. Precio de Quintal: lista de octubre 2026, sin IVA y de contado, por la unidad de venta (kg o unidad). Cambia cuando Quintal actualiza su lista."
+				}
+			},
+			{
+				"row": 24,
+				"cells": {
+					"B": "2. Merma: se estima por tipo de producto y se suma a la mercadería como Quintal ÷ (1 − merma). El interruptor decide si el precio la cubre."
+				}
+			},
+			{
+				"row": 25,
+				"cells": {
+					"B": "3. Flete real: tarifa del transporte + costo fijo por envío (aduana + despacho de Quintal) repartido en un envío de referencia + seguro del 1% sobre el precio de Quintal. Es lo que le cuesta a CoCo."
+				}
+			},
+			{
+				"row": 26,
+				"cells": {
+					"B": "4. Flete cobrado: el flete real multiplicado por el multiplicador (hoy ×2). Es lo que se le cobra al usuario; la diferencia es un ingreso de CoCo, además del markup."
+				}
+			},
+			{
+				"row": 27,
+				"cells": {
+					"B": "5. Packaging: bolsa y etiqueta propia por kg fraccionado; etiqueta y manipuleo por unidad en lo que se vende cerrado."
+				}
+			},
+			{
+				"row": 28,
+				"cells": {
+					"B": "6. Costo real puesto = Quintal + merma + flete real + packaging. Costo facturado = Quintal + merma + flete cobrado + packaging."
+				}
+			},
+			{
+				"row": 29,
+				"cells": {
+					"B": "7. Markup: un solo porcentaje sobre el costo facturado, igual para todos los productos. No se ajusta producto por producto."
+				}
+			},
+			{
+				"row": 30,
+				"cells": {
+					"B": "8. Redondeo: hacia arriba, a múltiplos del valor del parámetro."
+				}
+			},
+			{
+				"row": 31,
+				"cells": {
+					"B": "9. Los costos fijos no están en el precio: se cubren con volumen. Los impuestos y la comisión de cobro salen de la contribución, no del costo."
+				}
+			},
+			{
+				"row": 33,
+				"cells": {
+					"B": "Dos ejemplos de composición"
+				}
+			},
+			{
+				"row": 34,
+				"cells": {
+					"B": "Concepto",
+					"C": "Almendra (por kg)",
+					"D": "Aceite 5 L (por bidón)"
+				}
+			},
+			{
+				"row": 35,
+				"cells": {
+					"B": "Precio de Quintal",
+					"C": "22500",
+					"D": "95000"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 36,
+				"cells": {
+					"B": "Flete real",
+					"C": "1075",
+					"D": "5030"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 37,
+				"cells": {
+					"B": "Flete cobrado (real × multiplicador)",
+					"C": "2150",
+					"D": "10060"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 38,
+				"cells": {
+					"B": "Ingreso por duplicar el flete",
+					"C": "1075",
+					"D": "5030"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 39,
+				"cells": {
+					"B": "Packaging",
+					"C": "150",
+					"D": "150"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 40,
+				"cells": {
+					"B": "COSTO FACTURADO (Quintal + flete cobrado + packaging)",
+					"C": "25259.18367",
+					"D": "105687.3869"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 41,
+				"cells": {
+					"B": "Markup",
+					"C": "7577.755102",
+					"D": "31706.21608"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 42,
+				"cells": {
+					"B": "Redondeo",
+					"C": "13.06122449",
+					"D": "6.396984925"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 43,
+				"cells": {
+					"B": "PRECIO PUBLICADO",
+					"C": "32850",
+					"D": "137400"
+				},
+				"numericColumns": ["C", "D"]
+			},
+			{
+				"row": 45,
+				"cells": {
+					"B": "Unidad de venta y paso de compra"
+				}
+			},
+			{
+				"row": 46,
+				"cells": {
+					"B": "Productos por kg con precio publicado mayor a $20.000: de a 500 g (almendra, castaña de cajú, pistacho, avellana, pecan, mix antioxidante, dátil Medjool). Hasta $20.000: de a 1 kg."
+				}
+			},
+			{
+				"row": 47,
+				"cells": {
+					"B": "Excepción: el dátil Egipto también va de a 500 g (pedido de Nico), aunque por precio le tocaría de a 1 kg."
+				}
+			},
+			{
+				"row": 48,
+				"cells": {
+					"B": "Aceites, pasta de maní y sal rosada: por unidad cerrada (botella, bidón, frasco o bolsa), de a 1."
+				}
+			},
+			{
+				"row": 49,
+				"cells": {
+					"B": "El paso es una decisión de producto: no cambia solo si el precio sube o baja. Se revisa cuando se actualiza la lista."
+				}
+			},
+			{
+				"row": 51,
+				"cells": {
+					"B": "Para confirmar antes de publicar"
+				}
+			},
+			{
+				"row": 52,
+				"cells": {
+					"B": "Despacho de Quintal al transporte ($20.000 por envío): confirmar el monto. Merma (2% en lo fraccionado, 0,5% en lo cerrado): son supuestos; medirlos pesando lo comprado contra lo vendido."
+				}
+			},
+			{
+				"row": 53,
+				"cells": {
+					"B": "Pesos brutos del aceite (0,5 L, 1 L, 5 L) y de la pasta de maní: son estimados. Pesarlos o pedirlos a Quintal. Cambian el flete de esas unidades."
+				}
+			},
+			{
+				"row": 54,
+				"cells": {
+					"B": "Packaging de lo que se vende cerrado ($150 por unidad) y de las fracciones de 500 g: se mantiene el costo por kg; sobre precios de $20.000 o más por kilo, la diferencia es de alrededor de 1% o menos."
+				}
+			},
+			{
+				"row": 55,
+				"cells": {
+					"B": "Kilos del envío de referencia (150 kg): reemplazar con el promedio real. Cambia la parte del costo fijo por envío."
+				}
+			},
+			{
+				"row": 56,
+				"cells": {
+					"B": "Coco rallado: confirmar con Quintal la variante del pack de 5 kg."
+				}
+			},
+			{
+				"row": 57,
+				"cells": {
+					"B": "Precios de Quintal: lista de octubre 2026. Pueden variar con la actualización de la lista."
+				}
+			},
+			{
+				"row": 58,
+				"cells": {
+					"B": "La castaña de cajú es el producto más cercano al umbral de $20.000 para el paso de 500 g: si su precio baja de ese valor, revisar el paso."
+				}
+			},
+			{
+				"row": 59,
+				"cells": {
+					"B": "Proveedor y marca: decidir si la ficha muestra \"Quintal\" o no. Descripción corta de cada producto: no está cargada."
+				}
+			}
+		],
+		"merges": [
+			{
+				"ref": "D12:E12",
+				"startRow": 12,
+				"endRow": 12,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D13:E13",
+				"startRow": 13,
+				"endRow": 13,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D14:E14",
+				"startRow": 14,
+				"endRow": 14,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D15:E15",
+				"startRow": 15,
+				"endRow": 15,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D16:E16",
+				"startRow": 16,
+				"endRow": 16,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D17:E17",
+				"startRow": 17,
+				"endRow": 17,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D18:E18",
+				"startRow": 18,
+				"endRow": 18,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D19:E19",
+				"startRow": 19,
+				"endRow": 19,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D5:E5",
+				"startRow": 5,
+				"endRow": 5,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D6:E6",
+				"startRow": 6,
+				"endRow": 6,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D7:E7",
+				"startRow": 7,
+				"endRow": 7,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D8:E8",
+				"startRow": 8,
+				"endRow": 8,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D9:E9",
+				"startRow": 9,
+				"endRow": 9,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D10:E10",
+				"startRow": 10,
+				"endRow": 10,
+				"startColumn": "D",
+				"endColumn": "E"
+			},
+			{
+				"ref": "D11:E11",
+				"startRow": 11,
+				"endRow": 11,
+				"startColumn": "D",
+				"endColumn": "E"
+			}
+		]
+	}
+}
