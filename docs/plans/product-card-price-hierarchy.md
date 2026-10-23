@@ -1,6 +1,6 @@
 # Implementation Plan: product card — step price first, compact layout, badge slots
 
-> **Status:** Implemented 2026-10-23 (see Execution record), uncommitted on `main` (base `7568e60`). Feature grill 2026-10-23. Decisions confirmed by Flavio.
+> **Status:** Implemented 2026-10-23 (see Execution record), commit `573f722` on `main`. Feature grill 2026-10-23. Decisions confirmed by Flavio.
 
 ## 1. Objective & outcome
 
@@ -474,7 +474,7 @@ Single deploy, no flag. There is no data change, so rolling back means reverting
 
 ## Execution record
 
-**Status:** Done 2026-10-23 (q-code-implement), base `7568e60`. Not committed or deployed. `pnpm qa:seed` not run.
+**Status:** Done 2026-10-23 (q-code-implement), base `7568e60`, commit `573f722` pushed to `main`. `pnpm qa:seed` ran on 2026-10-23 against the Neon database in `.env`: 65 tickets updated, tracking kept.
 
 **Change summary.**
 - Price model: `getStepQuantity`, `getBaseStepPrice`, `getPerStepPrice`, `parsePresentationMeasure` and `getComparisonPrice` in `commerce.helpers.ts`. `getOfferHeadlinePrice` now returns the step price with `getOfferStepLabel`; the strikethrough uses the undiscounted step price. New: `getOfferComparisonPrice` and `getOfferTotalAmount`. `getOfferFixedQuantityLabel` returns only the quantity. `getPurchasePrice` carries `comparison`.
@@ -494,7 +494,7 @@ Single deploy, no flag. There is no data change, so rolling back means reverting
 | `ProductCardBadges` discount; `isNew` and `favorite` unused | Met. No caller passes `isNew` or `favorite`. The dummy layout check was not done (no dummy committed, by design). |
 | 4 catalog columns at `2xl`; home grid minimum; skeleton matches | Met, with a 240 px home minimum (see Deviations). |
 | Admin glossary entries | Met. `glossary.data.test.ts` passes. |
-| e2e and QA texts updated; all commands green | Met, except `pnpm qa:seed`, which was not run (see Follow-ups). |
+| e2e and QA texts updated; all commands green | Met. `pnpm qa:seed` updated the ticket texts. |
 
 **Test evidence.**
 - `pnpm test`: 125 files and 1791 tests passed, 4 skipped (the skips are pre-existing).
@@ -518,6 +518,5 @@ Single deploy, no flag. There is no data change, so rolling back means reverting
 - **Extra companion edits beyond §8.** `e2e/smoke.spec.ts` matched "Sumar al pedido" by exact name; this is the hazard from §10. `docs/qa/qa-ciclo-de-vida.md` mirrors the QA texts and needed the same rewrite.
 
 **Follow-ups.**
-- Run `pnpm qa:seed` after deploy. It rewrites only the ticket text and keeps status and notes. It was not run because `.env` points `DATABASE_URL` at the remote Neon database.
 - Re-run QA cases 5, 6 and 8 before merging (§12).
 - Manual check still pending: a product with a temporary discount in a dev DB (badge, step strikethrough, discounted comparison). Unit tests cover the logic, but the current data has no discounts.

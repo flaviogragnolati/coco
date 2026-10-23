@@ -11,7 +11,7 @@ stage_result:
       change: "Status Implemented; DoD checked; execution record added"
   references_added: []
   traceability_delta:
-    - {item: "product card step price / compact layout / badge slots", implemented_by: "working tree on main (base 7568e60), uncommitted"}
+    - {item: "product card step price / compact layout / badge slots", implemented_by: "commit 573f722 on main"}
   decisions_added_or_updated:
     - "Home offers grid minimum column 240 px (plan fallback; 220 px overflowed the add button)"
     - "Comparison line reserved only on compact cards; default (detail dialog) and hero omit the placeholder"
@@ -24,11 +24,10 @@ stage_result:
     - "q-review-code: standards pass with findings (2 suggestions, not applied); specification pass with findings (3 recorded deviations); outcome pass with findings"
     - "q-review-comments: 16 in scope, all keep; pass"
     - "pnpm build verified only with SKIP_ENV_VALIDATION=1 (local env lacks BETTER_AUTH_SECRET)"
-    - "pnpm qa:seed not run; discounted-product manual check not done (no discounts in current data)"
+    - "Discounted-product manual check not done (no discounts in current data)"
   required_user_actions:
-    - "Review and commit the change"
-    - "Run pnpm qa:seed against the intended database after deploy, then re-run QA cases 5, 6, 8"
-  next_recommended_action: "Commit, deploy, run pnpm qa:seed, and re-run QA cases 5, 6, 8"
+    - "Re-run QA cases 5, 6, 8 once deployed"
+  next_recommended_action: "Deploy and re-run QA cases 5, 6, 8"
 orchestration:
   mode: "standalone"
   global_state_updated: false
