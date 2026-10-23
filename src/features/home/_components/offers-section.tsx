@@ -62,6 +62,7 @@ export function OffersSection({
 										<HomeOfferAddButton
 											isAuthenticated={isAuthenticated}
 											offer={offer}
+											size="compact"
 											userId={userId}
 										/>
 									}

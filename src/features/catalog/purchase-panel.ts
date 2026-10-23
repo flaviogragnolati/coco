@@ -1,5 +1,6 @@
 import {
 	getMarketSavingLabel,
+	getOfferComparisonPrice,
 	getOfferDiscountLabel,
 	getOfferHeadlinePrice,
 	getOfferStrikethroughPrice,
@@ -45,8 +46,10 @@ export function toOfferPricing(
 }
 
 /**
- * The single price line: the offer unit price and what it is per ("$ 19.500"
- * "por kg"), with the undiscounted price and discount when there is one.
+ * The headline is the offer step price and the step it buys ("$ 9.750"
+ * "por 500 g"), with the undiscounted step price and discount when there is
+ * one; below it, the comparison price per kg or litre when it says something
+ * the headline does not.
  */
 export function getPurchasePrice(pricing: OfferPricing) {
 	const { amount, unitLabel } = getOfferHeadlinePrice(pricing);
@@ -55,6 +58,7 @@ export function getPurchasePrice(pricing: OfferPricing) {
 		unitLabel,
 		previousAmount: getOfferStrikethroughPrice(pricing),
 		discount: getOfferDiscountLabel(pricing),
+		comparison: getOfferComparisonPrice(pricing),
 		saving: SHOW_MARKET_SAVING ? getMarketSavingLabel(pricing) : null,
 	};
 }

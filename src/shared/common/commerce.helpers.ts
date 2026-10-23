@@ -238,6 +238,105 @@ export function getPerUnitPrice(
 	return unitPrice * getDiscountMultiplier(terms);
 }
 
+/** The quantity one step buys; with no step, the fixed MOQ. */
+export function getStepQuantity(
+	terms: Pick<CatalogClientTerms, "step" | "moq">,
+): number {
+	const step = toNumber(terms.step);
+	if (step !== null && step > 0) return step;
+	return toNumber(terms.moq) ?? 0;
+}
+
+/** One step at the undiscounted unit price, never the stored `stepPrice`. */
+export function getBaseStepPrice(
+	terms: Pick<CatalogClientTerms, "unitPrice" | "moqPrice" | "moq" | "step">,
+): number | null {
+	const unitPrice = getBaseUnitPrice(terms);
+	return unitPrice === null ? null : unitPrice * getStepQuantity(terms);
+}
+
+/** One step at the offer unit price: the card's headline. */
+export function getPerStepPrice(
+	terms: Pick<
+		CatalogClientTerms,
+		"unitPrice" | "moqPrice" | "moq" | "step" | "discountPercent"
+	>,
+): number | null {
+	const unitPrice = getPerUnitPrice(terms);
+	return unitPrice === null ? null : unitPrice * getStepQuantity(terms);
+}
+
+export type PresentationMeasure = { amount: number; measure: "kg" | "L" };
+
+const presentationMeasurePattern =
+	/^(\d[\d.,]*)\s*(g|gr|grs|kg|ml|cc|l|lt|lts)\.?$/i;
+
+const presentationMeasureFactors: Record<
+	string,
+	[factor: number, measure: PresentationMeasure["measure"]]
+> = {
+	g: [0.001, "kg"],
+	gr: [0.001, "kg"],
+	grs: [0.001, "kg"],
+	kg: [1, "kg"],
+	ml: [0.001, "L"],
+	cc: [0.001, "L"],
+	l: [1, "L"],
+	lt: [1, "L"],
+	lts: [1, "L"],
+};
+
+/**
+ * The net content of a free-text presentation size, in kg or L ("370 g" →
+ * 0,37 kg). Anything but one number and one unit ("2 x 500 g", "grande") is
+ * null: a missing comparison beats a wrong one.
+ */
+export function parsePresentationMeasure(
+	size: string | null | undefined,
+): PresentationMeasure | null {
+	const match = size?.trim().match(presentationMeasurePattern);
+	if (!match?.[1] || !match[2]) return null;
+	const value = parseQuantityInput(match[1]);
+	const conversion = presentationMeasureFactors[match[2].toLowerCase()];
+	if (value === null || value <= 0 || !conversion) return null;
+	const [factor, measure] = conversion;
+	return { amount: value * factor, measure };
+}
+
+const weightUnitKilograms: Partial<Record<CatalogProductUnit, number>> = {
+	kg: 1,
+	gr: 0.001,
+	lb: 0.45359237,
+};
+
+/**
+ * The offer price per kg or L, for comparing products sold in different steps.
+ * Null when it cannot be read, or when one step already is 1 kg / 1 L and the
+ * comparison would only repeat the step price.
+ */
+export function getComparisonPrice(
+	terms: Pick<
+		CatalogClientTerms,
+		"unitPrice" | "moqPrice" | "moq" | "step" | "discountPercent"
+	>,
+	unit: CatalogProductUnit,
+	presentation?: ProductPresentation | null,
+): PresentationMeasure | null {
+	const unitPrice = getPerUnitPrice(terms);
+	if (unitPrice === null) return null;
+
+	const kilograms = weightUnitKilograms[unit];
+	const perUnit: PresentationMeasure | null =
+		kilograms !== undefined
+			? { amount: kilograms, measure: "kg" }
+			: parsePresentationMeasure(presentation?.presentationSize);
+	if (!perUnit) return null;
+	if (Math.abs(getStepQuantity(terms) * perUnit.amount - 1) < epsilon)
+		return null;
+
+	return { amount: unitPrice / perUnit.amount, measure: perUnit.measure };
+}
+
 /**
  * What the customer saves against what other shops charge. `marketPrice` is an
  * unverified admin claim, so this returns `null` rather than a negative saving

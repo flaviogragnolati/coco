@@ -60,7 +60,7 @@ export function HomeOfferPurchasePanel({
 	action?: ReactNode;
 	/** Shows the not-in-order state whatever the viewer's own order holds. */
 	ignoreCart?: boolean;
-	size?: "default" | "hero";
+	size?: "compact" | "default" | "hero";
 }) {
 	const state = useContext(HomeOfferQuantityContext);
 	const hasHydrated = useCartStore((store) => store.hasHydrated);

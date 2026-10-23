@@ -33,40 +33,64 @@ export function usePurchaseQuantity(terms: CatalogClientTerms) {
 	return useState(() => getInitialPurchaseQuantity(terms));
 }
 
+type PurchasePanelSize = "compact" | "default" | "hero";
+
+const headlineSizeClassName: Record<PurchasePanelSize, string> = {
+	compact: "text-2xl",
+	default: "text-3xl",
+	hero: "text-4xl",
+};
+
 export function PurchasePrice({
 	pricing,
 	size = "default",
 	showDiscount = false,
 }: {
 	pricing: OfferPricing;
-	size?: "default" | "hero";
+	size?: PurchasePanelSize;
 	/** For surfaces without a discount badge over the product image. */
 	showDiscount?: boolean;
 }) {
 	const price = getPurchasePrice(pricing);
 	return (
 		<div className="flex flex-col gap-2">
-			<p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-				<span
-					className={cn(
-						"font-bold font-heading tracking-tight",
-						size === "hero" ? "text-4xl" : "text-3xl",
-					)}
-				>
-					{price.amount}
-				</span>{" "}
-				<span className="text-muted-foreground text-sm">{price.unitLabel}</span>{" "}
-				{price.previousAmount ? (
-					<del className="text-muted-foreground text-sm">
-						{price.previousAmount}
-					</del>
+			<div className="flex flex-col gap-0.5">
+				<p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+					<span
+						className={cn(
+							"font-bold font-heading tracking-tight",
+							headlineSizeClassName[size],
+						)}
+					>
+						{price.amount}
+					</span>{" "}
+					<span className="text-muted-foreground text-sm">
+						{price.unitLabel}
+					</span>{" "}
+					{price.previousAmount ? (
+						<del className="text-muted-foreground text-sm">
+							{price.previousAmount}
+						</del>
+					) : null}
+					{showDiscount && price.discount ? (
+						<Badge className="self-center" variant="highlight">
+							{price.discount}
+						</Badge>
+					) : null}
+				</p>
+				{price.comparison ? (
+					<p className="text-muted-foreground text-xs tabular-nums">
+						{price.comparison.amount}{" "}
+						<span aria-hidden="true">{price.comparison.measureLabel}</span>
+						<span className="sr-only">{price.comparison.spokenLabel}</span>
+					</p>
+				) : size === "compact" ? (
+					// Holds the line so the steppers of a row of cards stay aligned.
+					<p aria-hidden="true" className="text-xs">
+						&nbsp;
+					</p>
 				) : null}
-				{showDiscount && price.discount ? (
-					<Badge className="self-center" variant="highlight">
-						{price.discount}
-					</Badge>
-				) : null}
-			</p>
+			</div>
 			{price.saving ? (
 				<p className="w-fit rounded-full bg-brand-soft px-3 py-1.5 font-medium text-brand-soft-foreground text-xs">
 					{price.saving}
@@ -82,16 +106,24 @@ export function PurchaseActionButton({
 	inCart,
 	onAdd,
 	onViewInCart,
+	total,
+	size = "default",
 }: {
 	addLabel?: string;
 	disabled?: boolean;
 	inCart: boolean;
 	onAdd: () => void;
 	onViewInCart: () => void;
+	/** What adding charges, shown after the label; never once in the order. */
+	total?: string | null;
+	size?: "default" | "compact";
 }) {
 	return (
 		<Button
-			className="h-11 w-full rounded-full"
+			className={cn(
+				"w-full rounded-full",
+				size === "compact" ? "h-11 sm:h-10" : "h-11",
+			)}
 			disabled={disabled}
 			onClick={inCart ? onViewInCart : onAdd}
 			size="lg"
@@ -99,7 +131,20 @@ export function PurchaseActionButton({
 			variant="highlight"
 		>
 			<ShoppingCartIcon data-icon="inline-start" />
-			{inCart ? "Ver en tu pedido" : addLabel}
+			{inCart ? (
+				"Ver en tu pedido"
+			) : (
+				<>
+					{addLabel}
+					{total ? (
+						<>
+							{" "}
+							<span aria-hidden="true">·</span>{" "}
+							<span className="tabular-nums">{total}</span>
+						</>
+					) : null}
+				</>
+			)}
 		</Button>
 	);
 }
@@ -116,13 +161,13 @@ type PurchasePanelProps = {
 	/** The full-width button, usually a `PurchaseActionButton`. */
 	action?: ReactNode;
 	disabled?: boolean;
-	size?: "default" | "hero";
+	size?: PurchasePanelSize;
 	showDiscount?: boolean;
 };
 
 /**
- * Price, quantity, total and action, top to bottom. It takes the free space
- * above itself so the buttons of a row of cards line up.
+ * Price, quantity and action, top to bottom; the action carries the total. It
+ * takes the free space above itself so the buttons of a row of cards line up.
  */
 export function PurchasePanel({
 	terms,
@@ -138,7 +183,12 @@ export function PurchasePanel({
 }: PurchasePanelProps) {
 	const mode = getPurchasePanelMode(terms, inCartQuantity);
 	return (
-		<div className="mt-auto flex flex-col gap-3">
+		<div
+			className={cn(
+				"mt-auto flex flex-col",
+				size === "compact" ? "gap-2" : "gap-3",
+			)}
+		>
 			<PurchasePrice
 				pricing={toOfferPricing(terms, unit, presentation)}
 				showDiscount={showDiscount}
@@ -154,7 +204,7 @@ export function PurchasePanel({
 					{getOfferFixedQuantityLabel(terms, unit, presentation)}
 				</p>
 			) : (
-				<div className="flex flex-col items-center gap-2">
+				<div className="flex flex-col items-center">
 					<QuantityStepper
 						disabled={disabled}
 						onCommit={onQuantityChange}
@@ -165,12 +215,12 @@ export function PurchasePanel({
 							onQuantityChange(getNextQuantity(quantity, terms))
 						}
 						presentation={presentation}
-						size="lg"
+						size={size === "compact" ? "md" : "lg"}
 						terms={terms}
 						unit={unit}
 						value={quantity}
 					/>
-					<p aria-live="polite" className="font-medium text-sm">
+					<p aria-live="polite" className="sr-only">
 						{getOfferTotalLabel(terms, quantity)}
 					</p>
 				</div>

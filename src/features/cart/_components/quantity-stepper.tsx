@@ -25,8 +25,11 @@ import {
 type QuantityStepperProps = {
 	className?: string;
 	disabled?: boolean;
-	/** `lg` keeps the mobile size on every screen: the purchase panel's. */
-	size?: "default" | "lg";
+	/**
+	 * `lg` keeps the mobile size on every screen: the purchase panel's. `md` is
+	 * the compact card's: full width like `lg`, shrinking to 40px from `sm` up.
+	 */
+	size?: "default" | "md" | "lg";
 	terms: CatalogClientTerms;
 	unit: CatalogProductUnit;
 	presentation?: ProductPresentation | null;
@@ -51,9 +54,13 @@ export function QuantityStepper({
 	const [draft, setDraft] = useState(() => formatQuantityInput(value));
 	const canIncrement = canIncrementQuantity(value, terms);
 	const canDecrement = canDecrementQuantity(value, terms);
-	const large = size === "lg";
-	// 44px touch targets on mobile; compact rows shrink back from `sm` up.
-	const buttonClassName = large ? "size-11" : "size-11 sm:size-8";
+	const fullWidth = size !== "default";
+	// 44px touch targets on mobile; smaller sizes shrink back from `sm` up.
+	const buttonClassName = {
+		default: "size-11 sm:size-8",
+		md: "size-11 sm:size-10",
+		lg: "size-11",
+	}[size];
 
 	useEffect(() => {
 		setDraft(formatQuantityInput(value));
@@ -74,7 +81,7 @@ export function QuantityStepper({
 		<div
 			className={cn(
 				"flex w-full min-w-0 items-center gap-1.5",
-				!large && "sm:w-auto",
+				!fullWidth && "sm:w-auto",
 				className,
 			)}
 		>
@@ -92,7 +99,8 @@ export function QuantityStepper({
 			<label
 				className={cn(
 					"flex h-11 min-w-0 flex-1 cursor-text items-center justify-center gap-1 rounded-3xl border border-transparent bg-input/50 px-3 text-base transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30 has-disabled:cursor-not-allowed has-disabled:opacity-50",
-					!large && "sm:h-8 sm:w-36 sm:flex-none sm:text-sm",
+					size === "default" && "sm:h-8 sm:w-36 sm:flex-none sm:text-sm",
+					size === "md" && "sm:h-10",
 				)}
 			>
 				<input

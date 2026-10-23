@@ -47,16 +47,17 @@ const cardSkeletonKeys = ["a", "b", "c", "d", "e", "f"];
 
 function ProductGridSkeleton() {
 	return (
-		<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3">
+		<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
 			{cardSkeletonKeys.map((key) => (
 				<div
 					className="flex flex-col gap-3 rounded-4xl bg-card p-4 shadow-md ring-1 ring-foreground/5"
 					key={key}
 				>
-					<Skeleton className="aspect-4/3 w-full rounded-2xl" />
+					<Skeleton className="aspect-3/2 w-full rounded-2xl" />
 					<Skeleton className="h-5 w-2/3" />
-					<Skeleton className="h-16 w-full rounded-2xl" />
-					<Skeleton className="h-9 w-full rounded-3xl" />
+					<Skeleton className="h-12 w-1/2 rounded-2xl" />
+					<Skeleton className="h-10 w-full rounded-3xl" />
+					<Skeleton className="h-10 w-full rounded-3xl" />
 				</div>
 			))}
 		</div>

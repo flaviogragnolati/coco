@@ -1,0 +1,35 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/product-card-price-hierarchy.md"
+      change: "Status Implemented; DoD checked; execution record added"
+  references_added: []
+  traceability_delta:
+    - {item: "product card step price / compact layout / badge slots", implemented_by: "working tree on main (base 7568e60), uncommitted"}
+  decisions_added_or_updated:
+    - "Home offers grid minimum column 240 px (plan fallback; 220 px overflowed the add button)"
+    - "Comparison line reserved only on compact cards; default (detail dialog) and hero omit the placeholder"
+    - "Comparison spoken label: \"por kg\" / \"por litro\""
+  risks_added_or_updated:
+    - "md stepper truncates presentation suffixes in ~229 px catalog columns at 2xl"
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "q-review-code: standards pass with findings (2 suggestions, not applied); specification pass with findings (3 recorded deviations); outcome pass with findings"
+    - "q-review-comments: 16 in scope, all keep; pass"
+    - "pnpm build verified only with SKIP_ENV_VALIDATION=1 (local env lacks BETTER_AUTH_SECRET)"
+    - "pnpm qa:seed not run; discounted-product manual check not done (no discounts in current data)"
+  required_user_actions:
+    - "Review and commit the change"
+    - "Run pnpm qa:seed against the intended database after deploy, then re-run QA cases 5, 6, 8"
+  next_recommended_action: "Commit, deploy, run pnpm qa:seed, and re-run QA cases 5, 6, 8"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true

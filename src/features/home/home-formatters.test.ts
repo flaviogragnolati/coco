@@ -3,12 +3,15 @@ import { homeOfferTerms } from "~/features/cart/cart-mappers";
 import type { HomeOffer } from "~/shared/common/home.types";
 import {
 	getMarketSavingLabel,
+	getOfferComparisonPrice,
 	getOfferDiscountLabel,
 	getOfferFixedQuantityLabel,
 	getOfferHeadlinePrice,
 	getOfferInCartLabel,
 	getOfferQuantityLabel,
+	getOfferStepLabel,
 	getOfferStrikethroughPrice,
+	getOfferTotalAmount,
 	getOfferTotalLabel,
 } from "./home-formatters";
 
@@ -35,30 +38,111 @@ const offer: HomeOffer = {
 	currency: "ARS",
 };
 
-test("the headline is always the unit price, derived from the minimum on legacy terms", () => {
-	expect(getOfferHeadlinePrice(offer)).toEqual({
+const halfKilos = { ...offer, moq: "0.5", step: "0.5", unitPrice: "22600" };
+
+test("the headline is the step price, labelled by the step it buys", () => {
+	expect(getOfferHeadlinePrice(halfKilos)).toEqual({
+		amount: "$ 11.300",
+		unitLabel: "por 500 g",
+	});
+	expect(getOfferHeadlinePrice({ ...offer, step: "1" })).toEqual({
 		amount: "$ 1.500",
 		unitLabel: "por kg",
 	});
 	expect(
-		getOfferHeadlinePrice({ ...offer, unitPrice: null, moqPrice: "20000" }),
-	).toEqual({
-		amount: "$ 2.000",
-		unitLabel: "por kg",
-	});
+		getOfferHeadlinePrice({
+			...offer,
+			step: "1",
+			unitPrice: null,
+			moqPrice: "20000",
+		}),
+	).toEqual({ amount: "$ 2.000", unitLabel: "por kg" });
 });
 
-test("discount and strike-through apply to the same headline basis", () => {
-	const discounted = { ...offer, discountPercent: "25" };
-	expect(getOfferHeadlinePrice(discounted).amount).toBe("$ 1.125");
-	expect(getOfferStrikethroughPrice(discounted)).toBe("$ 1.500");
-	expect(getOfferTotalLabel(homeOfferTerms(discounted), "10")).toBe(
-		"Total $ 11.250",
-	);
-	const legacy = { ...discounted, unitPrice: null, moqPrice: "20000" };
+test.each([
+	["a quarter kilo in grams", { unit: "kg", step: "0.25" }, "por 250 g"],
+	["one kilo", { unit: "kg", step: "1" }, "por kg"],
+	["more than a kilo", { unit: "kg", step: "1.5" }, "por 1,5 kg"],
+	["grams as sold", { unit: "gr", step: "250" }, "por 250 gr"],
+	[
+		"one jar",
+		{
+			unit: "piece",
+			step: "1",
+			presentationContainer: "frasco",
+			presentationSize: "370 g",
+		},
+		"por frasco 370 g",
+	],
+	[
+		"several jars",
+		{
+			unit: "piece",
+			step: "6",
+			presentationContainer: "frasco",
+			presentationSize: "370 g",
+		},
+		"por 6 frascos 370 g",
+	],
+	[
+		"no step falls back to the fixed minimum",
+		{
+			unit: "piece",
+			step: null,
+			moq: "6",
+			presentationContainer: "frasco",
+			presentationSize: "370 g",
+		},
+		"por 6 frascos 370 g",
+	],
+] as const)("getOfferStepLabel: %s", (_name, overrides, expected) => {
+	expect(getOfferStepLabel({ ...offer, ...overrides })).toBe(expected);
+});
+
+test("the comparison price is per kg or litre, and absent when it repeats the step", () => {
+	expect(getOfferComparisonPrice(halfKilos)).toEqual({
+		amount: "$ 22.600",
+		measureLabel: "/ kg",
+		spokenLabel: "por kg",
+	});
+	expect(getOfferComparisonPrice({ ...halfKilos, step: "1" })).toBeNull();
+	expect(
+		getOfferComparisonPrice({
+			...offer,
+			unit: "piece",
+			step: "1",
+			unitPrice: "16900",
+			presentationContainer: "botella",
+			presentationSize: "0,5 L",
+		}),
+	).toEqual({
+		amount: "$ 33.800",
+		measureLabel: "/ L",
+		spokenLabel: "por litro",
+	});
+	expect(
+		getOfferComparisonPrice({
+			...offer,
+			unit: "piece",
+			step: "1",
+			presentationContainer: "botella",
+			presentationSize: "1 L",
+		}),
+	).toBeNull();
+});
+
+test("discount and strike-through apply to the same step basis", () => {
+	const discounted = { ...halfKilos, discountPercent: "20" };
+	expect(getOfferHeadlinePrice(discounted).amount).toBe("$ 9.040");
+	expect(getOfferStrikethroughPrice(discounted)).toBe("$ 11.300");
+	expect(getOfferComparisonPrice(discounted)?.amount).toBe("$ 18.080");
+	expect(getOfferDiscountLabel(discounted)).toBe("-20%");
+
+	const tens = { ...offer, discountPercent: "25" };
+	expect(getOfferTotalLabel(homeOfferTerms(tens), "10")).toBe("Total $ 11.250");
+	const legacy = { ...tens, step: "1", unitPrice: null, moqPrice: "20000" };
 	expect(getOfferHeadlinePrice(legacy).amount).toBe("$ 1.500");
 	expect(getOfferStrikethroughPrice(legacy)).toBe("$ 2.000");
-	expect(getOfferDiscountLabel(discounted)).toBe("-25%");
 });
 
 test("market saving is per unit and never a strike-through price", () => {
@@ -82,6 +166,7 @@ test.each([
 test("prices and savings retain USD currency", () => {
 	const dollars = {
 		...offer,
+		step: "1",
 		currency: "USD" as const,
 		unitPrice: "10",
 		moqPrice: "100",
@@ -118,6 +203,7 @@ test("quantities use plural countable units", () => {
 		getOfferHeadlinePrice({
 			...offer,
 			moq: "3",
+			step: "1",
 			unit: "piece",
 			unitPrice: null,
 		}).unitLabel,
@@ -149,13 +235,17 @@ test("half kilos total at the unit price", () => {
 	expect(getOfferTotalLabel(halves, "1.5")).toBe("Total $ 29.250");
 });
 
-test("a fixed quantity states the only quantity and its total", () => {
+test("the total amount is what the add button shows", () => {
+	expect(getOfferTotalAmount(homeOfferTerms(stepped), "15")).toBe("$ 22.500");
+});
+
+test("a fixed quantity states only the quantity; the button carries the total", () => {
 	expect(
 		getOfferFixedQuantityLabel(
 			homeOfferTerms({ ...offer, moq: "12", unit: "piece" }),
 			"piece",
 		),
-	).toBe("12 unidades · Total $ 18.000");
+	).toBe("12 unidades");
 });
 
 test("the in-cart notice names the quantity already in the order", () => {

@@ -14,9 +14,7 @@ test("a catalog card adds the quantity chosen on its stepper", async ({
 }) => {
 	await page.goto("/products");
 	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
-	const anyAdd = page
-		.getByRole("button", { name: "Agregar", exact: true })
-		.first();
+	const anyAdd = page.getByRole("button", { name: /^Agregar.*\$/ }).first();
 	test.skip(
 		(await anyAdd.count()) === 0,
 		"The current fixture has no catalog products.",
@@ -44,7 +42,7 @@ test("a catalog card adds the quantity chosen on its stepper", async ({
 		has: page.getByRole("heading", { name, exact: true }),
 	});
 
-	// One line: the unit price and what it is per share a paragraph and a row.
+	// One line: the step price and the step it buys share a paragraph and a row.
 	const price = card
 		.locator("p")
 		.filter({ hasText: /\$\s?[\d.,]+ por \S/ })
@@ -61,17 +59,19 @@ test("a catalog card adds the quantity chosen on its stepper", async ({
 	}
 	await expect(card.getByText(/\bMOQ\b/)).toHaveCount(0);
 
+	// The total rides in the add button; the "Total" line is for screen readers.
+	await expect(card.getByText(/^Total /)).toHaveClass(/\bsr-only\b/);
+
 	const quantity = card.getByRole("textbox", { name: /^Cantidad \(.+\)$/ });
 	const minimum = await quantity.inputValue();
-	const total = card.getByText(/^Total /);
-	const minimumTotal = (await total.textContent()) ?? "";
+	const add = card.getByRole("button", { name: /^Agregar.*\$/ });
+	const minimumName = (await add.textContent()) ?? "";
 
 	await card.getByRole("button", { name: "Aumentar cantidad" }).click();
 	await expect(quantity).not.toHaveValue(minimum);
-	await expect(total).not.toHaveText(minimumTotal);
+	await expect(add).not.toHaveText(minimumName);
 	const chosen = await quantity.inputValue();
 
-	const add = card.getByRole("button", { name: "Agregar", exact: true });
 	await expect(add).toBeEnabled();
 	await add.click();
 	await expect(page.getByRole("dialog")).toBeVisible();

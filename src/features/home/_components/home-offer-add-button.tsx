@@ -1,11 +1,15 @@
 "use client";
 
-import { homeOfferToCartItem } from "~/features/cart/cart-mappers";
+import {
+	homeOfferTerms,
+	homeOfferToCartItem,
+} from "~/features/cart/cart-mappers";
 import { useCartActions } from "~/features/cart/use-cart-sync";
 import { PurchaseActionButton } from "~/features/catalog/_components/purchase-panel";
 import type { HomeOffer } from "~/shared/common/home.types";
 import { useCartStore } from "~/store/cart-store";
 import { useCartUiStore } from "~/store/cart-ui-store";
+import { getOfferTotalAmount } from "../home-formatters";
 import {
 	useHomeOfferCartQuantity,
 	useHomeOfferQuantity,
@@ -15,10 +19,12 @@ export function HomeOfferAddButton({
 	offer,
 	isAuthenticated,
 	userId,
+	size,
 }: {
 	offer: HomeOffer;
 	isAuthenticated: boolean;
 	userId: string | null;
+	size?: "default" | "compact";
 }) {
 	const { setItem, isPending } = useCartActions({ isAuthenticated, userId });
 	const openMiniCart = useCartUiStore((state) => state.openMiniCart);
@@ -34,6 +40,8 @@ export function HomeOfferAddButton({
 				openMiniCart();
 			}}
 			onViewInCart={openMiniCart}
+			size={size}
+			total={getOfferTotalAmount(homeOfferTerms(offer), quantity)}
 		/>
 	);
 }

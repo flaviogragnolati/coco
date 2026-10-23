@@ -8,11 +8,16 @@ import {
 	formatQuantity,
 	formatQuantityInput,
 	formatUnitLabel,
+	getBaseStepPrice,
+	getComparisonPrice,
 	getMarketSaving,
+	getPerStepPrice,
 	getPerUnitPrice,
+	getStepQuantity,
 	isFixedQuantity,
 	normalizeCartQuantity,
 	PricingConfigurationError,
+	parsePresentationMeasure,
 	parseQuantityInput,
 	selectProductImage,
 } from "./commerce.helpers";
@@ -480,4 +485,146 @@ test("formatQuantityInput shows es-AR decimals without grouping", () => {
 	expect(formatQuantityInput("1500")).toBe("1500");
 	expect(formatQuantityInput("0.5000")).toBe("0,5");
 	expect(parseQuantityInput(formatQuantityInput("1234.5"))).toBe(1234.5);
+});
+
+test("the step price is one step at the offer unit price", () => {
+	const halves = terms({ moq: "0.5", step: "0.5", unitPrice: "22600" });
+	expect(getStepQuantity(halves)).toBe(0.5);
+	expect(getPerStepPrice(halves)).toBe(11300);
+	expect(getBaseStepPrice(halves)).toBe(11300);
+
+	const discounted = { ...halves, discountPercent: "20" };
+	expect(getPerStepPrice(discounted)).toBe(9040);
+	expect(getBaseStepPrice(discounted)).toBe(11300);
+});
+
+test("without a step, one step is the fixed minimum", () => {
+	const fixed = terms({ moq: "6", unitPrice: "5150" });
+	expect(getStepQuantity(fixed)).toBe(6);
+	expect(getPerStepPrice(fixed)).toBe(30900);
+});
+
+test("the step price ignores the stored step price", () => {
+	expect(
+		getPerStepPrice(terms({ step: "1", stepPrice: "999", unitPrice: "100" })),
+	).toBe(100);
+});
+
+test.each([
+	["grams", "370 g", { amount: 0.37, measure: "kg" }],
+	["gr with a trailing dot", "500 gr.", { amount: 0.5, measure: "kg" }],
+	["kilos", "1 kg", { amount: 1, measure: "kg" }],
+	["a decimal comma in litres", "0,5 L", { amount: 0.5, measure: "L" }],
+	["millilitres", "750ml", { amount: 0.75, measure: "L" }],
+	["cc", "250 CC", { amount: 0.25, measure: "L" }],
+	["lts", " 5 lts ", { amount: 5, measure: "L" }],
+	["a multiplier", "2 x 500 g", null],
+	["extra words", "frasco 370 g", null],
+	["a range", "300-400 g", null],
+	["zero", "0 g", null],
+	["no number", "grande", null],
+	["nothing", null, null],
+] as const)("parsePresentationMeasure: %s", (_name, size, expected) => {
+	const measure = parsePresentationMeasure(size);
+	if (expected === null) {
+		expect(measure).toBeNull();
+		return;
+	}
+	expect(measure?.measure).toBe(expected.measure);
+	expect(measure?.amount).toBeCloseTo(expected.amount);
+});
+
+test.each([
+	[
+		"half kilos compare per kg",
+		{ moq: "0.5", step: "0.5", unitPrice: "22600" },
+		"kg",
+		null,
+		{ amount: 22600, measure: "kg" },
+	],
+	[
+		"a 1 kg step repeats the step price",
+		{ moq: "1", step: "1", unitPrice: "7850" },
+		"kg",
+		null,
+		null,
+	],
+	[
+		"a jar compares per kg of content",
+		{ step: "1", unitPrice: "5150" },
+		"piece",
+		"370 g",
+		{ amount: 13918.918918, measure: "kg" },
+	],
+	[
+		"a half-litre bottle compares per litre",
+		{ step: "1", unitPrice: "16900" },
+		"piece",
+		"0,5 L",
+		{ amount: 33800, measure: "L" },
+	],
+	[
+		"a 1 L bottle repeats the step price",
+		{ step: "1", unitPrice: "9000" },
+		"piece",
+		"1 L",
+		null,
+	],
+	[
+		"a 1 kg bag repeats the step price",
+		{ step: "1", unitPrice: "9000" },
+		"piece",
+		"1 kg",
+		null,
+	],
+	[
+		"a 5 L jug compares per litre",
+		{ step: "1", unitPrice: "137400" },
+		"piece",
+		"5 L",
+		{ amount: 27480, measure: "L" },
+	],
+	[
+		"an unreadable size has no comparison",
+		{ step: "1", unitPrice: "9000" },
+		"piece",
+		"grande",
+		null,
+	],
+	[
+		"a multiplied size has no comparison",
+		{ step: "1", unitPrice: "9000" },
+		"piece",
+		"2 x 500 g",
+		null,
+	],
+	[
+		"no size has no comparison",
+		{ step: "1", unitPrice: "9000" },
+		"box",
+		null,
+		null,
+	],
+	[
+		"the comparison carries the discount",
+		{ moq: "0.5", step: "0.5", unitPrice: "22600", discountPercent: "20" },
+		"kg",
+		null,
+		{ amount: 18080, measure: "kg" },
+	],
+] as const)("getComparisonPrice: %s", (_name, overrides, unit, size, expected) => {
+	const comparison = getComparisonPrice(terms(overrides), unit, {
+		presentationContainer: size ? "frasco" : null,
+		presentationSize: size,
+	});
+	if (expected === null) {
+		expect(comparison).toBeNull();
+		return;
+	}
+	expect(comparison?.measure).toBe(expected.measure);
+	expect(comparison?.amount).toBeCloseTo(expected.amount, 4);
+});
+
+test("getComparisonPrice has nothing to compare without a price", () => {
+	expect(getComparisonPrice(terms({ moqPrice: "" }), "kg")).toBeNull();
 });

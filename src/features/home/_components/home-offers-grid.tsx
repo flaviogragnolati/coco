@@ -55,7 +55,7 @@ export function HomeOffersGrid({
 					))}
 				</ToggleGroup>
 			) : null}
-			<div className="grid grid-cols-[repeat(auto-fill,minmax(min(255px,100%),1fr))] gap-5">
+			<div className="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-5">
 				{visibleItems.map((item) => (
 					<Fragment key={item.key}>{item.card}</Fragment>
 				))}

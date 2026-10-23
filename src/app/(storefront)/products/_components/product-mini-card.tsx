@@ -4,7 +4,10 @@ import { CheckIcon } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
 import { ProductImage } from "~/features/catalog/_components/product-image";
-import { getOfferHeadlinePrice } from "~/features/home/home-formatters";
+import {
+	getOfferComparisonPrice,
+	getOfferHeadlinePrice,
+} from "~/features/home/home-formatters";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 
 type ProductMiniCardProps = {
@@ -18,12 +21,14 @@ export function ProductMiniCard({
 	product,
 	onSelect,
 }: ProductMiniCardProps) {
-	const price = getOfferHeadlinePrice({
+	const pricing = {
 		...product.terms,
 		unit: product.unit,
 		presentationContainer: product.presentationContainer,
 		presentationSize: product.presentationSize,
-	});
+	};
+	const price = getOfferHeadlinePrice(pricing);
+	const comparison = getOfferComparisonPrice(pricing);
 	return (
 		<button
 			aria-label={`Ver ${product.name}`}
@@ -50,6 +55,13 @@ export function ProductMiniCard({
 						</Badge>
 					) : null}
 				</span>
+				{comparison ? (
+					<span className="text-muted-foreground text-xs tabular-nums">
+						{comparison.amount}{" "}
+						<span aria-hidden="true">{comparison.measureLabel}</span>
+						<span className="sr-only">{comparison.spokenLabel}</span>
+					</span>
+				) : null}
 			</span>
 		</button>
 	);

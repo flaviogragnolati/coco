@@ -54,7 +54,7 @@ test("the hero shows the system illustration and the spotlight has its own band"
 		.getAttribute("href");
 	expect(spotlightHref).toMatch(/^\/products\?product=\d+$/);
 	await expect(
-		band.getByRole("button", { name: "Sumar al pedido", exact: true }),
+		band.getByRole("button", { name: /^Sumar al pedido.*\$/ }),
 	).toBeVisible();
 	await expect(page.locator(`#ofertas a[href='${spotlightHref}']`)).toHaveCount(
 		0,
@@ -113,7 +113,7 @@ test("adding a home offer opens the mini-cart without duplicating its quantity",
 }) => {
 	await page.goto("/");
 	const add = page
-		.getByRole("button", { name: "Sumar al pedido", exact: true })
+		.getByRole("button", { name: /^Sumar al pedido.*\$/ })
 		.first();
 	test.skip(
 		(await add.count()) === 0,

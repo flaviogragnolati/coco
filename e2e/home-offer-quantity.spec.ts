@@ -4,7 +4,7 @@ test("a home offer adds the quantity chosen on its card", async ({ page }) => {
 	await page.goto("/");
 	const add = page
 		.locator("#ofertas")
-		.getByRole("button", { name: "Sumar al pedido", exact: true })
+		.getByRole("button", { name: /^Sumar al pedido.*\$/ })
 		.first();
 	test.skip(
 		(await add.count()) === 0,
@@ -37,17 +37,17 @@ test("a home offer adds the quantity chosen on its card", async ({ page }) => {
 	await expect(
 		card.getByRole("button", { name: "Reducir cantidad" }),
 	).toBeDisabled();
-	const total = card.getByText(/^Total /);
-	const minimumTotal = (await total.textContent()) ?? "";
+	// The total rides in the add button; the "Total" line is for screen readers.
+	await expect(card.getByText(/^Total /)).toHaveClass(/\bsr-only\b/);
+	const cardAdd = card.getByRole("button", { name: /^Sumar al pedido.*\$/ });
+	const minimumName = (await cardAdd.textContent()) ?? "";
 
 	await card.getByRole("button", { name: "Aumentar cantidad" }).click();
 	await expect(quantity).not.toHaveValue(minimum);
-	await expect(total).not.toHaveText(minimumTotal);
+	await expect(cardAdd).not.toHaveText(minimumName);
 	const chosen = await quantity.inputValue();
 
-	await card
-		.getByRole("button", { name: "Sumar al pedido", exact: true })
-		.click();
+	await cardAdd.click();
 	await expect(page.getByRole("dialog")).toBeVisible();
 	const quantities = await page.evaluate(() =>
 		Object.values(

@@ -28,12 +28,17 @@ const jar = {
 	presentationSize: "370 g",
 } as const;
 
-test("the price line is the unit price per unit, on any presentation", () => {
+test("the price line is the step price, with the price per kg below it", () => {
 	expect(getPurchasePrice(toOfferPricing(terms, "kg", loose))).toEqual({
-		amount: "$ 19.500",
-		unitLabel: "por kg",
+		amount: "$ 9.750",
+		unitLabel: "por 500 g",
 		previousAmount: null,
 		discount: null,
+		comparison: {
+			amount: "$ 19.500",
+			measureLabel: "/ kg",
+			spokenLabel: "por kg",
+		},
 		saving: null,
 	});
 	const jars = toOfferPricing(
@@ -44,18 +49,28 @@ test("the price line is the unit price per unit, on any presentation", () => {
 	expect(getPurchasePrice(jars)).toMatchObject({
 		amount: "$ 4.200",
 		unitLabel: "por frasco 370 g",
+		comparison: { amount: "$ 11.351", measureLabel: "/ kg" },
 	});
 });
 
-test("a discount strikes through the undiscounted unit price", () => {
+test("a whole kilo step has no comparison line", () => {
+	expect(
+		getPurchasePrice(
+			toOfferPricing({ ...terms, moq: "1", step: "1" }, "kg", loose),
+		).comparison,
+	).toBeNull();
+});
+
+test("a discount strikes through the undiscounted step price", () => {
 	expect(
 		getPurchasePrice(
 			toOfferPricing({ ...terms, discountPercent: "20" }, "kg", loose),
 		),
 	).toMatchObject({
-		amount: "$ 15.600",
-		previousAmount: "$ 19.500",
+		amount: "$ 7.800",
+		previousAmount: "$ 9.750",
 		discount: "-20%",
+		comparison: { amount: "$ 15.600" },
 	});
 });
 
