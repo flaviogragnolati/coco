@@ -8,10 +8,10 @@ stage_result:
   updated_outputs:
     - artifact_type: "implementation-plan"
       path: "docs/plans/customer-tutorial.md"
-      change: "Status Implemented (uncommitted, migration pending); DoD checked except migration and signed-in invitation; execution record added"
+      change: "Status Implemented (commit 550a414, migration applied); DoD checked except the signed-in invitation run; execution record added"
   references_added: []
   traceability_delta:
-    - {item: "customer tutorial T1-T19", implemented_by: "uncommitted working tree on main, base 624389e"}
+    - {item: "customer tutorial T1-T19", implemented_by: "commit 550a414 on main"}
   decisions_added_or_updated:
     - "URL sync via window.history.replaceState instead of router.replace (no server render per step)"
     - "Fixture ids 990001+ (zod output schemas require positive ids)"
@@ -25,8 +25,7 @@ stage_result:
     - "Recomposed shells (navbar, catalog, checkout) can drift from the real pages (ADR 0012)"
     - "Invitation may reappear after browser Back from /tutorial until reload (unverified, needs signed-in user)"
   stale_artifacts: []
-  blockers:
-    - "Migration 20261106000000_user_tutorial_invitation not applied; signed-in session reads fail until it is"
+  blockers: []
   warnings:
     - "q-review-code standards: fail -> resolved (open redirect via tab in volver fixed and tested); 4 suggestions not applied"
     - "q-review-code specification: fail -> resolved (scroll on display:contents targets fixed, e2e asserts on-screen cut-out); T14 render test added; glossary wording fixed"
@@ -35,11 +34,9 @@ stage_result:
     - "pnpm check fails only on the pre-existing untracked output/ folder"
     - "Signed-in manual checks (cart merge-blocked/at-checkout, external-payment order detail, invitation) not run"
   required_user_actions:
-    - "Apply the migration (pnpm db:migrate) on the target database"
-    - "Review and commit the working tree"
     - "Run pnpm qa:seed, then QA tickets 68-70"
     - "Supply a Miel pura image for public/tutorial if wanted"
-  next_recommended_action: "Apply the migration, commit, then run QA tickets 68-70"
+  next_recommended_action: "Run pnpm qa:seed, then QA tickets 68-70 on the deployed environment"
 orchestration:
   mode: "standalone"
   global_state_updated: false

@@ -1,6 +1,6 @@
 # Implementation Plan: customer tutorial — guided walk-through of a purchase on example data
 
-> **Status:** Implemented 2026-11-06 (see Execution record), uncommitted in the working tree on `main`; the migration is not applied yet. Feature grill 2026-11-06. Decisions confirmed by Flavio.
+> **Status:** Implemented 2026-11-06 (see Execution record), commit `550a414` on `main`; migration applied. Feature grill 2026-11-06. Decisions confirmed by Flavio.
 
 ## 1. Objective & outcome
 
@@ -465,7 +465,7 @@ Regressions are avoided by keeping the real pages' containers as thin wrappers a
 
 ## 16. Definition of done
 
-- [ ] `User.tutorialInvitationAnsweredAt` exists, migration applied, field on `session.user`. *(Column, migration file and session field done; the migration is not applied.)*
+- [x] `User.tutorialInvitationAnsweredAt` exists, migration applied, field on `session.user`.
 - [x] `profile.answerTutorialInvitation` is idempotent and protected.
 - [x] `CartSheetView`, `CartPageView`, `OrderDetailView` extracted; real mini-cart, `/cart` and `/my-orders/[id]` unchanged. *(Verified as moves and by e2e; the signed-in manual pass is still open.)*
 - [x] `/tutorial` plays the express (12 steps) and complete (21 steps) versions with Siguiente/Atrás/✕, ← → Esc, at 1280 px and 375 px.
@@ -488,7 +488,7 @@ Regressions are avoided by keeping the real pages' containers as thin wrappers a
 
 ## Execution record
 
-**Status:** Done 2026-11-06 (q-code-implement), base `624389e`. The change is uncommitted in the working tree on `main`. The migration is not applied: the database in `.env` is the remote Neon instance, so applying it is left to Flavio.
+**Status:** Done 2026-11-06 (q-code-implement), base `624389e`, commit `550a414` pushed to `main`. Flavio applied the migration on 2026-11-06 to the Neon database in `.env`. `migrate deploy` fails with P3005 there (no migration history), so it ran as a script with `prisma db execute`; the column was then checked in `information_schema` (nullable `timestamp`).
 
 **Change summary.**
 - **Persistence.**
@@ -524,7 +524,7 @@ Regressions are avoided by keeping the real pages' containers as thin wrappers a
 
 | Criterion (§16) | Result |
 | --- | --- |
-| Column, migration, session field | Partly met. Column, migration file and session field are done, and the typecheck shows the field reaching `isTutorialInvitationEligible(user)`. The migration is not applied. |
+| Column, migration, session field | Met. The migration is applied and the column verified; the typecheck shows the field reaching `isTutorialInvitationEligible(user)`. |
 | Mutation idempotent and protected | Met (unit test). |
 | Three views extracted, real pages unchanged | Met. The views were checked as moves against `HEAD`, and the e2e catalog, home and smoke specs pass. The manual signed-in checks are still open: merge-blocked and at-checkout on `/cart`, and external payment on `/my-orders/[id]`. |
 | Both versions with keys, at 1280 px and 375 px | Met. The e2e walks the 21 complete steps at desktop size and the 12 express steps at 375 px. On every targeted step it asserts that the cut-out exists and lies inside the viewport. Every step was also screenshotted at both sizes. |
@@ -560,7 +560,7 @@ Regressions are avoided by keeping the real pages' containers as thin wrappers a
   - Applied:
     - The T14 check is now a scene render test (the mini-cart and the purchase block exist only in the browser and are covered by e2e).
     - The glossary definition no longer calls the tutorial "recorrido".
-  - Recorded rather than changed: deviations 1–9 below were judged acceptable; the migration is not applied.
+  - Recorded rather than changed: deviations 1–9 below were judged acceptable; the migration was applied afterwards.
 - **`q-review-comments`:** about 56 comments in scope; 1 remove (narration on the seeds) and 1 rewrite (the invitation's failure note), both applied. Outcome: pass with findings.
 
 **Deviations and decisions.**
@@ -574,8 +574,7 @@ Regressions are avoided by keeping the real pages' containers as thin wrappers a
 8. **`volver` checks go beyond the login rules:** backslash, and resolution against a probe origin (see the mini review).
 9. **The popover side is chosen by available room**, with edge docking when no side fits. The mini-cart is as tall as the viewport, and Radix only flips to the opposite side.
 
-**Blockers.** None in code. Before release or QA ticket 70:
-- Apply the migration (`pnpm db:migrate` on the target database). A signed-in session read against an unmigrated database will fail on the missing column.
+**Blockers.** None.
 
 **Follow-ups.**
 - Run QA tickets 68–70 once deployed. In ticket 70, also check the invitation after a browser Back from `/tutorial`. A reviewer suspects the cached storefront layout could show it again until a reload; this is unverified because it needs a signed-in user.
