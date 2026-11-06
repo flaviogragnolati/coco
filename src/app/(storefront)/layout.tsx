@@ -1,6 +1,8 @@
 import { AnnouncementBar } from "~/components/announcement-bar";
 import { AppNavbar } from "~/components/app-navbar";
 import { CartSheet } from "~/features/cart/_components/cart-sheet";
+import { TutorialInvitation } from "~/features/tutorial/_components/tutorial-invitation";
+import { isTutorialInvitationEligible } from "~/features/tutorial/tutorial-invitation.decision";
 import { getSession } from "~/server/better-auth/server";
 
 export default async function StorefrontLayout({
@@ -15,6 +17,7 @@ export default async function StorefrontLayout({
 			<AppNavbar session={session} />
 			{children}
 			<CartSheet isAuthenticated={Boolean(user)} userId={user?.id ?? null} />
+			<TutorialInvitation eligible={isTutorialInvitationEligible(user)} />
 		</div>
 	);
 }

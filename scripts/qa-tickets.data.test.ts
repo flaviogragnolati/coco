@@ -105,6 +105,20 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 		],
 	},
 	{ code: 54, mustMention: ["`/admin/packages`", "19/09/2026"] },
+	{ code: 68, mustMention: ["`/products`", '"Tutorial rápido · 1 min"'] },
+	{
+		code: 69,
+		mustMention: ['"Tutorial completo · 3 min"', '"Ir al catálogo"'],
+	},
+	{
+		code: 70,
+		mustMention: [
+			"`/checkout`",
+			"`/checkout/mercadopago/success`",
+			'"¿Primera vez en Coco?"',
+			'"Ahora no"',
+		],
+	},
 ];
 
 const byCode = new Map(qaTicketSeedEntries.map((entry) => [entry.code, entry]));
@@ -114,13 +128,13 @@ function seedSource() {
 }
 
 describe("qaTicketSeedEntries", () => {
-	it("transcribes 65 active tests with codes 1-67 except the retired 15 and 17", () => {
+	it("transcribes 68 active tests with codes 1-70 except the retired 15 and 17", () => {
 		const codes = qaTicketSeedEntries.map((entry) => entry.code);
-		const expected = Array.from({ length: 67 }, (_, index) => index + 1).filter(
+		const expected = Array.from({ length: 70 }, (_, index) => index + 1).filter(
 			(code) => code !== 15 && code !== 17,
 		);
 
-		expect(qaTicketSeedEntries).toHaveLength(65);
+		expect(qaTicketSeedEntries).toHaveLength(68);
 		expect(codes).toEqual(expected);
 		expect(new Set(codes).size).toBe(codes.length);
 	});

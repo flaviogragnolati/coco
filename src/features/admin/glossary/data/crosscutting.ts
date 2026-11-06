@@ -123,6 +123,26 @@ export const crosscuttingGlossaryEntries: GlossaryEntry[] = [
 			"Un pedido registrado para renombrar o redefinir una entrada del glosario: quién lo pidió, qué parte de la entrada cuestiona, el texto propuesto y un motivo opcional. Nunca edita la entrada — aceptarlo compromete a un cambio de código en el dataset del glosario y en CONTEXT.md, y por eso tiene un estado «aplicada» propio (ADR 0007).",
 		aliases: ["Sugerencia", "Pedido", "Ticket de glosario"],
 	},
+	{
+		slug: "concepto-tutorial",
+		kind: "concept",
+		section: "crosscutting",
+		label: "Tutorial",
+		term: "Tutorial",
+		definition:
+			"La guía paso a paso de una compra completa por el camino feliz (catálogo, pedido, checkout, pago, Mis pedidos y seguimiento), sobre datos de ejemplo fijos y en pantallas simuladas. Nunca lee ni escribe el pedido, las direcciones, los pedidos ni los pagos reales del cliente, así que puede mostrar etapas que todavía no vivió. Tiene una versión rápida y una completa sobre las mismas escenas; en la tienda se llaman «Tutorial rápido» y «Tutorial completo» (ADR 0012).",
+		aliases: ["Onboarding", "Tour", "Demo", "Recorrido"],
+	},
+	{
+		slug: "concepto-invitacion-al-tutorial",
+		kind: "concept",
+		section: "crosscutting",
+		label: "Invitación al tutorial",
+		term: "Tutorial invitation",
+		definition:
+			"La oferta única y no bloqueante de empezar el tutorial que recibe un cliente con sesión en la primera página de la tienda que no sea el ingreso, el checkout ni el regreso de un pago. Cualquier respuesta, elegir una versión o «Ahora no», la cierra para ese usuario en todos sus dispositivos. El tutorial sigue disponible desde el menú de ayuda. En la tienda se titula «¿Primera vez en Coco?».",
+		aliases: ["Popup de bienvenida"],
+	},
 
 	// --- Entidades -----------------------------------------------------------
 	{

@@ -35,6 +35,7 @@ const SECTION_H = "H. Admin — Órdenes de proveedor";
 const SECTION_I = "I. Admin — Recepción y empaque";
 const SECTION_J = "J. Admin — Envío al cliente y entrega";
 const SECTION_K = "K. Admin — Rollovers, tracking y cierre del pedido";
+const SECTION_L = "L. Tutorial del cliente";
 
 export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 	{
@@ -815,6 +816,42 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		expectedResult:
 			'Caso A: ORD-SEED-PICKUP pasa solo de "En procesamiento" a "Completado". Un pedido con items entregados y otros cancelados también termina "Completado".\nCaso B: pasa a "Cancelado".\nCaso C: sigue "En procesamiento": un rollover abierto lo mantiene abierto.\nEl cierre nunca pisa "Reembolsado", "Contracargo" ni "Fallido", no existe cierre manual y no depende de un plazo. Cancelar el pedido no cancela un pago externo pendiente (ADR 0005).',
 		isRegressionPath: true,
+	},
+	{
+		code: 68,
+		section: SECTION_L,
+		title: "Tutorial rápido desde el menú de ayuda",
+		actor: "Cliente",
+		feature: "`/tutorial` (ADR 0012)",
+		steps:
+			'Precondiciones: sin sesión o con sesión, cualquier navegador.\n1) En `/products`, abrir el ícono de ayuda (?) de la barra y elegir "Tutorial rápido · 1 min".\n2) Avanzar con "Siguiente", volver con "Atrás" y probar las flechas ← → del teclado.\n3) En el paso 5, recargar la página.\n4) Salir con Esc; volver a entrar y salir con ✕ y con "Salir del tutorial" de la barra superior.',
+		expectedResult:
+			'Se abre `/tutorial` con la barra "Modo tutorial · datos de ejemplo" y el diálogo "1 / 12"; cada paso resalta un elemento de la pantalla simulada.\nLas flechas mueven igual que los botones y la URL cambia el número de paso; al recargar sigue en el mismo paso.\nEsc, ✕ y "Salir del tutorial" vuelven a `/products` sin confirmación; el botón Atrás del navegador también sale del tutorial.',
+		isRegressionPath: false,
+	},
+	{
+		code: 69,
+		section: SECTION_L,
+		title: "Tutorial completo y Tu pedido real intacto",
+		actor: "Cliente",
+		feature: "`/tutorial` (ADR 0012)",
+		steps:
+			'Precondiciones: Tu pedido real con al menos un producto.\n1) Desde el menú de ayuda (?), elegir "Tutorial completo · 3 min".\n2) Avanzar hasta el final, mirando el seguimiento del pedido de ejemplo.\n3) En el último paso, hacer click en "Ir al catálogo" y abrir Tu pedido.',
+		expectedResult:
+			'El tutorial tiene 21 pasos y muestra las seis etapas del seguimiento una por una: Pedido confirmado, Preparación, Proveedor, Empaque, Envío y Entrega.\nEl último paso ofrece "Ir al catálogo" y "Terminar"; "Ir al catálogo" abre `/products`.\nTu pedido real tiene los mismos productos y cantidades que antes: el tutorial no agregó ni quitó nada.',
+		isRegressionPath: false,
+	},
+	{
+		code: 70,
+		section: SECTION_L,
+		title: "Invitación al tutorial en el primer ingreso",
+		actor: "Cliente",
+		feature: "Invitación al tutorial",
+		steps:
+			'Precondiciones: una cuenta de Google que nunca ingresó a Coco (o un usuario con la invitación sin responder), y un segundo navegador.\n1) Sin sesión, agregar un producto e ir a pagar: ingresar con Google hasta llegar a `/checkout`.\n2) Pagar con Mercado Pago (sandbox) hasta volver a `/checkout/mercadopago/success`.\n3) Ir a `/` y mirar la esquina inferior.\n4) Elegir "Ahora no", recargar y navegar por la tienda.\n5) Ingresar con la misma cuenta en el segundo navegador.',
+		expectedResult:
+			'En `/checkout` y en la página de regreso de Mercado Pago no aparece ninguna invitación.\nEn `/` aparece la tarjeta "¿Primera vez en Coco?" con "Tutorial rápido · 1 min", "Tutorial completo · 3 min" y "Ahora no".\nDespués de "Ahora no" no vuelve a aparecer, ni al recargar ni en el segundo navegador; elegir una versión en lugar de "Ahora no" abre el tutorial y también la cierra para siempre.',
+		isRegressionPath: false,
 	},
 ];
 

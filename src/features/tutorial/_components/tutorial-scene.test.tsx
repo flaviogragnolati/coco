@@ -1,0 +1,46 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+
+import { TooltipProvider } from "~/components/ui/tooltip";
+import { buildTutorialFixtures } from "~/features/tutorial/tutorial-fixtures";
+import {
+	TUTORIAL_TARGET_ATTRIBUTE,
+	type TutorialTargetId,
+	targetsByScene,
+	tutorialScripts,
+} from "~/features/tutorial/tutorial-script";
+import { TutorialScene } from "./tutorial-scene";
+
+/**
+ * Only exist in the browser: the mini-cart portals, and the purchase block is
+ * tagged after the card mounts. The e2e walk covers both.
+ */
+const browserOnlyTargets = new Set<TutorialTargetId>([
+	"mini-cart",
+	"product-purchase",
+]);
+
+const fixtures = buildTutorialFixtures(new Date("2026-11-06T15:00:00.000Z"));
+
+describe("tutorial scenes", () => {
+	const steps = Object.values(tutorialScripts).flat();
+
+	it.each(
+		steps.filter((step) => step.target !== null),
+	)("$id: its scene renders $target", (step) => {
+		if (step.target === null || browserOnlyTargets.has(step.target)) return;
+		// The root layout provides it to every page; the journey stepper needs it.
+		const html = renderToStaticMarkup(
+			<TooltipProvider>
+				<TutorialScene fixtures={fixtures} scene={step.scene} />
+			</TooltipProvider>,
+		);
+		expect(html).toContain(`${TUTORIAL_TARGET_ATTRIBUTE}="${step.target}"`);
+	});
+
+	it("the browser-only exceptions are real targets of their scene", () => {
+		for (const target of browserOnlyTargets) {
+			expect(targetsByScene.catalog).toContain(target);
+		}
+	});
+});

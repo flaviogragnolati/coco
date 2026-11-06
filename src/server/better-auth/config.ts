@@ -32,6 +32,11 @@ export const auth = betterAuth({
 				required: false,
 				input: false,
 			},
+			tutorialInvitationAnsweredAt: {
+				type: "date",
+				required: false,
+				input: false,
+			},
 			active: {
 				type: "boolean",
 				defaultValue: true,

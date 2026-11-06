@@ -288,6 +288,16 @@ _Avoid_: Order placement, purchase flow
 The explicit way back from a frozen at-checkout cart to an editable one: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why editing the cart mid-checkout is offered as leaving rather than as a direct edit. Blocked while a payment is in process. Spanish-facing UI labels it "Volver a editar el pedido".
 _Avoid_: Cancel checkout, abort checkout, unfreeze
 
+### Customer help
+
+**Tutorial**:
+The guided walk-through of a whole purchase along the happy path (catalog, cart, checkout, payment, my orders and order tracking), played on fixed example data in simulated screens. It never reads or writes the customer's real cart, addresses, orders or payments, so it can show stages the customer has not lived yet. It comes in an express and a complete version over the same scenes. Spanish-facing UI labels them "Tutorial rápido" and "Tutorial completo".
+_Avoid_: Onboarding, tour, demo, recorrido (that word belongs to order tracking)
+
+**Tutorial invitation**:
+The one-time, non-blocking offer to start the tutorial that a signed-in customer gets on the first storefront page that isn't sign-in, checkout or a payment return page. Either answer, picking a version or declining, settles it for that user on every device. The tutorial stays available from the help menu. Spanish-facing UI titles it "¿Primera vez en Coco?".
+_Avoid_: Onboarding popup, welcome modal
+
 ### Legal and site content
 
 **Supplier application**:

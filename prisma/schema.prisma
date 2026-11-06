@@ -8,19 +8,21 @@ datasource db {
 }
 
 model User {
-  id            String    @id
-  name          String    @db.Text
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?   @db.Text
-  role          UserRole  @default(user)
-  document      String?
-  taxId         String?
-  dob           DateTime?
-  active        Boolean   @default(true)
-  deleted       Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
+  id                           String    @id
+  name                         String    @db.Text
+  email                        String
+  emailVerified                Boolean   @default(false)
+  image                        String?   @db.Text
+  role                         UserRole  @default(user)
+  document                     String?
+  taxId                        String?
+  dob                          DateTime?
+  active                       Boolean   @default(true)
+  deleted                      Boolean   @default(false)
+  /// Null until the customer answers the tutorial invitation, either way.
+  tutorialInvitationAnsweredAt DateTime?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @default(now()) @updatedAt
 
   sessions              Session[]
   accounts              Account[]

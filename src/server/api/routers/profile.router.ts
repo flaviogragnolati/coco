@@ -51,4 +51,12 @@ export const profileRouter = createTRPCRouter({
 
 			return profileSchema.parse(user);
 		}),
+
+	/** Settles the tutorial invitation for good; the first answer's time wins. */
+	answerTutorialInvitation: protectedProcedure.mutation(async ({ ctx }) => {
+		await ctx.db.user.updateMany({
+			where: { id: ctx.session.user.id, tutorialInvitationAnsweredAt: null },
+			data: { tutorialInvitationAnsweredAt: new Date() },
+		});
+	}),
 });

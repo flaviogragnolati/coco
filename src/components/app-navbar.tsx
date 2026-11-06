@@ -1,6 +1,7 @@
 import { LogInIcon, MenuIcon } from "lucide-react";
 import Link from "next/link";
 import { CartNavButton } from "~/components/cart-nav-button";
+import { HelpMenu } from "~/components/help-menu";
 import { MobileNavMenu } from "~/components/mobile-nav-menu";
 import { NavbarSearch } from "~/components/navbar-search";
 import { Button } from "~/components/ui/button";
@@ -40,6 +41,7 @@ export function AppNavbar({ session }: AppNavbarProps) {
 				<NavbarSearch className="hidden max-w-[460px] flex-1 md:block" />
 
 				<div className="ml-auto flex items-center gap-2">
+					<HelpMenu />
 					<CartNavButton
 						isAuthenticated={Boolean(user)}
 						userId={user?.id ?? null}
