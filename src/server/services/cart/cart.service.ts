@@ -2,6 +2,7 @@ import "server-only";
 
 import { TRPCError } from "@trpc/server";
 import {
+	cartAddItemsOutputSchema,
 	cartMutationOutputSchema,
 	cartSnapshotSchema,
 } from "~/schemas/cart.schemas";
@@ -10,6 +11,9 @@ import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
 import { releaseCheckoutCart } from "~/server/services/checkout/checkout-release";
 import { checkoutReleaseBlockedMessage } from "~/server/services/checkout/checkout-release.decision";
 import type {
+	CartAddedLine,
+	CartAddItemInput,
+	CartAddItemsOutput,
 	CartItem,
 	CartLocalItemInput,
 	CartMutationOutput,
@@ -41,13 +45,21 @@ import {
 	findCurrentCartForMutationByUserId,
 	findProductClientTermsForCart,
 	listActiveCartItemsByTerms,
+	listCurrentClientTermsByProductIds,
 	listProductClientTermsForCart,
 	softDeleteCartItem,
 	softDeleteCartItemsByCartId,
 	updateCartItemQuantity,
 } from "./cart.data";
+import { planCartAdditions } from "./cart-additions.decision";
 
 type CartDb = typeof db;
+
+export type CartTransaction = Parameters<CartDb["$transaction"]>[0] extends (
+	tx: infer T,
+) => unknown
+	? T
+	: never;
 
 function emptyCart(): CartSnapshot {
 	return {
@@ -355,6 +367,120 @@ export async function setItemQuantity(
 	};
 
 	return cartMutationOutputSchema.parse(output);
+}
+
+/** `name` labels a product that turns out unavailable and has no terms to name it. */
+export type CartAddItemRequest = CartAddItemInput & { name?: string };
+
+/**
+ * Adds products to the customer's current cart at their current terms, inside
+ * the caller's transaction. Additive: a product already in the cart grows by
+ * the requested quantity, fitted to the terms. A product with no current terms
+ * is reported unavailable and leaves the cart untouched.
+ */
+export async function addItemsInTransaction(
+	tx: CartTransaction,
+	userId: string,
+	items: CartAddItemRequest[],
+	now: Date,
+): Promise<{ cartId: number; lines: CartAddedLine[] }> {
+	const cart = await getOrCreateCurrentCart(tx, userId);
+	const productIds = Array.from(new Set(items.map((item) => item.productId)));
+	const termsRecords = await listCurrentClientTermsByProductIds(
+		tx,
+		productIds,
+		now,
+	);
+
+	const termsByProductId = new Map<number, CartProductClientTermsRecord>();
+	for (const terms of termsRecords) {
+		if (!termsByProductId.has(terms.product.id)) {
+			termsByProductId.set(terms.product.id, terms);
+		}
+	}
+
+	const existingItems = await listActiveCartItemsByTerms(
+		tx,
+		cart.id,
+		Array.from(termsByProductId.values(), (terms) => terms.id),
+	);
+	const existingItemByTermsId = new Map(
+		existingItems.map((item) => [item.productClientTermsId, item]),
+	);
+
+	const plans = planCartAdditions({
+		requests: items,
+		termsByProductId: new Map(
+			Array.from(termsByProductId, ([productId, terms]) => [
+				productId,
+				termsToClientTerms(terms),
+			]),
+		),
+		existingQuantityByTermsId: new Map(
+			existingItems.map((item) => [
+				item.productClientTermsId,
+				item.quantity.toString(),
+			]),
+		),
+	});
+
+	const lines: CartAddedLine[] = [];
+	for (const plan of plans) {
+		const terms = termsByProductId.get(plan.productId);
+
+		if (plan.outcome === "unavailable" || !terms) {
+			const requested = items.find((item) => item.productId === plan.productId);
+			lines.push({
+				productId: plan.productId,
+				name: requested?.name ?? "-",
+				outcome: "unavailable",
+				quantity: null,
+			});
+			continue;
+		}
+
+		await upsertCartItem(
+			tx,
+			cart.id,
+			terms,
+			plan.quantity,
+			existingItemByTermsId.get(terms.id) ?? null,
+		);
+		lines.push({
+			productId: plan.productId,
+			name: terms.product.name,
+			outcome: plan.outcome,
+			quantity: plan.quantity,
+		});
+	}
+
+	return { cartId: cart.id, lines };
+}
+
+/** Reads the cart back after `addItemsInTransaction` committed. */
+export async function readAddItemsOutput(mutation: {
+	cartId: number;
+	lines: CartAddedLine[];
+}): Promise<CartAddItemsOutput> {
+	return cartAddItemsOutputSchema.parse({
+		cart: await getCartSnapshot(mutation.cartId),
+		lines: mutation.lines,
+	});
+}
+
+/**
+ * Adds several products to the current cart at once, by product id. Used by
+ * "Repetir pedido" and meant for combos too.
+ */
+export async function addItems(
+	userId: string,
+	items: CartAddItemRequest[],
+): Promise<CartAddItemsOutput> {
+	const now = new Date();
+	const mutation = await db.$transaction((tx) =>
+		addItemsInTransaction(tx, userId, items, now),
+	);
+	return readAddItemsOutput(mutation);
 }
 
 export async function removeItem(
