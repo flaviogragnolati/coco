@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, ShoppingCartIcon } from "lucide-react";
+import { CheckIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
 import { Badge } from "~/components/ui/badge";
@@ -26,6 +26,7 @@ import {
 	getInitialPurchaseQuantity,
 	getPurchasePanelMode,
 	getPurchasePrice,
+	showsQuantityUnit,
 	toOfferPricing,
 } from "../purchase-panel";
 
@@ -85,7 +86,8 @@ export function PurchasePrice({
 						<span className="sr-only">{price.comparison.spokenLabel}</span>
 					</p>
 				) : size === "compact" ? (
-					// Holds the line so the steppers of a row of cards stay aligned.
+					// Only an unreadable presentation size lands here; holds the line so
+					// the steppers of a row stay aligned.
 					<p aria-hidden="true" className="text-xs">
 						&nbsp;
 					</p>
@@ -101,21 +103,16 @@ export function PurchasePrice({
 }
 
 export function PurchaseActionButton({
-	addLabel = "Sumar al pedido",
 	disabled,
 	inCart,
 	onAdd,
 	onViewInCart,
-	total,
 	size = "default",
 }: {
-	addLabel?: string;
 	disabled?: boolean;
 	inCart: boolean;
 	onAdd: () => void;
 	onViewInCart: () => void;
-	/** What adding charges, shown after the label; never once in the order. */
-	total?: string | null;
 	size?: "default" | "compact";
 }) {
 	return (
@@ -130,21 +127,7 @@ export function PurchaseActionButton({
 			type="button"
 			variant="highlight"
 		>
-			<ShoppingCartIcon data-icon="inline-start" />
-			{inCart ? (
-				"Ver en tu pedido"
-			) : (
-				<>
-					{addLabel}
-					{total ? (
-						<>
-							{" "}
-							<span aria-hidden="true">·</span>{" "}
-							<span className="tabular-nums">{total}</span>
-						</>
-					) : null}
-				</>
-			)}
+			{inCart ? "Ver en tu pedido" : "Sumar al pedido"}
 		</Button>
 	);
 }
@@ -166,8 +149,9 @@ type PurchasePanelProps = {
 };
 
 /**
- * Price, quantity and action, top to bottom; the action carries the total. It
- * takes the free space above itself so the buttons of a row of cards line up.
+ * Price, quantity and action, top to bottom. The total is only announced to
+ * screen readers; the order shows it once added. The panel takes the free space
+ * above itself so the buttons of a row of cards line up.
  */
 export function PurchasePanel({
 	terms,
@@ -215,6 +199,7 @@ export function PurchasePanel({
 							onQuantityChange(getNextQuantity(quantity, terms))
 						}
 						presentation={presentation}
+						showUnit={showsQuantityUnit(unit)}
 						size={size === "compact" ? "md" : "lg"}
 						terms={terms}
 						unit={unit}

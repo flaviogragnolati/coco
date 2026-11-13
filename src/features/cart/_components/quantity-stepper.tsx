@@ -33,6 +33,8 @@ type QuantityStepperProps = {
 	terms: CatalogClientTerms;
 	unit: CatalogProductUnit;
 	presentation?: ProductPresentation | null;
+	/** Off, the field shows the bare number; its accessible name keeps the unit. */
+	showUnit?: boolean;
 	value: string;
 	onCommit: (quantity: string) => void;
 	onDecrement: () => void;
@@ -46,6 +48,7 @@ export function QuantityStepper({
 	terms,
 	unit,
 	presentation,
+	showUnit = true,
 	value,
 	onCommit,
 	onDecrement,
@@ -105,7 +108,10 @@ export function QuantityStepper({
 			>
 				<input
 					aria-label={getQuantityFieldLabel(unit, presentation)}
-					className="min-w-0 bg-transparent text-right font-medium tabular-nums outline-none disabled:cursor-not-allowed"
+					className={cn(
+						"min-w-0 bg-transparent font-medium tabular-nums outline-none disabled:cursor-not-allowed",
+						showUnit ? "text-right" : "text-center",
+					)}
 					disabled={disabled}
 					inputMode="decimal"
 					onBlur={commitDraft}
@@ -119,9 +125,11 @@ export function QuantityStepper({
 					style={{ width: `${Math.max(draft.length, 1) + 0.5}ch` }}
 					value={draft}
 				/>
-				<span aria-hidden="true" className="truncate text-muted-foreground">
-					{getQuantitySuffix(draft, value, unit, presentation)}
-				</span>
+				{showUnit ? (
+					<span aria-hidden="true" className="truncate text-muted-foreground">
+						{getQuantitySuffix(draft, value, unit, presentation)}
+					</span>
+				) : null}
 			</label>
 			<Button
 				aria-label="Aumentar cantidad"

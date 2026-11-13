@@ -67,7 +67,6 @@ export function ProductCard({
 			</CardHeader>
 			<CardContent className="flex flex-1 flex-col pt-3 pb-4">
 				<CatalogProductPurchase
-					addLabel="Agregar"
 					disabled={disabled}
 					inCartQuantity={inCartQuantity}
 					key={product.terms.id}

@@ -19,7 +19,6 @@ import {
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
-import { homeOfferTerms } from "~/features/cart/cart-mappers";
 import { ProductImage } from "~/features/catalog/_components/product-image";
 import {
 	PurchaseActionButton,
@@ -27,7 +26,6 @@ import {
 } from "~/features/catalog/_components/purchase-panel";
 import { toOfferPricing } from "~/features/catalog/purchase-panel";
 import { HomeOfferCard } from "~/features/home/_components/home-offer-card";
-import { getOfferTotalAmount } from "~/features/home/home-formatters";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
 import type { CartItem } from "~/shared/common/cart.types";
 import { formatUnitLabel } from "~/shared/common/commerce.helpers";
@@ -253,10 +251,6 @@ export function ProductPreviewDialog({
 													onAdd={ignore}
 													onViewInCart={ignore}
 													size="compact"
-													total={getOfferTotalAmount(
-														homeOfferTerms(preview.homeOffer),
-														preview.homeOffer.moq,
-													)}
 												/>
 											}
 											ignoreCart
