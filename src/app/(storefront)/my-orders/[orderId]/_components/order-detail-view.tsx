@@ -12,6 +12,7 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
+import { TransferDiscountBreakdownRows } from "~/features/cart/_components/transfer-total";
 import type {
 	CustomerOrderJourneyItemInput,
 	CustomerOrderJourneyView,
@@ -202,14 +203,35 @@ export function OrderDetailView({
 								<span className="text-muted-foreground">Items</span>
 								<span className="font-medium">{order.itemCount}</span>
 							</div>
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-muted-foreground">Monto</span>
-								<span className="font-heading font-semibold text-base">
-									{order.currency
-										? formatCurrency(order.totalAmount, order.currency)
-										: "-"}
-								</span>
-							</div>
+							{latestTransaction?.subtotalAmount &&
+							latestTransaction.transferDiscountPercent &&
+							latestTransaction.transferDiscountAmount ? (
+								<TransferDiscountBreakdownRows
+									breakdown={{
+										percent: latestTransaction.transferDiscountPercent,
+										subtotal: latestTransaction.subtotalAmount,
+										discount: latestTransaction.transferDiscountAmount,
+										total: latestTransaction.amount,
+									}}
+									currency={latestTransaction.currency}
+									totalLabel={
+										latestTransaction.status === "completed"
+											? "Total pagado"
+											: latestTransaction.status === "pending"
+												? "Total a transferir"
+												: "Total"
+									}
+								/>
+							) : (
+								<div className="flex items-center justify-between gap-3">
+									<span className="text-muted-foreground">Monto</span>
+									<span className="font-heading font-semibold text-base">
+										{order.currency
+											? formatCurrency(order.totalAmount, order.currency)
+											: "-"}
+									</span>
+								</div>
+							)}
 							<Separator />
 							<div className="flex items-start gap-3">
 								<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
