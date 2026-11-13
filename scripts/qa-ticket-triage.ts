@@ -178,7 +178,7 @@ function printPlan(snapshot: Snapshot) {
 			const state =
 				step.status === undefined
 					? ""
-					: ` [${step.status}] · ${describeAssignee(step.assignee ?? null, step.assignee ?? null)}`;
+					: ` [${step.status}] ${step.title} · ${describeAssignee(step.assignee ?? null, step.assignee ?? null)}`;
 			console.warn(
 				`#${step.code}${state} CONFLICTO, se saltea: ${step.reason}`,
 			);

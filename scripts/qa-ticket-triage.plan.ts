@@ -85,6 +85,7 @@ export type TriageStep =
 			code: number;
 			reason: string;
 			status?: QaTicketStatus;
+			title?: string;
 			assignee?: TriageAssignee;
 	  };
 
@@ -115,6 +116,7 @@ function conflict(
 		code: ticket.code,
 		reason,
 		status: ticket.status,
+		title: ticket.title,
 		assignee: ticket.assignee,
 	};
 }
