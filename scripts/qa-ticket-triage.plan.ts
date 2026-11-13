@@ -350,7 +350,7 @@ function entryKey(transition: TriageTransition) {
 
 /**
  * A code may come back in a later wave with a new dated note or another
- * origin; two entries that agree on both would race over the same ticket.
+ * origin; of two entries that agree on both, the second would never run.
  */
 export function findDuplicateEntries(transitions: readonly TriageTransition[]) {
 	const seen = new Set<string>();
