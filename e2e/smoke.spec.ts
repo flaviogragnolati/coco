@@ -31,6 +31,7 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 test("the hero shows the system illustration and the spotlight has its own band", async ({
 	page,
 }) => {
+	await page.setViewportSize({ width: 1280, height: 800 });
 	await page.goto("/");
 
 	const hero = page.locator("section").filter({
@@ -54,8 +55,11 @@ test("the hero shows the system illustration and the spotlight has its own band"
 		.getAttribute("href");
 	expect(spotlightHref).toMatch(/^\/products\?product=\d+$/);
 	await expect(
-		band.getByRole("button", { name: /^Sumar al pedido.*\$/ }),
+		band.getByRole("button", { name: "Sumar al pedido", exact: true }),
 	).toBeVisible();
+	// The card keeps to about 400px so the band does not grow with the photo.
+	const cardBox = await band.locator("[data-slot='card']").boundingBox();
+	expect(cardBox?.width).toBeLessThanOrEqual(401);
 	await expect(page.locator(`#ofertas a[href='${spotlightHref}']`)).toHaveCount(
 		0,
 	);
@@ -113,7 +117,7 @@ test("adding a home offer opens the mini-cart without duplicating its quantity",
 }) => {
 	await page.goto("/");
 	const add = page
-		.getByRole("button", { name: /^Sumar al pedido.*\$/ })
+		.getByRole("button", { name: "Sumar al pedido", exact: true })
 		.first();
 	test.skip(
 		(await add.count()) === 0,

@@ -34,12 +34,10 @@ export function HomeOfferCard({
 			<div className="relative">
 				<Link aria-label={`Ver ${offer.productName}`} href={href}>
 					<ProductImage
-						className={cn(
-							"flex w-full items-center justify-center bg-brand-soft bg-center bg-cover text-brand-soft-foreground",
-							hero ? "aspect-4/3" : "aspect-3/2",
-						)}
+						className="flex aspect-square w-full items-center justify-center"
 						imageUrl={offer.imageUrl}
 						name={offer.productName}
+						placeholderClassName="bg-brand-soft text-brand-soft-foreground"
 					/>
 				</Link>
 				<ProductCardBadges discount={discount} />

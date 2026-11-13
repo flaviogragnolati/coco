@@ -61,15 +61,20 @@ function perUnitLabel(offer: OfferPricing) {
 
 /**
  * What one step buys: "por 500 g" below a kilo, "por kg", "por 1,5 kg",
- * "por frasco 370 g", "por 6 frascos 370 g".
+ * "por bidón", "por 6 frascos". A container goes without its size, which the
+ * product name already carries.
  */
 export function getOfferStepLabel(offer: OfferPricing) {
 	const step = getStepQuantity(offer);
 	if (offer.unit === "kg" && step > 0 && step < 1) {
 		return `por ${formatQuantityInput(toQuantityString(step * 1000))} g`;
 	}
-	if (step === 1) return `por ${formatUnitLabel(1, offer.unit, offer)}`;
-	return `por ${formatQuantity(step, offer.unit, offer)}`;
+	const container = {
+		presentationContainer: offer.presentationContainer,
+		presentationSize: null,
+	};
+	if (step === 1) return `por ${formatUnitLabel(1, offer.unit, container)}`;
+	return `por ${formatQuantity(step, offer.unit, container)}`;
 }
 
 export function getOfferHeadlinePrice(offer: OfferPricing) {

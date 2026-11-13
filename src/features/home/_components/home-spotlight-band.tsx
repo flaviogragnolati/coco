@@ -24,17 +24,19 @@ export function HomeSpotlightBand({
 						Sumalo a tu pedido desde acá o seguí mirando las ofertas de abajo.
 					</p>
 				</div>
-				<HomeOfferCard
-					action={
-						<HomeOfferAddButton
-							isAuthenticated={isAuthenticated}
-							offer={offer}
-							userId={userId}
-						/>
-					}
-					offer={offer}
-					size="hero"
-				/>
+				<div className="mx-auto w-full max-w-100">
+					<HomeOfferCard
+						action={
+							<HomeOfferAddButton
+								isAuthenticated={isAuthenticated}
+								offer={offer}
+								userId={userId}
+							/>
+						}
+						offer={offer}
+						size="hero"
+					/>
+				</div>
 			</div>
 		</section>
 	);

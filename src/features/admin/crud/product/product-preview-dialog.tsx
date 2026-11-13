@@ -19,7 +19,6 @@ import {
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
-import { homeOfferTerms } from "~/features/cart/cart-mappers";
 import { ProductImage } from "~/features/catalog/_components/product-image";
 import {
 	PurchaseActionButton,
@@ -27,7 +26,6 @@ import {
 } from "~/features/catalog/_components/purchase-panel";
 import { toOfferPricing } from "~/features/catalog/purchase-panel";
 import { HomeOfferCard } from "~/features/home/_components/home-offer-card";
-import { getOfferTotalAmount } from "~/features/home/home-formatters";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
 import type { CartItem } from "~/shared/common/cart.types";
 import { formatUnitLabel } from "~/shared/common/commerce.helpers";
@@ -94,22 +92,24 @@ function ProductDetailPreview({ preview }: { preview: ProductPreview }) {
 		<div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
 			<div className="flex flex-col gap-3">
 				<ProductImage
-					className="flex aspect-[4/3] w-full items-center justify-center bg-center bg-cover bg-muted text-muted-foreground"
+					className="flex aspect-square w-full items-center justify-center"
 					imageUrl={
 						catalogProduct?.imageUrl ??
 						adminProduct.cardImageUrl ??
 						adminProduct.cartImageUrl
 					}
 					name={adminProduct.name}
+					placeholderClassName="bg-muted text-muted-foreground"
 				/>
 				{imageUrls.length > 1 ? (
 					<div className="grid grid-cols-3 gap-2">
 						{imageUrls.slice(0, 6).map((imageUrl) => (
 							<ProductImage
-								className="flex aspect-square items-center justify-center bg-center bg-cover bg-muted text-muted-foreground"
+								className="flex aspect-square items-center justify-center"
 								imageUrl={imageUrl}
 								key={imageUrl}
 								name={adminProduct.name}
+								placeholderClassName="bg-muted text-muted-foreground"
 							/>
 						))}
 					</div>
@@ -253,10 +253,6 @@ export function ProductPreviewDialog({
 													onAdd={ignore}
 													onViewInCart={ignore}
 													size="compact"
-													total={getOfferTotalAmount(
-														homeOfferTerms(preview.homeOffer),
-														preview.homeOffer.moq,
-													)}
 												/>
 											}
 											ignoreCart

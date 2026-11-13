@@ -14,7 +14,9 @@ test("a catalog card adds the quantity chosen on its stepper", async ({
 }) => {
 	await page.goto("/products");
 	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
-	const anyAdd = page.getByRole("button", { name: /^Agregar.*\$/ }).first();
+	const anyAdd = page
+		.getByRole("button", { name: "Sumar al pedido", exact: true })
+		.first();
 	test.skip(
 		(await anyAdd.count()) === 0,
 		"The current fixture has no catalog products.",
@@ -59,17 +61,21 @@ test("a catalog card adds the quantity chosen on its stepper", async ({
 	}
 	await expect(card.getByText(/\bMOQ\b/)).toHaveCount(0);
 
-	// The total rides in the add button; the "Total" line is for screen readers.
-	await expect(card.getByText(/^Total /)).toHaveClass(/\bsr-only\b/);
+	// The total is for screen readers only; it shows in the order once added.
+	const total = card.getByText(/^Total /);
+	await expect(total).toHaveClass(/\bsr-only\b/);
 
 	const quantity = card.getByRole("textbox", { name: /^Cantidad \(.+\)$/ });
 	const minimum = await quantity.inputValue();
-	const add = card.getByRole("button", { name: /^Agregar.*\$/ });
-	const minimumName = (await add.textContent()) ?? "";
+	const minimumTotal = (await total.textContent()) ?? "";
+	const add = card.getByRole("button", {
+		name: "Sumar al pedido",
+		exact: true,
+	});
 
 	await card.getByRole("button", { name: "Aumentar cantidad" }).click();
 	await expect(quantity).not.toHaveValue(minimum);
-	await expect(add).not.toHaveText(minimumName);
+	await expect(total).not.toHaveText(minimumTotal);
 	const chosen = await quantity.inputValue();
 
 	await expect(add).toBeEnabled();
@@ -94,6 +100,31 @@ test("a catalog card adds the quantity chosen on its stepper", async ({
 	expect(await cartQuantities(page)).toEqual([chosen.replace(",", ".")]);
 });
 
+test("only a weighed product names its unit inside the quantity field", async ({
+	page,
+}) => {
+	await page.goto("/products");
+	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
+	const fields = page
+		.locator("main [data-slot='card']")
+		.getByRole("textbox", { name: /^Cantidad \(.+\)$/ });
+	test.skip(
+		(await fields.count()) === 0,
+		"The current fixture has no catalog product with a stepper.",
+	);
+
+	for (const field of await fields.all()) {
+		const name = (await field.getAttribute("aria-label")) ?? "";
+		// The field sits in a <label>; its text is the visible unit, if any.
+		const unit = ((await field.locator("xpath=..").textContent()) ?? "").trim();
+		if (/^Cantidad \((kg|gr|lb)\)$/.test(name)) {
+			expect(unit, name).not.toBe("");
+		} else {
+			expect(unit, name).toBe("");
+		}
+	}
+});
+
 test("a catalog card's image and name open the product detail", async ({
 	page,
 }) => {
@@ -104,7 +135,14 @@ test("a catalog card's image and name open the product detail", async ({
 	test.skip((await card.count()) === 0, "The current fixture has no products.");
 	const name = (await card.getByRole("heading").textContent()) ?? "";
 
-	await card.getByRole("button", { name: `Ver ${name}`, exact: true }).click();
+	const image = card.getByRole("button", { name: `Ver ${name}`, exact: true });
+	const imageBox = await image.boundingBox();
+	expect(imageBox).toBeTruthy();
+	if (imageBox) {
+		expect(Math.abs(imageBox.width - imageBox.height)).toBeLessThan(2);
+	}
+
+	await image.click();
 	await expect(page).toHaveURL(/[?&]product=\d+/);
 	await expect(page.getByRole("dialog")).toBeVisible();
 	await page.getByRole("button", { name: "Cerrar" }).last().click();

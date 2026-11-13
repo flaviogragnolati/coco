@@ -1,15 +1,11 @@
 "use client";
 
-import {
-	homeOfferTerms,
-	homeOfferToCartItem,
-} from "~/features/cart/cart-mappers";
+import { homeOfferToCartItem } from "~/features/cart/cart-mappers";
 import { useCartActions } from "~/features/cart/use-cart-sync";
 import { PurchaseActionButton } from "~/features/catalog/_components/purchase-panel";
 import type { HomeOffer } from "~/shared/common/home.types";
 import { useCartStore } from "~/store/cart-store";
 import { useCartUiStore } from "~/store/cart-ui-store";
-import { getOfferTotalAmount } from "../home-formatters";
 import {
 	useHomeOfferCartQuantity,
 	useHomeOfferQuantity,
@@ -41,7 +37,6 @@ export function HomeOfferAddButton({
 			}}
 			onViewInCart={openMiniCart}
 			size={size}
-			total={getOfferTotalAmount(homeOfferTerms(offer), quantity)}
 		/>
 	);
 }

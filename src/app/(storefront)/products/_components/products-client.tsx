@@ -52,7 +52,7 @@ function ProductGridSkeleton() {
 					className="flex flex-col gap-3 rounded-4xl bg-card p-4 shadow-md ring-1 ring-foreground/5"
 					key={key}
 				>
-					<Skeleton className="aspect-3/2 w-full rounded-2xl" />
+					<Skeleton className="aspect-square w-full rounded-2xl" />
 					<Skeleton className="h-5 w-2/3" />
 					<Skeleton className="h-12 w-1/2 rounded-2xl" />
 					<Skeleton className="h-10 w-full rounded-3xl" />

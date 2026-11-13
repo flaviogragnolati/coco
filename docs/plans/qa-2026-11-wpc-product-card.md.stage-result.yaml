@@ -1,0 +1,41 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-2026-11-wpc-product-card.md"
+      change: "WP-C execution record: commits, validation, e2e, visual check, deviations, review and QA notes for #106, #107, #73, #84 and cases #5, #6, #8"
+    - artifact_type: "qa-cases"
+      path: "docs/qa/qa-ciclo-de-vida.md"
+      change: "Cases #5, #6 and #8 follow the button without total and the always-on comparison price"
+    - artifact_type: "plan"
+      path: "docs/plans/customer-tutorial.md"
+      change: "Script table: new stepQuantity body"
+  references_added: []
+  traceability_delta:
+    - {item: "#106 pricing", implemented_by: "commit e65c19f on wpc-product-card"}
+    - {item: "#106 button and stepper", implemented_by: "commit 56293d4 on wpc-product-card"}
+    - {item: "#106 + #107 square image", implemented_by: "commit d66a708 on wpc-product-card"}
+    - {item: "#106 companions", implemented_by: "commits db79e33, 7d2a845, 4af5a21, e337209 on wpc-product-card"}
+  decisions_added_or_updated:
+    - "The bare-number quantity field centres its value"
+    - "QA case texts are mirrored into docs/qa/qa-ciclo-de-vida.md, the origin of the seed wording"
+  risks_added_or_updated: []
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "Independent review (q-review-code two axes, q-review-comments): no blockers; findings applied"
+    - "e2e green against the local database: catalog-product-card 4/4, home-offer-quantity 1/1, smoke 15/15, customer-tutorial 8/8, catalog-category-filter 3/3; customer-tutorial.spec.ts:58 failed once in the first run (known flaky on main)"
+    - "Not checked visually: the loaded product dialog, dark mode, the admin preview"
+    - "QA transitions are not loaded: scripts/qa-ticket-triage.data.ts (WP0) does not exist yet"
+    - "Orchestration section 13 row left to the orchestrator (needs the merge commit; WP-B edits the same doc)"
+  required_user_actions: []
+  next_recommended_action: "Merge --no-ff wpc-product-card into main, then rebase WP-B"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true
