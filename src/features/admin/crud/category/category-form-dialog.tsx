@@ -19,6 +19,10 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { Switch } from "~/components/ui/switch";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
+import {
+	ILLUSTRATIVE_IMAGE_LEGEND,
+	illustrativeLegendColor,
+} from "~/features/catalog/product-image-legend";
 import { categoryCreateInputSchema } from "~/schemas/admin/category.schemas";
 import type {
 	CategoryDetail,
@@ -57,6 +61,8 @@ export function CategoryFormDialog({
 
 	const errors = form.formState.errors;
 	const active = Boolean(form.watch("active"));
+	const photoBackgroundColor = form.watch("photoBackgroundColor") ?? null;
+	const photoBackgroundDisabled = isSubmitting || category?.deleted;
 	const title = mode === "create" ? "Agregar categoría" : "Editar categoría";
 
 	useEffect(() => {
@@ -174,6 +180,66 @@ export function CategoryFormDialog({
 							<FieldError errors={[errors.sortOrder]} />
 						</Field>
 					</FieldGroup>
+
+					<Field data-invalid={Boolean(errors.photoBackgroundColor)}>
+						<FieldLabel htmlFor="category-photo-background-color">
+							Color de fondo de las fotos
+						</FieldLabel>
+						<div className="flex flex-wrap items-center gap-3">
+							<Input
+								aria-invalid={Boolean(errors.photoBackgroundColor)}
+								className="h-9 w-14 cursor-pointer p-1"
+								disabled={photoBackgroundDisabled}
+								id="category-photo-background-color"
+								onChange={(event) =>
+									form.setValue("photoBackgroundColor", event.target.value, {
+										shouldDirty: true,
+										shouldValidate: true,
+									})
+								}
+								type="color"
+								value={photoBackgroundColor ?? "#ffffff"}
+							/>
+							<span className="font-mono text-muted-foreground text-sm">
+								{photoBackgroundColor ?? "Sin color"}
+							</span>
+							<Button
+								disabled={
+									photoBackgroundDisabled || photoBackgroundColor === null
+								}
+								onClick={() =>
+									form.setValue("photoBackgroundColor", null, {
+										shouldDirty: true,
+										shouldValidate: true,
+									})
+								}
+								type="button"
+								variant="ghost"
+							>
+								Quitar color
+							</Button>
+							<div
+								aria-hidden="true"
+								className="relative h-16 w-40 rounded-md border"
+								style={{ backgroundColor: photoBackgroundColor ?? "#ffffff" }}
+							>
+								<span
+									className="absolute right-2 bottom-1.5 whitespace-nowrap font-medium text-xs leading-none"
+									style={{
+										color: illustrativeLegendColor(photoBackgroundColor),
+									}}
+								>
+									{ILLUSTRATIVE_IMAGE_LEGEND}
+								</span>
+							</div>
+						</div>
+						<FieldDescription>
+							El fondo que tienen las fotos de los productos de esta categoría.
+							La leyenda «Imagen ilustrativa» de las fotos usa un tono oscuro de
+							este color; sin color, va en gris oscuro.
+						</FieldDescription>
+						<FieldError errors={[errors.photoBackgroundColor]} />
+					</Field>
 				</form>
 			)}
 		</CrudFormDialogShell>

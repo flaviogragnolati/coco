@@ -7,6 +7,12 @@ export const categoryIdSchema = z
 	.int("El id debe ser un número entero")
 	.positive("El id debe ser positivo");
 
+export const categoryPhotoBackgroundColorSchema = z
+	.string()
+	.regex(/^#[0-9a-fA-F]{6}$/, "Elegí un color válido")
+	.transform((value) => value.toLowerCase())
+	.nullable();
+
 export const categoryCreateInputSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
 	sortOrder: z
@@ -14,6 +20,7 @@ export const categoryCreateInputSchema = z.object({
 		.int("El orden debe ser un número entero")
 		.min(0, "El orden no puede ser negativo")
 		.max(9999, "El orden no puede superar 9999"),
+	photoBackgroundColor: categoryPhotoBackgroundColorSchema.default(null),
 	active: z.boolean().default(true),
 });
 
@@ -33,6 +40,7 @@ export const categoryListItemSchema = z.object({
 	id: categoryIdSchema,
 	name: z.string(),
 	sortOrder: z.number().int(),
+	photoBackgroundColor: z.string().nullable(),
 	productCount: z.number().int().nonnegative(),
 	active: z.boolean(),
 	deleted: z.boolean(),
@@ -43,6 +51,7 @@ export const categoryDetailSchema = z.object({
 	id: categoryIdSchema,
 	name: z.string(),
 	sortOrder: z.number().int(),
+	photoBackgroundColor: z.string().nullable(),
 	active: z.boolean(),
 	deleted: z.boolean(),
 });
