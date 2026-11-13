@@ -57,12 +57,14 @@ function atClock(hour: number, minute: number) {
 	return `${hour === 1 ? "a la" : "a las"} ${formatClosingClock(hour, minute)}`;
 }
 
+/** "a las 12": the configured closing time of day. */
+export function formatClosingTime(schedule: WeeklyClosingSchedule) {
+	return atClock(schedule.closingHour, schedule.closingMinute);
+}
+
 /** "miércoles a las 12": the configured weekly slot, without a date. */
 export function formatClosingSlot(schedule: WeeklyClosingSchedule) {
-	return `${weekdayName(schedule.closingWeekday)} ${atClock(
-		schedule.closingHour,
-		schedule.closingMinute,
-	)}`;
+	return `${weekdayName(schedule.closingWeekday)} ${formatClosingTime(schedule)}`;
 }
 
 /** "miércoles 18/11 a las 12", read in Argentina time. */

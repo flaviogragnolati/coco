@@ -1,22 +1,31 @@
-import { howItWorksSteps } from "../home-content";
+import type { WeeklyClosingSchedule } from "~/shared/common/weekly-closing";
+import { getHowItWorksSteps } from "../home-content";
+import { HomeSystemIllustration } from "./home-system-illustration";
 import { SectionHeading } from "./section-heading";
 
-export function HowItWorksSection() {
+export function HowItWorksSection({
+	schedule,
+}: {
+	schedule: WeeklyClosingSchedule;
+}) {
 	return (
 		<section
 			className="scroll-mt-20 bg-brand-warm px-4 py-16 text-brand-warm-foreground md:px-6 md:py-20"
 			id="como-funciona"
 		>
-			<div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start lg:gap-16">
-				<SectionHeading
-					eyebrow="Cómo funciona"
-					title="Comprar entre muchos, sin el esfuerzo de coordinar."
-				/>
+			<div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start lg:gap-16">
+				<div className="flex flex-col gap-8">
+					<SectionHeading
+						eyebrow="Cómo funciona"
+						title="Comprar entre muchos, sin el esfuerzo de coordinar."
+					/>
+					<HomeSystemIllustration />
+				</div>
 				<ol className="flex flex-col gap-4">
-					{howItWorksSteps.map((step, index) => (
+					{getHowItWorksSteps(schedule).map((step, index) => (
 						<li
 							className="flex items-start gap-4 rounded-3xl bg-card p-5 text-card-foreground"
-							key={step}
+							key={step.title}
 						>
 							<span
 								aria-hidden="true"
@@ -24,7 +33,10 @@ export function HowItWorksSection() {
 							>
 								{index + 1}
 							</span>
-							<p className="self-center text-base/relaxed">{step}</p>
+							<p className="self-center text-base/relaxed">
+								<strong className="font-semibold">{step.title}</strong>{" "}
+								{step.body}
+							</p>
 						</li>
 					))}
 				</ol>

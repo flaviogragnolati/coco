@@ -1,4 +1,13 @@
 import { type LucideIcon, MailIcon, PhoneIcon } from "lucide-react";
+import type { FaqPickupPoint } from "~/shared/common/home.types";
+import {
+	formatClosingSlot,
+	formatClosingTime,
+	formatDeliveryLeadTimeBetween,
+	type WeeklyClosingSchedule,
+	weekdayName,
+	weekdayPlural,
+} from "~/shared/common/weekly-closing";
 
 export const homeNavLinks = [
 	{ href: "/#como-funciona", label: "Cómo funciona" },
@@ -7,16 +16,98 @@ export const homeNavLinks = [
 	{ href: "/#contacto", label: "Contacto" },
 ];
 
-export const announcementMessage =
-	"Compras comunitarias en Ushuaia · Mirá el catálogo sin registrarte";
+export const announcementMessage = "Compras comunitarias en Ushuaia";
 
-export const howItWorksSteps = [
-	"Cuando armás tu pedido, estás comprando con otros vecinos.",
-	"CoCo consolida los pedidos para acceder al precio mayorista.",
-	"No somos una distribuidora: coordinamos los recursos para comprar lo que vos necesitás.",
-	"El pedido sale desde origen con destino a tu ciudad.",
-	"Al llegar, lo retirás en el punto de retiro que elegiste o te lo llevamos a tu dirección.",
-];
+export const heroCopy = {
+	title: "Comprar en grupo sale menos.",
+	lead: "Juntamos pedidos de toda Ushuaia y compramos al por mayor. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.",
+	cta: "Ver el catálogo",
+	ctaNote: "No hace falta registrarte para mirar",
+};
+
+export type HomeStep = { title: string; body: string };
+
+export function getHowItWorksSteps(
+	schedule: WeeklyClosingSchedule,
+): HomeStep[] {
+	const weekday = weekdayName(schedule.closingWeekday);
+	return [
+		{
+			title: "Armás tu pedido.",
+			body: `Elegís del catálogo y sumás lo que necesitás. Tenés tiempo hasta el ${formatClosingSlot(schedule)}.`,
+		},
+		{
+			title: `Cerramos el ${weekday}.`,
+			body: "Juntamos todos los pedidos y hacemos una sola compra al por mayor en Buenos Aires.",
+		},
+		{
+			title: "Viaja a Ushuaia.",
+			body: `La mercadería tarda ${formatDeliveryLeadTimeBetween(schedule)} en llegar. En Mis pedidos ves en qué etapa está.`,
+		},
+		{
+			title: "Retirás o te lo enviamos.",
+			body: "Al confirmar el pedido elegís retirarlo en el punto de retiro o recibirlo en tu casa.",
+		},
+	];
+}
+
+export type FaqItem = { question: string; answer: string };
+
+function describePickupPoints(points: FaqPickupPoint[]) {
+	const [only] = points;
+	if (!only) return "";
+	if (points.length === 1) {
+		const line2 = only.line2 ? `, ${only.line2}` : "";
+		return ` El punto de retiro está en ${only.line1}${line2}, ${only.city} (${only.hours}).`;
+	}
+	const list = points
+		.map(
+			(point) =>
+				`${point.name}, ${point.line1}, ${point.city} (${point.hours})`,
+		)
+		.join("; ");
+	return ` Los puntos de retiro son: ${list}.`;
+}
+
+function capitalize(text: string) {
+	return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export function getFaqItems(
+	schedule: WeeklyClosingSchedule,
+	pickupPoints: FaqPickupPoint[],
+): FaqItem[] {
+	const weekday = weekdayName(schedule.closingWeekday);
+	return [
+		{
+			question: "¿Cuándo cierran los pedidos?",
+			answer: `Todos los ${weekdayPlural(schedule.closingWeekday)} ${formatClosingTime(schedule)}, hora de Argentina. Lo que confirmes y pagues hasta ese momento entra en la compra de esa semana; lo que llegue después, en la del ${weekday} siguiente. Arriba de la página ves cuánto falta para el próximo cierre.`,
+		},
+		{
+			question: "¿Cuánto tarda en llegar mi compra?",
+			answer: `${capitalize(formatDeliveryLeadTimeBetween(schedule))} desde el cierre. Hacemos una sola compra al por mayor en Buenos Aires y la mercadería viaja hasta Ushuaia: al ser una isla, el camión cruza a Chile, atraviesa el Estrecho de Magallanes en balsa, vuelve a entrar a la Argentina y cruza la cordillera. En Mis pedidos ves en qué etapa está.`,
+		},
+		{
+			question: "¿Cuándo pago mi pedido?",
+			answer:
+				"Al confirmarlo. Elegís cómo recibirlo y pagás con Mercado Pago o por transferencia bancaria. Si pagás por transferencia, te damos los datos al confirmar y tu pago queda registrado cuando revisamos el comprobante.",
+		},
+		{
+			question: "¿Dónde sigo mi pedido?",
+			answer:
+				"En Mis pedidos. Ahí ves cada pedido que pagaste y la etapa en la que está, desde el pago hasta la entrega. Si algo cambia, por ejemplo una demora o una cantidad distinta, también lo vas a ver ahí.",
+		},
+		{
+			question: "¿Cómo recibo mi pedido?",
+			answer: `Lo elegís al confirmar el pedido: te lo llevamos a la dirección que cargues o lo retirás en el punto de retiro, en su horario. Las dos opciones cuestan lo mismo.${describePickupPoints(pickupPoints)}`,
+		},
+		{
+			question: "¿Por qué los precios son más bajos que en un comercio?",
+			answer:
+				"Porque juntamos los pedidos de muchos vecinos y hacemos una sola compra grande, directo al proveedor. Así conseguimos el precio mayorista, que comprando de a uno no se consigue, y esa diferencia se nota en lo que pagás.",
+		},
+	];
+}
 
 export const footerColumns = [
 	{
@@ -40,38 +131,6 @@ export const footerColumns = [
 			{ label: "Mis pedidos", href: "/my-orders" },
 			{ label: "Perfil", href: "/profile" },
 		],
-	},
-];
-
-export const faqItems = [
-	{
-		question: "¿Cuánto tarda en llegar mi compra?",
-		answer:
-			"En promedio, entre 7 y 10 días desde que tu pedido entra en preparación. El pedido sale directo desde origen — muchas veces desde otra provincia — y hasta Tierra del Fuego el camino tiene un tramo particular: al ser una isla, el camión cruza a Chile, atraviesa el Estrecho de Magallanes en balsa, reingresa a la Argentina y cruza la cordillera hasta Ushuaia. Vas a ver cada etapa en Mis pedidos.",
-	},
-	{
-		question: "¿Cómo retiro mi pedido o lo recibo en casa?",
-		answer:
-			"Lo elegís al confirmar tu pedido: te lo llevamos a la dirección que cargues o lo retirás en uno de nuestros puntos de retiro, en el horario que indicamos. Las dos opciones cuestan lo mismo.",
-	},
-	{
-		question: "¿Necesito una cuenta para ver productos?",
-		answer:
-			"No. Podés explorar el catálogo y armar tu pedido sin registrarte. Te pedimos que ingreses cuando empezás el checkout.",
-	},
-	{
-		question: "¿Cuándo pago mi pedido?",
-		answer: "Pagás al confirmar el checkout, después de elegir la entrega.",
-	},
-	{
-		question: "¿Qué pasa después del pago?",
-		answer:
-			"Tu pedido pasa a seguimiento y te informamos cada cambio hasta la entrega.",
-	},
-	{
-		question: "¿Dónde sigo el avance de mi compra?",
-		answer:
-			"En Mis pedidos encontrás el estado y la cronología de cada compra, desde la confirmación del pago hasta la entrega.",
 	},
 ];
 

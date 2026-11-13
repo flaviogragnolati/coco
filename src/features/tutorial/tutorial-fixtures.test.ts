@@ -19,7 +19,15 @@ import {
 import { describeOrderDelivery } from "~/shared/common/delivery-display";
 import { formatOrderLineQuantityPrice } from "~/shared/common/order-display";
 import { userTrackingStageKeys } from "~/shared/common/tracking-display";
-import { buildTutorialFixtures } from "./tutorial-fixtures";
+import {
+	formatDeliveryLeadTime,
+	weekdayPlural,
+} from "~/shared/common/weekly-closing";
+import {
+	buildTutorialFixtures,
+	tutorialWeeklyClosing,
+} from "./tutorial-fixtures";
+import { tutorialScripts } from "./tutorial-script";
 
 const now = new Date("2026-11-06T15:00:00.000Z");
 const fixtures = buildTutorialFixtures(now);
@@ -167,5 +175,18 @@ describe("tutorial fixture journeys", () => {
 		expect(again.orderDetail("packaging").timelines).toEqual(
 			fixtures.orderDetail("packaging").timelines,
 		);
+	});
+});
+
+describe("tutorial weekly closing", () => {
+	it("the how-it-works step tells the same closing the home scene shows", () => {
+		const step = tutorialScripts.completo.find(
+			(candidate) => candidate.id === "how-it-works",
+		);
+
+		expect(step?.body).toContain(
+			`los ${weekdayPlural(tutorialWeeklyClosing.closingWeekday)}`,
+		);
+		expect(step?.body).toContain(formatDeliveryLeadTime(tutorialWeeklyClosing));
 	});
 });
