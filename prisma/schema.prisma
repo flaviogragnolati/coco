@@ -222,7 +222,7 @@ model Product {
   brandId               Int?
   categoryId            Int? // required by the app; NOT NULL once every product is backfilled
   defaultSupplierId     Int?
-  homeOfferRank         Int? // pinned position in the home offers grid; null means the automatic ranking decides
+  homeOfferRank         Int? // deprecated: replaced by HomeFeaturedItem; nothing reads it; dropped in a later migration
   createdAt             DateTime                      @default(now())
   updatedAt             DateTime                      @default(now()) @updatedAt
 
@@ -233,6 +233,8 @@ model Product {
   productSupplierTerms    ProductSupplierTerms[]
   productLocalConstraints ProductLocalConstraints[]
   homeOfferSpotlightOf    HomeOfferSettings[]
+  comboItems              ComboItem[]
+  homeFeaturedItems       HomeFeaturedItem[]
 
   @@index([brandId])
   @@index([categoryId])
@@ -260,17 +262,22 @@ enum ProductPresentationContainer {
 }
 
 // Singleton: always read and written through an upsert on `id: 1`.
+// At most one of spotlightProductId / spotlightComboId is set (CHECK in SQL).
 model HomeOfferSettings {
   id                 Int                 @id @default(1)
   spotlightProductId Int? // explicit hero pick; falls back to the top of the ranking when null or no longer vigente
+  spotlightComboId   Int?
   criterion          HomeOffersCriterion @default(marketSaving)
   offersLimit        Int                 @default(4)
+  fillWithRanking    Boolean             @default(true) // the ranking fills the free featured places and picks the band when none is chosen
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @default(now()) @updatedAt
 
   spotlightProduct Product? @relation(fields: [spotlightProductId], references: [id], onDelete: SetNull)
+  spotlightCombo   Combo?   @relation(fields: [spotlightComboId], references: [id], onDelete: SetNull)
 
   @@index([spotlightProductId])
+  @@index([spotlightComboId])
   @@map("home_offer_settings")
 }
 
@@ -278,6 +285,57 @@ enum HomeOffersCriterion {
   marketSaving
   discountPercent
   orderVolume // paid orders per product over the last 90 days
+}
+
+// A shortcut that adds its products to the order at their current terms; no price or stock of its own (ADR 0014).
+model Combo {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?  @db.Text
+  people      Int? // how many people it serves; required and unique within a group
+  groupName   String? // combos sharing it (trimmed, case-insensitive) show on one home card
+  active      Boolean  @default(true)
+  deleted     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  items           ComboItem[]
+  featuredItems   HomeFeaturedItem[]
+  homeSpotlightOf HomeOfferSettings[]
+
+  @@index([groupName])
+  @@map("combo")
+}
+
+model ComboItem {
+  id        Int     @id @default(autoincrement())
+  comboId   Int
+  productId Int
+  quantity  Decimal @db.Decimal(18, 4) // in the product's unit, a valid cart quantity when saved
+  sortOrder Int
+
+  combo   Combo   @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([comboId, productId])
+  @@index([productId])
+  @@map("combo_item")
+}
+
+// One entry of the home featured list: exactly one of productId / comboId (CHECK in SQL).
+// position is not unique: a reorder rewrites 1..n in one transaction; ties order by id.
+model HomeFeaturedItem {
+  id        Int      @id @default(autoincrement())
+  position  Int
+  productId Int?     @unique
+  comboId   Int?     @unique
+  createdAt DateTime @default(now())
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  combo   Combo?   @relation(fields: [comboId], references: [id], onDelete: Cascade)
+
+  @@index([position])
+  @@map("home_featured_item")
 }
 
 model Supplier {
