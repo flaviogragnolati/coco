@@ -393,10 +393,9 @@ export async function findCurrentTermsByProductId(
 export type CartAddItemRequest = CartAddItemInput & { name?: string };
 
 /**
- * Adds products to the customer's current cart at their current terms, inside
- * the caller's transaction. Additive: a product already in the cart grows by
- * the requested quantity, fitted to the terms. A product with no current terms
- * is reported unavailable and leaves the cart untouched.
+ * Adds products to the current cart at their current terms, inside the
+ * caller's transaction and additively (`planCartAdditions`). A product with no
+ * current terms is reported unavailable and leaves the cart untouched.
  */
 export async function addItemsInTransaction(
 	tx: CartTransaction,

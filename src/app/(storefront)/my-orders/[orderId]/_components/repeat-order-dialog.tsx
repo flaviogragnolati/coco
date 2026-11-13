@@ -126,7 +126,7 @@ export function RepeatOrderDialog({
 	const router = useRouter();
 	const utils = api.useUtils();
 	const [open, setOpen] = useState(false);
-	// Null until the customer touches a box: then every available line is on.
+	// Null means the default selection: every available line checked.
 	const [selection, setSelection] = useState<Set<number> | null>(null);
 
 	const preview = api.orders.repeatPreview.useQuery(

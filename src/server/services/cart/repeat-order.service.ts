@@ -113,7 +113,7 @@ export async function previewRepeat(
 		});
 	}
 
-	if (waitingOrder) {
+	if (gate === "waitingOrder" && waitingOrder) {
 		const latestTransaction = waitingOrder.transactions[0];
 		return repeatOrderPreviewSchema.parse({
 			state: "blocked",
