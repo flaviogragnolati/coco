@@ -209,7 +209,7 @@ The customer-facing set of purchasable products, each surfaced with its current 
 _Avoid_: Store, product list
 
 **Category**:
-The catalog group a product belongs to, such as "Frutos secos" or "Suplementos", with the position it is listed in. Every product has exactly one; an admin maintains them, and an inactive or deleted category is hidden from customers while its products stay purchasable. It may record the background color of its product photos, which only tints the illustrative legend. Not the heading of a supplier's price list, which only feeds the mapping. Spanish-facing UI labels it "Categoría".
+The catalog group a product belongs to, such as "Frutos secos" or "Suplementos", with the position it is listed in. Every product has exactly one; an admin maintains them, and an inactive or deleted category is hidden from customers while its products stay purchasable. The storefront navigation lists active categories with a currently purchasable product, in their configured order, and opens the catalog filtered by that category. It may record the background color of its product photos, which only tints the illustrative legend. Not the heading of a supplier's price list, which only feeds the mapping. Spanish-facing UI labels it "Categoría".
 _Avoid_: Rubro, family, heading
 
 **Illustrative legend**:

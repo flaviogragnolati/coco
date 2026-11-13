@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+	catalogCategoryListOutputSchema,
 	catalogProductDetailSchema,
 	catalogProductListOutputSchema,
 } from "~/schemas/catalog.schemas";
@@ -16,8 +17,16 @@ import {
 	type CatalogProductDetailRecord,
 	type CatalogProductListRecord,
 	findCatalogProductDetail,
+	listCatalogCategories,
 	listCatalogProducts,
 } from "./catalog.data";
+
+export async function categories() {
+	const records = await listCatalogCategories(db, new Date());
+	return catalogCategoryListOutputSchema.parse(
+		records.map(toCatalogCategory).filter(Boolean),
+	);
+}
 
 function mapListItem(
 	record: CatalogProductListRecord,

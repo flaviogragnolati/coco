@@ -33,6 +33,10 @@ export const catalogCategorySummarySchema = z.object({
 	photoBackgroundColor: z.string().nullable(),
 });
 
+export const catalogCategoryListOutputSchema = z.array(
+	catalogCategorySummarySchema,
+);
+
 export const catalogClientTermsSchema = z.object({
 	id: z.number().int().positive(),
 	moq: decimalOutputSchema,

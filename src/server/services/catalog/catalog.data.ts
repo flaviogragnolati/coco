@@ -91,6 +91,18 @@ function catalogProductWhere(now: Date): Prisma.ProductWhereInput {
 	};
 }
 
+export async function listCatalogCategories(database: CatalogDb, now: Date) {
+	return database.category.findMany({
+		where: {
+			active: true,
+			deleted: false,
+			products: { some: catalogProductWhere(now) },
+		},
+		select: catalogCategorySelect,
+		orderBy: [{ sortOrder: "asc" }, { name: "asc" }, { id: "asc" }],
+	});
+}
+
 export async function listCatalogProducts(database: CatalogDb, now: Date) {
 	return database.product.findMany({
 		where: catalogProductWhere(now),

@@ -3,18 +3,21 @@ import Link from "next/link";
 import { CartNavButton } from "~/components/cart-nav-button";
 import { HelpMenu } from "~/components/help-menu";
 import { MobileNavMenu } from "~/components/mobile-nav-menu";
+import { NavbarCategoryMenu } from "~/components/navbar-category-menu";
 import { NavbarSearch } from "~/components/navbar-search";
 import { Button } from "~/components/ui/button";
 import { UserMenu } from "~/components/user-menu";
 import { ClosingCountdown } from "~/features/weekly-closing/closing-countdown";
 import { isAdminRole } from "~/server/auth/auth.utils";
 import type { Session } from "~/server/better-auth";
+import * as catalogService from "~/server/services/catalog/catalog.service";
 
 type AppNavbarProps = {
 	session: Session | null;
 };
 
-export function AppNavbar({ session }: AppNavbarProps) {
+export async function AppNavbar({ session }: AppNavbarProps) {
+	const categories = await catalogService.categories();
 	const user = session?.user;
 	const isActiveUser = user?.active === true && user.deleted === false;
 	const canAccessAdmin = isActiveUser && isAdminRole(user.role);
@@ -39,6 +42,7 @@ export function AppNavbar({ session }: AppNavbarProps) {
 						Catálogo
 					</Link>
 				</Button>
+				<NavbarCategoryMenu categories={categories} />
 				<NavbarSearch className="hidden max-w-[460px] flex-1 md:block" />
 
 				<div className="ml-auto flex items-center gap-2">
@@ -73,6 +77,7 @@ export function AppNavbar({ session }: AppNavbarProps) {
 					<div className="md:hidden">
 						<MobileNavMenu
 							canAccessAdmin={canAccessAdmin}
+							categories={categories}
 							isActiveUser={isActiveUser}
 						/>
 					</div>

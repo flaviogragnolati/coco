@@ -8,6 +8,7 @@ import {
 	RouteIcon,
 	ShoppingBagIcon,
 	SparklesIcon,
+	TagsIcon,
 } from "lucide-react";
 import { HashSafeLink } from "~/components/hash-safe-link";
 import { NavbarSearch } from "~/components/navbar-search";
@@ -24,6 +25,7 @@ import {
 } from "~/components/ui/sheet";
 import { homeNavLinks } from "~/features/home/home-content";
 import { cn } from "~/lib/utils";
+import type { CatalogCategorySummary } from "~/shared/common/catalog.types";
 
 const navIcons = [RouteIcon, SparklesIcon, HelpCircleIcon, MessageCircleIcon];
 
@@ -54,9 +56,11 @@ function MobileSheetLink({
 export function MobileNavMenu({
 	isActiveUser,
 	canAccessAdmin,
+	categories,
 }: {
 	isActiveUser: boolean;
 	canAccessAdmin: boolean;
+	categories: CatalogCategorySummary[];
 }) {
 	return (
 		<Sheet>
@@ -77,7 +81,7 @@ export function MobileNavMenu({
 						Ofertas, ayuda y accesos a tu compra en un solo lugar.
 					</SheetDescription>
 				</SheetHeader>
-				<nav className="flex flex-col gap-1 px-6">
+				<nav className="flex min-h-0 flex-col gap-1 overflow-y-auto px-6 pb-6">
 					<NavbarSearch className="mb-4" />
 					{homeNavLinks.map((link, index) => {
 						const Icon = navIcons[index] ?? RouteIcon;
@@ -97,6 +101,21 @@ export function MobileNavMenu({
 						label="Catálogo"
 						variant="default"
 					/>
+					{categories.length > 0 ? (
+						<section aria-label="Categorías" className="flex flex-col gap-1">
+							<p className="px-3 pt-3 pb-1 font-medium text-muted-foreground text-sm">
+								Categorías
+							</p>
+							{categories.map((category) => (
+								<MobileSheetLink
+									href={`/products?categoria=${category.id}`}
+									Icon={TagsIcon}
+									key={category.id}
+									label={category.name}
+								/>
+							))}
+						</section>
+					) : null}
 					{isActiveUser ? (
 						<MobileSheetLink
 							href="/my-orders"

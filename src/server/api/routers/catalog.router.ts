@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 
 import {
+	catalogCategoryListOutputSchema,
 	catalogProductDetailInputSchema,
 	catalogProductDetailSchema,
 	catalogProductListOutputSchema,
@@ -9,6 +10,10 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import * as catalogService from "~/server/services/catalog/catalog.service";
 
 export const catalogRouter = createTRPCRouter({
+	categories: publicProcedure
+		.output(catalogCategoryListOutputSchema)
+		.query(() => catalogService.categories()),
+
 	list: publicProcedure.output(catalogProductListOutputSchema).query(() => {
 		return catalogService.list();
 	}),
