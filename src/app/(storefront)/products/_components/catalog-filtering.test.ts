@@ -347,6 +347,107 @@ test("sortCatalog relevance orders by match score when searching", () => {
 	).toStrictEqual(["Aceite puro", "Mezcla con aceite", "Otro"]);
 });
 
+const pantry = { id: 1, name: "Aceites y despensa", sortOrder: 1 };
+const nuts = { id: 2, name: "Frutos secos", sortOrder: 2 };
+
+test("selectSimilarProducts ranks category matches above brand and unit matches", () => {
+	const current = makeProduct({
+		name: "Actual",
+		category: pantry,
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+	const sameCategory = makeProduct({
+		name: "Misma categoría",
+		category: pantry,
+		unit: "box",
+		terms: { moqPrice: "900" },
+	});
+	const sameBrand = makeProduct({
+		name: "Misma marca",
+		category: nuts,
+		brand: { id: 1, name: "Alfa" },
+		unit: "box",
+	});
+	const sameUnit = makeProduct({
+		name: "Misma unidad",
+		category: nuts,
+		unit: "kg",
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, sameUnit, sameBrand, sameCategory],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual(["Misma categoría", "Misma marca", "Misma unidad"]);
+});
+
+test("selectSimilarProducts proposes the other sizes of the same product before the rest of its category", () => {
+	const current = makeProduct({
+		name: "Aceite de oliva extra virgen 0,5 L",
+		category: pantry,
+		terms: { moqPrice: "16900", moq: "1" },
+	});
+	const oneLitre = makeProduct({
+		name: "Aceite de oliva extra virgen 1 L",
+		category: pantry,
+		terms: { moqPrice: "30400", moq: "1" },
+	});
+	const fiveLitres = makeProduct({
+		name: "Aceite de oliva extra virgen 5 L",
+		category: pantry,
+		terms: { moqPrice: "137400", moq: "1" },
+	});
+	const salt = makeProduct({
+		name: "Sal rosada del Himalaya",
+		category: pantry,
+		terms: { moqPrice: "7500", moq: "1" },
+	});
+	const peanutButter = makeProduct({
+		name: "Pasta de maní Entre Nuts 370 g",
+		category: pantry,
+		terms: { moqPrice: "5150", moq: "1" },
+	});
+	const almonds = makeProduct({
+		name: "Almendras",
+		category: nuts,
+		terms: { moqPrice: "16000", moq: "1" },
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, salt, almonds, peanutButter, fiveLitres, oneLitre],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual([
+		"Aceite de oliva extra virgen 1 L",
+		"Aceite de oliva extra virgen 5 L",
+		"Sal rosada del Himalaya",
+	]);
+});
+
+test("selectSimilarProducts does not group uncategorized products by their missing category", () => {
+	const current = makeProduct({ name: "Actual", category: null, unit: "kg" });
+	const uncategorizedOtherUnit = makeProduct({
+		name: "Sin categoría otra unidad",
+		category: null,
+		unit: "box",
+	});
+	const sameUnit = makeProduct({
+		name: "Misma unidad",
+		category: nuts,
+		unit: "kg",
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, uncategorizedOtherUnit, sameUnit],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual(["Misma unidad"]);
+});
+
 test("selectSimilarProducts ranks brand matches above unit matches", () => {
 	const current = makeProduct({
 		name: "Actual",
