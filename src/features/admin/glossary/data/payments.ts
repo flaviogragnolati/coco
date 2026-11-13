@@ -53,6 +53,35 @@ export const paymentsGlossaryEntries: GlossaryEntry[] = [
 		],
 		href: "/admin/payments",
 	},
+	{
+		slug: "concepto-descuento-por-transferencia",
+		kind: "concept",
+		section: "payments",
+		label: "Descuento por transferencia",
+		term: "Transfer discount",
+		definition:
+			"El porcentaje que se descuenta del subtotal de productos cuando el cliente paga por transferencia: la suma de las líneas del pedido, con el descuento de oferta incluido y nunca el envío. Se suma al descuento de oferta. El total se redondea hacia abajo al peso entero y el descuento es la diferencia. Un superadmin carga un solo porcentaje en la configuración del pago externo. El intento de pago fija el porcentaje, el subtotal y el descuento cuando el cliente confirma; las líneas del pedido no lo llevan. Mercado Pago nunca lo aplica.",
+		aliases: ["Descuento de pago", "Descuento de oferta", "Promoción"],
+		occurrences: [
+			{
+				code: "UserTransaction.transferDiscountPercent",
+				db: "user_transaction.transferDiscountPercent",
+			},
+			{
+				code: "UserTransaction.subtotalAmount",
+				db: "user_transaction.subtotalAmount",
+			},
+			{
+				code: "UserTransaction.transferDiscountAmount",
+				db: "user_transaction.transferDiscountAmount",
+			},
+			{
+				code: "PaymentProviderConfig.settings",
+				db: "payment_provider_config.settings",
+			},
+		],
+		href: "/admin/payments",
+	},
 
 	// --- Entidades -----------------------------------------------------------
 	{

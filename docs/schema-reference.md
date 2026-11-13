@@ -212,6 +212,18 @@ They live as columns rather than inside `requestSnapshot` because a snapshot is 
 
 While the attempt is `pending`, `providerStatus` walks `awaiting_transfer → receipt_declared`, and `expiresAt` comes from the provider config's `expiresInHours`, so an unpaid transfer becomes a spent attempt that re-confirming replaces. Only the admin actions in `/admin/payments` end it, both audited: settling writes `externalTransactionId` with the verified reference, `providerStatus = settled_manually`, `completedAt` and an actor-stamped `responseSnapshot`, then runs the same `submitOrderForCompletedPayment` transition the Mercado Pago webhook runs; rejecting writes `status = failed` with `failureCode = external_rejected` and the reason, and fails the order.
 
+#### `UserTransaction` transfer-discount columns (ADR 0013)
+
+An external attempt may carry the *Transfer discount*. `amount` stays what the attempt charges: for a discounted transfer, the discounted total that must land in the bank. Three nullable columns freeze where it came from when the customer confirms:
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| `subtotalAmount` | `Decimal(18,2)`, nullable | The products subtotal: the sum of the line totals, offer discount included |
+| `transferDiscountPercent` | `Decimal(5,2)`, nullable | The percent in force at confirmation, from the `external` row's `settings.transferDiscountPercent` (0 to 50, 0 = none) |
+| `transferDiscountAmount` | `Decimal(18,2)`, nullable | `subtotalAmount − amount`; the total is rounded down to the whole peso |
+
+The `user_transaction_transfer_discount_all_or_none` constraint keeps them together: all three set, or all three null. They are null on every Mercado Pago attempt, on attempts without a discount and on attempts created before the discount existed. A later change to the setting affects only new attempts. Because the amount depends on the method, confirming reuses the live order's open attempt only for the same provider, and a completed payment cancels the order's other pending attempts without a declared receipt.
+
 #### `UserOrder` delivery preference columns (ADR 0011)
 
 | Column | Type | Meaning |
