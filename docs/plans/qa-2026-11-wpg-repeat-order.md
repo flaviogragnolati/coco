@@ -281,35 +281,37 @@ Cargar la transición en `scripts/qa-ticket-triage.data.ts` (WP0). La nota va **
 
 ## 11. Registro de ejecución
 
-**13/11/2026 · implementador WP-G.** Rama `wpg-repeat-order`, rebasada sobre `main` en `b3e5162` antes de las correcciones de la revisión independiente. Sin merge ni push.
+**13/11/2026 · implementador WP-G.** Rama `wpg-repeat-order`, rebasada sobre `main` en `6d53286`, con WP-A ya mergeado. Sin merge ni push.
 
 ### Commits
 
-Los hashes son los de después del rebase.
+Los hashes son los de después del último rebase.
 
 | Commit | Qué |
 | --- | --- |
-| `e727f53` | `readSnapshotProduct`, `readSnapshotUnitPrice`, `canRepeatOrder` y `formatOrderLineQuantityPrice`, con tests (pasos 1 y 2). |
-| `3c50cc8` | `planCartAdditions`, `collectRepeatLines`, `decideRepeatGate`, `mergeCartItems`, `describeRepeatOutcome` y los schemas de `addItems`, con tests (pasos 3 a 6 y 8). |
-| `d41f1d2` | `listCurrentClientTermsByProductIds`, `addItemsInTransaction`, `addItems` y `readAddItemsOutput` (pasos 7 y 9). |
-| `0c25c3a` | `repeat-order.schemas.ts`, `repeat-order.service.ts` y `orders.repeatPreview` / `orders.repeat` (pasos 10 a 12). |
-| `e3186a8` | Tests del servicio con mocks de `cart.data` y `checkout.data` y un espía sobre `releaseCheckoutCart` (paso 13). |
-| `4a4ff22` | Formato de Biome. |
-| `509ea0f` | `addItems` del store, el diálogo "Repetir pedido", el slot del detalle, la línea "cantidad × precio" y la página (pasos 14 a 17). |
-| `a71e050` | Fixture del tutorial con `productClientTerms`, su test y el e2e (pasos 18 y 19). |
-| `31a6085` | Lo que dejó la mini review. |
-| `0d7ce0f` | Este registro. |
-| `5cc22e7` | Revisión independiente, del lado del servidor: M1, L1, C1, C2 y N1. |
-| `db47902` | Revisión independiente, del lado del diálogo: L1, N2 y N3. |
+| `34cd962` | `readSnapshotProduct`, `readSnapshotUnitPrice`, `canRepeatOrder` y `formatOrderLineQuantityPrice`, con tests (pasos 1 y 2). |
+| `ff19a39` | `planCartAdditions`, `collectRepeatLines`, `decideRepeatGate`, `mergeCartItems`, `describeRepeatOutcome` y los schemas de `addItems`, con tests (pasos 3 a 6 y 8). |
+| `61fd426` | `listCurrentClientTermsByProductIds`, `addItemsInTransaction`, `addItems` y `readAddItemsOutput` (pasos 7 y 9). |
+| `96eb3b6` | `repeat-order.schemas.ts`, `repeat-order.service.ts` y `orders.repeatPreview` / `orders.repeat` (pasos 10 a 12). |
+| `16fbec2` | Tests del servicio con mocks de `cart.data` y `checkout.data` y un espía sobre `releaseCheckoutCart` (paso 13). |
+| `cb52866` | Formato de Biome. |
+| `442404d` | `addItems` del store, el diálogo "Repetir pedido", el slot del detalle, la línea "cantidad × precio" y la página (pasos 14 a 17). |
+| `2e38fa0` | Fixture del tutorial con `productClientTerms`, su test y el e2e (pasos 18 y 19). |
+| `36b2e52` | Lo que dejó la mini review. |
+| `0c064d5` | Este registro. |
+| `448fdd2` | Revisión independiente, del lado del servidor: M1, L1, C1, C2 y N1. |
+| `cbc6eb2` | Revisión independiente, del lado del diálogo: L1, N2 y N3. |
 
 ### Validación
 
-Es la corrida final, después de las correcciones de la revisión independiente.
+Es la corrida final, sobre `6d53286` y con las correcciones de la revisión independiente.
 
 - `pnpm typecheck`: sin errores.
-- `pnpm test`: 135 archivos pasan y 1 se saltea (`scripts/reset-initial-catalog.integration.test.ts`, que se saltea desde antes). Son 1972 tests en verde y 4 salteados.
-- `pnpm check` (Biome): 871 archivos, sin cambios.
-- **Pendiente de correr (no se corrió, por la DB compartida):** el e2e nuevo de `e2e/customer-tutorial.spec.ts`, "the order detail shows the price paid per unit and no repeat button", y el resto de ese archivo. Hay que correrlos contra una DB local (§9 y §10 de la orquestación).
+- `pnpm test`: 137 archivos pasan y 1 se saltea (`scripts/reset-initial-catalog.integration.test.ts`, que se saltea desde antes). Son 1985 tests en verde y 4 salteados.
+- `pnpm check` (Biome): 876 archivos, sin cambios.
+- **e2e, contra la DB local sembrada:** se corrieron `e2e/customer-tutorial.spec.ts` y `e2e/smoke.spec.ts` con el script con lock del orquestador. Pasaron los 24 tests en la primera corrida, incluido el nuevo, "the order detail shows the price paid per unit and no repeat button".
+  - El log del servidor muestra el aviso de hydration mismatch de `/products` (`catalog-filters-sidebar.tsx`), que ya existía y no hizo fallar nada.
+  - El `.env` quedó restaurado y el script lo verificó con sha256.
 - Paso 20: la entrada *Repeat order* de `CONTEXT.md` está y coincide con lo implementado.
 - Paso 21: el grep de "carrito", "MOQ", "step" y "máximo" sobre el diálogo, los mensajes, el servicio y los schemas nuevos no encuentra nada.
 - No hay migración: no cambia `prisma/schema.prisma`.
