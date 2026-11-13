@@ -390,6 +390,7 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 				quantity: item.quantity,
 				productSnapshot: { product: item.product },
 				priceSnapshot: {
+					productClientTerms: item.terms,
 					lineTotal: item.lineTotal,
 					currency: item.terms.currency,
 				},

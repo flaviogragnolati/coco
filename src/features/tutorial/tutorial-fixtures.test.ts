@@ -17,6 +17,7 @@ import {
 	formatCurrency,
 } from "~/shared/common/commerce.helpers";
 import { describeOrderDelivery } from "~/shared/common/delivery-display";
+import { formatOrderLineQuantityPrice } from "~/shared/common/order-display";
 import { userTrackingStageKeys } from "~/shared/common/tracking-display";
 import { buildTutorialFixtures } from "./tutorial-fixtures";
 
@@ -127,6 +128,16 @@ describe("tutorial fixture amounts", () => {
 			"Av. San Martín 1234 · Ushuaia, Tierra del Fuego 9410",
 		);
 		expect(journeyView.mode).toBe("unified");
+	});
+
+	it("the order detail shows the price each line was charged per kg", () => {
+		const [firstLine] = fixtures.orderDetail("shipping").order.items;
+		if (!firstLine) throw new Error("Empty tutorial order");
+		const label = plain(formatOrderLineQuantityPrice(firstLine));
+
+		expect(label).toContain("× ");
+		expect(label).toContain("/ kg");
+		expect(label).toBe("0,5 kg × $ 22.600 / kg");
 	});
 });
 
