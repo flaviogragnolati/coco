@@ -358,6 +358,37 @@ const implemented: TriageTransition[] = [
 		preconditions:
 			"migración aplicada y al menos una categoría con color cargado",
 	}),
+	retest(98, {
+		fix: "Implementado en c9ac7f9",
+		look: 'el contador "Cierre del pedido: faltan …" en la barra (computadora) y en la franja de arriba (celular y tableta), sin segundos y en hora de Argentina; la pantalla Admin › Catálogo › Cierre semanal: cambiar el día o la hora y ver que cambie todo (contador, hero, pasos, preguntas frecuentes y ficha). Es solo informativo: la compra se sigue lanzando a mano',
+		preconditions: 'una cuenta "Administrador" que no sea superadmin',
+	}),
+	retest(99, {
+		fix: "Implementado en c9ac7f9",
+		look: 'título "Comprar en grupo sale menos.", bajada, línea de cierre, "Ver el catálogo" → /products y "No hace falta registrarte para mirar"; la franja ya no repite la frase. Los textos son preliminares: los revisa Flavio',
+		preconditions: "ninguna",
+	}),
+	retest(100, {
+		fix: "Implementado en c9ac7f9",
+		look: 'el diagrama con su leyenda en "Cómo funciona" y 4 pasos; el paso 4 se adaptó al flujo actual (la entrega se elige al confirmar el pedido). Los textos son preliminares',
+		preconditions: "ninguna",
+	}),
+	retest(104, {
+		fix: "Implementado en c9ac7f9",
+		look: '6 preguntas en el orden del ticket; "¿Cómo recibo mi pedido?" adaptada al flujo actual y con la dirección del punto de retiro activo. Las respuestas son preliminares, redactadas sin el documento del recorrido',
+		preconditions:
+			'corregir o desactivar el punto de retiro con datos de prueba ("Calle Falsa 123") en /admin/pickup-points',
+	}),
+	retest(107, {
+		fix: 'Línea de cierre de la ficha implementada en c9ac7f9 ("Entra en el cierre del … · Llega en …"). Con #97 (86f4f26) y #106 (b04ebdc) la ficha queda completa: re-testear entera',
+		look: "la línea de cierre, la descripción oculta cuando repite el nombre, un solo control para cerrar, los similares de la misma categoría primero y la foto, el precio, el selector y el botón iguales a los de la tarjeta",
+		preconditions: "ninguna",
+	}),
+	retest(70, {
+		fix: 'La ilustración del sistema se movió del hero a "Cómo funciona" (#100) en c9ac7f9',
+		look: 'que se vea en "Cómo funciona" y que el hero quede solo con texto y botón',
+		preconditions: "ninguna",
+	}),
 ];
 
 export const qaTicketTriageTransitions: TriageTransition[] = [
