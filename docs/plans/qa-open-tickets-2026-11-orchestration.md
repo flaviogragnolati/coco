@@ -462,12 +462,12 @@ Ola 4: WP-H, WP-I (cuando llegue el contenido)
 
 ## 12. Definición de hecho
 
-- [ ] `retest` existe en el enum, la UI, las estadísticas, el glosario y `docs/schema-reference.md`. El tablero lo filtra.
-- [ ] Ningún ticket de #2–#112 queda en Pendiente sin motivo. Cada uno está en Re-test, Completo OK (con evidencia), Omitido, Bloqueado o papelera, con su nota fechada.
-- [ ] WP-A a WP-I están mergeados en `main`, cada uno con su revisión, o frenados en una pregunta bloqueante registrada en §13.
+- [x] `retest` existe en el enum, la UI, las estadísticas, el glosario y `docs/schema-reference.md`. El tablero lo filtra.
+- [x] Ningún ticket de #2–#112 queda en Pendiente sin motivo. Cada uno está en Re-test, Completo OK (con evidencia), Omitido, Bloqueado o papelera, con su nota fechada.
+- [x] WP-A a WP-I están mergeados en `main`, cada uno con su revisión, o frenados en una pregunta bloqueante registrada en §13.
 - [ ] `pnpm typecheck`, `pnpm test` y `pnpm check` en verde en `main`. Los e2e de las áreas tocadas están en verde contra la DB local.
-- [ ] `CONTEXT.md`, el glosario del admin, el tutorial y los planes afectados están actualizados.
-- [ ] El registro de ejecución (§13) está completo y el reporte de triage tiene sus decisiones al día.
+- [x] `CONTEXT.md`, el glosario del admin, el tutorial y los planes afectados están actualizados.
+- [x] El registro de ejecución (§13) está completo y el reporte de triage tiene sus decisiones al día.
 
 ## 13. Registro de ejecución
 
@@ -478,11 +478,11 @@ Ola 4: WP-H, WP-I (cuando llegue el contenido)
 | WP-G | `qa-2026-11-wpg-repeat-order.md` | `964c670` | Cargado en `qa:triage`: #112 → Re-test. | La revisión encontró una carrera (M1) en la que repetir podía cancelar un pedido recién confirmado. Se corrigió con la política `refuseLiveOrder` en la liberación del checkout. Queda un riesgo residual que necesita un lock de fila del carrito, fuera de alcance. e2e en verde contra la base local: `customer-tutorial` (9) y `smoke` (15). El flujo real de repetir no tiene e2e porque el login es solo con Google. |
 | WP-A | `qa-2026-11-wpa-quick-fixes.md` | `86f4f26` | Cargado en `qa:triage`: #93, #97, #103 y #109 → Re-test. #107 y #92 siguen en Pendiente. | Revisión independiente con un bloqueante (aserción de e2e sobre `sr-only`), corregido. e2e en verde contra la base local: `home-section-links` 3×, `catalog-product-card`, `smoke`, `catalog-category-filter`, `home-offer-quantity` y `supplier-application`. #93: causa confirmada en Next 16.2.7 (la caché de rutas guarda el hash), fix con `HashSafeLink`. #92: el bug de vaciado en el admin no existía (`product.data.ts` escribe `?? null`). Preexistente en `main`: hydration mismatch en `/products` (sidebar de marcas) que vuelve intermitente `customer-tutorial.spec.ts:58`. |
 
-| WP-B | `qa-2026-11-wpb-weekly-closing-home.md` | `c9ac7f9` | Incluido en el triage final: #98, #99, #100, #104, #107 y #70 → Re-test. | Migración aplicada; deploy real de `911bd55` confirmado exitoso. Textos preliminares para revisión de Flavio. |
-| WP-H | `qa-2026-11-wph-illustrative-image.md` | `4f3da0c` | Incluido en el triage final: #90 → Re-test. | La recuperación comprobó que faltaba la columna; migración aplicada y Prisma sin diferencias. La leyenda también se propagó al mosaico al integrar WP-D. |
-| WP-E | `qa-2026-11-wpe-navbar-categories.md` | `38f85c5` | Incluido en el triage final: #102 → Re-test. | Menú desktop/mobile; revisión independiente sin hallazgos; 35 e2e y 3 responsive sin retries. A 1024 px entra junto al contador. |
-| WP-F | `qa-2026-11-wpf-transfer-discount.md` | `ad74aae` | Incluido en el triage final: #110 → Re-test. | Corregido el intento mostrado en Pago/Resumen (`5fbe06a`). Conflictos compatibles con cierre y tutorial resueltos; revisión independiente y 67 tests enfocados en verde. Migración aplicada con autorización. |
-| WP-D | `qa-2026-11-wpd-combos-featured.md` | `b68fa10` | Incluido en el triage final: #101 → Re-test, con carga de combos por Flavio como precondición. | Correcciones de revisión `7ee9e2a`; 26 e2e y 4 tests de reset aislado. Integración preserva FAQ, cierre y color; 164 tests enfocados y revisión independiente sin hallazgos. Migración aplicada con autorización. |
+| WP-B | `qa-2026-11-wpb-weekly-closing-home.md` | `c9ac7f9` | **Aplicado el 13/11:** #98, #99, #100, #104, #107 y #70 → Re-test. | Migración aplicada; deploy real de `911bd55` confirmado exitoso. Textos preliminares para revisión de Flavio. |
+| WP-H | `qa-2026-11-wph-illustrative-image.md` | `4f3da0c` | **Aplicado el 13/11:** #90 → Re-test. | La recuperación comprobó que faltaba la columna; migración aplicada y Prisma sin diferencias. La leyenda también se propagó al mosaico al integrar WP-D. |
+| WP-E | `qa-2026-11-wpe-navbar-categories.md` | `38f85c5` | **Aplicado el 13/11:** #102 → Re-test. | Menú desktop/mobile; revisión independiente sin hallazgos; 35 e2e y 3 responsive sin retries. A 1024 px entra junto al contador. |
+| WP-F | `qa-2026-11-wpf-transfer-discount.md` | `ad74aae` | **Aplicado el 13/11:** #110 → Re-test. | Corregido el intento mostrado en Pago/Resumen (`5fbe06a`). Conflictos compatibles con cierre y tutorial resueltos; revisión independiente y 67 tests enfocados en verde. Migración aplicada con autorización. |
+| WP-D | `qa-2026-11-wpd-combos-featured.md` | `b68fa10` | **Aplicado el 13/11:** #101 → Re-test, con carga de combos por Flavio como precondición. | Correcciones de revisión `7ee9e2a`; 26 e2e y 4 tests de reset aislado. Integración preserva FAQ, cierre y color; 164 tests enfocados y revisión independiente sin hallazgos. Migración aplicada con autorización. |
 | WP-I | Carga desde el admin, decisión de Flavio del 13/11 | No requiere merge adicional | #91 y #92 → Bloqueado. | Falta la composición confirmada de los mix y las descripciones específicas. No se inventa contenido. La parte de código de #92 quedó resuelta con WP-A. |
 
 **Decisiones y hallazgos del orquestador (13/11):**
@@ -511,6 +511,13 @@ Ola 4: WP-H, WP-I (cuando llegue el contenido)
 - Verificación de catálogo compartido, transacción comprobada como solo lectura: exactamente los 27 nombres de `quintal-catalog.data.ts`, todos con categoría activa, precio de cliente y términos de Quintal vigentes; mínimo igual a paso (0,5 o 1). Hay 22 productos por kg; 13 tienen mínimo/paso 1, que es configuración por producto. #81 → Completo OK. `catalog-public-copy` verifica ausencia de ahorro vs. góndola en home/catálogo y todas las fichas locales: #74 → Completo OK.
 - Los otros tickets antiguos y los tres del tutorial pasan a Re-test con cobertura y precondiciones honestas. #69 conserva el re-test completo de desarrollador: la definición usa `db:seed:test`, `db:seed-verify` y exige una base local aislada.
 - Pendientes humanos: contenidos de #91/#92; número contratado de WhatsApp #82; carga de combos y colores; corrección/desactivación del punto de retiro de prueba antes de #104; re-test autenticado. La contracción de `Product.homeOfferRank` permanece diferida según WP-D.
+
+### Cierre operativo verificado (13/11/2026)
+
+- **Deploy:** `2b992f0e2679e31b611e6e0ce73e86a2dae0ffaf` exitoso en el proyecto real de producción a las `2026-11-13T17:24:55Z`. Smoke de `/`, `/products`, `catalog.categories` y `catalog.transferDiscount`: HTTP 200; home muestra categorías, destacados y leyenda. El commit de código es `e8937e6`; el resto de este cierre solo agrega documentación.
+- **QA seed:** 0 creados, 68 definiciones actualizadas, 0 retirados. Huellas de estado, notas, asignado, evidencia y borrado idénticas antes/después.
+- **QA triage:** 22 tickets aplicados, cero conflictos, 15 asignados liberados y 22 eventos `qaTicket.update` nuevos. Lectura final: **57 Re-test, 40 Completo OK, 3 Bloqueado (#82, #91, #92), 3 Omitido, 9 Papelera, 0 Pendiente**. Repetición en dry-run: 72 ya aplicadas, 0 a aplicar, 0 conflictos.
+- **Siguiente acción:** Flavio/QA ejecutan los Re-test, cargan combos/colores y el porcentaje de transferencia, y aportan los contenidos bloqueados. La aceptación humana sigue pendiente; no se declara entrega aceptada ni se reabren #105/#108/#111.
 
 ## 14. Instrucciones para el orquestador
 

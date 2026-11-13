@@ -109,7 +109,15 @@ stage_status:
       recorded_outcome: completed_with_warnings
       reconciled: true
       source_sha256: 261fb0080e4b3ea37455b605c0483e98983c24058128011bf84a1f2499ef3092
-  q-delivery-release: working
+  q-delivery-release:
+    execute-release: completed_with_warnings
+    coordinate-uat: pending
+  qa-open-tickets-2026-11:
+    implementation: completed_with_warnings
+    deployment: completed
+    triage: completed
+    human_qa: pending
+    WP-I: blocked-content
 decisions:
 - 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Pickup orders ask no address
   (user, 2026-10-08)'
@@ -356,9 +364,11 @@ risks:
   orchestration §13.
 - Authenticated admin/customer flows still require human re-test; supplier composition/descriptions remain unavailable.
 blockers:
-- 'WP-I: #91/#92 need composition and specific descriptions supplied by Quintal/Flavio.'
+- '#82: contracted WhatsApp number missing.'
+- '#91/#92: confirmed mix composition and specific product descriptions missing; Flavio loads them through admin.'
 active_front:
   item_ref: QA-OPEN-2026-11
   record_ref: docs/plans/qa-open-tickets-2026-11-orchestration.md
-next_actor: agent
-next_action: Publish authorized main and verify the real production deployment before QA seed/triage.
+next_actor: user
+next_action: Run 57 Re-test tickets; load combos/colors/transfer percentage and supply WhatsApp number, mix compositions
+  and descriptions.

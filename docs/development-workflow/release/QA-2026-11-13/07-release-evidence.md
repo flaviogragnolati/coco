@@ -14,4 +14,12 @@ All actions below were executed by Codex unless explicitly labelled as a user de
 - **Previous deploy:** real Vercel project confirmed `911bd55` successful at `2026-11-13T17:10:16Z`. A second connected project (`cocotdfs-projects`) failed independently; its result is not used as production evidence.
 - **QA dry-run:** 72 configured transitions, 22 to apply, 50 already applied, zero conflicts; 15 assigned re-test tickets will be freed. Predicted final board: 57 Re-test, 40 Completo OK, 3 Bloqueado, 3 Omitido, 9 Papelera, zero Pendiente.
 
-Production deployment, post-deploy smoke and final QA read-back are recorded below when complete.
+## Production outcome
+
+- Deployment `2b992f0e2679e31b611e6e0ce73e86a2dae0ffaf` succeeded at `2026-11-13T17:24:55Z` in the real production project (`coco-qq1q93abq-flaviogragnolatigmailcoms-projects.vercel.app`).
+- Public smoke on the production alias: `/`, `/products`, `/api/trpc/catalog.categories` and `/api/trpc/catalog.transferDiscount` all HTTP 200; home includes Categories, featured section and illustrative legend.
+- QA seed updated 68 definitions, created zero and retired zero. Before/after fingerprints for status, notes, assignee, evidence and deletion matched for every ticket.
+- QA triage applied 22 tickets without conflicts and freed 15 assignees. Read-only audit confirmed 22 new `qaTicket.update` events.
+- Final board: 57 Re-test, 40 passed, 3 blocked, 3 skipped, 9 trash and zero pending. Read-only repeat dry-run: 72 already applied, zero to apply, zero conflicts.
+- Human UAT remains pending. Blocked content belongs to Flavio/Quintal (#82, #91, #92); no human acceptance or financial end-to-end acceptance is inferred.
+

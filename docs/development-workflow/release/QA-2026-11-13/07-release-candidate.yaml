@@ -1,53 +1,95 @@
-schema_version: "1.0"
+schema_version: '1.0'
 rc_id: QA-2026-11-13
 release_kind: release
-version: "2026.11.qa1"
+version: 2026.11.qa1
 lifecycle: Working
-base_commit: e8937e6
+base_commit: e8937e6fa5a7168dcc209fbc1835ee3e43d9a0e2
 previous_deployment_commit: 911bd55
 scope:
-  - {package: WP-D, ticket: 101, merge_commit: b68fa10, plan: docs/plans/qa-2026-11-wpd-combos-featured.md, source_git_ref: e8937e6}
-  - {package: WP-E, ticket: 102, merge_commit: 38f85c5, plan: docs/plans/qa-2026-11-wpe-navbar-categories.md, source_git_ref: e8937e6}
-  - {package: WP-F, ticket: 110, merge_commit: ad74aae, plan: docs/plans/qa-2026-11-wpf-transfer-discount.md, source_git_ref: e8937e6}
-  - {package: QA-triage, record: docs/plans/qa-open-tickets-2026-11-orchestration.md, source_git_ref: e8937e6}
-excluded_tickets: [105, 108, 111]
+- package: WP-D
+  ticket: 101
+  merge_commit: b68fa10
+  plan: docs/plans/qa-2026-11-wpd-combos-featured.md
+  source_git_ref: e8937e6fa5a7168dcc209fbc1835ee3e43d9a0e2
+- package: WP-E
+  ticket: 102
+  merge_commit: 38f85c5
+  plan: docs/plans/qa-2026-11-wpe-navbar-categories.md
+  source_git_ref: e8937e6fa5a7168dcc209fbc1835ee3e43d9a0e2
+- package: WP-F
+  ticket: 110
+  merge_commit: ad74aae
+  plan: docs/plans/qa-2026-11-wpf-transfer-discount.md
+  source_git_ref: e8937e6fa5a7168dcc209fbc1835ee3e43d9a0e2
+- package: QA-triage
+  record: docs/plans/qa-open-tickets-2026-11-orchestration.md
+  source_git_ref: e8937e6fa5a7168dcc209fbc1835ee3e43d9a0e2
+excluded_tickets:
+- 105
+- 108
+- 111
 environments:
-  - name: local-disposable
-    preconditions: ["Fixed local DATABASE_URL", "Container coco-e2e-postgres", "No .env changes"]
-  - name: production
-    preconditions: ["Joint verification green", "Explicit user approval for migrations and push/deploy", "Additive migrations applied before push"]
+- name: local-disposable
+  preconditions:
+  - Fixed local DATABASE_URL
+  - Container coco-e2e-postgres
+  - No .env changes
+- name: production
+  preconditions:
+  - Joint verification green
+  - Explicit user approval for migrations and push/deploy
+  - Additive migrations applied before push
 migrations:
-  - path: prisma/migrations/20261113100000_combos_home_featured/migration.sql
-    reversibility: partial
-    disposition: "Application rollback can ignore new tables/columns; homeOfferRank remains. Do not drop populated combo tables. Preserve data and forward-fix before later contraction."
-  - path: prisma/migrations/20261113120000_transfer_discount_on_payment_attempt/migration.sql
-    reversibility: partial
-    disposition: "Nullable columns preserve old attempts. A code rollback does not undo payment-attempt snapshots; preserve them and forward-fix financial behavior."
+- path: prisma/migrations/20261113100000_combos_home_featured/migration.sql
+  reversibility: partial
+  disposition: Application rollback can ignore new tables/columns; homeOfferRank remains. Do not drop populated
+    combo tables. Preserve data and forward-fix before later contraction.
+- path: prisma/migrations/20261113120000_transfer_discount_on_payment_attempt/migration.sql
+  reversibility: partial
+  disposition: Nullable columns preserve old attempts. A code rollback does not undo payment-attempt snapshots;
+    preserve them and forward-fix financial behavior.
 configuration:
-  - {name: DATABASE_URL, source_of_truth: "Vercel production environment / local .env; value never recorded"}
-  - {name: APP_ENV, source_of_truth: "Vercel production environment"}
-  - {name: "external.transferDiscountPercent", source_of_truth: "Payment provider settings edited by superadmin"}
+- name: DATABASE_URL
+  source_of_truth: Vercel production environment / local .env; value never recorded
+- name: APP_ENV
+  source_of_truth: Vercel production environment
+- name: external.transferDiscountPercent
+  source_of_truth: Payment provider settings edited by superadmin
 rollout:
-  - "Apply the two approved additive migrations with prisma db execute and verify migrate diff is empty."
-  - "Push reviewed main, verify success in the real Vercel project flaviogragnolatigmailcoms-projects."
-  - "Public smoke: home, catalog, category navigation and illustrative legend."
-  - "Run approved qa:seed and qa:triage using the active superadmin actor, preserving tester notes and concurrent results."
-  - "Read back counts, pending tickets and audit evidence; record conflicts rather than overwriting them."
+- Apply the two approved additive migrations with prisma db execute and verify migrate diff is empty.
+- Push reviewed main, verify success in the real Vercel project flaviogragnolatigmailcoms-projects.
+- 'Public smoke: home, catalog, category navigation and illustrative legend.'
+- Run approved qa:seed and qa:triage using the active superadmin actor, preserving tester notes and concurrent results.
+- Read back counts, pending tickets and audit evidence; record conflicts rather than overwriting them.
 rollback:
   drill_environment: local-disposable
   application_probe_commit: 48230e9
   disposition: partial
   evidence: 07-release-evidence.md
-  production_action: "Requires explicit approval for an exact previous application deployment; retain additive schema and financial snapshots."
+  production_action: Requires explicit approval for an exact previous application deployment; retain additive schema
+    and financial snapshots.
 uat:
-  owner: "Flavio / QA testers"
+  owner: Flavio / QA testers
   status: pending
-  criteria: "Run each Re-test ticket; authenticated admin/payment acceptance is not inferred from automated checks."
-  content_gaps: ["#82 WhatsApp number", "#91 mix compositions", "#92 specific descriptions", "Load combos/colors", "Correct test pickup-point data before #104"]
+  criteria: Run each Re-test ticket; authenticated admin/payment acceptance is not inferred from automated checks.
+  content_gaps:
+  - '#82 WhatsApp number'
+  - '#91 mix compositions'
+  - '#92 specific descriptions'
+  - Load combos/colors
+  - 'Correct test pickup-point data before #104'
 evidence_checklist:
-  - {claim: "Integrated correctness", evidence: "Typecheck, 2197 unit tests and 44 local e2e in 07-release-evidence.md"}
-  - {claim: "Review complete", evidence: "Independent two-axis and comments reviews in originating plans/orchestration"}
-  - {claim: "Database matches schema", evidence: "Approved migrations and empty Prisma diff"}
-  - {claim: "Production runs the expected version", evidence: "Exact commit deployment success plus public smoke"}
-  - {claim: "QA board has actionable states", evidence: "Dry-run, applied transitions, read-back counts and audits"}
-  - {claim: "Human acceptance", evidence: "Pending Re-test results; no acceptance claim yet"}
+- claim: Integrated correctness
+  evidence: Typecheck, 2197 unit tests and 44 local e2e in 07-release-evidence.md
+- claim: Review complete
+  evidence: Independent two-axis and comments reviews in originating plans/orchestration
+- claim: Database matches schema
+  evidence: Approved migrations and empty Prisma diff
+- claim: Production runs the expected version
+  evidence: Exact commit deployment success plus public smoke
+- claim: QA board has actionable states
+  evidence: Dry-run, applied transitions, read-back counts and audits
+- claim: Human acceptance
+  evidence: Pending Re-test results; no acceptance claim yet
+deployed_commit: 2b992f0e2679e31b611e6e0ce73e86a2dae0ffaf
+execution_status: deployed-awaiting-human-uat

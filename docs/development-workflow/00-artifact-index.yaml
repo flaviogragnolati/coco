@@ -248,7 +248,7 @@ artifacts:
   semantic_authority: canonical
   authority_scope: bounded-execution-record
   lifecycle: Working
-  version: sha256:d9903793ed89ea8ec5ca9b4e75bbd69ed278556b53e6456f0a5ee17cc84f4ca4
+  version: sha256:c1fd6aedc5f8406cbabf2250fc12ca01832f75857aa827cd7b037e3d63421d1e
   source_refs: []
 - artifact_id: ART-DOCS-PLANS-QA-OPEN-TICKETS-2026-11-REPORT
   artifact_type: implementation-plan
@@ -325,7 +325,7 @@ artifacts:
   semantic_authority: canonical
   authority_scope: release-composition
   lifecycle: Working
-  version: sha256:3f7644494b9e1f67a7c16b9f4900c17c5cb3d5a3ac293484a00fe90e4d5fd28a
+  version: sha256:be7ec403d0bc29ec13cca658668812d42ca255d82ba875e5f91854c13395f102
   source_refs:
   - git:e8937e6
 - artifact_id: QA-2026-11-13-RELEASE-EVIDENCE
@@ -337,6 +337,6 @@ artifacts:
   semantic_authority: supporting
   authority_scope: deployment-execution-evidence
   lifecycle: Working
-  version: sha256:66c481a994e76ab8a23f42ef6bcf60330d01dea394d4f1115e705b9985f66a12
+  version: sha256:4cd9bd1eeda4db7212f5e2741bf0c3279185e6729f097058405a5b5b199e3e86
   source_refs:
   - git:e8937e6
