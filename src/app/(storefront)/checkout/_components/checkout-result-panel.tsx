@@ -21,6 +21,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { formatTransferDiscountPercent } from "~/features/cart/_components/transfer-total";
 import { ExternalPaymentDetails } from "~/features/checkout/external-payment-details";
 import { cn } from "~/lib/utils";
 import type { CheckoutPaymentResult } from "~/shared/common/checkout.types";
@@ -124,6 +125,12 @@ export function CheckoutResultPanel({
 									result.transaction.currency,
 								)}
 							</span>
+							{result.transaction.transferDiscountAmount !== null &&
+							result.transaction.transferDiscountPercent !== null ? (
+								<span className="text-muted-foreground">
+									{`Incluye ${formatTransferDiscountPercent(result.transaction.transferDiscountPercent)} % de descuento por transferencia (−${formatCurrency(result.transaction.transferDiscountAmount, result.transaction.currency)})`}
+								</span>
+							) : null}
 						</ResultField>
 						<ResultField label="Pago">
 							<span>{result.paymentMethod.label}</span>

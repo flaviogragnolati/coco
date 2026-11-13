@@ -163,6 +163,22 @@ test("a deep link opens its step and an unsafe return path falls back home", asy
 	await expect(page).toHaveURL(/localhost:\d+\/$/);
 });
 
+test("the order and the payment step show what paying by transfer would cost", async ({
+	page,
+}) => {
+	await page.goto("/tutorial?version=rapido&paso=5");
+	await expect(counter(page)).toHaveText("5 / 12");
+	await expect(
+		page.getByText(/Con transferencia: \$\s?31\.410/).first(),
+	).toBeVisible();
+
+	await page.goto("/tutorial?version=rapido&paso=8");
+	await expect(counter(page)).toHaveText("8 / 12");
+	await expect(
+		page.getByText(/\$\s?31\.410 con 10 % de descuento/).first(),
+	).toBeVisible();
+});
+
 test("the order detail shows the price paid per unit and no repeat button", async ({
 	page,
 }) => {

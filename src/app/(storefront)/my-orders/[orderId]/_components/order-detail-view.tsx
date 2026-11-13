@@ -12,6 +12,7 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
+import { TransferDiscountBreakdownRows } from "~/features/cart/_components/transfer-total";
 import type {
 	CustomerOrderJourneyItemInput,
 	CustomerOrderJourneyView,
@@ -30,6 +31,7 @@ import {
 	formatOrderLineQuantityPrice,
 	orderStatusChipConfigMap,
 	paymentStatusLabelMap,
+	selectOrderDisplayAttempt,
 } from "~/shared/common/order-display";
 import { readSnapshotQuantityUnit } from "~/shared/common/product-snapshot";
 import type { UserOrderItemTimeline } from "~/shared/common/tracking.types";
@@ -119,7 +121,7 @@ export function OrderDetailView({
 	/** Marks regions for an outside walkthrough; absent on the real page. */
 	targets?: { journey?: DataAttributes };
 }) {
-	const latestTransaction = order.transactions[0];
+	const displayAttempt = selectOrderDisplayAttempt(order.transactions);
 	const statusChip = orderStatusChipConfigMap[order.status];
 	const delivery = describeOrderDelivery(order);
 	const StatusIcon = statusChip.icon;
@@ -202,14 +204,35 @@ export function OrderDetailView({
 								<span className="text-muted-foreground">Items</span>
 								<span className="font-medium">{order.itemCount}</span>
 							</div>
-							<div className="flex items-center justify-between gap-3">
-								<span className="text-muted-foreground">Monto</span>
-								<span className="font-heading font-semibold text-base">
-									{order.currency
-										? formatCurrency(order.totalAmount, order.currency)
-										: "-"}
-								</span>
-							</div>
+							{displayAttempt?.subtotalAmount &&
+							displayAttempt.transferDiscountPercent &&
+							displayAttempt.transferDiscountAmount ? (
+								<TransferDiscountBreakdownRows
+									breakdown={{
+										percent: displayAttempt.transferDiscountPercent,
+										subtotal: displayAttempt.subtotalAmount,
+										discount: displayAttempt.transferDiscountAmount,
+										total: displayAttempt.amount,
+									}}
+									currency={displayAttempt.currency}
+									totalLabel={
+										displayAttempt.status === "completed"
+											? "Total pagado"
+											: displayAttempt.status === "pending"
+												? "Total a transferir"
+												: "Total"
+									}
+								/>
+							) : (
+								<div className="flex items-center justify-between gap-3">
+									<span className="text-muted-foreground">Monto</span>
+									<span className="font-heading font-semibold text-base">
+										{order.currency
+											? formatCurrency(order.totalAmount, order.currency)
+											: "-"}
+									</span>
+								</div>
+							)}
 							<Separator />
 							<div className="flex items-start gap-3">
 								<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
@@ -264,37 +287,37 @@ export function OrderDetailView({
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="flex flex-col gap-3 text-xs">
-							{latestTransaction ? (
+							{displayAttempt ? (
 								<>
 									<div className="flex items-center justify-between gap-3">
 										<span className="text-muted-foreground">Estado</span>
 										<Badge
 											variant={
-												latestTransaction.status === "completed"
+												displayAttempt.status === "completed"
 													? "success"
-													: latestTransaction.status === "failed"
+													: displayAttempt.status === "failed"
 														? "destructive"
 														: "secondary"
 											}
 										>
-											{paymentStatusLabelMap[latestTransaction.status]}
+											{paymentStatusLabelMap[displayAttempt.status]}
 										</Badge>
 									</div>
 									<div className="flex items-center justify-between gap-3">
 										<span className="text-muted-foreground">Transacción</span>
-										<span className="font-medium">#{latestTransaction.id}</span>
+										<span className="font-medium">#{displayAttempt.id}</span>
 									</div>
 									<div className="flex flex-col gap-1">
 										<span className="text-muted-foreground">Referencia</span>
 										<span>
-											{latestTransaction.externalTransactionId ?? "Sin ref."}
+											{displayAttempt.externalTransactionId ?? "Sin ref."}
 										</span>
 									</div>
 									<div className="flex flex-col gap-1">
 										<span className="text-muted-foreground">Método</span>
-										<span>{latestTransaction.paymentMethod.label}</span>
+										<span>{displayAttempt.paymentMethod.label}</span>
 										<span className="text-muted-foreground">
-											{latestTransaction.paymentMethod.details}
+											{displayAttempt.paymentMethod.details}
 										</span>
 									</div>
 								</>

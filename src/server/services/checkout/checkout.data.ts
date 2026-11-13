@@ -6,6 +6,7 @@ import type {
 	CheckoutAddressCreateInput,
 	CheckoutAddressUpdateInput,
 } from "~/shared/common/checkout.types";
+import type { TransferDiscountBreakdown } from "~/shared/common/transfer-discount";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import { activePickupPointWhere } from "../admin/pickup-point.data";
 import { cartProductClientTermsSelect } from "../cart/cart.data";
@@ -76,6 +77,9 @@ export const checkoutPaymentMethodSelect = {
 const orderTransactionSelect = {
 	id: true,
 	amount: true,
+	subtotalAmount: true,
+	transferDiscountPercent: true,
+	transferDiscountAmount: true,
 	currency: true,
 	status: true,
 	completedAt: true,
@@ -438,11 +442,21 @@ export async function createPendingTransaction(
 		requestSnapshot: unknown;
 		provider?: string;
 		providerMode?: "sandbox" | "production" | null;
+		transferDiscount?: TransferDiscountBreakdown | null;
 	},
 ) {
+	const discount = input.transferDiscount;
+
 	return db.userTransaction.create({
 		data: {
 			amount: input.amount,
+			...(discount
+				? {
+						subtotalAmount: discount.subtotal,
+						transferDiscountPercent: discount.percent,
+						transferDiscountAmount: discount.discount,
+					}
+				: {}),
 			currency: input.currency as never,
 			status: "pending",
 			provider: input.provider ?? "mock",
@@ -670,6 +684,56 @@ export async function cancelTransaction(db: CheckoutDbClient, id: number) {
 		data: { status: "cancelled", cancelledAt: new Date() },
 		select: orderTransactionSelect,
 	});
+}
+
+const abandonableAttemptWhere = {
+	status: "pending",
+	declaredReceiptReference: null,
+} satisfies Prisma.UserTransactionWhereInput;
+
+/**
+ * Cancels an attempt only while it is still pending with no declared receipt.
+ * False when it no longer is.
+ */
+export async function cancelAbandonableAttempt(
+	db: CheckoutDbClient,
+	id: number,
+) {
+	const { count } = await db.userTransaction.updateMany({
+		where: { id, ...abandonableAttemptWhere },
+		data: { status: "cancelled", cancelledAt: new Date() },
+	});
+
+	return count === 1;
+}
+
+/**
+ * Cancels the order's other pending attempts that have no declared receipt and
+ * returns their ids. One with a declared receipt is left for an admin to
+ * settle or reject.
+ */
+export async function cancelOtherPendingAttempts(
+	db: CheckoutDbClient,
+	input: { userOrderId: number; keepTransactionId: number },
+) {
+	const where = {
+		userOrderId: input.userOrderId,
+		id: { not: input.keepTransactionId },
+		...abandonableAttemptWhere,
+	} satisfies Prisma.UserTransactionWhereInput;
+	const attempts = await db.userTransaction.findMany({
+		where,
+		select: { id: true },
+	});
+	if (attempts.length === 0) return [];
+
+	const ids = attempts.map((attempt) => attempt.id);
+	await db.userTransaction.updateMany({
+		where: { ...where, id: { in: ids } },
+		data: { status: "cancelled", cancelledAt: new Date() },
+	});
+
+	return ids;
 }
 
 export async function updateOrderStatus(

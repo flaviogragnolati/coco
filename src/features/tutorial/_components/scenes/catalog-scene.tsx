@@ -13,7 +13,10 @@ import { CatalogFiltersSidebar } from "~/app/(storefront)/products/_components/c
 import { CatalogToolbar } from "~/app/(storefront)/products/_components/catalog-toolbar";
 import { ProductCard } from "~/app/(storefront)/products/_components/product-card";
 import { CartSheetView } from "~/features/cart/_components/cart-sheet-view";
-import type { TutorialFixtures } from "~/features/tutorial/tutorial-fixtures";
+import {
+	TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
+	type TutorialFixtures,
+} from "~/features/tutorial/tutorial-fixtures";
 import {
 	TUTORIAL_TARGET_ATTRIBUTE,
 	tutorialTarget,
@@ -146,6 +149,7 @@ export function CatalogScene({
 					onRemove={noop}
 					open
 					targets={{ content: tutorialTarget("mini-cart") }}
+					transferDiscountPercent={TUTORIAL_TRANSFER_DISCOUNT_PERCENT}
 				/>
 			) : null}
 		</main>

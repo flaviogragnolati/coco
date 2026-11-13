@@ -41,6 +41,7 @@ import type {
 import type { DeliveryPreference } from "~/shared/common/delivery-display";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
 import { api } from "~/trpc/react";
+import { getCheckoutCharge } from "./checkout-charge";
 import {
 	type CheckoutDeliverySelection,
 	CheckoutDeliveryStep,
@@ -214,8 +215,20 @@ export function CheckoutClient() {
 	});
 
 	const confirmAndPay = api.checkout.confirmAndPay.useMutation({
-		onError(error) {
+		async onError(error) {
 			toast.error(error.message || "No se pudo confirmar el pago");
+			// Nothing was created, so the same key confirms again once the screen
+			// shows the server's figures: prices and the transfer percent.
+			if (error.data?.code !== "CONFLICT") return;
+			try {
+				const state = await utils.checkout.getState.fetch(undefined, {
+					staleTime: 0,
+				});
+				applyCheckoutState(state);
+				replaceCart(state.cart, syncedUserId);
+			} catch {
+				// The toast already told the customer to review the order.
+			}
 		},
 		async onSuccess(output) {
 			if (output.redirectUrl) {
@@ -350,6 +363,12 @@ export function CheckoutClient() {
 	const selectedPaymentMethod = checkout.paymentMethods.find(
 		(paymentMethod) => paymentMethod.id === selectedPaymentMethodId,
 	);
+	const { transferDiscountPercent } = checkout;
+	const chargedTotal = getCheckoutCharge(
+		liveCart,
+		selectedPaymentMethod,
+		transferDiscountPercent,
+	);
 	const addressMutationPending =
 		createAddress.isPending || updateAddress.isPending;
 
@@ -393,6 +412,9 @@ export function CheckoutClient() {
 			acceptedTerms: true,
 			idempotencyKey: paymentAttemptKey,
 			paymentMethodId: selectedPaymentMethod.id,
+			// A cart in several currencies has no single amount; the server refuses
+			// it before comparing.
+			expectedAmount: chargedTotal?.amount ?? liveCart.totals[0]?.amount ?? "0",
 			delivery:
 				deliverySelection.mode === "pickupPoint"
 					? {
@@ -435,7 +457,11 @@ export function CheckoutClient() {
 			<div className="grid gap-4 lg:grid-cols-[1fr_22rem] lg:items-start">
 				<section className="flex flex-col gap-4">
 					{currentStep === "order" ? (
-						<CheckoutOrderStep cart={liveCart} onEditCart={handleEditCart} />
+						<CheckoutOrderStep
+							cart={liveCart}
+							onEditCart={handleEditCart}
+							transferDiscountPercent={transferDiscountPercent}
+						/>
 					) : null}
 
 					{currentStep === "delivery" ? (
@@ -464,6 +490,8 @@ export function CheckoutClient() {
 							onSelect={setSelectedPaymentMethodId}
 							paymentMethods={checkout.paymentMethods}
 							selectedPaymentMethodId={selectedPaymentMethodId}
+							total={liveCart.totals[0]}
+							transferDiscountPercent={transferDiscountPercent}
 						/>
 					) : null}
 
@@ -480,6 +508,7 @@ export function CheckoutClient() {
 							onEditStep={goToStep}
 							paymentMethod={selectedPaymentMethod}
 							termsText={checkout.termsText}
+							transferDiscountPercent={transferDiscountPercent}
 						/>
 					) : null}
 
@@ -513,6 +542,7 @@ export function CheckoutClient() {
 					delivery={deliverySelection}
 					onEditStep={goToStep}
 					selectedPaymentMethod={selectedPaymentMethod}
+					transferDiscountPercent={transferDiscountPercent}
 				/>
 			</div>
 
@@ -524,6 +554,8 @@ export function CheckoutClient() {
 				isSubmitting={confirmAndPay.isPending}
 				onOpenSummary={() => setSummarySheetOpen(true)}
 				onPrimary={currentStep === "review" ? handleConfirm : handleContinue}
+				selectedPaymentMethod={selectedPaymentMethod}
+				transferDiscountPercent={transferDiscountPercent}
 			/>
 
 			<Sheet onOpenChange={setSummarySheetOpen} open={summarySheetOpen}>
@@ -541,6 +573,7 @@ export function CheckoutClient() {
 							delivery={deliverySelection}
 							onEditStep={goToStep}
 							selectedPaymentMethod={selectedPaymentMethod}
+							transferDiscountPercent={transferDiscountPercent}
 						/>
 					</div>
 				</SheetContent>

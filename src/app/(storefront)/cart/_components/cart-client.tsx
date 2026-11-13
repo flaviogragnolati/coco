@@ -3,6 +3,7 @@
 import { discardPendingGuestItems } from "~/features/cart/discard-pending-guest-items";
 import { useCartActions } from "~/features/cart/use-cart-sync";
 import { useCartStore } from "~/store/cart-store";
+import { api } from "~/trpc/react";
 import { CartPageView } from "./cart-page-view";
 
 export function CartClient({
@@ -20,6 +21,9 @@ export function CartClient({
 		(state) => state.bootstrapBlockedMessage,
 	);
 	const cartActions = useCartActions({ isAuthenticated, userId });
+	const transferDiscount = api.catalog.transferDiscount.useQuery(undefined, {
+		staleTime: 5 * 60_000,
+	});
 
 	return (
 		<CartPageView
@@ -36,6 +40,7 @@ export function CartClient({
 			onLeaveCheckout={cartActions.leaveCheckout}
 			onQuantityCommit={cartActions.updateQuantity}
 			onRemove={cartActions.removeItem}
+			transferDiscountPercent={transferDiscount.data?.percent ?? null}
 		/>
 	);
 }

@@ -74,7 +74,11 @@ export function CheckoutScene({
 			<div className="grid gap-4 lg:grid-cols-[1fr_22rem] lg:items-start">
 				<section className="flex flex-col gap-4">
 					{step === "order" ? (
-						<CheckoutOrderStep cart={cart} onEditCart={noop} />
+						<CheckoutOrderStep
+							cart={cart}
+							onEditCart={noop}
+							transferDiscountPercent={checkoutState.transferDiscountPercent}
+						/>
 					) : null}
 
 					{step === "delivery" ? (
@@ -100,6 +104,8 @@ export function CheckoutScene({
 								onSelect={noop}
 								paymentMethods={checkoutState.paymentMethods}
 								selectedPaymentMethodId={paymentMethod.id}
+								total={cart.totals[0]}
+								transferDiscountPercent={checkoutState.transferDiscountPercent}
 							/>
 						</TutorialTargetSlot>
 					) : null}
@@ -115,6 +121,7 @@ export function CheckoutScene({
 								onEditStep={noop}
 								paymentMethod={paymentMethod}
 								termsText={checkoutState.termsText}
+								transferDiscountPercent={checkoutState.transferDiscountPercent}
 							/>
 						</TutorialTargetSlot>
 					) : null}
@@ -145,6 +152,7 @@ export function CheckoutScene({
 					delivery={deliverySelection}
 					onEditStep={noop}
 					selectedPaymentMethod={paymentMethod}
+					transferDiscountPercent={checkoutState.transferDiscountPercent}
 				/>
 			</div>
 
@@ -155,6 +163,8 @@ export function CheckoutScene({
 				currentStep={step}
 				onOpenSummary={noop}
 				onPrimary={noop}
+				selectedPaymentMethod={paymentMethod}
+				transferDiscountPercent={checkoutState.transferDiscountPercent}
 			/>
 		</main>
 	);

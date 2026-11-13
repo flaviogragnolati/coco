@@ -16,6 +16,7 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
+import { TransferTotalHint } from "~/features/cart/_components/transfer-total";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 
@@ -47,6 +48,7 @@ export function CartSummary({
 	onClear,
 	onLeaveCheckout,
 	isPending,
+	transferDiscountPercent,
 }: {
 	cart: CartSnapshot;
 	/** The guest items could not be merged; checkout would drop them. */
@@ -55,6 +57,7 @@ export function CartSummary({
 	isPending?: boolean;
 	onClear: () => void;
 	onLeaveCheckout: () => void;
+	transferDiscountPercent: number | null;
 }) {
 	const atCheckout = cart.status === "atCheckout";
 	const clearBlockedReasonId = useId();
@@ -84,16 +87,19 @@ export function CartSummary({
 				<div className="flex flex-col gap-2">
 					{cart.totals.length > 0 ? (
 						cart.totals.map((total) => (
-							<div
-								className="flex items-center justify-between gap-3"
-								key={total.currency}
-							>
-								<span className="text-muted-foreground text-xs">
-									Total estimado
-								</span>
-								<span className="font-heading font-semibold text-lg">
-									{formatCurrency(total.amount, total.currency)}
-								</span>
+							<div className="flex flex-col gap-1" key={total.currency}>
+								<div className="flex items-center justify-between gap-3">
+									<span className="text-muted-foreground text-xs">
+										Total estimado
+									</span>
+									<span className="font-heading font-semibold text-lg">
+										{formatCurrency(total.amount, total.currency)}
+									</span>
+								</div>
+								<TransferTotalHint
+									percent={transferDiscountPercent}
+									total={total}
+								/>
 							</div>
 						))
 					) : (

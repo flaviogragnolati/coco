@@ -199,7 +199,7 @@ export async function settleExternalAttempt(
 			},
 		});
 
-		await submitOrderForCompletedPayment(tx, {
+		const { cancelledAttemptIds } = await submitOrderForCompletedPayment(tx, {
 			orderId: attempt.userOrder.id,
 			cartId: attempt.userOrder.cartId,
 			transactionId: attempt.id,
@@ -218,6 +218,7 @@ export async function settleExternalAttempt(
 			metadata: {
 				receiptReference: input.receiptReference,
 				note: input.note,
+				cancelledAttemptIds,
 			},
 		});
 
@@ -243,7 +244,11 @@ export async function rejectExternalAttempt(
 			id: attempt.id,
 			reason: input.reason,
 		});
-		await updateOrderStatus(tx, attempt.userOrder.id, "failed");
+		// A leftover transfer on an order another attempt already paid (ADR 0013)
+		// is rejected without failing that order.
+		if (attempt.userOrder.status === "pending") {
+			await updateOrderStatus(tx, attempt.userOrder.id, "failed");
+		}
 
 		const after = await readAttemptDetail(tx, input.id);
 

@@ -1,5 +1,8 @@
 import { CartPageView } from "~/app/(storefront)/cart/_components/cart-page-view";
-import type { TutorialFixtures } from "~/features/tutorial/tutorial-fixtures";
+import {
+	TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
+	type TutorialFixtures,
+} from "~/features/tutorial/tutorial-fixtures";
 import { tutorialTarget } from "~/features/tutorial/tutorial-script";
 import { noop } from "./noop";
 
@@ -24,6 +27,7 @@ export function CartScene({ fixtures }: { fixtures: TutorialFixtures }) {
 				lines: tutorialTarget("cart-lines"),
 				summary: tutorialTarget("cart-summary"),
 			}}
+			transferDiscountPercent={TUTORIAL_TRANSFER_DISCOUNT_PERCENT}
 		/>
 	);
 }

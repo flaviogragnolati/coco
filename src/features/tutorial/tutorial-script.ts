@@ -159,7 +159,7 @@ const steps = {
 		scene: cart,
 		target: "cart-summary",
 		title: "Listo para pagar",
-		body: "Acá ves el total estimado. Para pagar te pedimos ingresar con tu cuenta de Google.",
+		body: "Acá ves el total estimado y, debajo, cuánto pagás si elegís transferencia. Para pagar te pedimos ingresar con tu cuenta de Google.",
 	},
 	checkoutSteps: {
 		id: "checkout-steps",
@@ -180,7 +180,7 @@ const steps = {
 		scene: { id: "checkout", step: "payment" },
 		target: "checkout-payment",
 		title: "Cómo pagás",
-		body: "Con Mercado Pago pagás con tarjeta, dinero en cuenta o efectivo. Si preferís transferir, elegí pago externo y te damos los datos.",
+		body: "Con Mercado Pago pagás con tarjeta, dinero en cuenta o efectivo. Si preferís transferir, elegí pago externo: ves el total con el descuento y te damos los datos al confirmar.",
 	},
 	checkoutReview: {
 		id: "checkout-review",

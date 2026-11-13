@@ -5,6 +5,7 @@ import { TRPCError } from "@trpc/server";
 import type { Prisma } from "~/prisma/client";
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
 import {
+	cancelOtherPendingAttempts,
 	updateCartStatus,
 	updateOrderStatus,
 } from "~/server/services/checkout/checkout.data";
@@ -15,8 +16,10 @@ import {
 
 /**
  * The single "payment completed ⇒ submit the cart items, close the cart,
- * advance the order, publish the facts" transition, shared by the redirect
- * (mock gateway) and webhook (Mercado Pago) paths.
+ * advance the order, cancel its other open attempts, publish the facts"
+ * transition, shared by the redirect (mock gateway), webhook (Mercado Pago)
+ * and admin settlement (external payment) paths. Returns the order and the ids
+ * of the attempts it cancelled.
  *
  * The set it acts on is the intersection of the order snapshot and the cart
  * items still live: an item added after the order was snapshotted has no order
@@ -58,6 +61,13 @@ export async function submitOrderForCompletedPayment(
 	});
 	await updateCartStatus(tx, input.cartId, "submitted");
 	const order = await updateOrderStatus(tx, input.orderId, "processing");
+	// A switch of payment method can leave an older attempt payable (ADR 0013).
+	// Once one is paid the others are cancelled, except a declared transfer,
+	// which an admin decides.
+	const cancelledAttemptIds = await cancelOtherPendingAttempts(tx, {
+		userOrderId: input.orderId,
+		keepTransactionId: input.transactionId,
+	});
 
 	await DomainEventPublisher.publishMany(
 		tx,
@@ -86,5 +96,5 @@ export async function submitOrderForCompletedPayment(
 		}),
 	);
 
-	return order;
+	return { order, cancelledAttemptIds };
 }

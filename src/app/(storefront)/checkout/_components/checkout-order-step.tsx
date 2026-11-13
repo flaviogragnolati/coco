@@ -21,15 +21,18 @@ import {
 } from "~/components/ui/empty";
 import { Separator } from "~/components/ui/separator";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
+import { TransferTotalHint } from "~/features/cart/_components/transfer-total";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 
 export function CheckoutOrderStep({
 	cart,
 	onEditCart,
+	transferDiscountPercent,
 }: {
 	cart: CartSnapshot;
 	onEditCart: () => void;
+	transferDiscountPercent: number | null;
 }) {
 	if (cart.items.length === 0) {
 		return (
@@ -99,16 +102,19 @@ export function CheckoutOrderStep({
 				<Separator />
 				<div className="flex flex-col gap-2">
 					{cart.totals.map((total) => (
-						<div
-							className="flex items-center justify-between gap-3"
-							key={total.currency}
-						>
-							<span className="text-muted-foreground text-xs">
-								Total estimado
-							</span>
-							<span className="font-heading font-semibold text-lg">
-								{formatCurrency(total.amount, total.currency)}
-							</span>
+						<div className="flex flex-col gap-1" key={total.currency}>
+							<div className="flex items-center justify-between gap-3">
+								<span className="text-muted-foreground text-xs">
+									Total estimado
+								</span>
+								<span className="font-heading font-semibold text-lg">
+									{formatCurrency(total.amount, total.currency)}
+								</span>
+							</div>
+							<TransferTotalHint
+								percent={transferDiscountPercent}
+								total={total}
+							/>
 						</div>
 					))}
 				</div>

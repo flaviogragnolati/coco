@@ -22,7 +22,11 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
+import { formatTransferDiscountPercent } from "~/features/cart/_components/transfer-total";
+import type { CatalogCurrency } from "~/shared/common/catalog.types";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
+import { formatCurrency } from "~/shared/common/commerce.helpers";
+import { applyTransferDiscount } from "~/shared/common/transfer-discount";
 import { SelectableTile } from "./selectable-tile";
 
 const PAYMENT_PROVIDER_COPY = {
@@ -54,11 +58,23 @@ export function CheckoutPaymentStep({
 	paymentMethods,
 	selectedPaymentMethodId,
 	onSelect,
+	total,
+	transferDiscountPercent,
 }: {
 	paymentMethods: CheckoutPaymentMethod[];
 	selectedPaymentMethodId: number | null;
 	onSelect: (id: number) => void;
+	total: { amount: string; currency: CatalogCurrency } | undefined;
+	transferDiscountPercent: number | null;
 }) {
+	const transferDiscount = total
+		? applyTransferDiscount({
+				subtotal: total.amount,
+				percent: transferDiscountPercent,
+				currency: total.currency,
+			})
+		: null;
+
 	return (
 		<Card>
 			<CardHeader>
@@ -112,6 +128,13 @@ export function CheckoutPaymentStep({
 									<span className="text-muted-foreground text-xs/relaxed">
 										{copy.description}
 									</span>
+									{paymentMethod.provider === "external" &&
+									transferDiscount &&
+									total ? (
+										<span className="font-medium text-sm tabular-nums">
+											{`${formatCurrency(transferDiscount.total, total.currency)} con ${formatTransferDiscountPercent(transferDiscount.percent)} % de descuento`}
+										</span>
+									) : null}
 								</SelectableTile>
 							);
 						})}

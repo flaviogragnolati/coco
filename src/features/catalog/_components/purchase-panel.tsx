@@ -18,10 +18,13 @@ import type {
 	CatalogProductUnit,
 } from "~/shared/common/catalog.types";
 import {
+	formatCurrency,
 	getNextQuantity,
+	getPerStepPrice,
 	getPreviousQuantity,
 	type ProductPresentation,
 } from "~/shared/common/commerce.helpers";
+import { getTransferStepPrice } from "~/shared/common/transfer-discount";
 import {
 	getInitialPurchaseQuantity,
 	getPurchasePanelMode,
@@ -46,13 +49,21 @@ export function PurchasePrice({
 	pricing,
 	size = "default",
 	showDiscount = false,
+	transferDiscountPercent = null,
 }: {
 	pricing: OfferPricing;
 	size?: PurchasePanelSize;
 	/** For surfaces without a discount badge over the product image. */
 	showDiscount?: boolean;
+	/** Only the product dialog passes it; cards never show the transfer price. */
+	transferDiscountPercent?: number | null;
 }) {
 	const price = getPurchasePrice(pricing);
+	const transferStepPrice = getTransferStepPrice(
+		getPerStepPrice(pricing),
+		transferDiscountPercent,
+		pricing.currency,
+	);
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="flex flex-col gap-0.5">
@@ -79,6 +90,12 @@ export function PurchasePrice({
 						</Badge>
 					) : null}
 				</p>
+				{transferStepPrice ? (
+					<p className="font-medium text-sm tabular-nums">
+						{formatCurrency(transferStepPrice, pricing.currency)} pagando con
+						transferencia
+					</p>
+				) : null}
 				{price.comparison ? (
 					<p className="text-muted-foreground text-xs tabular-nums">
 						{price.comparison.amount}{" "}
@@ -146,6 +163,7 @@ type PurchasePanelProps = {
 	disabled?: boolean;
 	size?: PurchasePanelSize;
 	showDiscount?: boolean;
+	transferDiscountPercent?: number | null;
 };
 
 /**
@@ -164,6 +182,7 @@ export function PurchasePanel({
 	disabled,
 	size = "default",
 	showDiscount,
+	transferDiscountPercent,
 }: PurchasePanelProps) {
 	const mode = getPurchasePanelMode(terms, inCartQuantity);
 	return (
@@ -177,6 +196,7 @@ export function PurchasePanel({
 				pricing={toOfferPricing(terms, unit, presentation)}
 				showDiscount={showDiscount}
 				size={size}
+				transferDiscountPercent={transferDiscountPercent}
 			/>
 			{mode === "in-cart" && inCartQuantity !== null ? (
 				<p className="flex min-h-11 items-center justify-center gap-1.5 text-center font-medium text-sm text-success">

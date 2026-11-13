@@ -52,6 +52,10 @@ export function ProductDetailsDialog({
 	);
 	const product = detailQuery.data;
 	const closing = useWeeklyClosing();
+	const transferDiscount = api.catalog.transferDiscount.useQuery(undefined, {
+		enabled: open,
+		staleTime: 5 * 60_000,
+	});
 
 	const bodyRef = useRef<HTMLDivElement>(null);
 	const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -194,6 +198,9 @@ export function ProductDetailsDialog({
 										}}
 										product={product}
 										showDiscount
+										transferDiscountPercent={
+											transferDiscount.data?.percent ?? null
+										}
 									/>
 								</div>
 							</div>

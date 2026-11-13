@@ -1,6 +1,6 @@
 # Plan: WP-F, descuento por transferencia (#110)
 
-> **Estado:** Working. Feature grill del 13/11/2026. Flavio contestó las 6 preguntas por el orquestador y eligió la opción recomendada en todas. También aceptó los 5 supuestos del grill.
+> **Estado:** implementado el 13/11/2026 en la rama `wpf-transfer-discount`, sobre `main` (`7b97050`). Revisión hecha y hallazgos corregidos; e2e en verde contra la base local. Sin merge ni push. Registro de ejecución en §17. Feature grill del 13/11/2026: Flavio contestó las 6 preguntas por el orquestador y eligió la opción recomendada en todas. También aceptó los 5 supuestos del grill.
 > **Origen:**
 > - `docs/plans/qa-open-tickets-2026-11-orchestration.md` (§2, §3, §6 WP-F, §7, §8 y §9);
 > - la fila #110 de `docs/plans/qa-open-tickets-2026-11-report.md`;
@@ -512,3 +512,141 @@ Cargar la transición en `scripts/qa-ticket-triage.data.ts` (WP0). La nota va **
 - Si el código de `main` ya no coincide con las líneas citadas (WP-A, WP-C y WP-G mergeados), guiate por los símbolos, no por los números de línea.
 - Cualquier cambio en `mercadopago-preference.*` está **fuera de alcance**. Si un test de MP se pone rojo, el problema está en el monto del intento, no en la preferencia.
 - Los textos al cliente van en castellano rioplatense y dicen "pedido", nunca "carrito". "Pago externo" sigue siendo el nombre del medio.
+
+## 17. Registro de ejecución (13/11/2026)
+
+La rama es `wpf-transfer-discount`, rebaseada sobre `main` (`7b97050`, que ya tiene WP-A, WP0, WP-G y WP-C). No hubo merge ni push.
+
+El plan coincidió con el código de `main`, salvo por los números de línea. WP-C dejó a `PurchasePrice` con `pricing: OfferPricing`, que ya trae todo lo que necesita `getPerStepPrice`, así que su firma solo sumó el prop opcional `transferDiscountPercent`. En `order-detail-view.tsx` cambiaron las tarjetas "Resumen" y "Pago": ambas seleccionan el intento que representa el pago efectivo. El encabezado y las líneas de WP-G no se tocaron. El subtítulo de la ficha tampoco se tocó, porque es de WP-B.
+
+### 17.1. Commits
+
+| Pasos | Commit | Qué se hizo |
+| --- | --- | --- |
+| 1–4 | `cd88501` | `transfer-discount.ts`, con aritmética entera en centavos y puntos básicos y el total redondeado hacia abajo, y `payment-charge.decision.ts`. Los tests se escribieron primero. |
+| 5–8 | `8549cb4` | El setting `transferDiscountPercent` (0 a 50, hasta dos decimales, por defecto 0), `getPublicTransferDiscountPercent`, `catalog.transferDiscount` (pública) y su test. |
+| 9–12 | `7d29be3` | La migración `20261113120000_transfer_discount_on_payment_attempt` y el schema. En los datos: los selects, `createPendingTransaction` con el desglose y `cancelOtherPendingAttempts`. |
+| 13–17, 21 | `e0480cc` | Los schemas, `start`/`getState` con el %, `confirmAndPay` (monto por medio, reuso por medio, `expectedAmount` y `CONFLICT`), el desglose en el resultado y el detalle, y G3 en `submitOrderForCompletedPayment`. El checkout: mosaico, resumen, revisión, barra mobile, `expectedAmount` y la recarga tras `CONFLICT`. Tests de servicio de §8. |
+| 18–20, 21 (resultado) | `20e0ebb` | `TransferTotalHint` y `TransferDiscountBreakdownRows`, la línea "pagando con transferencia" en la ficha (solo en el diálogo), "Con transferencia: $ X" en `/cart` y en el mini-pedido, y la línea del resultado del pago. |
+| 22 | `ffc7d36` | El desglose en el "Resumen" de "Mis pedidos". |
+| 23–25 | `1ac868d` | El campo del %, la marca "−10 % transf." en "Monto" y el bloque del detalle del intento. |
+| 28–29 | `900bd28` | El glosario del admin y `docs/schema-reference.md`. |
+| 30 | `264cb43` | El tutorial: el 10 % de ejemplo, los textos, el test de fixtures y el e2e. |
+| Revisión | `890e11f` | Las correcciones de §17.4. |
+| 26–27 | `ab5ad49` | `checkout-v4`, con el texto de §13 tal cual, en su propio commit al final. |
+
+### 17.2. Migración
+
+`prisma/migrations/20261113120000_transfer_discount_on_payment_attempt/migration.sql` está escrita a mano y verificada con `prisma migrate diff --from-schema <schema de main> --to-schema prisma/schema.prisma --script`, sin conectarse a ninguna base. Es aditiva y no tiene backfill:
+- agrega tres columnas nulas: `subtotalAmount`, `transferDiscountPercent` y `transferDiscountAmount`;
+- agrega el CHECK del plan, `user_transaction_transfer_discount_all_or_none`;
+- agrega un segundo CHECK, `user_transaction_transfer_discount_breakdown`, que pidió la revisión: con desglose, subtotal − descuento = `amount` y el % va entre 0 (excluido) y 50.
+
+No se aplicó en la base compartida. La aplica Flavio con `pnpm exec prisma db execute --file prisma/migrations/20261113120000_transfer_discount_on_payment_attempt/migration.sql` antes del deploy. En la base local de e2e se aplicó con `E2E_PREP`.
+
+### 17.3. Validación
+
+| Comando | Resultado |
+| --- | --- |
+| `pnpm typecheck` | Sin errores. |
+| `pnpm test` | Pasan 146 archivos y se saltea 1. Pasan 2084 tests y se saltean 6. |
+| `pnpm check` | 893 archivos, sin errores. |
+
+**Tests nuevos:**
+- `transfer-discount.test.ts`: los casos del paso 2, más el 50 % y un subtotal no numérico.
+- `payment-charge.decision.test.ts`: la matriz del paso 4, más un intento completado.
+- `external-payment-config.service.test.ts`: la lectura pública y la validación de dos decimales (7,55 pasa y 7,555 no).
+- `checkout.payment-switch.test.ts`, con los siete casos de §8 y tres más:
+  - MP con un monto distinto también da `CONFLICT`;
+  - después de un intento vencido, el nuevo pasa por la comparación;
+  - si el intento cambió de estado durante el cambio de medio, no se reemplaza.
+
+  El invariante de MP se prueba con el `buildMercadoPagoPreferenceCreateData` real y las líneas de `buildPreferenceLines`.
+- `order-submission.service.test.ts` (G3), `checkout.data.test.ts` (la forma de las consultas de cancelación), `payment.reject-external.test.ts`, `order-display.test.ts`, `checkout-terms.test.ts` y `tutorial-fixtures.test.ts`.
+
+**e2e contra la base local** (script con lock y la migración aplicada con `E2E_PREP`):
+
+| Spec | 1.ª corrida | 2.ª corrida (con las correcciones de la revisión) |
+| --- | --- | --- |
+| `smoke` | 15/15 | 15/15 |
+| `customer-tutorial` | 9/10: falló `:58` | 10/10 |
+| `catalog-product-card` | 4/4 | 4/4 |
+
+`customer-tutorial.spec.ts:58` es el intermitente que también falla en `main` (hydration mismatch del sidebar de marcas en `/products`). El test nuevo, "the order and the payment step show what paying by transfer would cost", pasó en las dos corridas.
+
+**No se hizo:** la revisión manual de §8 con un superadmin y un cliente, porque el login es solo con Google (mismo precedente que WP-G). La cubren los tests de servicio y el re-test.
+
+### 17.4. Revisión independiente
+
+La hizo un sub-agente nuevo con `q-review-code` (los dos ejes) y `q-review-comments` sobre `main...HEAD`, con foco en plata, idempotencia y redondeo. Confirmó:
+- el núcleo de plata;
+- que el cliente y el servidor calculan con la misma función;
+- la idempotencia;
+- la regla de un pedido vivo por carrito;
+- el invariante de MP;
+- que el texto de `checkout-v4` coincide con §13.
+
+Hallazgos corregidos:
+- **M1 (mayor):** en el escenario R1 (MP aprobado tarde después de cambiar a transferencia), "Mis pedidos" mostraba el monto con descuento del intento de transferencia cancelado. Ahora el monto y el estado de pago del pedido salen del intento que lo pagó; si no hay uno, de uno en proceso, y si tampoco, del más nuevo (`selectOrderDisplayAttempt`). Se usa en la lista, en el detalle y en el "Resumen".
+- **M2 (mayor):** rechazar una transferencia sobrante pasaba a `failed` un pedido ya pagado por otro intento. Ahora el rechazo solo falla el pedido si sigue `pending`.
+- **m1:** el reemplazo del intento cancela solo si sigue `pending` y sin comprobante, con una actualización condicionada. Si no, responde `CONFLICT` y no crea nada.
+- **m2:** después de un `CONFLICT`, el checkout lee el estado sin caché (`staleTime: 0`).
+- **m3:** liquidar una transferencia deja en la auditoría los ids de los intentos que G3 canceló.
+- **m4:** los tests que faltaban (los listados en §17.3).
+- **n2:** el segundo CHECK de la migración.
+- **n3, C1 a C6:** comentarios y `schema-reference` corregidos. En particular, el redondeo de la ficha: ver §17.5.
+
+Hallazgos no aplicados:
+- **n1:** `transfer-total.tsx` queda en `src/features/cart/_components/`, como dice el plan, aunque lo importan el admin y "Mis pedidos".
+- **s2:** ver §17.5.
+
+### 17.5. Desvíos y decisiones
+
+- **`catalog.transferDiscount` pasa por `catalogService.getTransferDiscount()`.** Ningún router del repo importa `db`.
+- **Validación de dos decimales.** La del plan, `Math.round(v * 100) === v * 100`, rechazaba 7,55 por el error de punto flotante. Se usa `toPrecision(12)`, como `toMoneyString`.
+- **Tope de enteros seguros.** `applyTransferDiscount` no da descuento si centavos × (10 000 − bps) pasa `Number.MAX_SAFE_INTEGER` (unos $ 9.000 millones), en lugar de calcular mal.
+- **`moneyEquals` con un monto no numérico** da `false`.
+- **El snapshot del intento externo.** `markTransactionAsExternalPending` reescribe el `requestSnapshot`, así que también lleva `subtotal` y `transferDiscount`, no solo el de la creación.
+- **Recarga tras `CONFLICT`.** Además de `replaceCart`, se aplica el estado completo (`applyCheckoutState`). Si no, un % que cambió dejaría al cliente con el monto viejo y un `CONFLICT` sin fin.
+- **`getCheckoutCharge`.** Es un helper del checkout que envuelve `decideAttemptCharge` y lo usan el cliente, el resumen, la revisión y la barra mobile. Con un carrito en varias monedas, `expectedAmount` manda el primer total y el servidor lo rechaza por la moneda antes de comparar.
+- **G4.** Además de "Total pagado" (completado) y "Total a transferir" (pendiente), un intento fallido o cancelado dice "Total", porque no está pagado ni hay que transferirlo.
+- **Detalle del intento en el admin (s2).** Con descuento, el bloque muestra Subtotal → Descuento → "A cobrar en el banco" (último y en negrita), en lugar de "A cobrar en el banco" primero como en el mockup. Así el monto no se repite. Sin descuento, muestra "A cobrar en el banco" (externo) o "Monto" (MP).
+- **Campo del % en el admin.** Guarda el texto que se escribe, porque un input numérico informa "" mientras "7." está a medio escribir. Vacío equivale a 0.
+- **S5 y R3 estaban mal.** La ficha redondea un paso hacia abajo y el pedido redondea el total, así que n pasos pueden sumar hasta $ n−1 menos que el pedido, no $ 1 (por ejemplo, 10 × 45.215 al 10 %: el pedido cobra 406.935 y la ficha suma 406.930). Manda el pedido, como ya decía S5.
+- **La tarjeta "Pago" de "Mis pedidos"** también usa `selectOrderDisplayAttempt`, igual que "Resumen". Se corrigió al retomar la sesión: en R1 muestra el pago aprobado de MP, su referencia y su método, aunque la transferencia cancelada sea más nueva.
+- **Transición de QA y fila de §13 de la orquestación.** No se cargaron en `scripts/qa-ticket-triage.data.ts` ni en la orquestación, porque llevan el hash del merge. Las carga el orquestador, como en WP-A, WP-C y WP-G. La nota va abajo.
+
+### 17.6. Nota de QA para #110 (→ Re-test)
+
+> `[13/11/2026 · triage] Implementado en <merge>. Mirar: con "Descuento por transferencia (%)" en 10 en /admin/payments → Pago externo, la ficha desplegada muestra "$ X pagando con transferencia" (la tarjeta no); Tu pedido y el mini-pedido muestran "Con transferencia: $ X" debajo del total; en el checkout, el mosaico "Pago externo" muestra el total con el descuento y el resumen pasa a subtotal, descuento y total; los datos de transferencia piden ese monto; Mis pedidos muestra el desglose; el admin ve "Monto" con "−10 % transf." y "A cobrar en el banco" en el detalle. Con MP no hay descuento. Montos redondeados hacia abajo al peso. Precondiciones: superadmin para cargar el %; pago externo habilitado; cliente con pedido armado.`
+
+### 17.7. Pendiente para Flavio
+
+1. Aplicar la migración en la base compartida con `prisma db execute` (§17.2) **antes** del deploy, y verificarla con `pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma`.
+2. Mergear con `--no-ff` y desplegar.
+3. Como superadmin, cargar el % en `/admin/payments` → "Pago externo" → "Descuento por transferencia (%)" y guardar. Mientras quede en 0, no cambia nada para el cliente.
+4. Hacer la revisión manual de §8 con la base que corresponda.
+
+### 17.8. Riesgos residuales
+
+- Si un admin liquida una transferencia mientras una preferencia vieja de MP sigue pagable, una aprobación tardía cobra dos veces (R1, ya aceptado). Lo mismo pasaba con "Volver a editar el pedido".
+- G3 cancela solo intentos `pending`. Un MP cancelado que el webhook vuelve a `inProcess` sobrevive.
+- Un pedido confirmado con `checkout-v3` que se paga con transferencia después del deploy recibe el descuento (R7, aceptado).
+
+
+### 17.9. Reanudación con Codex (13/11/2026)
+
+Se recuperó el worktree limpio en `ab5ad49`; los fixes de la revisión y el registro anterior ya estaban commiteados. No se reabrieron las decisiones del grill.
+
+Se completó M1 en la tarjeta "Pago": ahora comparte `displayAttempt` con "Resumen", en lugar de mostrar el intento más nuevo. La regresión `order-detail-view.test.tsx` renderiza un pedido pagado por un intento viejo de MP con una transferencia cancelada más reciente; comprueba "Aprobado", "Mercado Pago" y la referencia aprobada, y descarta la referencia cancelada y el medio externo.
+
+Validación de esta reanudación:
+
+- `node_modules/.bin/tsgo --noEmit`: sin errores.
+- `node_modules/.bin/vitest run`: 147 archivos y 2085 tests en verde; 1 archivo y 6 tests omitidos.
+- `node_modules/.bin/biome check .`: sin errores.
+- La regresión de render y `order-display.test.ts`: 13/13.
+
+Se usaron los binarios locales con Node 24.20.0 porque el shim `pnpm` demoró el arranque sin salida y reportó Node 26.0.0. Los tres comandos originales también terminaron en verde sobre el estado previo a esta corrección, con aviso de versión de Node distinto del `engines.node` (24.15.0). No se volvió a correr e2e: el orquestador coordina la pasada local después de integrar WP-B y WP-H. La corrección nueva requiere confirmación del revisor independiente en esa integración; no se presenta como revisión independiente ya cerrada.
+
+No se modificaron `.env`, la base compartida, el index de Git ni las referencias de ramas. El merge, el despliegue y la transición de #110 siguen a cargo del orquestador.

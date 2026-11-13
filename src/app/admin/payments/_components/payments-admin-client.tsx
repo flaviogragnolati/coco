@@ -46,6 +46,10 @@ import { CrudStatsCards } from "~/features/admin/crud/_components/crud-stats-car
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import { sortByDate } from "~/features/admin/crud/_lib/crud-list-sort";
+import {
+	formatTransferDiscountPercent,
+	TransferDiscountBreakdownRows,
+} from "~/features/cart/_components/transfer-total";
 import type {
 	CrudColumn,
 	CrudSortDirection,
@@ -64,6 +68,7 @@ import type {
 } from "~/shared/common/admin-crud/payment.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
+import { TRANSFER_DISCOUNT_MAX_PERCENT } from "~/shared/common/transfer-discount";
 import { api } from "~/trpc/react";
 import {
 	formatAttemptRefs,
@@ -211,6 +216,31 @@ function AttemptDetail({
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-4">
+				{attempt.subtotalAmount &&
+				attempt.transferDiscountPercent &&
+				attempt.transferDiscountAmount ? (
+					<div className="border p-3">
+						<TransferDiscountBreakdownRows
+							breakdown={{
+								percent: attempt.transferDiscountPercent,
+								subtotal: attempt.subtotalAmount,
+								discount: attempt.transferDiscountAmount,
+								total: attempt.amount,
+							}}
+							currency={attempt.currency}
+							totalLabel="A cobrar en el banco"
+						/>
+					</div>
+				) : (
+					<div className="flex items-center justify-between gap-3 border p-3">
+						<span className="text-muted-foreground text-sm">
+							{isExternal ? "A cobrar en el banco" : "Monto"}
+						</span>
+						<span className="font-heading font-semibold text-base">
+							{formatCurrency(attempt.amount, attempt.currency)}
+						</span>
+					</div>
+				)}
 				<div className="grid gap-3 md:grid-cols-3">
 					<div className="border p-3 text-xs">
 						<span className="text-muted-foreground">Idempotencia</span>
@@ -701,11 +731,14 @@ function ExternalConfigEditor({
 	const [settings, setSettings] = useState<ExternalPaymentSettings | null>(
 		null,
 	);
+	// Kept as typed: a number input reports "" while "7." is half written.
+	const [discountDraft, setDiscountDraft] = useState("");
 
 	useEffect(() => {
 		if (!config) return;
 		setEnabled(config.enabled);
 		setSettings(config.settings);
+		setDiscountDraft(String(config.settings.transferDiscountPercent));
 	}, [config]);
 
 	if (!config || !settings) return <CrudLoadingState />;
@@ -754,6 +787,30 @@ function ExternalConfigEditor({
 							type="number"
 							value={settings.expiresInHours}
 						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor="external-transfer-discount">
+							Descuento por transferencia (%)
+						</FieldLabel>
+						<Input
+							id="external-transfer-discount"
+							max={TRANSFER_DISCOUNT_MAX_PERCENT}
+							min={0}
+							onChange={(event) => {
+								setDiscountDraft(event.target.value);
+								setSetting(
+									"transferDiscountPercent",
+									Number(event.target.value),
+								);
+							}}
+							step="0.01"
+							type="number"
+							value={discountDraft}
+						/>
+						<FieldDescription>
+							Se descuenta del total de los productos cuando el cliente paga por
+							transferencia. 0 = sin descuento. Solo lo cambia un superadmin.
+						</FieldDescription>
 					</Field>
 					<Field>
 						<FieldLabel htmlFor="external-holder">Titular</FieldLabel>
@@ -965,7 +1022,17 @@ export function PaymentsAdminClient() {
 		{
 			key: "amount",
 			header: "Monto",
-			cell: (item) => formatCurrency(item.amount, item.currency),
+			cell: (item) => (
+				<span className="flex flex-col">
+					<span>{formatCurrency(item.amount, item.currency)}</span>
+					{item.transferDiscountPercent ? (
+						<span className="text-muted-foreground text-xs">
+							−{formatTransferDiscountPercent(item.transferDiscountPercent)} %
+							transf.
+						</span>
+					) : null}
+				</span>
+			),
 		},
 		{
 			key: "status",

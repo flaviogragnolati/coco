@@ -133,6 +133,7 @@ test("confirmAndPay refuses an address the customer does not have", async () => 
 			idempotencyKey: "idem-1",
 			delivery: { mode: "homeDelivery", shippingAddressId: 1 },
 			paymentMethodId: 2,
+			expectedAmount: "500.00",
 		} as Parameters<typeof checkoutService.confirmAndPay>[1]),
 	).rejects.toThrow("Seleccioná una dirección de envío válida.");
 
@@ -146,6 +147,7 @@ test("confirmAndPay refuses a pickup point checkout no longer offers", async () 
 			idempotencyKey: "idem-2",
 			delivery: { mode: "pickupPoint", pickupPointId: 7 },
 			paymentMethodId: 2,
+			expectedAmount: "500.00",
 		} as Parameters<typeof checkoutService.confirmAndPay>[1]),
 	).rejects.toThrow("El punto de retiro ya no está disponible");
 

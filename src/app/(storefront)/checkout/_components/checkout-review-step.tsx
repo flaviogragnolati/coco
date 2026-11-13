@@ -22,6 +22,10 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Switch } from "~/components/ui/switch";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
+import {
+	TransferDiscountBreakdownRows,
+	TransferTotalHint,
+} from "~/features/cart/_components/transfer-total";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
@@ -29,6 +33,7 @@ import {
 	deliveryPreferenceLabelMap,
 	formatAddressLine,
 } from "~/shared/common/delivery-display";
+import { getCheckoutCharge } from "./checkout-charge";
 import type { CheckoutDeliverySelection } from "./checkout-delivery-step";
 import { paymentMethodCopy } from "./checkout-payment-step";
 import type { CheckoutStepId } from "./checkout-steps";
@@ -78,6 +83,7 @@ export function CheckoutReviewStep({
 	onAcceptedTermsChange,
 	onConfirm,
 	onEditStep,
+	transferDiscountPercent,
 }: {
 	cart: CartSnapshot;
 	delivery: CheckoutDeliverySelection;
@@ -88,7 +94,14 @@ export function CheckoutReviewStep({
 	onAcceptedTermsChange: (checked: boolean) => void;
 	onConfirm: () => void;
 	onEditStep: (step: CheckoutStepId) => void;
+	transferDiscountPercent: number | null;
 }) {
+	const transferDiscount = getCheckoutCharge(
+		cart,
+		paymentMethod,
+		transferDiscountPercent,
+	)?.transferDiscount;
+
 	return (
 		<Card>
 			<CardHeader>
@@ -116,17 +129,28 @@ export function CheckoutReviewStep({
 					</div>
 					<Separator />
 					<div className="flex flex-col gap-2">
-						{cart.totals.map((total) => (
-							<div
-								className="flex items-center justify-between gap-3"
-								key={total.currency}
-							>
-								<span className="text-muted-foreground text-xs">Total</span>
-								<span className="font-heading font-semibold">
-									{formatCurrency(total.amount, total.currency)}
-								</span>
-							</div>
-						))}
+						{transferDiscount && cart.totals[0] ? (
+							<TransferDiscountBreakdownRows
+								breakdown={transferDiscount}
+								currency={cart.totals[0].currency}
+								totalLabel="Total"
+							/>
+						) : (
+							cart.totals.map((total) => (
+								<div className="flex flex-col gap-1" key={total.currency}>
+									<div className="flex items-center justify-between gap-3">
+										<span className="text-muted-foreground text-xs">Total</span>
+										<span className="font-heading font-semibold">
+											{formatCurrency(total.amount, total.currency)}
+										</span>
+									</div>
+									<TransferTotalHint
+										percent={transferDiscountPercent}
+										total={total}
+									/>
+								</div>
+							))
+						)}
 					</div>
 				</ReviewSection>
 

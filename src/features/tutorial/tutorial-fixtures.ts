@@ -40,6 +40,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const tutorialWeeklyClosing = weeklyClosingScheduleSchema.parse(
 	DEFAULT_WEEKLY_CLOSING,
 );
+/**
+ * A fixed example percent. The tutorial pays with Mercado Pago, so its total
+ * never takes it; it only shows what paying by transfer would cost.
+ */
+export const TUTORIAL_TRANSFER_DISCOUNT_PERCENT = 10;
 
 const ids = {
 	cart: 990_001,
@@ -379,6 +384,9 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 			externalTransactionId: "MP-EJEMPLO",
 			failureCode: null,
 			failureMessage: null,
+			subtotalAmount: null,
+			transferDiscountPercent: null,
+			transferDiscountAmount: null,
 		},
 		redirectUrl: null,
 		externalPayment: null,
@@ -433,6 +441,9 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 					failureCode: null,
 					failureMessage: null,
 					createdAt: submittedAt,
+					subtotalAmount: null,
+					transferDiscountPercent: null,
+					transferDiscountAmount: null,
 					paymentMethod: mercadoPago,
 				},
 			],
@@ -458,6 +469,7 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 			pickupPoints: [pickupPoint],
 			paymentMethods: [mercadoPago, externalPayment],
 			termsText: TERMS_TEXT,
+			transferDiscountPercent: TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
 		},
 		deliverySelection: { mode: "homeDelivery", address },
 		paymentMethod: mercadoPago,

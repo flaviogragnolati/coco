@@ -19,6 +19,7 @@ export function CatalogProductPurchase({
 	product,
 	showDiscount,
 	size,
+	transferDiscountPercent,
 	onAdd,
 	onViewInCart,
 }: CatalogPurchaseHandlers & {
@@ -27,6 +28,7 @@ export function CatalogProductPurchase({
 	product: CatalogProductListItem;
 	showDiscount?: boolean;
 	size?: "compact" | "default";
+	transferDiscountPercent?: number | null;
 }) {
 	const [quantity, setQuantity] = usePurchaseQuantity(product.terms);
 	return (
@@ -48,6 +50,7 @@ export function CatalogProductPurchase({
 			showDiscount={showDiscount}
 			size={size}
 			terms={product.terms}
+			transferDiscountPercent={transferDiscountPercent}
 			unit={product.unit}
 		/>
 	);

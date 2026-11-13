@@ -19,12 +19,14 @@ import {
 import { describeOrderDelivery } from "~/shared/common/delivery-display";
 import { formatOrderLineQuantityPrice } from "~/shared/common/order-display";
 import { userTrackingStageKeys } from "~/shared/common/tracking-display";
+import { applyTransferDiscount } from "~/shared/common/transfer-discount";
 import {
 	formatDeliveryLeadTime,
 	weekdayPlural,
 } from "~/shared/common/weekly-closing";
 import {
 	buildTutorialFixtures,
+	TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
 	tutorialWeeklyClosing,
 } from "./tutorial-fixtures";
 import { tutorialScripts } from "./tutorial-script";
@@ -103,6 +105,24 @@ describe("tutorial fixture amounts", () => {
 		expect(fixtures.paymentResult.transaction.amount).toBe("34900.00");
 		expect(fixtures.orderList[0]?.totalAmount).toBe("34900.00");
 		expect(fixtures.orderDetail("shipping").order.totalAmount).toBe("34900.00");
+	});
+
+	it("paying by transfer would cost $ 31.410, while the Mercado Pago payment carries no discount", () => {
+		const [total] = fixtures.cart.totals;
+		expect(
+			applyTransferDiscount({
+				subtotal: total?.amount ?? "0",
+				percent: TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
+				currency: "ARS",
+			})?.total,
+		).toBe("31410.00");
+		expect(fixtures.checkoutState.transferDiscountPercent).toBe(
+			TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
+		);
+		expect(fixtures.paymentResult.transaction).toMatchObject({
+			amount: "34900.00",
+			transferDiscountAmount: null,
+		});
 	});
 
 	it("every product image is a file served from public/tutorial", () => {

@@ -5,16 +5,16 @@
  * Interim placeholder until the legal text is provided (ADR 0009 is deferred).
  */
 export const CHECKOUT_TERMS = {
-	version: "checkout-v3",
+	version: "checkout-v4",
 	text: `TEXTO DE PRUEBA — Estos términos son un borrador para el entorno de pruebas y no tienen validez legal.
 
-1. Objeto. Al confirmar el pedido, el cliente compra los productos detallados en el resumen, en las cantidades y precios que allí figuran. Cada línea se cobra al precio por unidad multiplicado por la cantidad, e incluye los impuestos indicados.
+1. Objeto. Al confirmar el pedido, el cliente compra los productos detallados en el resumen, en las cantidades y precios que allí figuran. Cada línea se cobra al precio por unidad multiplicado por la cantidad, e incluye los impuestos indicados. Si pagás por transferencia, al total se le aplica el descuento de la cláusula 3.
 
 2. Compra agrupada. Los pedidos se agrupan con los de otros clientes para comprar al proveedor. Por eso la fecha de entrega es estimada y depende del cierre de la operación de compra.
 
-3. Pago. El pedido queda confirmado cuando el pago se acredita. Los pagos con Mercado Pago se acreditan cuando el proveedor de pagos los aprueba. Las transferencias se acreditan cuando el equipo de administración verifica el comprobante. Mientras el pago no se acredite, el pedido queda pendiente y no se reserva mercadería.
+3. Pago. El pedido queda confirmado cuando el pago se acredita. Los pagos con Mercado Pago se acreditan cuando el proveedor de pagos los aprueba. Las transferencias se acreditan cuando el equipo de administración verifica el comprobante. Mientras el pago no se acredite, el pedido queda pendiente y no se reserva mercadería. Si pagás por transferencia, tenés el descuento que se informa en el paso de pago. Se calcula sobre el total de los productos, no sobre el envío, y el monto se redondea al peso entero a tu favor. El porcentaje queda fijo al confirmar el pedido. Si después pagás con otro medio, el descuento no se aplica.
 
-4. Disponibilidad y ajustes. Si el proveedor entrega menos cantidad que la pedida, la diferencia se reprograma para una próxima operación o se cancela. Te avisamos en el seguimiento del pedido, con el motivo. Nunca se cobra una cantidad que no se entrega.
+4. Disponibilidad y ajustes. Si el proveedor entrega menos cantidad que la pedida, la diferencia se reprograma para una próxima operación o se cancela. Te avisamos en el seguimiento del pedido, con el motivo. Nunca se cobra una cantidad que no se entrega. Si el pedido se pagó por transferencia, lo que se reintegra lleva el mismo descuento que se cobró.
 
 5. Envío y retiro. La entrega se hace en la dirección elegida o en el punto de retiro indicado. El cliente debe recibir el pedido o retirarlo dentro del plazo informado. Las demoras de transporte se informan como incidencias en el seguimiento.
 
