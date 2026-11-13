@@ -517,7 +517,7 @@ Cargar la transición en `scripts/qa-ticket-triage.data.ts` (WP0). La nota va **
 
 La rama es `wpf-transfer-discount`, rebaseada sobre `main` (`7b97050`, que ya tiene WP-A, WP0, WP-G y WP-C). No hubo merge ni push.
 
-El plan coincidió con el código de `main`, salvo por los números de línea. WP-C dejó a `PurchasePrice` con `pricing: OfferPricing`, que ya trae todo lo que necesita `getPerStepPrice`, así que su firma solo sumó el prop opcional `transferDiscountPercent`. En `order-detail-view.tsx` solo cambió la tarjeta "Resumen": el encabezado y las líneas de WP-G no se tocaron. El subtítulo de la ficha tampoco se tocó, porque es de WP-B.
+El plan coincidió con el código de `main`, salvo por los números de línea. WP-C dejó a `PurchasePrice` con `pricing: OfferPricing`, que ya trae todo lo que necesita `getPerStepPrice`, así que su firma solo sumó el prop opcional `transferDiscountPercent`. En `order-detail-view.tsx` cambiaron las tarjetas "Resumen" y "Pago": ambas seleccionan el intento que representa el pago efectivo. El encabezado y las líneas de WP-G no se tocaron. El subtítulo de la ficha tampoco se tocó, porque es de WP-B.
 
 ### 17.1. Commits
 
@@ -533,7 +533,7 @@ El plan coincidió con el código de `main`, salvo por los números de línea. W
 | 28–29 | `900bd28` | El glosario del admin y `docs/schema-reference.md`. |
 | 30 | `264cb43` | El tutorial: el 10 % de ejemplo, los textos, el test de fixtures y el e2e. |
 | Revisión | `890e11f` | Las correcciones de §17.4. |
-| 26–27 | último commit | `checkout-v4`, con el texto de §13 tal cual, en su propio commit al final. |
+| 26–27 | `ab5ad49` | `checkout-v4`, con el texto de §13 tal cual, en su propio commit al final. |
 
 ### 17.2. Migración
 
@@ -613,7 +613,7 @@ Hallazgos no aplicados:
 - **Detalle del intento en el admin (s2).** Con descuento, el bloque muestra Subtotal → Descuento → "A cobrar en el banco" (último y en negrita), en lugar de "A cobrar en el banco" primero como en el mockup. Así el monto no se repite. Sin descuento, muestra "A cobrar en el banco" (externo) o "Monto" (MP).
 - **Campo del % en el admin.** Guarda el texto que se escribe, porque un input numérico informa "" mientras "7." está a medio escribir. Vacío equivale a 0.
 - **S5 y R3 estaban mal.** La ficha redondea un paso hacia abajo y el pedido redondea el total, así que n pasos pueden sumar hasta $ n−1 menos que el pedido, no $ 1 (por ejemplo, 10 × 45.215 al 10 %: el pedido cobra 406.935 y la ficha suma 406.930). Manda el pedido, como ya decía S5.
-- **La tarjeta "Pago" de "Mis pedidos"** sigue mostrando el intento más nuevo, porque se tocó solo el "Resumen". En el escenario R1 puede decir "Cancelado" con el pedido pago. Queda como seguimiento.
+- **La tarjeta "Pago" de "Mis pedidos"** también usa `selectOrderDisplayAttempt`, igual que "Resumen". Se corrigió al retomar la sesión: en R1 muestra el pago aprobado de MP, su referencia y su método, aunque la transferencia cancelada sea más nueva.
 - **Transición de QA y fila de §13 de la orquestación.** No se cargaron en `scripts/qa-ticket-triage.data.ts` ni en la orquestación, porque llevan el hash del merge. Las carga el orquestador, como en WP-A, WP-C y WP-G. La nota va abajo.
 
 ### 17.6. Nota de QA para #110 (→ Re-test)
@@ -632,3 +632,21 @@ Hallazgos no aplicados:
 - Si un admin liquida una transferencia mientras una preferencia vieja de MP sigue pagable, una aprobación tardía cobra dos veces (R1, ya aceptado). Lo mismo pasaba con "Volver a editar el pedido".
 - G3 cancela solo intentos `pending`. Un MP cancelado que el webhook vuelve a `inProcess` sobrevive.
 - Un pedido confirmado con `checkout-v3` que se paga con transferencia después del deploy recibe el descuento (R7, aceptado).
+
+
+### 17.9. Reanudación con Codex (13/11/2026)
+
+Se recuperó el worktree limpio en `ab5ad49`; los fixes de la revisión y el registro anterior ya estaban commiteados. No se reabrieron las decisiones del grill.
+
+Se completó M1 en la tarjeta "Pago": ahora comparte `displayAttempt` con "Resumen", en lugar de mostrar el intento más nuevo. La regresión `order-detail-view.test.tsx` renderiza un pedido pagado por un intento viejo de MP con una transferencia cancelada más reciente; comprueba "Aprobado", "Mercado Pago" y la referencia aprobada, y descarta la referencia cancelada y el medio externo.
+
+Validación de esta reanudación:
+
+- `node_modules/.bin/tsgo --noEmit`: sin errores.
+- `node_modules/.bin/vitest run`: 147 archivos y 2085 tests en verde; 1 archivo y 6 tests omitidos.
+- `node_modules/.bin/biome check .`: sin errores.
+- La regresión de render y `order-display.test.ts`: 13/13.
+
+Se usaron los binarios locales con Node 24.20.0 porque el shim `pnpm` demoró el arranque sin salida y reportó Node 26.0.0. Los tres comandos originales también terminaron en verde sobre el estado previo a esta corrección, con aviso de versión de Node distinto del `engines.node` (24.15.0). No se volvió a correr e2e: el orquestador coordina la pasada local después de integrar WP-B y WP-H. La corrección nueva requiere confirmación del revisor independiente en esa integración; no se presenta como revisión independiente ya cerrada.
+
+No se modificaron `.env`, la base compartida, el index de Git ni las referencias de ramas. El merge, el despliegue y la transición de #110 siguen a cargo del orquestador.

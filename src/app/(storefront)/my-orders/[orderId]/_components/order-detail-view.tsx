@@ -121,8 +121,7 @@ export function OrderDetailView({
 	/** Marks regions for an outside walkthrough; absent on the real page. */
 	targets?: { journey?: DataAttributes };
 }) {
-	const latestTransaction = order.transactions[0];
-	const summaryAttempt = selectOrderDisplayAttempt(order.transactions);
+	const displayAttempt = selectOrderDisplayAttempt(order.transactions);
 	const statusChip = orderStatusChipConfigMap[order.status];
 	const delivery = describeOrderDelivery(order);
 	const StatusIcon = statusChip.icon;
@@ -205,21 +204,21 @@ export function OrderDetailView({
 								<span className="text-muted-foreground">Items</span>
 								<span className="font-medium">{order.itemCount}</span>
 							</div>
-							{summaryAttempt?.subtotalAmount &&
-							summaryAttempt.transferDiscountPercent &&
-							summaryAttempt.transferDiscountAmount ? (
+							{displayAttempt?.subtotalAmount &&
+							displayAttempt.transferDiscountPercent &&
+							displayAttempt.transferDiscountAmount ? (
 								<TransferDiscountBreakdownRows
 									breakdown={{
-										percent: summaryAttempt.transferDiscountPercent,
-										subtotal: summaryAttempt.subtotalAmount,
-										discount: summaryAttempt.transferDiscountAmount,
-										total: summaryAttempt.amount,
+										percent: displayAttempt.transferDiscountPercent,
+										subtotal: displayAttempt.subtotalAmount,
+										discount: displayAttempt.transferDiscountAmount,
+										total: displayAttempt.amount,
 									}}
-									currency={summaryAttempt.currency}
+									currency={displayAttempt.currency}
 									totalLabel={
-										summaryAttempt.status === "completed"
+										displayAttempt.status === "completed"
 											? "Total pagado"
-											: summaryAttempt.status === "pending"
+											: displayAttempt.status === "pending"
 												? "Total a transferir"
 												: "Total"
 									}
@@ -288,37 +287,37 @@ export function OrderDetailView({
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="flex flex-col gap-3 text-xs">
-							{latestTransaction ? (
+							{displayAttempt ? (
 								<>
 									<div className="flex items-center justify-between gap-3">
 										<span className="text-muted-foreground">Estado</span>
 										<Badge
 											variant={
-												latestTransaction.status === "completed"
+												displayAttempt.status === "completed"
 													? "success"
-													: latestTransaction.status === "failed"
+													: displayAttempt.status === "failed"
 														? "destructive"
 														: "secondary"
 											}
 										>
-											{paymentStatusLabelMap[latestTransaction.status]}
+											{paymentStatusLabelMap[displayAttempt.status]}
 										</Badge>
 									</div>
 									<div className="flex items-center justify-between gap-3">
 										<span className="text-muted-foreground">Transacción</span>
-										<span className="font-medium">#{latestTransaction.id}</span>
+										<span className="font-medium">#{displayAttempt.id}</span>
 									</div>
 									<div className="flex flex-col gap-1">
 										<span className="text-muted-foreground">Referencia</span>
 										<span>
-											{latestTransaction.externalTransactionId ?? "Sin ref."}
+											{displayAttempt.externalTransactionId ?? "Sin ref."}
 										</span>
 									</div>
 									<div className="flex flex-col gap-1">
 										<span className="text-muted-foreground">Método</span>
-										<span>{latestTransaction.paymentMethod.label}</span>
+										<span>{displayAttempt.paymentMethod.label}</span>
 										<span className="text-muted-foreground">
-											{latestTransaction.paymentMethod.details}
+											{displayAttempt.paymentMethod.details}
 										</span>
 									</div>
 								</>
