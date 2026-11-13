@@ -284,9 +284,40 @@ const retests: TriageTransition[] = [
 	}),
 ];
 
+/** Tickets implemented by the November work packages (WP-A, WP-G, …). */
+const implemented: TriageTransition[] = [
+	retest(93, {
+		fix: "Corregido en 86f4f26: los links a secciones del home ya no pasan por el navegador interno de la app",
+		look: 'en el home, tocar "Ver qué se puede comprar" varias veces: baja a Ofertas y la URL queda con un solo "#ofertas". Repetirlo después de llegar desde el catálogo con el menú (celular: ☰ → "Ofertas"; computadora: Ayuda → "Preguntas frecuentes") y tocar el logo: vuelve a "/" sin "#". Desde otra página, esos links ahora recargan la página: es lo esperado',
+		preconditions: "ninguna",
+	}),
+	retest(97, {
+		fix: 'Implementado en 86f4f26: sale "Sin galería adicional"',
+		look: 'abrir un producto con una sola imagen (por ejemplo, Aceite de oliva extra virgen 0,5 L): no aparece "Sin galería adicional" ni queda el hueco. Con varias imágenes, la galería funciona igual',
+		preconditions: "ninguna",
+	}),
+	retest(103, {
+		fix: 'Implementado en 86f4f26: el catálogo filtra solo por categoría y sale el bloque "Unidad"',
+		look: 'en /products el panel de filtros ya no tiene "Unidad", y un link viejo con "?unit=kg" muestra todo el catálogo. Los chips Todos / kg / unidad del home salen con #101: en este re-test mirar solo /products',
+		preconditions: "ninguna",
+	}),
+	retest(109, {
+		fix: 'Implementado en 86f4f26: la marca se escribe "CoCo" en todos los textos',
+		look: 'la pestaña dice "CoCo | Compras comunitarias en Ushuaia" y el pie "© 2026 CoCo"; "CoCo" en el ingreso, los pasos del home, el menú del celular ("Explorá CoCo"), proveedores, el tutorial y el admin. El logo sigue en minúscula',
+		preconditions: "ninguna",
+	}),
+	retest(112, {
+		fix: "Implementado en 964c670",
+		look: 'en Mis pedidos, el detalle de un pedido que no esté "Pendiente" → "Repetir pedido": diálogo con casillas (todas marcadas, precio de hoy, "Ya no disponible" deshabilitado); al confirmar se suma a Tu pedido (el carrito), acumulando si el producto ya estaba, y se abre Tu pedido para editar y confirmar; el pedido original no cambia; cada línea del detalle muestra "cantidad × precio". Con otro pedido esperando el pago aparece el aviso con "Ver pedido pendiente" y no se cancela nada. Si se repite un pedido cancelado cuyos productos siguen en Tu pedido, las cantidades se suman (es la regla elegida). En "cantidad × precio" el precio va redondeado como en el catálogo, así que la cuenta a mano puede diferir en $ 1',
+		preconditions:
+			"una cuenta de cliente con al menos un pedido pagado; para el aviso, un pedido confirmado con transferencia sin informar",
+	}),
+];
+
 export const qaTicketTriageTransitions: TriageTransition[] = [
 	...superseded,
 	...outOfScope,
 	...blocked,
 	...retests,
+	...implemented,
 ];
