@@ -1,0 +1,103 @@
+schema_version: '1.0'
+stage_result:
+  skill_id: q-delivery-release
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs:
+  - artifact_type: release-candidate
+    path: docs/development-workflow/release/MP-VALIDATION-20261113/07-release-candidate.yaml
+    lifecycle: Working
+    source_refs:
+    - IP-MP-VALIDATION-20261113@0.2
+    - base:6e151350a04f95c6d9711f1bad7f83294679e67d
+  - artifact_type: release-evidence
+    path: docs/development-workflow/release/MP-VALIDATION-20261113/07-release-evidence.md
+    lifecycle: Working
+    source_refs:
+    - MP-VALIDATION-20261113@2026.11.mp-validation2
+  - artifact_type: release-source-manifest
+    path: docs/development-workflow/release/MP-VALIDATION-20261113/07-source-manifest.json
+    lifecycle: Working
+    semantic_authority: supporting
+    source_refs:
+    - base:6e151350a04f95c6d9711f1bad7f83294679e67d
+  - artifact_type: release-source-manifest
+    path: docs/development-workflow/release/MP-VALIDATION-20261113/07-source-manifest.admin.json
+    lifecycle: Working
+    semantic_authority: supporting
+    source_refs:
+    - MP-VALIDATION-20261113@2026.11.mp-validation2
+  derived_outputs:
+  - path: docs/development-workflow/release/MP-VALIDATION-20261113/07-admin-validation.json
+    semantic_authority: none
+    source_refs:
+    - MP-VALIDATION-20261113@2026.11.mp-validation2
+    generation_provenance: Playwright browser actions and database assertions against
+      isolated local fixtures;11passed
+  - path: docs/development-workflow/release/MP-VALIDATION-20261113/07-public-smoke.json
+    semantic_authority: none
+    source_refs:
+    - MP-VALIDATION-20261113@2026.11.mp-validation2
+    generation_provenance: HTTP status/content plus redacted database readback against
+      the final deployed alias
+  - path: docs/development-workflow/release/MP-VALIDATION-20261113/07-public-return-validation.json
+    semantic_authority: none
+    source_refs:
+    - MP-VALIDATION-20261113@2026.11.mp-validation2
+    generation_provenance: Playwright browser assertions against all3deployed return
+      pages
+  - path: docs/development-workflow/release/MP-VALIDATION-20261113/screenshots
+    semantic_authority: none
+    source_refs:
+    - MP-VALIDATION-20261113@2026.11.mp-validation2
+    generation_provenance: 9Chromium screenshots;6isolated fictional-data admin screens
+      and3anonymous deployed return screens
+  updated_outputs:
+  - docs/plans/mercadopago-validation-resumption.md
+  - docs/plans/mercadopago-validation-resumption.md.stage-result.yaml
+  - README.md
+  - qa_ticket:#22,#25,#27,#35,#38,#39,#40,#42
+  references_added:
+  - https://coco-kappa-ashy.vercel.app
+  - https://vercel.com/flaviogragnolatigmailcoms-projects/coco/3sQWEGdwXwDYHkf3dwHskEY5esET
+  traceability_delta:
+  - Reviewed implementation and two bounded admin fixes deployed; deployment success
+    remains distinct from full financial integration acceptance.
+  decisions_added_or_updated:
+  - User explicitly authorized deployment to the previously named environment and
+    completed Vercel device authentication for the owning account.
+  - Direct CLI deployment of an immutable source snapshot; exact base plus SHA256
+    verified in deployment metadata. No Git operation was inferred or executed.
+  - No schema/data migration or shared seed/reset; provider remains sandbox. Rollback
+    not exercised and requires separate authorization.
+  risks_added_or_updated:
+  - CLI source deployment contains uncommitted workspace changes; a later Git-driven
+    deployment must include these changes to preserve them.
+  - Concurrent provider events/overlapping payment attempts and legacy missing-expiry
+    attempts remain unverified.
+  stale_artifacts: []
+  blockers: []
+  warnings:
+  - 'Execute-release completed: dpl_3sQWEGdwXwDYHkf3dwHskEY5esET READY on confirmed
+    alias; sourceSHA25692e93cbd505e0bdf6d812a112a0cbac1ffd2a2ee6f0fc036896ae922af7fdf89.
+    No acceptance verdict or delivery manifest.'
+  - Full sandbox UAT still requires actual test-buyer APRO/OTHE/CONT, signed Payment.get
+    reconciliation, operational replay and authenticated target admin verification.
+    Production secret names exist; seller/application correspondence is not established.
+  - 2260 unit tests pass,6existing skips; TypeScript/Biome/build pass.11isolated UI/database
+    checks and3deployed return-page UI checks pass. Independent incremental code review
+    and root comment review pass.
+  - Legacy fulfillment harness ran12/13steps; draft-window fixture drift remains recorded.
+    Direct isolated browser operation tests cover paid-demand gating, rollover and
+    allocation, without relabeling that harness green.
+  - Rollback was not drilled in this patch; no application/data restore was attempted
+    and no financial state was deleted.
+  required_user_actions:
+  - Run authenticated target UAT with controlled CoCo admin/customer and Mercado Pago
+    test-buyer sessions; share execution evidence without secrets.
+  next_recommended_action: coordinate-uat; then independent integral validation and
+    an explicit acceptance decision before close-delivery.
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

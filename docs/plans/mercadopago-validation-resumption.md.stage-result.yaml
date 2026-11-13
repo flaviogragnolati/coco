@@ -1,0 +1,69 @@
+schema_version: '1.0'
+stage_result:
+  skill_id: q-code-implement
+  mode: standalone
+  outcome: blocked
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+  - docs/plans/mercadopago-validation-resumption.md
+  - 'qa_ticket:#23,#24,#27: definitions aligned through audited service; #27 moved
+    to retest; history preserved'
+  - 'qa_ticket:#22,#25,#27: partial evidence appended through audited service; retest
+    preserved'
+  - 'qa_ticket:#22: public browser execution on final deployment recorded; other acceptance
+    states preserved'
+  - 'qa_ticket:#35,#38,#39,#40,#42: isolated admin/operations evidence appended with
+    original history preserved'
+  references_added:
+  - https://www.mercadopago.com.ar/developers/en/reference/online-payments/checkout-pro-preferences/search-preferences/get
+  traceability_delta:
+  - 'Local recovery and HTTP/SDK/persistence contracts verified; QA #21-#27/#36-#38
+    and regressions #16/#110 still require acceptance on the chosen deployment.'
+  decisions_added_or_updated:
+  - 'Flavio explicitly approved conservative recovery: retrieve an existing preference;
+    unresolved lookup leaves the attempt pending until its persisted original expiry;
+    a fresh confirmation may then create another attempt on the same order. Waiting
+    up to the configured 60 minutes accepted.'
+  - Flavio authorized direct deployment of the implemented change to the previously
+    named coco-kappa-ashy environment; no Git operation was inferred.
+  - User requested verification of admin payments/transfers/operations; two reproduced
+    defects were corrected without changing payment rules or server authorization.
+  risks_added_or_updated:
+  - A legacy attempt without a persisted expiry or a recoverable preference requires
+    administrative investigation; no deadline backfill or synthetic payment state.
+  stale_artifacts: []
+  blockers:
+  - Actual Mercado Pago test-buyer purchase, signed delivery/Payment.get, APRO/OTHE/CONT,
+    operational replay and authenticated target admin regression remain unexecuted.
+  - Production secret names are present, but token validity and correspondence to
+    the intended test seller/application remain unverified.
+  - The pre-existing fulfillment harness has a stale draft date window (12/13 steps
+    passed); its isolated browser replacement checks pass, but the legacy harness
+    has not been repaired or reported green.
+  warnings:
+  - Implementation plus admin fixes deployed READY as dpl_3sQWEGdwXwDYHkf3dwHskEY5esET,
+    version 2026.11.mp-validation2, on the confirmed target alias; exact base plus
+    source SHA256 recorded in release evidence.
+  - 2260 unit tests pass, 6 pre-existing skips; TypeScript, Biome14codefiles and final
+    build pass.11isolated browser checks and3deployed return-page checks pass. No
+    real provider purchase was inferred.
+  - Independent incremental q-review-code passed standards/specification for the two
+    admin fixes. q-review-comments passed with no new/changed comments in that increment;
+    the previous one added comment remains keep.
+  - Concurrency and overlapping external payments remain unverified. Legacy missing-expiry
+    attempts require investigation; no synthetic monetary state or reset was applied
+    to shared data.
+  - No versioned technical foundation was available; existing ADRs, repository conventions
+    and SDK3.1.0 source were used. No delivery acceptance verdict is claimed.
+  required_user_actions:
+  - Provide controlled CoCo customer/admin and Mercado Pago test-buyer sessions or
+    tester execution evidence for the remaining authenticated sandbox UAT; do not
+    share credential values.
+  next_recommended_action: Complete authenticated target UAT and actual sandbox provider
+    payment sequence; reconcile implementation and release sidecars through the owning
+    orchestrator.
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

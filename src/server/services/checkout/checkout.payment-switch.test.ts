@@ -188,6 +188,7 @@ const data = {
 			input: {
 				amount: string;
 				provider: string;
+				expiresAt?: Date;
 				transferDiscount?: {
 					percent: number;
 					subtotal: string;
@@ -202,6 +203,7 @@ const data = {
 				provider: input.provider,
 				providerPreferenceId: null,
 				checkoutUrl: null,
+				expiresAt: input.expiresAt ?? null,
 				paymentMethod:
 					input.provider === "external" ? externalMethod : mercadoPagoMethod,
 				subtotalAmount: discount ? new Prisma.Decimal(discount.subtotal) : null,
@@ -216,7 +218,10 @@ const data = {
 		},
 	),
 	markTransactionAsExternalPending: vi.fn(async () => created),
-	updateTransactionWithMercadoPagoPreference: vi.fn(async () => created),
+	updateTransactionWithMercadoPagoPreference: vi.fn(
+		async (_db: unknown, input: Record<string, unknown>) =>
+			attempt({ ...created, ...input }),
+	),
 };
 
 const createMercadoPagoPreference = vi.fn(async () => ({
@@ -247,8 +252,17 @@ vi.mock("../payments/external/external-payment-config.service", () => ({
 		settings: externalSettings,
 	})),
 }));
+const recoverMercadoPagoPreference = vi.fn(async () => ({
+	providerPreferenceId: "pref-90",
+	checkoutUrl: "https://mp.test/checkout/90",
+	sandboxCheckoutUrl: null,
+	expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+	externalReference: "user_transaction:90",
+	responseSnapshot: {},
+}));
 vi.mock("../payments/mercadopago/mercadopago-preference.service", () => ({
 	createMercadoPagoPreference,
+	recoverMercadoPagoPreference,
 }));
 vi.mock("./checkout-release", () => ({ releaseCheckoutCart: vi.fn() }));
 // The real preference lines are built below; the SDK client never is.
@@ -473,4 +487,103 @@ test("an attempt that changed state while switching is not replaced", async () =
 	});
 	expect(data.createUserOrder).not.toHaveBeenCalled();
 	expect(data.createPendingTransaction).not.toHaveBeenCalled();
+});
+
+test.each([
+	"provider",
+	"persistence",
+])("recovers the same preference after a %s failure without another creation", async (failure) => {
+	if (failure === "provider") {
+		createMercadoPagoPreference.mockRejectedValueOnce(new Error("timeout"));
+	} else {
+		data.updateTransactionWithMercadoPagoPreference.mockRejectedValueOnce(
+			new Error("database unavailable"),
+		);
+	}
+	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toThrow();
+	const stranded = created;
+	expect(stranded).not.toBeNull();
+	liveOrder = order(80, [stranded as Attempt]);
+	data.findTransactionByIdempotencyKey.mockResolvedValueOnce({
+		...stranded,
+		userOrder: liveOrder,
+	});
+
+	const sameKey = await confirm(mercadoPagoMethod.id, "500.00");
+	const otherKey = await checkoutService.confirmAndPay("user-1", {
+		idempotencyKey: "00000000-0000-4000-8000-000000000002",
+		acceptedTerms: true,
+		paymentMethodId: mercadoPagoMethod.id,
+		delivery: { mode: "pickupPoint", pickupPointId: 3 },
+		expectedAmount: "500.00",
+	});
+
+	for (const result of [sameKey, otherKey]) {
+		expect(result.transaction).toMatchObject({ id: 90, status: "pending" });
+		expect(result.redirectUrl).toBe("https://mp.test/checkout/90");
+	}
+	expect(data.createUserOrder).toHaveBeenCalledTimes(1);
+	expect(data.createPendingTransaction).toHaveBeenCalledTimes(1);
+	expect(createMercadoPagoPreference).toHaveBeenCalledTimes(1);
+});
+
+test("an uncertain preference stays pending when lookup cannot recover it", async () => {
+	const stranded = attempt({
+		providerPreferenceId: null,
+		checkoutUrl: null,
+		sandboxCheckoutUrl: null,
+		expiresAt: new Date(Date.now() + 60_000),
+	});
+	liveOrder = order(70, [stranded]);
+	recoverMercadoPagoPreference.mockRejectedValueOnce(
+		new Error("lookup inconclusive"),
+	);
+	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toThrow(
+		"lookup inconclusive",
+	);
+	expect(stranded.status).toBe("pending");
+	expectNothingCreated();
+	expect(createMercadoPagoPreference).not.toHaveBeenCalled();
+});
+
+test("a new key after a missing preference expires creates another attempt on the same order", async () => {
+	liveOrder = order(70, [
+		attempt({
+			providerPreferenceId: null,
+			checkoutUrl: null,
+			expiresAt: new Date(Date.now() - 1000),
+		}),
+	]);
+	const result = await confirm(mercadoPagoMethod.id, "500.00");
+	expect(result.order.id).toBe(70);
+	expect(result.redirectUrl).toBe("https://mp.test/checkout/90");
+	expect(data.createUserOrder).not.toHaveBeenCalled();
+	expect(data.createPendingTransaction).toHaveBeenCalledWith(
+		tx,
+		expect.objectContaining({
+			userOrderId: 70,
+			amount: "500.00",
+			expiresAt: expect.any(Date),
+		}),
+	);
+	expect(createMercadoPagoPreference).toHaveBeenCalledTimes(1);
+	expect(recoverMercadoPagoPreference).not.toHaveBeenCalled();
+});
+
+test("an expired key without a preference asks for a fresh confirmation without creating anything", async () => {
+	const stranded = attempt({
+		providerPreferenceId: null,
+		checkoutUrl: null,
+		expiresAt: new Date(Date.now() - 1000),
+	});
+	data.findTransactionByIdempotencyKey.mockResolvedValueOnce({
+		...stranded,
+		userOrder: order(70, [stranded]),
+	});
+	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toMatchObject({
+		code: "PRECONDITION_FAILED",
+	});
+	expectNothingCreated();
+	expect(createMercadoPagoPreference).not.toHaveBeenCalled();
+	expect(recoverMercadoPagoPreference).not.toHaveBeenCalled();
 });

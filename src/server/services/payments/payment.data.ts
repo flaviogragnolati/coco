@@ -263,25 +263,23 @@ export async function getPaymentStats(db: PaymentDbClient) {
 		receivedEvents,
 		failedEvents,
 	] = await Promise.all([
-		db.userTransaction.count({ where: { provider: "mercadopago" } }),
+		db.userTransaction.count(),
 		db.userTransaction.count({
 			where: {
-				provider: "mercadopago",
 				status: { in: ["pending", "inProcess"] },
 			},
 		}),
 		db.userTransaction.count({
-			where: { provider: "mercadopago", status: "completed" },
+			where: { status: "completed" },
 		}),
 		db.userTransaction.count({
 			where: {
-				provider: "mercadopago",
 				status: { in: ["failed", "cancelled", "chargedBack"] },
 			},
 		}),
-		db.paymentProviderEvent.count({ where: { provider: "mercadopago" } }),
+		db.paymentProviderEvent.count(),
 		db.paymentProviderEvent.count({
-			where: { provider: "mercadopago", status: "failed" },
+			where: { status: "failed" },
 		}),
 	]);
 

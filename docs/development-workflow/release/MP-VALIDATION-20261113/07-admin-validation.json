@@ -1,0 +1,82 @@
+{
+  "database": "isolated local only",
+  "providerCalls": "none; MP fixtures only",
+  "results": [
+    {
+      "name": "payment tabs and populated detail",
+      "status": "passed"
+    },
+    {
+      "name": "declared transfer remains unpaid and creates no submission",
+      "status": "passed",
+      "evidence": {
+        "attempt": "pending",
+        "order": "pending",
+        "cart": "atCheckout"
+      }
+    },
+    {
+      "name": "admin settles transfer once and submits its cart",
+      "status": "passed",
+      "evidence": {
+        "attempt": "completed",
+        "order": "processing",
+        "cart": "submitted",
+        "amount": "16200"
+      }
+    },
+    {
+      "name": "admin rejects another transfer without submitting demand",
+      "status": "passed",
+      "evidence": {
+        "attempt": "failed",
+        "order": "failed"
+      }
+    },
+    {
+      "name": "MP reconciliation is disabled and explained before payment id exists",
+      "status": "passed"
+    },
+    {
+      "name": "invalid provider event can be ignored with a sufficient reason",
+      "status": "passed"
+    },
+    {
+      "name": "admin cannot change MP config and superadmin confirmation is enforced",
+      "status": "passed"
+    },
+    {
+      "name": "external configuration saves independently and keeps the transfer discount",
+      "status": "passed"
+    },
+    {
+      "name": "operations create/review/execute includes paid transfer and excludes rejected/pending attempts",
+      "status": "passed",
+      "evidence": {
+        "operationId": 14,
+        "status": "completed"
+      }
+    },
+    {
+      "name": "global dashboard statistics include external transfers",
+      "status": "passed",
+      "evidence": {
+        "total": 22,
+        "pending": 3,
+        "completed": 16
+      }
+    },
+    {
+      "name": "paid transfer materializes supplier lots and allocation lineage",
+      "status": "passed",
+      "evidence": {
+        "operationId": 16,
+        "status": "completed",
+        "lots": 1,
+        "supplierOrders": 1,
+        "allocatedQuantity": 50,
+        "submissionFacts": 1
+      }
+    }
+  ]
+}

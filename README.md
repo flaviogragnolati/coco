@@ -17,15 +17,15 @@ environments may use the compatible aliases `MP_ACCESS_TOKEN` and
 For the shared sandbox environment, configure Mercado Pago payment Webhooks at:
 
 ```text
-https://coco-murex.vercel.app/api/mercadopago/webhook
+https://coco-kappa-ashy.vercel.app/api/mercadopago/webhook
 ```
 
 The provider configuration uses these return pages:
 
 ```text
-https://coco-murex.vercel.app/checkout/mercadopago/success
-https://coco-murex.vercel.app/checkout/mercadopago/failure
-https://coco-murex.vercel.app/checkout/mercadopago/pending
+https://coco-kappa-ashy.vercel.app/checkout/mercadopago/success
+https://coco-kappa-ashy.vercel.app/checkout/mercadopago/failure
+https://coco-kappa-ashy.vercel.app/checkout/mercadopago/pending
 ```
 
 Keep the provider in `sandbox` mode until a complete test-buyer purchase and a
@@ -78,3 +78,44 @@ You can check out the [create-t3-app GitHub repository](https://github.com/t3-os
 ## How do I deploy this?
 
 Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+
+## Mercado Pago sandbox validation
+
+The current validation target is `https://coco-kappa-ashy.vercel.app`. Its
+configured database was correlated with a deliberately invalid webhook on
+13 November 2026: the endpoint returned HTTP 401 and recorded a rejected,
+unlinked event without creating a payment attempt. The three return pages
+returned HTTP 200 with their expected titles and reconciliation notice.
+These checks do not validate a test-buyer purchase. The exact deployed source
+and isolated admin validation are recorded in the
+[release evidence](docs/development-workflow/release/MP-VALIDATION-20261113/07-release-evidence.md). Results and operational identifiers belong to QA tickets
+#22 and #25; the remaining sequence is in
+[the validation plan](docs/plans/mercadopago-validation-resumption.md).
+
+Preference recovery persists the attempt's expiry before preference creation. If a
+response is lost, confirming again retrieves the known preference, or searches
+by the attempt's external reference and fetches its detail. It resumes only one
+unexpired preference whose reference, amount and currency match. An absent or
+ambiguous search leaves the attempt pending and creates no replacement
+preference. After expiry, reload checkout to confirm a new attempt on the same
+order. A legacy attempt without a saved expiry and without a recoverable
+preference needs administrative investigation; this change does not invent its
+deadline. Recovery never approves a payment.
+
+For notification failures, compare the provider's delivery and HTTP response,
+the preference's notification URL, signature diagnostics, server logs and the
+payment returned by `Payment.get`. A missing prerequisite blocks a case; an
+implementation defect fails it. Record the actual provider status: `rejected`
+maps to `failed`, `pending` to `pending`, and `in_process` to `inProcess`.
+
+Run the focused verification with:
+
+```bash
+pnpm exec vitest run src/server/services/payments src/server/services/checkout src/app/api/mercadopago src/app/admin/payments/_components/payment.mappers.test.ts src/env.helpers.test.ts scripts/qa-tickets.data.test.ts
+pnpm typecheck
+```
+
+Then run `pnpm test` and `pnpm build` before an authorized deployment. Mocked
+replay verifies sequential behavior; concurrent deliveries still need an
+isolated persistence test. A complete sandbox purchase, signed notification,
+provider lookup, order submission and tracking remain required for acceptance.

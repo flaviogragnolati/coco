@@ -442,6 +442,7 @@ export async function createPendingTransaction(
 		requestSnapshot: unknown;
 		provider?: string;
 		providerMode?: "sandbox" | "production" | null;
+		expiresAt?: Date;
 		transferDiscount?: TransferDiscountBreakdown | null;
 	},
 ) {
@@ -461,6 +462,7 @@ export async function createPendingTransaction(
 			status: "pending",
 			provider: input.provider ?? "mock",
 			providerMode: input.providerMode,
+			expiresAt: input.expiresAt,
 			idempotencyKey: input.idempotencyKey,
 			paymentMethodId: input.paymentMethodId,
 			userOrderId: input.userOrderId,
@@ -475,29 +477,48 @@ export async function updateTransactionWithMercadoPagoPreference(
 	input: {
 		id: number;
 		providerMode: "sandbox" | "production";
+		onlyIfPending?: boolean;
 		providerPreferenceId: string;
 		checkoutUrl: string | null;
 		sandboxCheckoutUrl: string | null;
 		expiresAt: Date;
 		externalReference: string;
-		requestSnapshot: unknown;
+		requestSnapshot?: unknown;
 		responseSnapshot: unknown;
 	},
 ) {
+	const data = {
+		provider: "mercadopago",
+		providerMode: input.providerMode,
+		providerPreferenceId: input.providerPreferenceId,
+		checkoutUrl: input.checkoutUrl,
+		sandboxCheckoutUrl: input.sandboxCheckoutUrl,
+		expiresAt: input.expiresAt,
+		externalTransactionId: input.externalReference,
+		providerStatus: "preference_created",
+		...(input.requestSnapshot === undefined
+			? {}
+			: { requestSnapshot: toPrismaInputJson(input.requestSnapshot) }),
+		responseSnapshot: toPrismaInputJson(input.responseSnapshot),
+	};
+	if (input.onlyIfPending) {
+		await db.userTransaction.updateMany({
+			where: {
+				id: input.id,
+				provider: "mercadopago",
+				status: "pending",
+				providerPaymentId: null,
+			},
+			data,
+		});
+		return db.userTransaction.findUniqueOrThrow({
+			where: { id: input.id },
+			select: orderTransactionSelect,
+		});
+	}
 	return db.userTransaction.update({
 		where: { id: input.id },
-		data: {
-			provider: "mercadopago",
-			providerMode: input.providerMode,
-			providerPreferenceId: input.providerPreferenceId,
-			checkoutUrl: input.checkoutUrl,
-			sandboxCheckoutUrl: input.sandboxCheckoutUrl,
-			expiresAt: input.expiresAt,
-			externalTransactionId: input.externalReference,
-			providerStatus: "preference_created",
-			requestSnapshot: toPrismaInputJson(input.requestSnapshot),
-			responseSnapshot: toPrismaInputJson(input.responseSnapshot),
-		},
+		data,
 		select: orderTransactionSelect,
 	});
 }

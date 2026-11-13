@@ -1,0 +1,112 @@
+schema_version: '1.0'
+rc_id: MP-VALIDATION-20261113
+release_kind: hotfix
+version: 2026.11.mp-validation2
+lifecycle: Working
+base_commit: 6e151350a04f95c6d9711f1bad7f83294679e67d
+source_snapshot:
+  sha256: 92e93cbd505e0bdf6d812a112a0cbac1ffd2a2ee6f0fc036896ae922af7fdf89
+  file_count: 963
+  provenance: 07-source-manifest.json plus 07-source-manifest.admin.json; same exact
+    base; three source/test files updated after isolated admin validation.
+included_records:
+- artifact_id: IP-MP-VALIDATION-20261113
+  version: '0.2'
+  path: docs/plans/mercadopago-validation-resumption.md
+  sha256: e03af08a69eb0d181d4486c5d8144faac53f9266b3bfb8ce9b7be8538b5ee95f
+  acceptance: pending sandbox UAT
+environments:
+- name: vercel-production-with-mercadopago-sandbox
+  url: https://coco-kappa-ashy.vercel.app
+  project: coco
+  project_id: prj_VW5NrkjpGuOXDnrF2At6ZTz6ZAQB
+  scope: flaviogragnolatigmailcoms-projects
+  preconditions:
+  - Reviewed source snapshot matches manifest
+  - 2259 unit tests pass; typecheck/Biome/build pass
+  - Mercado Pago provider remains sandbox; binary false; unsigned false
+  - Required server secret names present in production configuration
+migrations: []
+configuration:
+- names:
+  - DATABASE_URL
+  - BETTER_AUTH_SECRET
+  - BETTER_AUTH_URL
+  - BETTER_AUTH_GOOGLE_CLIENT_ID
+  - BETTER_AUTH_GOOGLE_CLIENT_SECRET
+  - MERCADOPAGO_ACCESS_TOKEN
+  - MERCADOPAGO_WEBHOOK_SECRET
+  source_of_truth: Existing Vercel production configuration; values not copied, modified
+    or recorded.
+- names:
+  - mercadopago.mode
+  - mercadopago.settings
+  - external.settings
+  source_of_truth: Existing payment_provider_config rows; no configuration mutation
+    in deployment.
+approval:
+  source: 'User message in current conversation: deploy de lo realizado.'
+  environment: Existing coco-kappa-ashy deployment/project
+  operation: Deploy reviewed workspace change directly through Vercel CLI
+  git_effects: Not authorized or executed.
+rollout:
+- Verify source manifest and current deployment/project ownership
+- Deploy the immutable source snapshot to the existing project with --prod
+- Wait for READY and confirm target alias points to the new deployment
+- Run public return-page, authorization and invalid-signature smoke checks; correlate
+  the rejected event with the configured database
+- Record authenticated admin/purchase UAT gaps separately from deployment success
+rollback:
+  previous_deployment_id: dpl_4DkJeZrW68pnUxNpzT8WzcXLDWMQ
+  previous_deployment_url: coco-pu3r4w4f1-flaviogragnolatigmailcoms-projects.vercel.app
+  disposition: Application rollback available in Vercel; not executed or drilled for
+    this patch. No schema or data migration. Financial state and events must be retained.
+  approval: A rollback or promotion of the previous deployment requires a separate
+    explicit authorization.
+uat:
+  owner: Flavio / QA tester
+  status: pending
+  criteria:
+  - MP APRO purchase with signed webhook, Payment.get, one order submission and tracking
+  - OTHE/CONT statuses and no false credit
+  - Preference abandonment/recovery and expiry preserve order/amount
+  - Admin reconcile/reprocess/ignore and admin versus superadmin permissions
+  - External receipt declaration remains pending; mark paid/reject and discounts are
+    correct
+  - Only completed-payment demand becomes eligible in operations; draft/review/execute
+    preserve amounts and lineage
+  automated_isolated_browser_checks: 11 passed; not human acceptance
+  deployed_public_return_checks: '3 passed; QA #22 passed'
+evidence_checklist:
+- claim: Exact reviewed source deployed
+  evidence: Source SHA256 metadata + deployment id/READY + target alias verification
+- claim: Public return/security endpoints respond as expected
+  evidence: HTTP content/status plus rejected-event lookup, without payment mutation
+- claim: Admin/transfer/operation UI works
+  evidence: Automated isolated browser/service checks with explicit fixture limitations,
+    then authenticated target UAT
+- claim: Full sandbox payment accepted
+  evidence: Pending identified provider payment, signed event, order/tracking/submission
+    and replay evidence
+execution_status: deployed-awaiting-authenticated-sandbox-uat
+included_admin_fixes:
+- Global dashboard statistics count transfers and other providers as well as MP.
+- ConfigEditor rejects missing/incorrect CONFIRMAR with the existing friendly message;
+  server validation and permissions unchanged.
+executed_deployments:
+- id: dpl_B7hcF9pLoqrR9jUAJxbd8FfZsPgJ
+  url: https://coco-37w4fy064-flaviogragnolatigmailcoms-projects.vercel.app
+  source_sha256: 068f611f4f3dfc551bfe8be48fbdf9d60197d336daf52d986418decd2c7ccbd1
+  state: READY
+  smoke: passed
+  note: Initial recovery deployment; admin validation then identified two additional
+    fixes.
+- id: dpl_3sQWEGdwXwDYHkf3dwHskEY5esET
+  url: https://coco-o6ycf35vc-flaviogragnolatigmailcoms-projects.vercel.app
+  source_sha256: 92e93cbd505e0bdf6d812a112a0cbac1ffd2a2ee6f0fc036896ae922af7fdf89
+  state: READY
+  ready_at: '2026-11-13T18:27:43.523000+00:00'
+  smoke: passed
+deployed_version: 2026.11.mp-validation2
+deployed_source_sha256: 92e93cbd505e0bdf6d812a112a0cbac1ffd2a2ee6f0fc036896ae922af7fdf89
+deployed_id: dpl_3sQWEGdwXwDYHkf3dwHskEY5esET

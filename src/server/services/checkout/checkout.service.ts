@@ -54,7 +54,10 @@ import {
 	getExternalPaymentConfig,
 } from "../payments/external/external-payment-config.service";
 import { getMercadoPagoConfig } from "../payments/mercadopago/mercadopago-config.service";
-import { createMercadoPagoPreference } from "../payments/mercadopago/mercadopago-preference.service";
+import {
+	createMercadoPagoPreference,
+	recoverMercadoPagoPreference,
+} from "../payments/mercadopago/mercadopago-preference.service";
 import {
 	type CheckoutAddressRecord,
 	type CheckoutCartRecord,
@@ -681,6 +684,36 @@ async function createLiveUserOrder(
 	});
 }
 
+async function buildExistingPaymentResult(
+	input: Parameters<typeof buildPaymentResult>[0],
+) {
+	const attempt = input.transaction;
+	if (
+		attempt.provider === "mercadopago" &&
+		attempt.status === "pending" &&
+		!attempt.providerPaymentId &&
+		!attempt.checkoutUrl &&
+		!attempt.sandboxCheckoutUrl
+	) {
+		if (attempt.expiresAt && attempt.expiresAt <= new Date()) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message:
+					"El intento venció. Recargá el checkout para confirmar un nuevo intento sobre el mismo pedido.",
+			});
+		}
+		const preference = await recoverMercadoPagoPreference(attempt);
+		const transaction = await updateTransactionWithMercadoPagoPreference(db, {
+			id: attempt.id,
+			onlyIfPending: true,
+			providerMode: attempt.providerMode ?? "sandbox",
+			...preference,
+		});
+		return buildPaymentResult({ ...input, transaction });
+	}
+	return buildPaymentResult(input);
+}
+
 async function getExistingPaymentResult(
 	userId: string,
 	idempotencyKey: string,
@@ -692,7 +725,7 @@ async function getExistingPaymentResult(
 		throw new TRPCError({ code: "FORBIDDEN" });
 	}
 
-	return buildPaymentResult({
+	return buildExistingPaymentResult({
 		order: existing.userOrder,
 		transaction: existing,
 		paymentMethod: toCheckoutPaymentMethod(existing.paymentMethod),
@@ -823,7 +856,7 @@ export async function confirmAndPay(
 		if (liveOrder && latestAttempt && openAttemptHandling === "reuse") {
 			return {
 				kind: "existing" as const,
-				result: buildPaymentResult({
+				payment: {
 					order: liveOrder,
 					transaction: latestAttempt,
 					paymentMethod: toCheckoutPaymentMethod(latestAttempt.paymentMethod),
@@ -832,7 +865,7 @@ export async function confirmAndPay(
 						orderCode: liveOrder.code,
 						transaction: latestAttempt,
 					}),
-				}),
+				},
 			};
 		}
 
@@ -906,6 +939,14 @@ export async function confirmAndPay(
 				provider: providerConfig.provider,
 			},
 			provider: providerConfig.provider,
+			expiresAt:
+				providerConfig.provider === "mercadopago"
+					? new Date(
+							now.getTime() +
+								providerConfig.config.settings.preferenceExpiresInMinutes *
+									60_000,
+						)
+					: undefined,
 			providerMode:
 				providerConfig.provider === "mercadopago"
 					? providerConfig.config.mode
@@ -925,7 +966,8 @@ export async function confirmAndPay(
 		};
 	});
 
-	if (prepared.kind === "existing") return prepared.result;
+	if (prepared.kind === "existing")
+		return buildExistingPaymentResult(prepared.payment);
 
 	if (prepared.providerConfig.provider === "mercadopago") {
 		const mercadoPagoConfig = prepared.providerConfig.config;

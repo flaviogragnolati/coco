@@ -27,6 +27,7 @@ Referencias primarias consultadas el 13/11/2026:
 
 - [Compra de prueba para Checkout Pro vía Preferences](https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/integration-test/test-purchases): comprador de prueba, navegador incógnito y escenarios con tarjeta.
 - [Tarjetas de prueba](https://www.mercadopago.com.ar/developers/es/docs/your-integrations/test/cards): APRO aprobado, OTHE rechazado y CONT pendiente. No confundir la etiqueta del escenario con el `payment.status` efectivamente obtenido.
+- [Buscar preferencias por referencia externa](https://www.mercadopago.com.ar/developers/en/reference/online-payments/checkout-pro-preferences/search-preferences/get): contrato de búsqueda consultado durante la implementación; los tipos y el cliente del SDK 3.1.0 instalado corroboran `external_reference`, `total` y `elements`.
 - [Notificaciones de Preferences](https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/payment-notifications): firma, consulta del recurso y precedencia de la URL incluida en la preferencia.
 
 ## Alcance, exclusiones y diferidos
@@ -196,11 +197,49 @@ Ejecutar `pnpm test` tras cambios de producción en checkout/reconciliación por
 
 - [x] Flavio confirma el alcance sandbox y el destino del plan.
 - [ ] Configuración y credenciales del deployment contrastadas con la aplicación y vendedor de prueba.
-- [ ] Riesgo de intento sin preferencia reproducido y resuelto o descartado con evidencia.
-- [ ] Pruebas de HTTP/reconciliación y regresiones de montos pasan; concurrencia etiquetada según evidencia real.
-- [ ] #27 refleja el reuso actual; #23/#24 tienen expectativas y diagnóstico correctos.
+- [x] Riesgo de intento sin preferencia reproducido y corregido localmente con pruebas; validación desplegada pendiente.
+- [x] Pruebas locales de HTTP/reconciliación y regresiones de montos pasan; concurrencia con persistencia real sigue sin verificar.
+- [x] #27 refleja el reuso actual; #23/#24 tienen expectativas y diagnóstico correctos, publicados mediante servicio auditado.
 - [ ] Casos #21–#27 y #36–#38 ejecutados sobre la versión elegida con evidencia, más regresiones #16/#110; ningún bloqueo o fallo necesario para aceptación sigue abierto.
 - [ ] Sin dobles submissions, monto incorrecto, aprobación por redirect ni procesamiento de una firma inválida.
-- [ ] Tickets con resultados honestos y guía operativa actualizada.
+- [x] Tickets con resultados honestos y guía operativa actualizada; los casos dependientes del comprador/proveedor real siguen pendientes.
 
 Ejecutar en orden, comenzando por las precondiciones del entorno confirmado. Usar `q-code-implement` para el trabajo asentado y `q-code-debug` para un fallo reproducido cuya corrección aún no esté decidida. No ampliar arquitectura ni esquema sin alinear el cambio. No modificar workflow-state ni artifact-index desde esta ejecución standalone; el sidecar queda para reconciliación del orquestador. Preservar todos los cambios ajenos del workspace y no hacer operaciones Git o despliegues sin la autorización correspondiente.
+
+## Estado de ejecución — 13/11/2026
+
+**Estado: implementación y admin verificados; despliegue ejecutado; aceptación sandbox pendiente.** Base de comparación: `6e151350a04f95c6d9711f1bad7f83294679e67d`. La corrección se desplegó por CLI en el proyecto existente. La versión final `2026.11.mp-validation2` y sus huellas exactas están en `docs/development-workflow/release/MP-VALIDATION-20261113/07-release-candidate.yaml`; no se realizó commit ni push. Los resultados operativos y sus identificadores están en los tickets originales; este apartado registra el estado agregado de implementación.
+
+**Decisión de Flavio durante la ejecución:** autorizó recuperar una preferencia existente y, si la búsqueda no la encuentra, conservar el intento pendiente hasta su vencimiento original antes de permitir otro intento sobre la misma orden; aceptó la espera de hasta 60 minutos configurados. No se presupone que una búsqueda vacía pruebe el fracaso de la creación ni se depende de una garantía no verificada de idempotencia del endpoint de preferencias.
+
+**Cambio:** ambos fallos reproducidos — creación rechazada/incierta y respuesta aceptada que no pudo persistirse — devolvían pending sin URL con la misma clave y con otra. Se guarda ahora el vencimiento antes de llamar al SDK; la recuperación consulta la preferencia conocida o busca por referencia y obtiene su detalle. Verifica unicidad, referencia, monto, moneda, URLs y vencimiento sin extender el plazo original. No crea otra preferencia durante esa recuperación ni declara fallida una operación incierta. La persistencia recuperada solo modifica intentos pending sin payment id, y conserva el request original. Una clave vencida pide recargar checkout; una nueva confirmación crea otro intento sobre la misma orden.
+
+**Cobertura de aceptación local:** pruebas del POST real con HMAC del SDK, errores/redelivery, deduplicación del evento, consulta Payment.get, estados y discrepancias monetarias, re-fetch, replay secuencial, rollback de submission, no degradación terminal y aprobación tardía secuencial sin otro hecho de confirmación. Los límites de persistencia se simulan; no prueban concurrencia ni cobros reales del proveedor.
+
+**Evidencia técnica:** La cobertura focalizada original de 284 pruebas se amplió con una regresión de indicadores; suite completa final: 2.260 pasan, 6 omitidas existentes (164 archivos: 163 pasan, 1 omitido). TypeScript (`tsgo --noEmit`), Biome sobre los 14 archivos de código afectados, `git diff --check`, generación Prisma y build de Next.js pasan. El wrapper `pnpm test` no produjo salida y se interrumpió; se usaron los binarios instalados sin reinstalar dependencias. El primer build falló al descargar Google Fonts bajo red restringida; el build final con acceso de red pasó, sin cambiar fuentes ni configuración.
+
+**Entorno y QA:** configuración de base contrastada: sandbox, callbacks del destino, binary y unsigned apagados. Un POST inválido observado en el deployment produjo el evento rejected en esa base y confirmó su correspondencia. Las tres páginas públicas devolvieron 200 con título y aviso esperado; el POST inválido devolvió 401 sin crear intentos. La versión exacta se identificó por deployment y huella de código. #22 se completó por navegador sobre el destino; #25 conserva evidencia HTTP/datos y requiere inspección autenticada del evento. #23/#24/#27 se alinearon por servicio auditado; solo #27 cambió de passed a retest. Historial, asignaciones y evidencia anterior se conservaron. Flavio Gragnolati existe como superadmin activo; no se creó ni modificó ninguna cuenta.
+
+**Mini revisión:** q-review-code completado por revisor independiente contra el SHA base: eje de estándares aprobado sin hallazgos accionables; eje de especificación aprobado para el cambio implementado, con aceptación integral pendiente. q-review-comments aprobado por el implementador: 1 comentario agregado, keep; ninguno reescrito ni eliminado. Brechas declaradas: recuperación SDK aún simulada, concurrencia sin base aislada y recorrido sandbox/admin pendiente. No se encontró una fundación técnica versionada: revisión sobre contratos existentes, ADRs y SDK instalado.
+
+**Desviaciones y bloqueos:** no hubo compra de prueba, revisión autenticada del admin desplegado, APRO/OTHE/CONT ni replays operativos. Flavio autorizó el despliegue; se verificaron versión por deployment/huella, proyecto y presencia por nombre de secretos en Vercel. Faltan vigencia y correspondencia de esas credenciales con aplicación/vendedor de prueba, y sesiones cliente/admin/comprador para completar los casos dependientes. Los permisos admin/superadmin y las acciones de pago externo se probaron por navegador en una base aislada, sin presentarlos como aceptación del entorno compartido. Los casos no ejecutados siguen en retest; no se declara validada la integración. El README corrige el destino y documenta el procedimiento local y los límites comprobados.
+
+**Riesgo residual:** intentos legados sin vencimiento guardado y sin preferencia recuperable requieren investigación administrativa; no se inventa un plazo ni se hace backfill. Concurrencia de eventos y compensación por dos pagos externos permanecen sin validar y no se presentan como resueltas por mocks. No hubo migraciones, seeds, resets, cambios de modo ni operaciones Git. Estado global e índice de artefactos sin modificar.
+
+**Archivos cambiados:**
+
+- Producción: `src/server/services/checkout/checkout.service.ts`, `src/server/services/checkout/checkout.data.ts`, `src/server/services/payments/mercadopago/mercadopago-preference.service.ts`, `src/server/services/payments/payment.data.ts`, `src/app/admin/payments/_components/payments-admin-client.tsx`.
+- Pruebas: `src/server/services/checkout/checkout.payment-switch.test.ts`, `src/server/services/checkout/checkout.preference-persistence.test.ts`, `src/app/api/mercadopago/webhook/route.test.ts`, `src/server/services/payments/mercadopago/mercadopago-preference.service.test.ts`, `src/server/services/payments/mercadopago/mercadopago-reconciliation.service.test.ts`, `src/server/services/payments/payment.data.test.ts`, `src/server/services/payments/order-submission.service.test.ts`, `scripts/qa-tickets.data.test.ts`.
+- QA y guía: `scripts/qa-tickets.data.ts`, `docs/qa/qa-ciclo-de-vida.md`, `README.md`.
+- Registro: este plan y `mercadopago-validation-resumption.md.stage-result.yaml`.
+
+**Siguiente acción:** completar la secuencia sandbox y el retest autenticado sobre `https://coco-kappa-ashy.vercel.app`, con sesiones controladas por Flavio/tester. El despliegue ya está autorizado y ejecutado; no volver a pedir esa autorización para este resultado. El resultado standalone adjunto queda pendiente de reconciliación por el orquestador.
+
+
+### Verificación administrativa solicitada durante el despliegue
+
+Flavio pidió verificar pagos, transferencias y operaciones para cerrar el feature. Se ejecutaron 11 comprobaciones por Chromium contra la app y PostgreSQL locales, en una base nueva con datos ficticios. Pasan declaración de comprobante sin acreditar, cobro único y submission, rechazo sin demanda, bloqueo de reconciliación MP sin payment id, ignorado con motivo, permisos admin/superadmin, confirmación y configuración de ambos medios. Operaciones incorpora solo la demanda pagada; se comprobaron rollover bajo MOQ y, en otro pedido, un lote, una orden de proveedor y asignación de 50 unidades con un único hecho de submission. Resultados y capturas: `docs/development-workflow/release/MP-VALIDATION-20261113/07-admin-validation.json` y `screenshots/`.
+
+Se reprodujeron y corrigieron dos defectos: los indicadores globales excluían transferencias aunque el listado las incluía; y la confirmación vacía exponía un error técnico. El contador ahora incluye todos los proveedores y el guard de confirmación muestra el mensaje vigente, conservando la validación y autorización del servidor. La regresión de datos falló antes de corregir el contador y pasó después. La revisión independiente incremental aprobó estándares y especificación; comentarios: aprobado sin comentarios agregados o afectados en este incremento.
+
+El harness de fulfillment anterior pasó 12/13 pasos: su ventana de borrador de junio no coincide con los fixtures vigentes de julio. Ese fallo del harness no se declara aprobado ni se corrigió dentro de este alcance; las pruebas administrativas ejecutaron directamente la creación/revisión/ejecución con pagos locales actuales. No se inyectaron estados monetarios ficticios en la base compartida. Ninguna prueba local sustituye la compra sandbox, el webhook firmado real ni aceptación humana.

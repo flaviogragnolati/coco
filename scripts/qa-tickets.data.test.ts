@@ -75,6 +75,10 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 	},
 	{ code: 26, mustMention: ['"Reprocesar"'] },
 	{
+		code: 27,
+		mustMention: ["misma orden", "mismo intento", "vencido", "ADR 0013"],
+	},
+	{
 		code: 30,
 		mustMention: ["`/admin/payments`", '"Seguimiento del pedido"'],
 	},
@@ -297,5 +301,43 @@ describe("qa-seed.ts", () => {
 
 	it("reports how many codes it retired", () => {
 		expect(seedSource()).toContain("retirados");
+	});
+});
+
+describe("Mercado Pago validation definitions", () => {
+	it("bases pending scenarios on the fetched payment status", () => {
+		const definition = byCode.get(24)?.expectedResult ?? "";
+		for (const mapping of [
+			"rejected → failed",
+			"pending → pending",
+			"in_process → inProcess",
+		])
+			expect(definition).toContain(mapping);
+	});
+	it("diagnoses notification failures before classifying the case", () => {
+		const definition = byCode.get(23)?.expectedResult ?? "";
+		for (const boundary of [
+			"HTTP",
+			"firma",
+			"logs",
+			"recurso consultado",
+			"precondición",
+			"defecto de implementación",
+		])
+			expect(definition).toContain(boundary);
+	});
+	it.each([
+		23, 24, 27,
+	])("keeps #%i consistent with the lifecycle table", (code) => {
+		const entry = byCode.get(code);
+		const row = readFileSync(
+			new URL("../docs/qa/qa-ciclo-de-vida.md", import.meta.url),
+			"utf8",
+		)
+			.split("\n")
+			.find((line) => line.startsWith(`| ${code} |`));
+		expect(row).toBeDefined();
+		expect(row).toContain(entry?.steps.replaceAll("\n", " "));
+		expect(row).toContain(entry?.expectedResult.replaceAll("\n", " "));
 	});
 });

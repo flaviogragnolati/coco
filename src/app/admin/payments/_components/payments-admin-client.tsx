@@ -704,7 +704,15 @@ function ConfigEditor({
 				<div className="flex justify-end">
 					<Button
 						disabled={isSaving}
-						onClick={() => onSubmit({ enabled, mode, settings, confirmation })}
+						onClick={() => {
+							if (confirmation.trim() !== "CONFIRMAR") {
+								toast.error(
+									'Escribí "CONFIRMAR" para aplicar cambios de configuración.',
+								);
+								return;
+							}
+							onSubmit({ enabled, mode, settings, confirmation });
+						}}
 						type="button"
 					>
 						Guardar configuración

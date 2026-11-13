@@ -27,6 +27,7 @@ type CreateMercadoPagoPreferenceInput = {
 		id: number;
 		amount: { toString(): string } | string;
 		currency: string;
+		expiresAt: Date | null;
 	};
 	config: PaymentProviderConfig;
 };
@@ -58,9 +59,14 @@ export async function createMercadoPagoPreference(
 	input: CreateMercadoPagoPreferenceInput,
 ) {
 	const preference = new Preference(createMercadoPagoClient());
-	const expiresAt = new Date(
-		Date.now() + input.config.settings.preferenceExpiresInMinutes * 60_000,
-	);
+	const expiresAt = input.transaction.expiresAt;
+	if (!expiresAt || expiresAt <= new Date()) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message:
+				"El intento necesita un vencimiento vigente antes de crear la preferencia de Mercado Pago.",
+		});
+	}
 	let preferenceData: ReturnType<typeof buildMercadoPagoPreferenceCreateData>;
 
 	try {
@@ -104,6 +110,82 @@ export async function createMercadoPagoPreference(
 		expiresAt: preferenceData.expiresAt,
 		externalReference: preferenceData.externalReference,
 		requestSnapshot: preferenceData.body,
+		responseSnapshot: result,
+	};
+}
+
+export async function recoverMercadoPagoPreference(transaction: {
+	id: number;
+	amount: { toString(): string } | string;
+	currency: string;
+	providerPreferenceId: string | null;
+	expiresAt: Date | null;
+}) {
+	const client = new Preference(createMercadoPagoClient());
+	const externalReference = `user_transaction:${transaction.id}`;
+	let preferenceId = transaction.providerPreferenceId;
+	if (!preferenceId) {
+		const search = await client.search({
+			options: { external_reference: externalReference, limit: 2 },
+		});
+		const matches =
+			search.elements?.filter(
+				(item) => item.external_reference === externalReference,
+			) ?? [];
+		// An empty search cannot prove that a timed-out creation failed.
+		if (matches.length !== 1 || (search.total ?? matches.length) !== 1) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message:
+					"No pudimos recuperar el enlace de Mercado Pago. El intento sigue pendiente; volvé a intentar más tarde o, después de su vencimiento, recargá el checkout.",
+			});
+		}
+		preferenceId = matches[0]?.id ?? null;
+	}
+	if (!preferenceId)
+		throw new TRPCError({
+			code: "BAD_GATEWAY",
+			message: "Mercado Pago no devolvió una preferencia recuperable.",
+		});
+	const result = await client.get({ preferenceId });
+	const items = result.items ?? [];
+	const totalInCents = items.reduce(
+		(sum, item) =>
+			sum + Math.round((item.unit_price ?? 0) * 100) * (item.quantity ?? 0),
+		0,
+	);
+	const expiresAt = new Date(result.expiration_date_to ?? "");
+	if (
+		result.id !== preferenceId ||
+		result.external_reference !== externalReference ||
+		items.length === 0 ||
+		items.some(
+			(item) =>
+				item.currency_id !== transaction.currency ||
+				!Number.isFinite(item.unit_price) ||
+				(item.unit_price ?? 0) <= 0 ||
+				!Number.isInteger(item.quantity) ||
+				(item.quantity ?? 0) <= 0,
+		) ||
+		totalInCents !== Math.round(Number(transaction.amount.toString()) * 100) ||
+		!result.expires ||
+		!Number.isFinite(expiresAt.getTime()) ||
+		expiresAt <= new Date() ||
+		(transaction.expiresAt !== null && expiresAt > transaction.expiresAt) ||
+		!(result.init_point || result.sandbox_init_point)
+	) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message:
+				"La preferencia recuperada no coincide con el intento o ya venció. Revisá el pago antes de volver a confirmar.",
+		});
+	}
+	return {
+		providerPreferenceId: preferenceId,
+		checkoutUrl: result.init_point ?? null,
+		sandboxCheckoutUrl: result.sandbox_init_point ?? null,
+		expiresAt,
+		externalReference,
 		responseSnapshot: result,
 	};
 }

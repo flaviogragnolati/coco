@@ -1,0 +1,9 @@
+{
+  "base_manifest": "07-source-manifest.json",
+  "source_sha256": "92e93cbd505e0bdf6d812a112a0cbac1ffd2a2ee6f0fc036896ae922af7fdf89",
+  "changed_files": {
+    "src/app/admin/payments/_components/payments-admin-client.tsx": "e0ade9b6449730f4e07621b332330f1e9a7914ef2e3ef9b5fd83072198185359",
+    "src/server/services/payments/payment.data.test.ts": "ebffff2dc2f3a1e6e55e08cad8d4c10dd68e12a13003e667085e52b31b8452b1",
+    "src/server/services/payments/payment.data.ts": "b1c8f1a9827fe5de9024720edd7541ea27b65fb45ea8c8939c15f97f28b872ae"
+  }
+}

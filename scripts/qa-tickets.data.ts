@@ -287,7 +287,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		steps:
 			'Precondiciones: continuar desde el intento de #21 (Checkout Pro abierto, sin pagar). En Checkout Pro iniciar sesión con el usuario comprador de prueba, nunca con el vendedor. Pagar con la tarjeta de prueba que pasa el responsable de QA, nombre del titular `APRO` y DNI 12345678 (tabla pública de tarjetas de prueba de MP; si MP lo rechaza, usar el documento del perfil del comprador de prueba).\n1) Completar el pago en Checkout Pro y volver por la URL de éxito.\n2) En `/admin/payments` → "Intentos", abrir el intento de #21 y copiar el id del campo "Pago (id de Mercado Pago)". En "Eventos", buscar ese id: debe aparecer un evento de tipo `payment` con Firma "válida".\n3) En la sesión Cliente, abrir `/my-orders/[id]` del pedido y refrescar hasta que termine la reconciliación.',
 		expectedResult:
-			'El evento queda vinculado y con firma válida; el intento pasa a "completed" y el cliente ve el pago "Aprobado".\nEl campo "Pago (id de Mercado Pago)" del intento muestra el id del pago.\nLa orden pasa a "En procesamiento", el carrito a "Enviado" y sus items a submitted.\nEl detalle del cliente muestra "Pedido confirmado". La proyección puede aparecer unos segundos después porque el tracking es asíncrono.\nSi el evento no llega o llega con Firma "no válida" y error "Firma inválida: …", es configuración de entorno: el caso queda "Bloqueado", no "Fallido".',
+			'El evento queda vinculado, processed y con firma válida; Payment.get informa approved con el monto y moneda del intento. El intento pasa a "completed" y el cliente ve el pago "Aprobado".\nEl campo "Pago (id de Mercado Pago)" del intento muestra el id del pago.\nLa orden pasa a "En procesamiento", el carrito a "Enviado" y sus items a submitted, con un solo hecho de confirmación por item.\nEl detalle del cliente muestra "Pedido confirmado". Antes de ejecutar, fijar el plazo de observación del tracking asíncrono y revisar el outbox si demora.\nSi el evento no llega o la firma se rechaza, contrastar entrega y HTTP del proveedor, URL de la preferencia, firma, logs y recurso consultado. Clasificar como Bloqueado solo si falta una precondición; un defecto de implementación es Fallido. No atribuirlo automáticamente a configuración.',
 		isRegressionPath: true,
 	},
 	{
@@ -297,9 +297,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente + Sistema",
 		feature: "Mapeo de estados MP",
 		steps:
-			'Precondiciones: mismo comprador de prueba, tarjeta y DNI que #23. Cada caso es un checkout nuevo con "Mercado Pago" (pasos 1 y 2 de #21); si Checkout Pro ofrece reintentar, no reintentar.\n1) Pagar en Checkout Pro con nombre del titular `OTHE` (MP lo rechaza).\n2) En otro checkout nuevo, pagar con nombre del titular `CONT` (MP lo deja pendiente, `in_process`).\n3) Para cada uno, revisar el intento en `/admin/payments` → "Intentos" (buscar por email del Cliente), el pedido en `/my-orders` y el carrito en `/cart`.',
+			"Precondiciones: mismo comprador de prueba, tarjeta y DNI que #23; binary mode apagado. Usar pedidos separados para OTHE y CONT (otra cuenta cliente o carrito nuevo, sin cancelar un pago en proceso). Cada caso comienza con los pasos 1 y 2 de #21; no reintentar en Checkout Pro.\n1) Pagar con nombre del titular `OTHE` (rechazado).\n2) En el otro pedido, pagar con nombre del titular `CONT` (pendiente).\n3) Para cada pago, registrar el payment.status consultado en Payment.get y contrastarlo con el intento en `/admin/payments`, el pedido en `/my-orders` y el carrito en `/cart`.",
 		expectedResult:
-			'`OTHE`: el intento queda "failed" y el cliente ve el pago "Rechazado"; la orden sigue "Pendiente" y el carrito sigue editable.\n`CONT`: el intento queda "inProcess" y el cliente ve el pago "En proceso" sin acreditar nada; la orden sigue "Pendiente".',
+			'El estado real del recurso determina el mapeo: rejected → failed ("Rechazado"); pending → pending ("Pendiente"); in_process → inProcess ("En proceso"). No exigir inProcess solo por usar CONT.\nNinguno acredita el pedido ni crea tracking de compra confirmada. La orden sigue "Pendiente". El rechazado permite volver a editar; un pago en proceso no se puede abandonar.',
 		isRegressionPath: false,
 	},
 	{
@@ -333,9 +333,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Orden pendiente + reintento de checkout",
 		steps:
-			"1) Confirmar con MP y cerrar la pestaña de MP sin pagar.\n2) Volver a `/checkout` y confirmar de nuevo.\n3) Revisar `/my-orders` y `/admin/payments`.",
+			"Precondiciones: Mercado Pago en Sandbox, sesiones Cliente y Admin disponibles y carrito listo para confirmar; no completar ningún pago.\n1) Confirmar con Mercado Pago, anotar pedido, intento, preferencia, vencimiento y monto en `/admin/payments`, y cerrar Checkout Pro sin pagar.\n2) Antes del vencimiento, volver a `/checkout` y confirmar de nuevo. Comparar los identificadores y el monto en `/my-orders` y `/admin/payments`.\n3) Como variante, esperar el vencimiento o usar un intento fallido y volver a confirmar.\n4) Si se cambia a Pago externo antes de pagar, aplicar ADR 0013: comparar el total descontado y comprobar que un intento en proceso o con comprobante declarado no se reemplaza.",
 		expectedResult:
-			'La primera orden queda "Pendiente" con su transacción "pending" (comportamiento conocido). El segundo intento genera una orden nueva sobre el mismo carrito. Registrar el resultado observado — es un edge conocido a decidir producto.',
+			"Antes del vencimiento se conserva la misma orden, el mismo intento vigente y su preferencia; se vuelve a Checkout Pro sin crear otra orden ni acreditar el pedido.\nCon intento vencido o fallido se crea un nuevo intento sobre la misma orden, validando el total vigente.\nEl cambio de medio permitido reemplaza el intento conservando la orden y el monto correspondiente al medio; un pago que ya no se puede abandonar se conserva.",
 		isRegressionPath: false,
 	},
 	{
