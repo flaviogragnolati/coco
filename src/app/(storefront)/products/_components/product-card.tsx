@@ -40,9 +40,10 @@ export function ProductCard({
 					type="button"
 				>
 					<ProductImage
-						className="flex aspect-3/2 w-full items-center justify-center bg-center bg-cover bg-muted text-muted-foreground"
+						className="flex aspect-square w-full items-center justify-center"
 						imageUrl={product.imageUrl}
 						name={product.name}
+						placeholderClassName="bg-muted text-muted-foreground"
 					/>
 				</button>
 				<ProductCardBadges discount={discount} />

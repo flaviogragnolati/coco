@@ -92,22 +92,24 @@ function ProductDetailPreview({ preview }: { preview: ProductPreview }) {
 		<div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
 			<div className="flex flex-col gap-3">
 				<ProductImage
-					className="flex aspect-[4/3] w-full items-center justify-center bg-center bg-cover bg-muted text-muted-foreground"
+					className="flex aspect-square w-full items-center justify-center"
 					imageUrl={
 						catalogProduct?.imageUrl ??
 						adminProduct.cardImageUrl ??
 						adminProduct.cartImageUrl
 					}
 					name={adminProduct.name}
+					placeholderClassName="bg-muted text-muted-foreground"
 				/>
 				{imageUrls.length > 1 ? (
 					<div className="grid grid-cols-3 gap-2">
 						{imageUrls.slice(0, 6).map((imageUrl) => (
 							<ProductImage
-								className="flex aspect-square items-center justify-center bg-center bg-cover bg-muted text-muted-foreground"
+								className="flex aspect-square items-center justify-center"
 								imageUrl={imageUrl}
 								key={imageUrl}
 								name={adminProduct.name}
+								placeholderClassName="bg-muted text-muted-foreground"
 							/>
 						))}
 					</div>

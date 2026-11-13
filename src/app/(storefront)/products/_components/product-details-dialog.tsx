@@ -100,7 +100,7 @@ export function ProductDetailsDialog({
 					{detailQuery.isLoading ? (
 						<div className="grid gap-5 md:grid-cols-[18rem_1fr]">
 							<div className="flex flex-col gap-3">
-								<Skeleton className="aspect-4/3 w-full rounded-2xl" />
+								<Skeleton className="aspect-square w-full rounded-2xl" />
 								<div className="grid grid-cols-3 gap-2">
 									{thumbnailSkeletonKeys.map((key) => (
 										<Skeleton
@@ -130,9 +130,10 @@ export function ProductDetailsDialog({
 							<div className="grid gap-5 md:grid-cols-[18rem_1fr]">
 								<div className="flex flex-col gap-3">
 									<ProductImage
-										className="flex aspect-4/3 w-full items-center justify-center rounded-2xl bg-center bg-cover bg-muted text-muted-foreground"
+										className="flex aspect-square w-full items-center justify-center rounded-2xl"
 										imageUrl={mainImage}
 										name={product.name}
+										placeholderClassName="bg-muted text-muted-foreground"
 									/>
 									{galleryImages.length > 1 ? (
 										<div className="grid grid-cols-3 gap-2">
@@ -148,9 +149,10 @@ export function ProductDetailsDialog({
 													type="button"
 												>
 													<ProductImage
-														className="flex aspect-square w-full items-center justify-center bg-center bg-cover bg-muted text-muted-foreground"
+														className="flex aspect-square w-full items-center justify-center"
 														imageUrl={imageUrl}
 														name={product.name}
+														placeholderClassName="bg-muted text-muted-foreground"
 													/>
 												</button>
 											))}

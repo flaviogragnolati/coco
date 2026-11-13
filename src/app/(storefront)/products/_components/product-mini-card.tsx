@@ -37,9 +37,10 @@ export function ProductMiniCard({
 			type="button"
 		>
 			<ProductImage
-				className="flex aspect-square w-16 shrink-0 items-center justify-center rounded-xl bg-center bg-cover bg-muted text-muted-foreground"
+				className="flex aspect-square w-16 shrink-0 items-center justify-center rounded-xl"
 				imageUrl={product.imageUrl}
 				name={product.name}
+				placeholderClassName="bg-muted text-muted-foreground"
 			/>
 			<span className="flex min-w-0 flex-1 flex-col gap-0.5">
 				<span className="line-clamp-2 text-xs">{product.name}</span>
