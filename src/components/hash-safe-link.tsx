@@ -11,7 +11,7 @@ type HashSafeLinkProps = Omit<ComponentProps<"a">, "href"> & { href: string };
  * to a route it had not prefetched, and every later `<Link>` to that route
  * appends its own fragment to the cached one ("/#ofertas#ofertas"). A native
  * anchor scrolls within the page without going through the router, and from
- * another page it loads the target fresh.
+ * another page it loads the target fresh. Revisit when upgrading Next.
  */
 export function HashSafeLink({ href, ...props }: HashSafeLinkProps) {
 	if (href.includes("#")) {
