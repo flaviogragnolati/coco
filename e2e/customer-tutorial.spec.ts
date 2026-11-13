@@ -59,8 +59,15 @@ test("the help menu opens the express tutorial, which steps, reloads and exits",
 	page,
 }) => {
 	await page.goto("/products");
-	await page.getByRole("button", { name: "Ayuda" }).click();
-	await page.getByRole("menuitem", { name: "Tutorial rápido · 1 min" }).click();
+	const express = page.getByRole("menuitem", {
+		name: "Tutorial rápido · 1 min",
+	});
+	// Retried so a click that lands before hydration does not fail the test.
+	await expect(async () => {
+		await page.getByRole("button", { name: "Ayuda" }).click();
+		await expect(express).toBeVisible({ timeout: 1_000 });
+	}).toPass();
+	await express.click();
 
 	await expect(page).toHaveURL(
 		/\/tutorial\?version=rapido&volver=%2Fproducts$/,
