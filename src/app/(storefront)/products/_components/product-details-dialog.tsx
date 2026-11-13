@@ -13,8 +13,10 @@ import {
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
 import { ProductImage } from "~/features/catalog/_components/product-image";
+import { useWeeklyClosing } from "~/features/weekly-closing/weekly-closing-provider";
 import { cn } from "~/lib/utils";
 import { visibleProductDescription } from "~/shared/common/product-description";
+import { productClosingLine } from "~/shared/common/weekly-closing";
 import { api } from "~/trpc/react";
 import {
 	CatalogProductPurchase,
@@ -49,6 +51,7 @@ export function ProductDetailsDialog({
 		{ enabled: open && productId !== null },
 	);
 	const product = detailQuery.data;
+	const closing = useWeeklyClosing();
 
 	const bodyRef = useRef<HTMLDivElement>(null);
 	const [activeImage, setActiveImage] = useState<string | null>(null);
@@ -87,10 +90,16 @@ export function ProductDetailsDialog({
 					<DialogTitle className="font-semibold text-xl leading-snug">
 						{product?.name ?? "Detalle de producto"}
 					</DialogTitle>
-					<DialogDescription className="sr-only">
-						Información comercial vigente para sumarte a una compra mayorista
-						compartida.
-					</DialogDescription>
+					{closing ? (
+						<DialogDescription className="text-muted-foreground text-sm">
+							{productClosingLine(closing.now, closing.schedule)}
+						</DialogDescription>
+					) : (
+						<DialogDescription className="sr-only">
+							Información comercial vigente para sumarte a una compra mayorista
+							compartida.
+						</DialogDescription>
+					)}
 				</DialogHeader>
 
 				<div
