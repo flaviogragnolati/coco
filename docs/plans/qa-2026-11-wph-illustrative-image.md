@@ -1,6 +1,6 @@
 # Plan reducido: WP-H, leyenda "Imagen ilustrativa" en las fotos de producto (#90)
 
-> **Estado:** Working. Simple grill del 13/11/2026. Flavio contestó las 4 preguntas a través del orquestador y eligió la opción recomendada en todas.
+> **Estado:** Implementado en la rama `wph-illustrative-image`, pendiente de merge (ver §11). Simple grill del 13/11/2026. Flavio contestó las 4 preguntas a través del orquestador y eligió la opción recomendada en todas.
 > **Origen:**
 > - `docs/plans/qa-open-tickets-2026-11-orchestration.md` (§6 WP-H, §7);
 > - `docs/plans/qa-open-tickets-2026-11-report.md` (fila #90).
@@ -251,3 +251,83 @@ La transición se agrega a `scripts/qa-ticket-triage.data.ts` (WP0). La nota va 
 - Flavio avisado de que tiene que aplicar la migración en la DB compartida **antes** del deploy, y de cargar los colores de las 6 categorías desde el ABM.
 - El registro de ejecución agregado a este plan, con la decisión sobre el mosaico de combos, y una fila en §13 de la orquestación.
 - La transición de §9 cargada en el script de triage.
+
+## 11. Registro de ejecución
+
+**13/11/2026 · implementador WP-H.** Rama `wph-illustrative-image`, rebasada sobre `main` en `7b97050`, con WP0, WP-A, WP-C y WP-G ya mergeados. Sin merge ni push.
+
+### Commits
+
+Los hashes son los de después del último rebase.
+
+| Commit | Qué |
+| --- | --- |
+| `01d2999` | `illustrativeLegendColor`, `ILLUSTRATIVE_IMAGE_LEGEND` y `NEUTRAL_LEGEND_COLOR`, con los valores de la tabla del paso 8 en el test. |
+| `a9527f1` | Columna, migración, esquema, `category.data.ts`, mappers, formulario y tabla del ABM, con tests del esquema y del servicio (pasos 1 a 7 y 13). |
+| `fb7691b` | El color hasta el catálogo, la ficha, la vista previa y la home, y los fixtures del tutorial (pasos 9 y 15). |
+| `12b9936` | `ProductImage` con `legend` y sus cuatro callers grandes, con el test de componente (pasos 10 a 12). |
+| `8561846` | Glosario (paso 16). |
+| `c3a6bf8` | `docs/schema-reference.md`. |
+| `0af8cac` | e2e (paso 14). |
+| `c502798` | Transición de #90 en `qa:triage` (§9). |
+| `76a612a` | Fixture de `cart-mappers.test.ts` que el typecheck no marcaba (el objeto pasa por `homeOfferSchema.parse`). |
+| `51b00b7` | Test de la escena del catálogo del tutorial: la leyenda en `#724f27` y la miel sin leyenda. |
+| `f8f9e43` | Lo que dejó la revisión independiente: hash de la nota de #90 después del rebase y un espacio del glosario. |
+| (último) | Este registro. |
+
+### Migración
+
+`prisma/migrations/20261113100000_category_photo_background_color/migration.sql`. Escrita a mano y **sin aplicar en la base compartida**. Flavio la aplica antes del deploy:
+
+```sh
+pnpm exec prisma db execute --file prisma/migrations/20261113100000_category_photo_background_color/migration.sql
+pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma
+```
+
+### Validación
+
+Es la corrida final, sobre `7b97050`.
+
+- `pnpm typecheck`: sin errores.
+- `pnpm test`: 142 archivos pasan y 1 se saltea (el de antes). Son 2064 tests en verde y 6 salteados.
+- `pnpm check` (Biome): 886 archivos, sin cambios.
+- **e2e, contra la DB local sembrada** con la migración aplicada por `E2E_PREP` (script con lock del orquestador):
+  - `catalog-product-card` (5, incluido el nuevo "large product photos carry the illustrative legend, placeholders and thumbnails do not") y `smoke` (15): en verde.
+  - `customer-tutorial` (9): 8 en verde. Falla `customer-tutorial.spec.ts:58`, el intermitente conocido de `main` (el menú "Ayuda" no abre mientras Next muestra el hydration mismatch de `/products`). Con `--repeat-each 3` pasó 2 de 3 veces. Los otros 8 pasan siempre.
+  - El `.env` quedó restaurado en cada corrida y el script lo verificó con sha256.
+- **Revisión de tamaño y posición** (un spec temporal, no commiteado, contra la misma base, en `/products` y `/` a 360, 768, 1280 y 1536 px):
+  - la leyenda está en una línea, dentro del cuadro, abajo a la derecha;
+  - mide 9 px en todos los anchos: los cuadros miden entre 229 y 354 px, así que el 2,5 % (5,7 a 8,8 px) queda debajo del mínimo y rige el mínimo;
+  - la distancia al borde derecho sale del 3 % del ancho (10 px en un cuadro de 328 px). Eso confirma que Tailwind v4 genera `@container` y las clases con `cqw`, que también se compilaron aparte con el compilador de Tailwind.
+- **No se hizo** la revisión manual del ABM (elegir el color, la columna, "Quitar color" y la auditoría) ni la de la vista previa del admin: el admin necesita login con Google, que no hay en la base local. Las cubren los tests del esquema, del servicio (auditoría con el color antes y después) y el typecheck. Queda para el re-test de #90.
+
+### Mini review
+
+La hizo un sub-agente independiente con `q-review-code` (los dos ejes) y `q-review-comments` sobre `main...HEAD`.
+
+- **`q-review-code`: pasa con hallazgos.**
+  - S1 (mayor): la rama tenía conflicto con `main` en `scripts/qa-ticket-triage.data.ts` y el hash de la nota de #90 iba a quedar viejo. Se rebaseó, se conservaron las entradas de `main` (#5, #6 y #8) y la nota apunta a `12b9936`.
+  - S2 (detalle): una línea en blanco mal ubicada en el glosario. Corregida.
+  - P1 (mayor): faltaban este registro y la fila de §13 de la orquestación. Este registro queda acá. La fila de §13 la escribe el orquestador al mergear (ver desvíos).
+  - P2 (menor): el mismo hash que S1.
+- **`q-review-comments`: pasa.** Los 7 comentarios agregados quedan como están.
+
+### Desvíos
+
+- **Test de `ProductImage`.** Ya existía `product-image.test.ts` (de `cssUrl`). Se renombró a `.tsx` y se le sumaron los cuatro casos del paso 12, en lugar de crear un archivo nuevo al lado.
+- **Caso "crear con `#E8DCC8` guarda `#e8dcc8`" (paso 13).** El paso a minúsculas lo hace el esquema, así que ese caso y el de `"#abc"` están en `category.schemas.test.ts` (nuevo). El test del servicio verifica que el color validado llegue a `createCategory` y que la auditoría lo lleve antes y después.
+- **Formulario.** Con el color en `null`, al lado del selector se lee "Sin color" en vez de un hex.
+- **Fila de §13 de la orquestación.** No se escribe en esta rama: las filas llevan el hash del merge y la orquestación la tocan también WP-B, WP-D y WP-F en paralelo. Es lo conservador. El texto propuesto queda en el reporte al orquestador.
+- **Hash de la nota de #90.** Apunta a `12b9936`, el commit de la leyenda. Sigue siendo válido con un merge `--no-ff`. Si la rama se vuelve a rebasear, hay que actualizarlo.
+
+### Mosaico de combos (WP-D)
+
+**Queda fuera de WP-H.** WP-D no está en `main`. Cuando se mergee, el que llegue segundo tiene que:
+- cargar `photoBackgroundColor` en los ítems del combo con `toCatalogCategory(...)`. El typecheck lo exige si los ítems usan `homeOfferSchema`;
+- pasar `legend` a `ProductImage` en el mosaico, si las fotos son grandes. **Esto no lo exige nada**, así que hay que revisarlo a mano.
+
+### Para Flavio
+
+1. Aplicar la migración en la base compartida **antes** del deploy, con los dos comandos de arriba.
+2. Después del deploy, cargar el "Color de fondo de las fotos" de las 6 categorías en Admin → Categorías. Hasta entonces, la leyenda va en gris oscuro.
+3. Correr `qa:triage --apply` para #90 → Re-test. La observación de §9 para #106 ya está en su nota de `main`, así que no hace falta nada más.
