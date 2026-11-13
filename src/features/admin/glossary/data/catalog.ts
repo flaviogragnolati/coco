@@ -187,7 +187,6 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		aliases: ["Presentación", "Pack del proveedor"],
 		href: "/admin/product-terms",
 	},
-
 	{
 		slug: "concepto-imagen-ilustrativa",
 		kind: "concept",
@@ -199,6 +198,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		aliases: ["Leyenda de la foto", "Marca de agua"],
 		href: "/admin/categories",
 	},
+
 	// --- Entidades -----------------------------------------------------------
 	{
 		slug: "entidad-producto",

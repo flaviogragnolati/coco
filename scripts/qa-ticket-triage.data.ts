@@ -353,7 +353,7 @@ const implemented: TriageTransition[] = [
 		from: ["passed"],
 	},
 	retest(90, {
-		fix: "Implementado en ceda5b1 como leyenda en pantalla (no se modifica el archivo; decisión de Flavio del 13/11)",
+		fix: "Implementado en 12b9936 como leyenda en pantalla (no se modifica el archivo; decisión de Flavio del 13/11)",
 		look: '"Imagen ilustrativa" abajo a la derecha en tarjetas del catálogo y la home, destacado, foto principal de la ficha y vista previa del admin; tamaño 2,5 % del ancho con mínimo de 9 px; color = tono oscuro del "Color de fondo de las fotos" de la categoría (Admin → Categorías), gris oscuro si no tiene; no aparece en miniaturas, Similares, pedido/checkout ni en productos sin foto; cambiar la categoría o su color cambia la leyenda al recargar. La foto descargada no lleva la leyenda (por diseño)',
 		preconditions:
 			"migración aplicada y al menos una categoría con color cargado",
