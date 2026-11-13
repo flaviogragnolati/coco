@@ -1,0 +1,53 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-2026-11-wpb-weekly-closing-home.md"
+      change: "WP-B execution record: commits, validation, e2e, visual check, deviations, review, QA notes for #98, #99, #100, #104, #107, #70 and the Calle Falsa 123 precondition; migration instruction corrected to prisma db execute"
+    - artifact_type: "reference"
+      path: "docs/schema-reference.md"
+      change: "WeeklyClosingSettings model row and singleton note"
+    - artifact_type: "plan"
+      path: "docs/plans/home-community-redesign.md"
+      change: "Amendment 2026-11-13: the weekly closing reverses 'sin fecha de cierre'"
+    - artifact_type: "plan"
+      path: "docs/plans/customer-tutorial.md"
+      change: "Script table: new howItWorks body"
+  references_added: []
+  traceability_delta:
+    - {item: "#98 model, migration and helpers", implemented_by: "commit e4e20b7 on wpb-weekly-closing-home"}
+    - {item: "#98 admin screen and storefront reader", implemented_by: "commit 1339f4c on wpb-weekly-closing-home"}
+    - {item: "#98 countdown", implemented_by: "commit f1b1f9d on wpb-weekly-closing-home"}
+    - {item: "#99 + #100 + #104 home copy, #70 illustration move", implemented_by: "commit 9d0ea22 on wpb-weekly-closing-home"}
+    - {item: "#107 closing line", implemented_by: "commit 1b06a31 on wpb-weekly-closing-home"}
+    - {item: "companions and review", implemented_by: "commits 67cd3e1, 202c70b, a3821c2, 7730595, 0cdbe33 on wpb-weekly-closing-home"}
+  decisions_added_or_updated:
+    - "The countdown clock measures the server offset once per document"
+    - "A failed storefront read of the weekly closing falls back to the defaults instead of failing the page"
+    - "The product closing line takes the context's next closing, not the current instant"
+    - "WeeklyClosingSettings is a kept model for the demo purge and the catalog reset"
+  risks_added_or_updated:
+    - "The storefront client bundle now carries dayjs with its timezone plugin"
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "Independent review (q-review-code two axes, q-review-comments): no blockers; findings applied, midnight reads 'a las 0' (accepted)"
+    - "e2e green against the local database: smoke 16/16, home-section-links 3/3, catalog-product-card 4/4, customer-tutorial 9/9"
+    - "customer-tutorial.spec.ts:58 needed a hydration retry: the pre-existing /products hydration mismatch drops an early click and the storefront now hydrates later in cold dev"
+    - "Not checked: the navbar with a session, the admin screen (no admin e2e), the FAQ answer with a real pickup point"
+    - "Migration not applied to the shared database: Flavio applies it with prisma db execute before the deploy"
+    - "Orchestration section 13 row and qa-ticket-triage entries left to the orchestrator"
+  required_user_actions:
+    - "Apply prisma/migrations/20261113120000_weekly_closing_settings/migration.sql to the shared database"
+    - "Fix or deactivate the 'Calle Falsa 123' pickup point before the #104 re-test"
+    - "Review the preliminary copy in the re-test"
+  next_recommended_action: "Merge --no-ff wpb-weekly-closing-home into main, load the section 13.5 transitions into qa-ticket-triage"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true
