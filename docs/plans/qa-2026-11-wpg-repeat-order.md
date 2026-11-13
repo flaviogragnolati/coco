@@ -1,6 +1,6 @@
 # Plan reducido: WP-G, repetir pedido (#112)
 
-> **Estado:** Working. Simple grill del 13/11/2026. Flavio contestó las 5 preguntas a través del orquestador y eligió la opción recomendada en todas.
+> **Estado:** Implementado en la rama `wpg-repeat-order` (13/11/2026), sin mergear. Faltan el merge, los e2e contra la DB local y la transición de QA (ver §11). Simple grill del 13/11/2026. Flavio contestó las 5 preguntas a través del orquestador y eligió la opción recomendada en todas.
 > **Origen:** `docs/plans/qa-open-tickets-2026-11-orchestration.md` (§6 WP-G, §7) y la fila #112 de `docs/plans/qa-open-tickets-2026-11-report.md`.
 > **Base:** `main` en `055450f`. Si WP-D o WP-F ya se mergearon cuando arranque este WP, rebasear sobre `main` (ver §7, archivos compartidos).
 
@@ -278,3 +278,103 @@ Cargar la transición en `scripts/qa-ticket-triage.data.ts` (WP0). La nota va **
 - El merge `--no-ff` a `main`.
 - El registro de ejecución agregado a este plan y una fila en §13 de la orquestación.
 - La transición de §9 cargada en el script de triage.
+
+## 11. Registro de ejecución
+
+**13/11/2026 · implementador WP-G.** Rama `wpg-repeat-order`, rebasada sobre `main` en `6d53286`, con WP-A ya mergeado. Sin merge ni push.
+
+### Commits
+
+Los hashes son los de después del último rebase.
+
+| Commit | Qué |
+| --- | --- |
+| `34cd962` | `readSnapshotProduct`, `readSnapshotUnitPrice`, `canRepeatOrder` y `formatOrderLineQuantityPrice`, con tests (pasos 1 y 2). |
+| `ff19a39` | `planCartAdditions`, `collectRepeatLines`, `decideRepeatGate`, `mergeCartItems`, `describeRepeatOutcome` y los schemas de `addItems`, con tests (pasos 3 a 6 y 8). |
+| `61fd426` | `listCurrentClientTermsByProductIds`, `addItemsInTransaction`, `addItems` y `readAddItemsOutput` (pasos 7 y 9). |
+| `96eb3b6` | `repeat-order.schemas.ts`, `repeat-order.service.ts` y `orders.repeatPreview` / `orders.repeat` (pasos 10 a 12). |
+| `16fbec2` | Tests del servicio con mocks de `cart.data` y `checkout.data` y un espía sobre `releaseCheckoutCart` (paso 13). |
+| `cb52866` | Formato de Biome. |
+| `442404d` | `addItems` del store, el diálogo "Repetir pedido", el slot del detalle, la línea "cantidad × precio" y la página (pasos 14 a 17). |
+| `2e38fa0` | Fixture del tutorial con `productClientTerms`, su test y el e2e (pasos 18 y 19). |
+| `36b2e52` | Lo que dejó la mini review. |
+| `0c064d5` | Este registro. |
+| `448fdd2` | Revisión independiente, del lado del servidor: M1, L1, C1, C2 y N1. |
+| `cbc6eb2` | Revisión independiente, del lado del diálogo: L1, N2 y N3. |
+| `ba4f264` | El registro de la revisión independiente. |
+| `32e16e9` | El registro del e2e y los hashes rebasados. |
+| (último) | El docstring de `LiveOrderRefusedError`, que pidió el revisor. |
+
+### Validación
+
+Es la corrida final, sobre `6d53286` y con las correcciones de la revisión independiente.
+
+- `pnpm typecheck`: sin errores.
+- `pnpm test`: 137 archivos pasan y 1 se saltea (`scripts/reset-initial-catalog.integration.test.ts`, que se saltea desde antes). Son 1985 tests en verde y 4 salteados.
+- `pnpm check` (Biome): 876 archivos, sin cambios.
+- **e2e, contra la DB local sembrada:** se corrieron `e2e/customer-tutorial.spec.ts` y `e2e/smoke.spec.ts` con el script con lock del orquestador. Pasaron los 24 tests en la primera corrida, incluido el nuevo, "the order detail shows the price paid per unit and no repeat button".
+  - El log del servidor muestra el aviso de hydration mismatch de `/products` (`catalog-filters-sidebar.tsx`), que ya existía y no hizo fallar nada.
+  - El `.env` quedó restaurado y el script lo verificó con sha256.
+- Paso 20: la entrada *Repeat order* de `CONTEXT.md` está y coincide con lo implementado.
+- Paso 21: el grep de "carrito", "MOQ", "step" y "máximo" sobre el diálogo, los mensajes, el servicio y los schemas nuevos no encuentra nada.
+- No hay migración: no cambia `prisma/schema.prisma`.
+
+### Mini review
+
+- **`q-review-code`, eje de estándares: pasa con hallazgos menores.**
+  - Aplicado: el preview ahora decide el bloqueo con el veredicto de `decideRepeatGate` y no con la presencia del pedido vivo, así el gate es la única autoridad.
+  - Riesgo residual: si los términos vigentes de un producto no tienen ni precio por unidad ni precio de mínimo, `calculateLineTotal` tira error y el preview responde 500. Es el mismo comportamiento que ya tienen el carrito y el checkout con esos términos, así que no se trató aparte.
+  - El pedido se busca siempre con el `userId` de la sesión. Los `productIds` que no están en el pedido se ignoran, así que la mutación no sirve para sumar productos arbitrarios.
+- **`q-review-code`, eje de especificación: pasa.** Los pasos 1 a 21 están cubiertos y los desvíos están abajo.
+- **`q-review-comments`: pasa con hallazgos, ya aplicados.**
+  - Se reescribió el comentario del estado de selección del diálogo, que era ambiguo (blocker).
+  - Se acortó el docstring de `addItemsInTransaction`, que repetía el de `planCartAdditions` (sugerencia).
+
+### Revisión independiente (orquestador): pasa con hallazgos, ya corregidos
+
+- **M1, carrera entre el bloqueo y la liberación.**
+  - El problema: `repeat` decidía con su propia lectura del pedido vivo. `ensureCartMutable` → `releaseCheckoutCart` volvía a leerlo, y si el pedido había nacido entre las dos lecturas (un `confirmAndPay` en otra pestaña), lo cancelaba.
+  - El arreglo: `releaseCheckoutCart` acepta una política `{ refuseLiveOrder: true }`. Con ella, si **su** lectura encuentra un pedido vivo, devuelve `refusedLiveOrder` en vez de cancelarlo.
+    - La política viaja por `addItemsInTransaction` → `getOrCreateCurrentCart` → `ensureCartMutable`.
+    - `ensureCartMutable` la convierte en `LiveOrderRefusedError` y `repeat` la traduce a `PRECONDITION_FAILED` con `REPEAT_BLOCKED_MESSAGE`.
+  - Para que `checkout.leave`, que no pasa política, conserve el tipo estrecho del resultado, `releaseCheckoutCart` tiene dos sobrecargas.
+  - El gate previo queda como camino rápido.
+  - Test: `findLiveOrderByCartId` devuelve `null` la primera vez y una transferencia sin informar la segunda. No se llama ni a `cancelTransaction` ni a `updateOrderStatus` ni se escribe en el carrito. Sin la política, el test falla.
+- **L1, nada para sumar.** Si ningún producto tiene términos vigentes, `addItemsInTransaction` no llama a `getOrCreateCurrentCart`: el carrito no se toca y un checkout abandonado no se libera. La salida trae el carrito actual (`readAddItemsOutput(userId, …)` lee con `getCurrent`). En ese caso el diálogo muestra el aviso, vuelve a pedir el preview y se queda abierto, sin ir a `/cart`.
+- **C1 y C2:** los docstrings de `addItems` y de `repeat` se reescribieron con el texto pedido.
+- **N1:** `findCurrentTermsByProductId` acepta `typeof db | CartTransaction`.
+- **N2:** los ids de las casillas salen de `useId()`.
+- **N3:** `onSuccess` cierra con `handleOpenChange(false)`, que también limpia la selección.
+- **L2, redondeo de "cantidad × precio": se acepta como está.** El precio por unidad se muestra redondeado como en el catálogo (ARS sin decimales), así que cantidad × precio mostrado puede no dar exactamente el total de la línea, que sale del precio sin redondear.
+- **Riesgo residual, fuera de alcance:** no hay lock de fila del carrito.
+  - La política cierra la carrera entre el gate y la liberación, porque la lectura que decide es la misma que cancelaría.
+  - Pero un `confirmAndPay` que cree el pedido después de esa lectura y antes del commit de `repeat` no se ve.
+  - Cerrarlo pide un lock de fila del carrito (`SELECT … FOR UPDATE`) compartido con `confirmAndPay`.
+
+### Desvíos
+
+1. **`readAddItemsOutput` y `findCurrentTermsByProductId` exportadas desde `cart.service.ts`.**
+   - El plan pide que `repeat` lea el carrito fuera de la transacción, pero `getCartSnapshot` es privada.
+   - En vez de exportarla tal cual, `readAddItemsOutput` arma y valida la salida de `addItems`. La usan `addItems` y `repeat`.
+   - `findCurrentTermsByProductId` se queda con los términos vigentes de cada producto y la comparten el preview y `addItemsInTransaction`.
+2. **`CartTransaction` exportado.** Es un alias del tipo de cliente de transacción que `cart.service.ts` ya repetía en línea. Solo lo usan las funciones nuevas: las existentes no se tocaron.
+3. **Tipos de "Repetir pedido" en `cart.types.ts`** (`RepeatOrderPreview`, `RepeatOrderPreviewLine`, `RepeatOrderInput`). El plan no decía dónde iban.
+4. **`quantity` de `cartAddedLineSchema`** usa `decimalOutputSchema.nullable()` en lugar de `z.string().nullable()`, como el resto de las cantidades del carrito. La salida es la misma.
+5. **El diálogo, además de `replaceCart`, invalida `cart.getCurrent`** para que la caché de tRPC no quede atrás del store al llegar a `/cart`.
+6. **Pedido de otro usuario en `repeat` y producto elegido que no está en el pedido.** El plan solo pedía el `NOT_FOUND` del preview. Se agregó un test de que `repeat` también da `NOT_FOUND` y otro de que elegir solo productos ajenos al pedido da `BAD_REQUEST` sin escribir.
+7. **El e2e usa `.first()`** en el `getByText` del precio, por si la escena muestra el texto más de una vez.
+8. **§9 y §10 sin cerrar en este WP.**
+   - `scripts/qa-ticket-triage.data.ts` todavía no existe porque WP0 no se mergeó. La transición de #112 queda escrita abajo para que el orquestador la cargue cuando exista.
+   - La fila de §13 de la orquestación la agrega el orquestador con el merge.
+
+### Nota de QA para #112 (transición a Re-test)
+
+Va **arriba** de las notas que haya, sin borrarlas, por `scripts/qa-ticket-triage.data.ts` cuando WP0 esté mergeado. Hay que reemplazar `<commit>` por el merge a `main`.
+
+> `[13/11/2026 · triage] Implementado en <commit>. Mirar: en Mis pedidos, detalle de un pedido que no esté "Pendiente" → "Repetir pedido"; diálogo con casillas (todas marcadas, precio de hoy, "Ya no disponible" deshabilitado); al confirmar se suma a Tu pedido (acumula si el producto ya estaba, ajustado al tamaño de compra) y se abre Tu pedido para editar y confirmar; el pedido original no cambia; cada línea del detalle muestra "cantidad × precio". Con otro pedido esperando el pago aparece el aviso con "Ver pedido pendiente" y no se cancela nada. Precondiciones: cuenta de cliente con al menos un pedido pagado; para el aviso, un pedido confirmado con transferencia sin informar.`
+
+### Riesgo anotado para QA
+
+- Repetir un pedido cancelado cuyos productos siguen en "Tu pedido" duplica las cantidades (§5). Es la regla elegida en la P2.
+- Los pedidos de antes de que el checkout guardara `productClientTerms` en `priceSnapshot` muestran solo la cantidad, sin "× precio".
+- Observación (L2): en "cantidad × precio", el precio por unidad va redondeado como en el catálogo, así que la cuenta a mano puede diferir en centavos del total de la línea. Es lo aceptado.

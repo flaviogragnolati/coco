@@ -156,6 +156,19 @@ test("a deep link opens its step and an unsafe return path falls back home", asy
 	await expect(page).toHaveURL(/localhost:\d+\/$/);
 });
 
+test("the order detail shows the price paid per unit and no repeat button", async ({
+	page,
+}) => {
+	await page.goto("/tutorial?version=rapido&paso=11");
+	await expect(counter(page)).toHaveText("11 / 12");
+	await expect(
+		page.getByText(/0,5 kg × \$\s?22\.600 \/ kg/).first(),
+	).toBeVisible();
+	await expect(
+		page.getByRole("button", { name: "Repetir pedido" }),
+	).toHaveCount(0);
+});
+
 test.describe("on a phone", () => {
 	test.use({ viewport: { width: 375, height: 740 } });
 

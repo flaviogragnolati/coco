@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Prisma } from "~/prisma/client";
+import { currentTermsWhere } from "../_base/terms-validity";
 
 type CartDbClient = Prisma.TransactionClient;
 
@@ -175,6 +176,28 @@ export async function listProductClientTermsForCart(
 	return database.productClientTerms.findMany({
 		where: { id: { in: ids } },
 		select: cartProductClientTermsSelect,
+	});
+}
+
+/**
+ * The current client terms of each product, newest first with the catalog's
+ * tie-break, so the first row per product is the one the catalog sells.
+ */
+export async function listCurrentClientTermsByProductIds(
+	database: CartDbClient,
+	productIds: number[],
+	now: Date,
+) {
+	if (productIds.length === 0) return [];
+
+	return database.productClientTerms.findMany({
+		where: {
+			...currentTermsWhere(now),
+			productId: { in: productIds },
+			product: { active: true, deleted: false },
+		},
+		select: cartProductClientTermsSelect,
+		orderBy: [{ fromDate: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
 	});
 }
 

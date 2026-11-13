@@ -27,6 +27,7 @@ import {
 	formatOrderDelivery,
 } from "~/shared/common/delivery-display";
 import {
+	formatOrderLineQuantityPrice,
 	orderStatusChipConfigMap,
 	paymentStatusLabelMap,
 } from "~/shared/common/order-display";
@@ -107,11 +108,14 @@ export function OrderDetailView({
 	order,
 	journeyView,
 	externalPaymentSlot,
+	actionsSlot,
 	targets,
 }: {
 	order: OrderDetail;
 	journeyView: CustomerOrderJourneyView;
 	externalPaymentSlot?: React.ReactNode;
+	/** Real page only; the tutorial leaves it out. */
+	actionsSlot?: React.ReactNode;
 	/** Marks regions for an outside walkthrough; absent on the real page. */
 	targets?: { journey?: DataAttributes };
 }) {
@@ -136,13 +140,16 @@ export function OrderDetailView({
 				</Badge>
 			</div>
 
-			<section className="flex flex-col gap-2">
-				<h1 className="font-heading font-semibold text-2xl tracking-normal">
-					Pedido {order.code}
-				</h1>
-				<p className="text-muted-foreground text-sm/relaxed">
-					Código de armado {order.cartCode}
-				</p>
+			<section className="flex flex-wrap items-end justify-between gap-3">
+				<div className="flex min-w-0 flex-col gap-2">
+					<h1 className="font-heading font-semibold text-2xl tracking-normal">
+						Pedido {order.code}
+					</h1>
+					<p className="text-muted-foreground text-sm/relaxed">
+						Código de armado {order.cartCode}
+					</p>
+				</div>
+				{actionsSlot}
 			</section>
 
 			{targets?.journey ? (
@@ -174,7 +181,7 @@ export function OrderDetailView({
 										{getProductName(item)}
 									</span>
 									<span className="text-muted-foreground text-xs">
-										{itemQuantityLabel(item)}
+										{formatOrderLineQuantityPrice(item)}
 									</span>
 								</div>
 								<span className="font-heading font-semibold">

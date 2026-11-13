@@ -25,6 +25,13 @@ export type CheckoutReleaseOutcome =
 			cart: null;
 	  };
 
+export type CheckoutReleasePolicy = { refuseLiveOrder: true };
+
+export type RefusedLiveOrderOutcome = {
+	decision: "refusedLiveOrder";
+	cart: null;
+};
+
 /**
  * The single implementation of handing a cart back to the customer: cancel the
  * live order and its pending attempt, then return the cart to `pending`. Both
@@ -41,15 +48,33 @@ export type CheckoutReleaseOutcome =
  * Never turns a refusal into an error and never opens its own transaction: it
  * always runs inside the caller's `$transaction`, and the caller decides what a
  * `blocked*` decision means for it.
+ *
+ * With `refuseLiveOrder`, any live order this read finds is refused instead of
+ * cancelled. A caller that checked for one earlier still needs it: the order
+ * may have been confirmed in between.
  */
 export async function releaseCheckoutCart(
 	database: CheckoutDbClient,
 	cart: { id: number; status: CartStatus },
-): Promise<CheckoutReleaseOutcome> {
+): Promise<CheckoutReleaseOutcome>;
+export async function releaseCheckoutCart(
+	database: CheckoutDbClient,
+	cart: { id: number; status: CartStatus },
+	policy?: CheckoutReleasePolicy,
+): Promise<CheckoutReleaseOutcome | RefusedLiveOrderOutcome>;
+export async function releaseCheckoutCart(
+	database: CheckoutDbClient,
+	cart: { id: number; status: CartStatus },
+	policy?: CheckoutReleasePolicy,
+): Promise<CheckoutReleaseOutcome | RefusedLiveOrderOutcome> {
 	const liveOrder =
 		cart.status === "atCheckout"
 			? await findLiveOrderByCartId(database, cart.id)
 			: null;
+	if (liveOrder && policy?.refuseLiveOrder) {
+		return { decision: "refusedLiveOrder", cart: null };
+	}
+
 	const latestAttempt = liveOrder?.transactions[0] ?? null;
 	const decision = decideCheckoutRelease({
 		cartStatus: cart.status,
