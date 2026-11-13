@@ -14,6 +14,8 @@ export const RESET_DELETE_ORDER = [
 	...TRANSACTIONAL_DELETE_ORDER.filter(
 		(model) => model !== "PaymentProviderEvent",
 	),
+	"HomeFeaturedItem",
+	"ComboItem",
 	"ProductLocalConstraints",
 	"ProductClientTerms",
 	"ProductSupplierTerms",

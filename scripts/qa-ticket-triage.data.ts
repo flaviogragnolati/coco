@@ -319,7 +319,7 @@ const implemented: TriageTransition[] = [
 	}),
 	retest(73, {
 		fix: "Re-testear después de #106 (b04ebdc)",
-		look: 'el selector − n + se puede editar en la tarjeta y en la ficha, arranca en el mínimo y no baja de ahí. Superado por #106: el total ya no se muestra en la ficha (queda para lectores de pantalla y en Tu pedido)',
+		look: "el selector − n + se puede editar en la tarjeta y en la ficha, arranca en el mínimo y no baja de ahí. Superado por #106: el total ya no se muestra en la ficha (queda para lectores de pantalla y en Tu pedido)",
 		preconditions: "ninguna",
 	}),
 	retest(84, {

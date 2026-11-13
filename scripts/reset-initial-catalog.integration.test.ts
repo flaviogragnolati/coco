@@ -111,20 +111,30 @@ describe.skipIf(!url)("initial catalog reset on isolated PostgreSQL", () => {
 		const product = await db.product.findFirstOrThrow({
 			where: { name: "Almendra Non Pareil 25/27" },
 		});
-		await db.product.update({
-			where: { id: product.id },
-			data: { homeOfferRank: 2 },
+		await db.homeFeaturedItem.create({
+			data: { position: 2, productId: product.id },
 		});
 		await db.homeOfferSettings.update({
 			where: { id: 1 },
 			data: { spotlightProductId: product.id },
 		});
-		await db.product.create({
+		const unrelated = await db.product.create({
 			data: {
 				name: "Old unrelated product",
 				unit: "kg",
 				active: false,
 				deleted: true,
+			},
+		});
+		await db.combo.create({
+			data: {
+				name: "Combo fixture",
+				items: {
+					create: [
+						{ productId: product.id, quantity: "2.5", sortOrder: 0 },
+						{ productId: unrelated.id, quantity: "1", sortOrder: 1 },
+					],
+				},
 			},
 		});
 		const terms = await db.productClientTerms.findFirstOrThrow();
@@ -340,7 +350,7 @@ describe.skipIf(!url)("initial catalog reset on isolated PostgreSQL", () => {
 		).not.toBeNull();
 	});
 	it("replaces everything atomically while preserving access, QA, home and payment ledger", async () => {
-		await runInitialCatalogReplacement(db, catalog);
+		const { droppedByReset } = await runInitialCatalogReplacement(db, catalog);
 		await db.$transaction((tx) => verifyInitialCatalog(tx, catalog));
 		expect(await db.product.count()).toBe(27);
 		expect(await db.userOrder.count()).toBe(0);
@@ -359,7 +369,17 @@ describe.skipIf(!url)("initial catalog reset on isolated PostgreSQL", () => {
 			where: { id: home.spotlightProductId },
 		});
 		expect(product.name).toBe("Almendra Non Pareil 25/27");
-		expect(product.homeOfferRank).toBe(2);
+		const featured = await db.homeFeaturedItem.findMany();
+		expect(featured.map((entry) => [entry.position, entry.productId])).toEqual([
+			[2, product.id],
+		]);
+		const comboItems = await db.comboItem.findMany();
+		expect(
+			comboItems.map((entry) => [entry.productId, entry.quantity.toString()]),
+		).toEqual([[product.id, "2.5"]]);
+		expect(droppedByReset).toEqual([
+			expect.stringContaining("Old unrelated product"),
+		]);
 		const input = toSeedInitCatalog(catalog);
 		const outcome = await db.$transaction(async (tx) =>
 			applySeedInitPlan(

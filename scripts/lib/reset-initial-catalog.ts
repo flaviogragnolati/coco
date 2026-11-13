@@ -241,7 +241,24 @@ export async function replaceInitialCatalog(tx: Tx, input: Catalog) {
 	const preserved = await preservedDigests(tx);
 	const home = await tx.homeOfferSettings.findMany();
 	const oldProducts = await tx.product.findMany({
-		select: { id: true, name: true, homeOfferRank: true },
+		select: { id: true, name: true },
+	});
+	const oldComboItems = await tx.comboItem.findMany({
+		select: {
+			comboId: true,
+			quantity: true,
+			sortOrder: true,
+			product: { select: { name: true } },
+		},
+		orderBy: { id: "asc" },
+	});
+	const oldFeaturedItems = await tx.homeFeaturedItem.findMany({
+		select: {
+			position: true,
+			comboId: true,
+			product: { select: { name: true } },
+		},
+		orderBy: [{ position: "asc" }, { id: "asc" }],
 	});
 	for (const model of RESET_DELETE_ORDER)
 		await tx.$executeRaw(Prisma.sql`DELETE FROM ${table(model)}`);
@@ -263,13 +280,44 @@ export async function replaceInitialCatalog(tx: Tx, input: Catalog) {
 	const created = await tx.product.findMany({
 		select: { id: true, name: true },
 	});
-	for (const old of oldProducts) {
-		const product = created.find((p) => p.name === old.name);
-		if (product && old.homeOfferRank !== null)
-			await tx.product.update({
-				where: { id: product.id },
-				data: { homeOfferRank: old.homeOfferRank },
+	// Combos and the featured list point at products by id; the new catalog
+	// keeps names, so they are rebuilt by name and what has no match is reported.
+	const createdIdByName = new Map(created.map((p) => [p.name, p.id]));
+	const droppedByReset: string[] = [];
+	const restoredComboProducts = new Set<string>();
+	for (const item of oldComboItems) {
+		const productId = createdIdByName.get(item.product.name);
+		const key = `${item.comboId}:${productId}`;
+		if (productId === undefined || restoredComboProducts.has(key)) {
+			droppedByReset.push(`combo #${item.comboId}: ${item.product.name}`);
+			continue;
+		}
+		restoredComboProducts.add(key);
+		await tx.comboItem.create({
+			data: {
+				comboId: item.comboId,
+				productId,
+				quantity: item.quantity,
+				sortOrder: item.sortOrder,
+			},
+		});
+	}
+	for (const item of oldFeaturedItems) {
+		if (item.comboId !== null) {
+			await tx.homeFeaturedItem.create({
+				data: { position: item.position, comboId: item.comboId },
 			});
+			continue;
+		}
+		const name = item.product?.name;
+		const productId = name ? createdIdByName.get(name) : undefined;
+		if (productId === undefined) {
+			droppedByReset.push(`destacado del home: ${name ?? "-"}`);
+			continue;
+		}
+		await tx.homeFeaturedItem.create({
+			data: { position: item.position, productId },
+		});
 	}
 	for (const setting of home) {
 		const oldName = oldProducts.find(
@@ -306,16 +354,20 @@ export async function replaceInitialCatalog(tx: Tx, input: Catalog) {
 	);
 	for (const model of RESET_DELETE_ORDER.filter(
 		(model) =>
-			!["Product", "ProductClientTerms", "ProductSupplierTerms"].includes(
-				model,
-			),
+			![
+				"Product",
+				"ProductClientTerms",
+				"ProductSupplierTerms",
+				"ComboItem",
+				"HomeFeaturedItem",
+			].includes(model),
 	)) {
 		const rows = await tx.$queryRaw<Array<{ count: number }>>(
 			Prisma.sql`SELECT count(*)::int AS count FROM ${table(model)}`,
 		);
 		assertEqual(rows[0]?.count, 0, model);
 	}
-	return { inventory, result };
+	return { inventory, result, droppedByReset };
 }
 
 export async function runInitialCatalogReplacement(

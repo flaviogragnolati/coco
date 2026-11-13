@@ -179,6 +179,7 @@ const kept: Record<
 	},
 	Destination: { label: "Destinos", count: (tx) => tx.destination.count() },
 	Category: { label: "Categorías", count: (tx) => tx.category.count() },
+	Combo: { label: "Combos", count: (tx) => tx.combo.count() },
 	Channel: { label: "Canales", count: (tx) => tx.channel.count() },
 	HomeOfferSettings: {
 		label: "Configuración del home",
@@ -227,7 +228,6 @@ async function loadInventory(tx: Tx): Promise<Inventory> {
 					name: true,
 					defaultSupplierId: true,
 					brandId: true,
-					homeOfferRank: true,
 					...flags,
 				},
 			}),
@@ -242,6 +242,17 @@ async function loadInventory(tx: Tx): Promise<Inventory> {
 	const localConstraints = await tx.productLocalConstraints.findMany({
 		select: { id: true, productId: true },
 	});
+	const comboItems = await tx.comboItem.findMany({
+		select: { id: true, productId: true },
+	});
+	const featuredItems = await tx.homeFeaturedItem.findMany({
+		select: { id: true, productId: true },
+	});
+	const featuredProductIds = new Set(
+		featuredItems.flatMap((row) =>
+			row.productId === null ? [] : [row.productId],
+		),
+	);
 	const settings = await tx.homeOfferSettings.findUnique({
 		where: { id: 1 },
 		select: { spotlightProductId: true },
@@ -255,11 +266,16 @@ async function loadInventory(tx: Tx): Promise<Inventory> {
 		},
 		{
 			suppliers,
-			products,
+			products: products.map((product) => ({
+				...product,
+				featured: featuredProductIds.has(product.id),
+			})),
 			brands,
 			supplierTerms,
 			clientTerms,
 			localConstraints,
+			comboItems,
+			featuredItems,
 			spotlightProductId,
 		},
 	);
@@ -319,6 +335,12 @@ async function purge(tx: Tx, plan: DemoPurgePlan) {
 		}
 		deleted.push({ label, count });
 	};
+	await exact("Destacados del home demo", demo.featuredItemIds, (ids) =>
+		tx.homeFeaturedItem.deleteMany({ where: { id: { in: ids } } }),
+	);
+	await exact("Productos de combos demo", demo.comboItemIds, (ids) =>
+		tx.comboItem.deleteMany({ where: { id: { in: ids } } }),
+	);
 	await exact("Restricciones locales demo", demo.localConstraintIds, (ids) =>
 		tx.productLocalConstraints.deleteMany({ where: { id: { in: ids } } }),
 	);
@@ -375,9 +397,7 @@ function printInventory(inventory: Inventory) {
 	for (const product of demo.products) {
 		const tags = [
 			product.deleted ? "eliminado" : product.active ? null : "inactivo",
-			product.homeOfferRank === null
-				? null
-				: `fijado en el home, puesto ${product.homeOfferRank}`,
+			product.featured ? "destacado en el home" : null,
 		].filter(Boolean);
 		console.info(
 			`    - #${product.id} ${product.name} (${product.supplierName})${tags.length ? ` [${tags.join(", ")}]` : ""}`,
@@ -388,7 +408,7 @@ function printInventory(inventory: Inventory) {
 		console.info(`    - #${brand.id} ${brand.name}`);
 	}
 	console.info(
-		`  Términos de cliente: ${demo.clientTermIds.length}, términos de proveedor: ${demo.supplierTermIds.length}, restricciones locales: ${demo.localConstraintIds.length}`,
+		`  Términos de cliente: ${demo.clientTermIds.length}, términos de proveedor: ${demo.supplierTermIds.length}, restricciones locales: ${demo.localConstraintIds.length}, productos en combos: ${demo.comboItemIds.length}, destacados del home: ${demo.featuredItemIds.length}`,
 	);
 	if (demo.clearSpotlight) {
 		console.info(

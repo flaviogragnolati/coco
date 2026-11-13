@@ -52,6 +52,10 @@ describe("initial catalog reset guards", () => {
 			]),
 		).toEqual(new Set(modelTables.keys()));
 		expect(RESET_DELETE_ORDER).not.toContain("PaymentProviderEvent");
+		expect(RESET_PRESERVED_MODELS).toContain("Combo");
+		expect(RESET_DELETE_ORDER.indexOf("ComboItem")).toBeLessThan(
+			RESET_DELETE_ORDER.indexOf("Product"),
+		);
 	});
 	it("accepts the agreed snapshot and active reference data", () => {
 		expect(
