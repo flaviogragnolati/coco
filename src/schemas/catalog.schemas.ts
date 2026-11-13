@@ -76,7 +76,7 @@ export const catalogProductListOutputSchema = z.array(
 	catalogProductListItemSchema,
 );
 
-/** Null when there is no transfer discount to show (ADR 0013). */
+/** `percent` is null when there is no transfer discount to show (ADR 0013). */
 export const transferDiscountSchema = z.object({
 	percent: z.number().positive().max(TRANSFER_DISCOUNT_MAX_PERCENT).nullable(),
 });

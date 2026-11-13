@@ -11,3 +11,14 @@ ADD CONSTRAINT "user_transaction_transfer_discount_all_or_none" CHECK (
     ("subtotalAmount" IS NULL) = ("transferDiscountPercent" IS NULL)
     AND ("subtotalAmount" IS NULL) = ("transferDiscountAmount" IS NULL)
 );
+
+-- When present, the breakdown adds up to what the attempt charges.
+ALTER TABLE "user_transaction"
+ADD CONSTRAINT "user_transaction_transfer_discount_breakdown" CHECK (
+    "subtotalAmount" IS NULL
+    OR (
+        "subtotalAmount" - "transferDiscountAmount" = "amount"
+        AND "transferDiscountPercent" > 0
+        AND "transferDiscountPercent" <= 50
+    )
+);

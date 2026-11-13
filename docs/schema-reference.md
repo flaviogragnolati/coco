@@ -219,10 +219,10 @@ An external attempt may carry the *Transfer discount*. `amount` stays what the a
 | Column | Type | Meaning |
 | --- | --- | --- |
 | `subtotalAmount` | `Decimal(18,2)`, nullable | The products subtotal: the sum of the line totals, offer discount included |
-| `transferDiscountPercent` | `Decimal(5,2)`, nullable | The percent in force at confirmation, from the `external` row's `settings.transferDiscountPercent` (0 to 50, 0 = none) |
+| `transferDiscountPercent` | `Decimal(5,2)`, nullable | The percent in force at confirmation, from the `external` row's `settings.transferDiscountPercent`: above 0 and at most 50 (a 0 setting leaves all three null) |
 | `transferDiscountAmount` | `Decimal(18,2)`, nullable | `subtotalAmount − amount`; the total is rounded down to the whole peso |
 
-The `user_transaction_transfer_discount_all_or_none` constraint keeps them together: all three set, or all three null. They are null on every Mercado Pago attempt, on attempts without a discount and on attempts created before the discount existed. A later change to the setting affects only new attempts. Because the amount depends on the method, confirming reuses the live order's open attempt only for the same provider, and a completed payment cancels the order's other pending attempts without a declared receipt.
+The `user_transaction_transfer_discount_all_or_none` constraint keeps them together: all three set, or all three null. When set, `user_transaction_transfer_discount_breakdown` requires `subtotalAmount − transferDiscountAmount = amount` and a percent above 0 and at most 50. They are null on every Mercado Pago attempt, on attempts without a discount and on attempts created before the discount existed. A later change to the setting affects only new attempts. Because the amount depends on the method, confirming reuses the live order's open attempt only for the same provider, and a completed payment cancels the order's other pending attempts without a declared receipt. The order's amount and payment status in "Mis pedidos" come from the attempt that paid it, not always from the newest one.
 
 #### `UserOrder` delivery preference columns (ADR 0011)
 

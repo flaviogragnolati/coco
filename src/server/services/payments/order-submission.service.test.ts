@@ -1,7 +1,7 @@
 import { beforeAll, expect, test, vi } from "vitest";
 
 const data = {
-	cancelOtherPendingAttempts: vi.fn(async () => 1),
+	cancelOtherPendingAttempts: vi.fn(async () => [61]),
 	updateCartStatus: vi.fn(async () => null),
 	updateOrderStatus: vi.fn(async () => ({ id: 70 })),
 };
@@ -29,7 +29,7 @@ test("a completed payment cancels the order's other pending attempts", async () 
 		},
 	};
 
-	await service.submitOrderForCompletedPayment(tx as never, {
+	const result = await service.submitOrderForCompletedPayment(tx as never, {
 		orderId: 70,
 		cartId: 1,
 		transactionId: 90,
@@ -40,4 +40,5 @@ test("a completed payment cancels the order's other pending attempts", async () 
 		userOrderId: 70,
 		keepTransactionId: 90,
 	});
+	expect(result.cancelledAttemptIds).toEqual([61]);
 });

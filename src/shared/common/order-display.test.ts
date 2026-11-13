@@ -4,6 +4,7 @@ import {
 	canRepeatOrder,
 	formatOrderLineQuantityPrice,
 	type OrderStatus,
+	selectOrderDisplayAttempt,
 } from "./order-display";
 
 test.each<[OrderStatus, boolean]>([
@@ -81,4 +82,20 @@ test("a line whose snapshot froze no terms shows the quantity alone", () => {
 			priceSnapshot: { lineTotal: "33900.00", currency: "ARS" },
 		}),
 	).toBe("1,5 kg");
+});
+
+test("an order shows the attempt that paid it, even when a newer one exists", () => {
+	const paid = { id: 1, status: "completed" as const };
+	const leftover = { id: 2, status: "cancelled" as const };
+	expect(selectOrderDisplayAttempt([leftover, paid])).toBe(paid);
+	expect(
+		selectOrderDisplayAttempt([
+			leftover,
+			{ id: 3, status: "inProcess" as const },
+		]),
+	).toMatchObject({ id: 3 });
+	expect(
+		selectOrderDisplayAttempt([leftover, { id: 4, status: "failed" as const }]),
+	).toBe(leftover);
+	expect(selectOrderDisplayAttempt([])).toBeUndefined();
 });

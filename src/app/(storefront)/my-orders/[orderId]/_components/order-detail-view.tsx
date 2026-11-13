@@ -31,6 +31,7 @@ import {
 	formatOrderLineQuantityPrice,
 	orderStatusChipConfigMap,
 	paymentStatusLabelMap,
+	selectOrderDisplayAttempt,
 } from "~/shared/common/order-display";
 import { readSnapshotQuantityUnit } from "~/shared/common/product-snapshot";
 import type { UserOrderItemTimeline } from "~/shared/common/tracking.types";
@@ -121,6 +122,7 @@ export function OrderDetailView({
 	targets?: { journey?: DataAttributes };
 }) {
 	const latestTransaction = order.transactions[0];
+	const summaryAttempt = selectOrderDisplayAttempt(order.transactions);
 	const statusChip = orderStatusChipConfigMap[order.status];
 	const delivery = describeOrderDelivery(order);
 	const StatusIcon = statusChip.icon;
@@ -203,21 +205,21 @@ export function OrderDetailView({
 								<span className="text-muted-foreground">Items</span>
 								<span className="font-medium">{order.itemCount}</span>
 							</div>
-							{latestTransaction?.subtotalAmount &&
-							latestTransaction.transferDiscountPercent &&
-							latestTransaction.transferDiscountAmount ? (
+							{summaryAttempt?.subtotalAmount &&
+							summaryAttempt.transferDiscountPercent &&
+							summaryAttempt.transferDiscountAmount ? (
 								<TransferDiscountBreakdownRows
 									breakdown={{
-										percent: latestTransaction.transferDiscountPercent,
-										subtotal: latestTransaction.subtotalAmount,
-										discount: latestTransaction.transferDiscountAmount,
-										total: latestTransaction.amount,
+										percent: summaryAttempt.transferDiscountPercent,
+										subtotal: summaryAttempt.subtotalAmount,
+										discount: summaryAttempt.transferDiscountAmount,
+										total: summaryAttempt.amount,
 									}}
-									currency={latestTransaction.currency}
+									currency={summaryAttempt.currency}
 									totalLabel={
-										latestTransaction.status === "completed"
+										summaryAttempt.status === "completed"
 											? "Total pagado"
-											: latestTransaction.status === "pending"
+											: summaryAttempt.status === "pending"
 												? "Total a transferir"
 												: "Total"
 									}

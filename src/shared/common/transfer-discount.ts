@@ -57,9 +57,9 @@ export function applyTransferDiscount(input: {
 }
 
 /**
- * One step of a product at the transfer price. It rounds the step, while the
- * order rounds its total, so with several steps the two may differ by $ 1; the
- * order is the one charged.
+ * One step of a product at the transfer price. It rounds one step down, while
+ * the order rounds its total, so n steps can come to up to $ n−1 less than the
+ * order; the order is the one charged.
  */
 export function getTransferStepPrice(
 	stepPrice: number | null,

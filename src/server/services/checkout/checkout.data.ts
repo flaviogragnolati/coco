@@ -686,25 +686,54 @@ export async function cancelTransaction(db: CheckoutDbClient, id: number) {
 	});
 }
 
+const abandonableAttemptWhere = {
+	status: "pending",
+	declaredReceiptReference: null,
+} satisfies Prisma.UserTransactionWhereInput;
+
 /**
- * Cancels the order's other pending attempts that have no declared receipt.
- * One with a declared receipt is left for an admin to reject.
+ * Cancels an attempt only while it is still pending with no declared receipt.
+ * False when it no longer is.
+ */
+export async function cancelAbandonableAttempt(
+	db: CheckoutDbClient,
+	id: number,
+) {
+	const { count } = await db.userTransaction.updateMany({
+		where: { id, ...abandonableAttemptWhere },
+		data: { status: "cancelled", cancelledAt: new Date() },
+	});
+
+	return count === 1;
+}
+
+/**
+ * Cancels the order's other pending attempts that have no declared receipt and
+ * returns their ids. One with a declared receipt is left for an admin to
+ * settle or reject.
  */
 export async function cancelOtherPendingAttempts(
 	db: CheckoutDbClient,
 	input: { userOrderId: number; keepTransactionId: number },
 ) {
-	const { count } = await db.userTransaction.updateMany({
-		where: {
-			userOrderId: input.userOrderId,
-			id: { not: input.keepTransactionId },
-			status: "pending",
-			declaredReceiptReference: null,
-		},
+	const where = {
+		userOrderId: input.userOrderId,
+		id: { not: input.keepTransactionId },
+		...abandonableAttemptWhere,
+	} satisfies Prisma.UserTransactionWhereInput;
+	const attempts = await db.userTransaction.findMany({
+		where,
+		select: { id: true },
+	});
+	if (attempts.length === 0) return [];
+
+	const ids = attempts.map((attempt) => attempt.id);
+	await db.userTransaction.updateMany({
+		where: { ...where, id: { in: ids } },
 		data: { status: "cancelled", cancelledAt: new Date() },
 	});
 
-	return count;
+	return ids;
 }
 
 export async function updateOrderStatus(

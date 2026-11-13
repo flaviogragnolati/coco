@@ -221,7 +221,9 @@ export function CheckoutClient() {
 			// shows the server's figures: prices and the transfer percent.
 			if (error.data?.code !== "CONFLICT") return;
 			try {
-				const state = await utils.checkout.getState.fetch();
+				const state = await utils.checkout.getState.fetch(undefined, {
+					staleTime: 0,
+				});
 				applyCheckoutState(state);
 				replaceCart(state.cart, syncedUserId);
 			} catch {

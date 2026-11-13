@@ -62,3 +62,45 @@ test("a home order clears the point and mirrors billing from shipping", () => {
 	expect(data.shippingAddressSnapshot).toEqual(shippingAddressSnapshot);
 	expect(data.billingAddressSnapshot).toEqual(shippingAddressSnapshot);
 });
+
+test("completing a payment cancels only the order's other undeclared pending attempts", async () => {
+	const { cancelOtherPendingAttempts } = await import("./checkout.data");
+	const userTransaction = {
+		findMany: vi.fn(async () => [{ id: 61 }, { id: 62 }]),
+		updateMany: vi.fn(async () => ({ count: 2 })),
+	};
+
+	const ids = await cancelOtherPendingAttempts({ userTransaction } as never, {
+		userOrderId: 70,
+		keepTransactionId: 90,
+	});
+
+	const scope = {
+		userOrderId: 70,
+		status: "pending",
+		declaredReceiptReference: null,
+	};
+	expect(ids).toEqual([61, 62]);
+	expect(userTransaction.findMany).toHaveBeenCalledWith(
+		expect.objectContaining({
+			where: { ...scope, id: { not: 90 } },
+		}),
+	);
+	expect(userTransaction.updateMany).toHaveBeenCalledWith({
+		where: { ...scope, id: { in: [61, 62] } },
+		data: { status: "cancelled", cancelledAt: expect.any(Date) },
+	});
+});
+
+test("an attempt is cancelled for a switch only while still pending and undeclared", async () => {
+	const { cancelAbandonableAttempt } = await import("./checkout.data");
+	const userTransaction = { updateMany: vi.fn(async () => ({ count: 0 })) };
+
+	await expect(
+		cancelAbandonableAttempt({ userTransaction } as never, 61),
+	).resolves.toBe(false);
+	expect(userTransaction.updateMany).toHaveBeenCalledWith({
+		where: { id: 61, status: "pending", declaredReceiptReference: null },
+		data: { status: "cancelled", cancelledAt: expect.any(Date) },
+	});
+});

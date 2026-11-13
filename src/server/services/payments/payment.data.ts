@@ -228,6 +228,7 @@ export async function findPaymentAttemptWithCartById(
 					id: true,
 					code: true,
 					cartId: true,
+					status: true,
 				},
 			},
 		},

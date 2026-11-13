@@ -181,7 +181,7 @@ const data = {
 	findLiveOrderByCartId: vi.fn(async () => liveOrder),
 	updateOrderDelivery: vi.fn(async () => liveOrder),
 	createUserOrder: vi.fn(async () => order(80, [])),
-	cancelTransaction: vi.fn(async () => null),
+	cancelAbandonableAttempt: vi.fn(async () => true),
 	createPendingTransaction: vi.fn(
 		async (
 			_db: unknown,
@@ -284,7 +284,7 @@ function confirm(paymentMethodId: number, expectedAmount: string) {
 function expectNothingCreated() {
 	expect(data.createUserOrder).not.toHaveBeenCalled();
 	expect(data.createPendingTransaction).not.toHaveBeenCalled();
-	expect(data.cancelTransaction).not.toHaveBeenCalled();
+	expect(data.cancelAbandonableAttempt).not.toHaveBeenCalled();
 }
 
 test("a repeated idempotency key answers with its attempt whatever amount the screen sends", async () => {
@@ -305,7 +305,7 @@ test("switching to transfer replaces the Mercado Pago attempt on the same live o
 
 	const result = await confirm(externalMethod.id, "450.00");
 
-	expect(data.cancelTransaction).toHaveBeenCalledWith(tx, 61);
+	expect(data.cancelAbandonableAttempt).toHaveBeenCalledWith(tx, 61);
 	expect(data.createUserOrder).not.toHaveBeenCalled();
 	expect(data.createPendingTransaction).toHaveBeenCalledWith(
 		tx,
@@ -434,4 +434,43 @@ test("an attempt the customer can no longer abandon is kept whatever method they
 	expect(declared.transaction.id).toBe(64);
 
 	expectNothingCreated();
+});
+
+test("Mercado Pago also refuses an amount other than the sum of the lines", async () => {
+	await expect(confirm(mercadoPagoMethod.id, "450.00")).rejects.toMatchObject({
+		code: "CONFLICT",
+		message: expect.stringMatching(/ahora pagás \$\s?500\./),
+	});
+	expect(data.createUserOrder).not.toHaveBeenCalled();
+	expect(data.createPendingTransaction).not.toHaveBeenCalled();
+	expect(createMercadoPagoPreference).not.toHaveBeenCalled();
+});
+
+test("after a spent attempt the new one still goes through the amount check", async () => {
+	liveOrder = order(70, [
+		attempt({ id: 61, expiresAt: new Date(Date.now() - 1000) }),
+	]);
+
+	await expect(confirm(externalMethod.id, "500.00")).rejects.toMatchObject({
+		code: "CONFLICT",
+	});
+	expectNothingCreated();
+
+	const result = await confirm(externalMethod.id, "450.00");
+	expect(result.order.id).toBe(70);
+	expect(data.createPendingTransaction).toHaveBeenCalledWith(
+		tx,
+		expect.objectContaining({ userOrderId: 70, amount: "450.00" }),
+	);
+});
+
+test("an attempt that changed state while switching is not replaced", async () => {
+	liveOrder = order(70, [attempt({ id: 61 })]);
+	data.cancelAbandonableAttempt.mockImplementationOnce(async () => false);
+
+	await expect(confirm(externalMethod.id, "450.00")).rejects.toMatchObject({
+		code: "CONFLICT",
+	});
+	expect(data.createUserOrder).not.toHaveBeenCalled();
+	expect(data.createPendingTransaction).not.toHaveBeenCalled();
 });

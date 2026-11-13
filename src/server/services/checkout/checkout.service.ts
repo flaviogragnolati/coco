@@ -40,6 +40,7 @@ import {
 	selectProductImage,
 } from "~/shared/common/commerce.helpers";
 import { readPickupPointSnapshot } from "~/shared/common/delivery-display";
+import { selectOrderDisplayAttempt } from "~/shared/common/order-display";
 import { withSnapshotPresentation } from "~/shared/common/product-snapshot";
 import {
 	decideAttemptCharge,
@@ -59,7 +60,7 @@ import {
 	type CheckoutCartRecord,
 	type CheckoutDbClient,
 	type CheckoutPaymentMethodRecord,
-	cancelTransaction,
+	cancelAbandonableAttempt,
 	createCheckoutAddress,
 	createPendingTransaction,
 	createUserOrder,
@@ -248,7 +249,7 @@ function toAttemptTransferDiscount(
 }
 
 function toOrderListItem(record: OrderListRecord) {
-	const latestTransaction = record.transactions[0];
+	const displayAttempt = selectOrderDisplayAttempt(record.transactions);
 
 	return {
 		id: record.id,
@@ -257,9 +258,9 @@ function toOrderListItem(record: OrderListRecord) {
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 		itemCount: record._count.items,
-		totalAmount: latestTransaction?.amount.toString() ?? "0.00",
-		currency: latestTransaction?.currency ?? null,
-		latestTransactionStatus: latestTransaction?.status ?? null,
+		totalAmount: displayAttempt?.amount.toString() ?? "0.00",
+		currency: displayAttempt?.currency ?? null,
+		latestTransactionStatus: displayAttempt?.status ?? null,
 	};
 }
 
@@ -267,7 +268,7 @@ function toOrderDetail(
 	record: OrderDetailRecord,
 	externalPayment: OrderExternalPayment | null,
 ): OrderDetail {
-	const latestTransaction = record.transactions[0];
+	const displayAttempt = selectOrderDisplayAttempt(record.transactions);
 
 	return orderDetailSchema.parse({
 		id: record.id,
@@ -276,9 +277,9 @@ function toOrderDetail(
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 		itemCount: record.items.length,
-		totalAmount: latestTransaction?.amount.toString() ?? "0.00",
-		currency: latestTransaction?.currency ?? null,
-		latestTransactionStatus: latestTransaction?.status ?? null,
+		totalAmount: displayAttempt?.amount.toString() ?? "0.00",
+		currency: displayAttempt?.currency ?? null,
+		latestTransactionStatus: displayAttempt?.status ?? null,
 		cartCode: record.cart.code,
 		billingAddressSnapshot: record.billingAddressSnapshot,
 		shippingAddressSnapshot: record.shippingAddressSnapshot,
@@ -836,7 +837,16 @@ export async function confirmAndPay(
 		}
 
 		if (latestAttempt && openAttemptHandling === "replace") {
-			await cancelTransaction(tx, latestAttempt.id);
+			// Guarded on the state the decision read: a receipt declared or a
+			// provider update committed meanwhile must not be cancelled over.
+			const cancelled = await cancelAbandonableAttempt(tx, latestAttempt.id);
+			if (!cancelled) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message:
+						"Tu pago cambió mientras confirmabas. Revisá tu pedido y confirmá de nuevo.",
+				});
+			}
 		}
 
 		if (!liveOrder && cart.status !== "atCheckout") {

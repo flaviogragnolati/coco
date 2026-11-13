@@ -251,6 +251,7 @@ export const externalPaymentSettingsSchema = z.object({
 			TRANSFER_DISCOUNT_MAX_PERCENT,
 			`El descuento no puede superar el ${TRANSFER_DISCOUNT_MAX_PERCENT} %`,
 		)
+		// 7.55 × 100 is 754.999… in floating point; 12 digits drop that noise.
 		.refine(
 			(value) => Number.isInteger(Number((value * 100).toPrecision(12))),
 			"Usá hasta dos decimales",

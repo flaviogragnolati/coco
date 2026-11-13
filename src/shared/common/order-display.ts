@@ -165,3 +165,27 @@ export function formatOrderLineQuantityPrice(item: {
 		? `${quantity} × ${unitPrice} / ${productUnitLabelMap[unit]}`
 		: `${quantity} × ${unitPrice} c/u`;
 }
+
+const PAID_ATTEMPT_STATUSES: readonly OrderTransactionStatus[] = [
+	"completed",
+	"refunded",
+	"chargedBack",
+];
+
+/**
+ * The attempt an order's amount and payment status come from, out of its
+ * attempts newest first: the one that took the money, else one the provider
+ * is holding, else the newest. After a switch of payment method, a late
+ * Mercado Pago approval can pay an attempt older than the newest (ADR 0013).
+ */
+export function selectOrderDisplayAttempt<
+	T extends { status: OrderTransactionStatus },
+>(transactions: readonly T[]): T | undefined {
+	return (
+		transactions.find((attempt) =>
+			PAID_ATTEMPT_STATUSES.includes(attempt.status),
+		) ??
+		transactions.find((attempt) => attempt.status === "inProcess") ??
+		transactions[0]
+	);
+}
