@@ -1,21 +1,20 @@
 "use client";
 
-import { AlertCircleIcon, ImageIcon } from "lucide-react";
+import { AlertCircleIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Button } from "~/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
 import { ProductImage } from "~/features/catalog/_components/product-image";
 import { cn } from "~/lib/utils";
+import { visibleProductDescription } from "~/shared/common/product-description";
 import { api } from "~/trpc/react";
 import {
 	CatalogProductPurchase,
@@ -72,10 +71,13 @@ export function ProductDetailsDialog({
 			)
 		: [];
 	const mainImage = activeImage ?? galleryImages[0] ?? null;
+	const description = product
+		? visibleProductDescription(product.description, product.name)
+		: null;
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="grid max-h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-[min(56rem,calc(100%-2rem))]">
+			<DialogContent className="grid max-h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-[min(56rem,calc(100%-2rem))]">
 				<DialogHeader className="pr-10">
 					{product?.brand ? (
 						<p className="font-semibold text-muted-foreground text-xs uppercase tracking-widest">
@@ -85,7 +87,7 @@ export function ProductDetailsDialog({
 					<DialogTitle className="font-semibold text-xl leading-snug">
 						{product?.name ?? "Detalle de producto"}
 					</DialogTitle>
-					<DialogDescription>
+					<DialogDescription className="sr-only">
 						Información comercial vigente para sumarte a una compra mayorista
 						compartida.
 					</DialogDescription>
@@ -153,18 +155,14 @@ export function ProductDetailsDialog({
 												</button>
 											))}
 										</div>
-									) : (
-										<div className="flex items-center gap-2 text-muted-foreground text-xs">
-											<ImageIcon />
-											Sin galería adicional
-										</div>
-									)}
+									) : null}
 								</div>
 								<div className="flex flex-col gap-4">
-									<p className="text-muted-foreground text-sm/relaxed">
-										{product.description ??
-											"Producto disponible para pedidos mayoristas compartidos."}
-									</p>
+									{description ? (
+										<p className="text-muted-foreground text-sm/relaxed">
+											{description}
+										</p>
+									) : null}
 									<CatalogProductPurchase
 										disabled={disabled}
 										inCartQuantity={
@@ -192,16 +190,6 @@ export function ProductDetailsDialog({
 						</>
 					) : null}
 				</div>
-
-				<DialogFooter>
-					<Button
-						onClick={() => onOpenChange(false)}
-						type="button"
-						variant="outline"
-					>
-						Cerrar
-					</Button>
-				</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	);
