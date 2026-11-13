@@ -253,11 +253,11 @@ test("half kilos total at the unit price", () => {
 	expect(getOfferTotalLabel(halves, "1.5")).toBe("Total $ 29.250");
 });
 
-test("the total amount is what the add button shows", () => {
+test("the total amount is the formatted line total", () => {
 	expect(getOfferTotalAmount(homeOfferTerms(stepped), "15")).toBe("$ 22.500");
 });
 
-test("a fixed quantity states only the quantity; the button carries the total", () => {
+test("a fixed quantity states only the quantity", () => {
 	expect(
 		getOfferFixedQuantityLabel(
 			homeOfferTerms({ ...offer, moq: "12", unit: "piece" }),

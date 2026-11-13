@@ -8,7 +8,7 @@ type ProductImageProps = {
 	/** The shape: aspect, width, rounding and how the placeholder icon sits. */
 	className?: string;
 	/**
-	 * The tint behind the placeholder icon. A photo shows whole over its
+	 * The placeholder's tint and icon colour. A photo shows whole over its
 	 * surface's own background instead.
 	 */
 	placeholderClassName?: string;

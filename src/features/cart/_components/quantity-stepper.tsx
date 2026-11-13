@@ -121,7 +121,7 @@ export function QuantityStepper({
 							event.currentTarget.blur();
 						}
 					}}
-					// Sized to its text so the unit reads right after the number.
+					// Sized to its text so the unit, when shown, reads right after the number.
 					style={{ width: `${Math.max(draft.length, 1) + 0.5}ch` }}
 					value={draft}
 				/>

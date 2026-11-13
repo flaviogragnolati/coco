@@ -86,8 +86,8 @@ export function PurchasePrice({
 						<span className="sr-only">{price.comparison.spokenLabel}</span>
 					</p>
 				) : size === "compact" ? (
-					// Only an unreadable presentation size lands here; holds the line so
-					// the steppers of a row stay aligned.
+					// Only a missing or unreadable size lands here; holds the line so the
+					// steppers of a row stay aligned.
 					<p aria-hidden="true" className="text-xs">
 						&nbsp;
 					</p>
