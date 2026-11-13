@@ -8,8 +8,40 @@ import type {
 import {
 	calculateLineTotal,
 	normalizeCartQuantity,
+	toNumber,
+	toQuantityString,
 } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
+
+/**
+ * Adds items to a cart keyed by terms id: a line already there grows by the
+ * incoming quantity, and every touched line is fitted to its terms.
+ */
+export function mergeCartItems(
+	current: Record<string, CartItem>,
+	incoming: CartItem[],
+): Record<string, CartItem> {
+	const next = { ...current };
+
+	for (const item of incoming) {
+		const key = String(item.productClientTermsId);
+		const existing = next[key];
+		const wanted = existing
+			? toQuantityString(
+					(toNumber(existing.quantity) ?? 0) + (toNumber(item.quantity) ?? 0),
+				)
+			: item.quantity;
+		const quantity = normalizeCartQuantity(wanted, item.terms);
+
+		next[key] = {
+			...item,
+			quantity,
+			lineTotal: calculateLineTotal(item.terms, quantity),
+		};
+	}
+
+	return next;
+}
 
 export function catalogProductToCartItem(
 	product: CatalogProductListItem,

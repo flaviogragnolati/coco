@@ -1,6 +1,9 @@
 import type { z } from "zod";
 
 import type {
+	cartAddedLineSchema,
+	cartAddItemInputSchema,
+	cartAddItemsOutputSchema,
 	cartItemSchema,
 	cartLocalItemInputSchema,
 	cartMutationOutputSchema,
@@ -27,3 +30,6 @@ export type CartSetItemQuantityInput = z.output<
 export type CartRemoveItemInput = z.output<typeof cartRemoveItemInputSchema>;
 export type CartWarning = z.output<typeof cartWarningSchema>;
 export type CartMutationOutput = z.output<typeof cartMutationOutputSchema>;
+export type CartAddItemInput = z.output<typeof cartAddItemInputSchema>;
+export type CartAddedLine = z.output<typeof cartAddedLineSchema>;
+export type CartAddItemsOutput = z.output<typeof cartAddItemsOutputSchema>;

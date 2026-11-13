@@ -83,3 +83,20 @@ export const cartMutationOutputSchema = z.object({
 	cart: cartSnapshotSchema,
 	warnings: z.array(cartWarningSchema),
 });
+
+export const cartAddItemInputSchema = z.object({
+	productId: z.number().int().positive(),
+	quantity: positiveDecimalStringSchema,
+});
+
+export const cartAddedLineSchema = z.object({
+	productId: z.number().int().positive(),
+	name: z.string(),
+	outcome: z.enum(["added", "adjusted", "unavailable"]),
+	quantity: decimalOutputSchema.nullable(),
+});
+
+export const cartAddItemsOutputSchema = z.object({
+	cart: cartSnapshotSchema,
+	lines: z.array(cartAddedLineSchema),
+});
