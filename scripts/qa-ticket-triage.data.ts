@@ -286,6 +286,23 @@ const retests: TriageTransition[] = [
 
 /** Tickets implemented by the November work packages (WP-A, WP-G, …). */
 const implemented: TriageTransition[] = [
+	retest(101, {
+		fix: "Implementado en b68fa10",
+		look: "Destacados de la semana muestra productos y combos en el orden del admin; el combo agrupa personas, muestra las fotos, cantidades y precios vigentes y suma cada producto por separado a Tu pedido; se avisa si falta alguno y se oculta si no queda ninguno. La banda Destacado puede mostrar un producto o un combo",
+		preconditions:
+			"Flavio carga al menos dos combos del mismo grupo con distinta cantidad de personas en /admin/combos y los agrega en /admin/home-offers; migración y deploy aplicados",
+	}),
+	retest(102, {
+		fix: "Implementado en b0e09d3",
+		look: "Categorías en la barra de computadora y en el menú del celular; cada opción abre /products con esa categoría seleccionada; no aparecen categorías vacías u ocultas. El buscador funciona igual y la barra entra a 1024 px junto al contador",
+		preconditions: "categorías activas con productos y precios vigentes",
+	}),
+	retest(110, {
+		fix: "Implementado en ad74aae; Pago y Resumen muestran el mismo intento efectivo",
+		look: "un superadmin configura Descuento por transferencia (%) en /admin/payments → Pago externo; la ficha, Tu pedido y el mini-pedido muestran el precio alternativo; el checkout externo y Mis pedidos muestran subtotal, descuento y monto final. Mercado Pago no descuenta; cambiar de medio conserva el intento correcto y los términos dicen checkout-v4",
+		preconditions:
+			"superadmin para configurar el porcentaje, pago externo habilitado y un pedido armado; migración y deploy aplicados",
+	}),
 	retest(93, {
 		fix: "Corregido en 86f4f26: los links a secciones del home ya no pasan por el navegador interno de la app",
 		look: 'en el home, tocar "Ver qué se puede comprar" varias veces: baja a Ofertas y la URL queda con un solo "#ofertas". Repetirlo después de llegar desde el catálogo con el menú (celular: ☰ → "Ofertas"; computadora: Ayuda → "Preguntas frecuentes") y tocar el logo: vuelve a "/" sin "#". Desde otra página, esos links ahora recargan la página: es lo esperado',
@@ -391,10 +408,99 @@ const implemented: TriageTransition[] = [
 	}),
 ];
 
+const remainingRetests: TriageTransition[] = [
+	{
+		...retest(69, {
+			fix: "El comando vigente es db:seed:test; se corrige la definición del caso",
+			look: "crear una operación sobre demanda de prueba, volver a sembrar y verificar que no haya diagnósticos de cantidades inconsistentes. Esta reproducción completa todavía requiere ejecución por un desarrollador",
+			preconditions:
+				"una base local descartable aislada; nunca ejecutar estos comandos sobre la base compartida",
+		}),
+		definition: {
+			title:
+				"Re-sembrar después de una operación manual conserva las cantidades de prueba",
+			steps:
+				"1) Usar exclusivamente una base local descartable y ejecutar pnpm db:seed:test.\n2) Crear y ejecutar una operación sobre demanda sembrada (CITEM-SEED-*), hasta generar lote, orden de proveedor y paquete.\n3) Volver a ejecutar pnpm db:seed:test.\n4) Ejecutar pnpm db:seed-verify contra la misma base local.",
+			expectedResult:
+				"Ambos comandos terminan con código 0 y db:seed-verify no informa lot.item.quantityMismatch ni package.line.quantityMismatch. No ejecutar seeds de prueba sobre la base compartida.",
+		},
+	},
+	retest(85, {
+		fix: "Ajustes del catálogo implementados; tarjeta y ficha verificadas por navegador contra la base local",
+		look: "sin MOQ, información del proveedor, chip ARS ni comparación con góndola; nombre, precio, selector y Sumar al pedido. El total se muestra en Tu pedido, de acuerdo con el cambio de #106",
+		preconditions: "ninguna; comparar con el pedido después de agregar",
+	}),
+	retest(87, {
+		fix: "Lectura de la base compartida: los 27 productos tienen mínimo igual al paso (0,5 o 1) y precio vigente; la interfaz pública tiene pruebas automáticas",
+		look: "cantidades y unidades en ficha, Tu pedido y Mis pedidos; no mostrar la presentación del proveedor. El mínimo es configurable por producto: 13 productos por kg tienen mínimo y paso 1, no 0,5",
+		preconditions: "una cuenta con pedidos para verificar Mis pedidos",
+	}),
+	retest(88, {
+		fix: "Filtro implementado y verificado por navegador contra la base local; faltan las combinaciones manuales de búsqueda y orden",
+		look: "cada categoría filtra los productos y el contador; Todos restablece; combinar con búsqueda y orden. Solo aparecen categorías con productos vigentes",
+		preconditions: "al menos dos categorías con productos vigentes",
+	}),
+	retest(89, {
+		fix: "Lectura de la base compartida: los 27 productos activos tienen categoría; falta validar la edición e importación desde el admin",
+		look: "selector de categoría al editar productos e importar la planilla; el filtro del catálogo usa esa categoría",
+		preconditions: "una cuenta de administrador",
+	}),
+	...[113, 114, 115].map((code) =>
+		retest(code, {
+			fix: "Tutorial implementado y actualizado con los cambios de esta pasada; pruebas públicas del recorrido en verde",
+			look:
+				code === 115
+					? "la invitación del primer ingreso no aparece durante el pago y, al responderla, no reaparece en otro navegador"
+					: "los pasos y controles del tutorial, salir y volver al catálogo; el recorrido de ejemplo no modifica Tu pedido real",
+			preconditions:
+				code === 115
+					? "cuenta de Google sin invitación respondida y segundo navegador; comprador de prueba para Mercado Pago"
+					: "para comprobar que se conserva Tu pedido real, armarlo antes de entrar al tutorial",
+		}),
+	),
+];
+
+const pendingContent: TriageTransition[] = [
+	{
+		code: 91,
+		status: "blocked",
+		prependNote: note(
+			"Falta la composición confirmada de los mix. Quintal la provee y Flavio la carga desde /admin/products, según la decisión del 13/11/2026. No se inventan ingredientes.",
+		),
+	},
+	{
+		code: 92,
+		status: "blocked",
+		prependNote: note(
+			"Faltan las descripciones específicas de los productos, que Flavio carga desde /admin/products. La parte de código ya oculta los textos genéricos o que repiten el nombre; guardar y vaciar una descripción funciona. Cuando se cargue el contenido, volver a Re-test.",
+		),
+	},
+];
+
+const verifiedLegacy: TriageTransition[] = [
+	{
+		code: 74,
+		status: "passed",
+		prependNote: note(
+			"Verificado por código sobre main con b68fa10: e2e/catalog-public-copy.spec.ts → 2/2 en verde contra la base local, sin comparación de ahorro vs. góndola en home, catálogo y todas las fichas de la muestra sembrada. La pasada conjunta de navegador terminó 44/44.",
+		),
+	},
+	{
+		code: 81,
+		status: "passed",
+		prependNote: note(
+			"Verificado por código sobre main con b68fa10: consulta de solo lectura a la base compartida → exactamente los 27 nombres del catálogo real de Quintal, sin productos demo activos; todos con categoría, precio de cliente y condiciones de proveedor vigentes. La lista real ya existe; incluye frutos secos, semillas, aceites y despensa.",
+		),
+	},
+];
+
 export const qaTicketTriageTransitions: TriageTransition[] = [
 	...superseded,
 	...outOfScope,
 	...blocked,
 	...retests,
 	...implemented,
+	...remainingRetests,
+	...pendingContent,
+	...verifiedLegacy,
 ];
