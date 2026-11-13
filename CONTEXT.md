@@ -11,7 +11,7 @@ The customer-facing demand captured before and during order submission.
 _Avoid_: Order line, purchase line
 
 **Payment attempt**:
-A customer payment attempt tied to a commercial order. It can be pending, in process, completed, failed, cancelled, refunded, or charged back, and it is not an aggregation batch for fulfillment.
+A customer payment attempt tied to a commercial order. It can be pending, in process, completed, failed, cancelled, refunded, or charged back, and it is not an aggregation batch for fulfillment. Its amount is what it charges. One order may go through several attempts, possibly with different payment methods and amounts. An open attempt is reused only for the same payment method: one for another method is replaced if the customer can still abandon it.
 _Avoid_: Operation, payment operation
 
 **Chargeback**:
@@ -25,6 +25,10 @@ _Avoid_: Manual payment, offline payment, transfer
 **Declared receipt**:
 The transfer reference a customer reports for an external payment. It records a claim, not a settlement: the attempt stays pending until an admin confirms it. Spanish-facing UI labels it "Comprobante declarado".
 _Avoid_: Verified receipt, proof of payment
+
+**Transfer discount**:
+The percentage off the products subtotal that an external payment gets: the sum of the order lines, offer discount included, never shipping. It stacks on top of the offer discount. The total is rounded down to the whole peso, and the discount is the difference. A superadmin sets one percentage in the external payment settings. The attempt freezes the percent, the subtotal and the discount when the customer confirms, so order lines and client terms never carry it (ADR 0013). Customers see it in the product dialog, in their order and at checkout, and never on a catalog card. Spanish-facing UI labels it "Descuento por transferencia".
+_Avoid_: Payment discount, offer discount, promoción, recargo
 
 **Operation**:
 An aggregation batch for submitted customer demand.
@@ -205,23 +209,31 @@ The customer-facing set of purchasable products, each surfaced with its current 
 _Avoid_: Store, product list
 
 **Category**:
-The catalog group a product belongs to, such as "Frutos secos" or "Suplementos", with the position it is listed in. Every product has exactly one; an admin maintains them, and an inactive or deleted category is hidden from customers while its products stay purchasable. Not the heading of a supplier's price list, which only feeds the mapping. Spanish-facing UI labels it "Categoría".
+The catalog group a product belongs to, such as "Frutos secos" or "Suplementos", with the position it is listed in. Every product has exactly one; an admin maintains them, and an inactive or deleted category is hidden from customers while its products stay purchasable. It may record the background color of its product photos, which only tints the illustrative legend. Not the heading of a supplier's price list, which only feeds the mapping. Spanish-facing UI labels it "Categoría".
 _Avoid_: Rubro, family, heading
 
-**Featured offer**:
-A current catalog product shown in the home offers grid, either pinned by an admin or chosen by the offers ranking. Pinned ones come first and the ranking fills the rest, so the grid is never empty and never stale. Spanish-facing UI labels it "Oferta destacada".
-_Avoid_: Promotion, operation, oferta protagonista, pedido abierto
+**Illustrative legend**:
+The "Imagen ilustrativa" caption the storefront draws over large product photos — catalog and home cards, the home spotlight, the product detail's main photo and the admin preview — never over thumbnails or a missing photo. It is drawn on screen, not stamped into the stored file, so a downloaded photo lacks it. Its tone is a dark shade of the product's category photo background color, or neutral gray when the category has none or is hidden from customers. Spanish-facing UI labels it "Imagen ilustrativa".
+_Avoid_: Watermark, marca de agua, stamped image
+
+**Featured item**:
+One entry of the home's featured section: a current catalog product or a combo. An admin puts it on the featured list, in the order they choose. Only products can also come from the offers ranking, which fills the places the list leaves free unless the admin turns the fill off. A featured combo brings its whole combo group onto one card, and two combos of the same group never take two cards. Nothing on the list is shown without a price: a product without current terms, or a combo with none of its products available, is skipped. The section title is fixed, whatever the ranking criterion. Spanish-facing UI labels it "Destacado" and the section "Destacados".
+_Avoid_: Featured offer, oferta destacada, pinned offer, promotion, operation, oferta protagonista, pedido abierto
 
 **Combo**:
-A named set of catalog products, configured by an admin, that a customer adds to the order in one action. Each product goes in as its own order line at its own current price, and the customer can change or remove it afterwards. A combo has no price or stock of its own. Featuring it on the home is a separate decision from creating it. Spanish-facing UI labels it "Combo".
-_Avoid_: Pack, kit, bundle, promoción
+A named set of catalog products, each in the quantity the combo states, that a customer adds to the order in one action. An admin configures it with an optional description and an optional number of people it serves, and the quantities are checked against each product's minimum and step when saved. Each product goes in as its own order line at its own current price, added to whatever the order already holds, and the customer can change or remove it afterwards. A combo has no price or stock of its own (ADR 0014): what the card shows is the sum of today's prices of the products available now. A product without current terms is left out with an "Esta semana no está" notice, and a combo with none available is not shown. Featuring it on the home is a separate decision from creating it, and combos appear nowhere else for customers. Spanish-facing UI labels it "Combo".
+_Avoid_: Pack, kit, bundle, promoción, combo size, tamaño, variante
+
+**Combo group**:
+The combos an admin gathers under one group name so the home shows them on a single card, with a selector by number of people ("1 persona", "2 personas"). Within a group, every combo states its number of people and no two share it. Featuring or spotlighting any combo of a group shows the whole group on that card, opened on that combo. A combo without a group is a card of its own; one that states people reads "Para 2 personas". Spanish-facing UI labels it "Grupo".
+_Avoid_: Familia, combo base, combo size, tamaño, variante
 
 **Home spotlight**:
-The single product the home leads its offers with, in its own band right above the offers grid: an admin's pick, or the top of the offers ranking when nobody picked one. It is excluded from the offers grid, so no product appears twice on the page. Spanish-facing UI labels it "Producto destacado".
-_Avoid_: Oferta protagonista, hero offer, featured offer
+The single product or combo the home leads with, in its own band right above the featured section. It is an admin's pick or, when nobody picked one and the ranking fill is on, the top of the offers ranking. It is excluded from the featured section, and a spotlighted combo takes its whole combo group with it, so nothing appears twice on the page. The band's badge reads "Destacado"; the admin calls it "Banda destacada".
+_Avoid_: Oferta protagonista, hero offer, featured item, producto destacado
 
 **Offers ranking**:
-The order in which non-pinned current products compete for the home grid: by money saved against the market price, by offer discount, or by order volume (paid orders per product over a recent window), whichever criterion the admin selected. Terms missing the criterion's input rank last.
+The order in which current products that are not on the featured list compete for the places the list leaves free in the featured section: by money saved against the market price, by offer discount, or by order volume (paid orders per product over a recent window), whichever criterion the admin selected. It ranks products only, never combos, and it is a fill the admin can turn off. Terms missing the criterion's input rank last.
 _Avoid_: Sort, top offers, query
 
 **Weekly closing**:
@@ -265,11 +277,11 @@ What a customer saves per unit, and per MOQ block, by buying at the offer price 
 _Avoid_: Discount, descuento, savings claim
 
 **Offer discount**:
-A percentage on client terms that lowers what the customer actually pays, applied to the unit price and therefore to any quantity. It has no validity of its own — it lives and dies with the terms that carry it (ADR 0008). Spanish-facing UI labels it "Descuento".
-_Avoid_: Promotion, coupon, campaign
+A percentage on client terms that lowers what the customer actually pays, applied to the unit price and therefore to any quantity. It has no validity of its own — it lives and dies with the terms that carry it (ADR 0008). Distinct from the transfer discount, which depends on how the customer pays and stacks on top of it. Spanish-facing UI labels it "Descuento".
+_Avoid_: Promotion, coupon, campaign, transfer discount
 
 **Offer price**:
-The amount a customer pays once the offer discount is applied to the client terms. Computed in one place, so it is identical in the catalog, the cart, the checkout snapshot and the payment. Spanish-facing UI labels it "Precio oferta".
+The amount a customer pays once the offer discount is applied to the client terms. Computed in one place, so it is identical in the catalog, the cart, the checkout snapshot and a Mercado Pago payment. An external payment may charge less, because the transfer discount comes off the order total, never off this price (ADR 0013). Spanish-facing UI labels it "Precio oferta".
 _Avoid_: Final price, sale price, discounted price, total operación
 
 **MOQ (minimum order quantity)**:
@@ -293,7 +305,7 @@ The slide-over cart preview opened from the navbar and when adding a product. A 
 _Avoid_: Cart drawer, cart popover
 
 **Checkout**:
-The customer-facing flow that turns an at-checkout cart into a submitted order plus a payment attempt: review the order, choose shipping address and payment method, accept terms, and pay. Single-currency, with prices and quantities snapshotted at confirmation. The cart is the live source of truth up to the moment checkout starts; from then on it is frozen against edits, because the order snapshot references it.
+The customer-facing flow that turns an at-checkout cart into a submitted order plus a payment attempt: review the order, choose shipping address and payment method, accept terms, and pay. Single-currency, with prices and quantities snapshotted at confirmation. Confirming carries the amount the screen showed for the chosen payment method. A new payment attempt is refused if the amount changed since then, so the customer never pays a figure they did not see. The cart is the live source of truth up to the moment checkout starts; from then on it is frozen against edits, because the order snapshot references it.
 _Avoid_: Order placement, purchase flow
 
 **Leave checkout**:
