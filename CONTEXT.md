@@ -212,6 +212,10 @@ _Avoid_: Rubro, family, heading
 A current catalog product shown in the home offers grid, either pinned by an admin or chosen by the offers ranking. Pinned ones come first and the ranking fills the rest, so the grid is never empty and never stale. Spanish-facing UI labels it "Oferta destacada".
 _Avoid_: Promotion, operation, oferta protagonista, pedido abierto
 
+**Combo**:
+A named set of catalog products, configured by an admin, that a customer adds to the order in one action. Each product goes in as its own order line at its own current price, and the customer can change or remove it afterwards. A combo has no price or stock of its own. Featuring it on the home is a separate decision from creating it. Spanish-facing UI labels it "Combo".
+_Avoid_: Pack, kit, bundle, promoción
+
 **Home spotlight**:
 The single product the home leads its offers with, in its own band right above the offers grid: an admin's pick, or the top of the offers ranking when nobody picked one. It is excluded from the offers grid, so no product appears twice on the page. Spanish-facing UI labels it "Producto destacado".
 _Avoid_: Oferta protagonista, hero offer, featured offer
@@ -329,6 +333,10 @@ _Avoid_: Attachment history, public upload, QA run artifact
 **QA clarification**:
 The state a QA ticket reaches when its own definition does not allow executing it or deciding pass/fail deterministically — a missing datum, precondition, step, location, or oracle to compare against. It is neither blocked (which assumes the definition is sufficient and blames the environment, data, or a dependency) nor failed (which requires the flow to have run and diverged). The reason is mandatory and lives in the ticket's notes; evidence stays optional, the tester who spotted the ambiguity keeps the ticket, and taking it back is the existing claim, which moves it to in progress. Spanish-facing UI labels it "Requiere aclaración".
 _Avoid_: No se entiende, ambiguo, bloqueado
+
+**QA re-test**:
+The state of a QA ticket whose defect was corrected, or whose requested change was implemented, after its last run, so it waits for a tester to run it again. It differs from pending, which means the ticket was never run against its current definition, and from passed, which a tester or an automated check must still earn. Spanish-facing UI labels it "Re-test".
+_Avoid_: Reabierto, pendiente de nuevo, retest pendiente
 
 **Regression path**:
 The subset of QA tickets that form the end-to-end happy path, marked on the ticket so a tester can run the short sweep instead of all of them. It is a property of the ticket, not a separate suite.
