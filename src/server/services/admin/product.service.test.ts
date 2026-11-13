@@ -100,6 +100,22 @@ beforeEach(() => {
 	vi.mocked(data.findProductCategoryById).mockResolvedValue(FRUTOS_SECOS);
 });
 
+describe("product admin service description", () => {
+	it("passes an emptied description on as no description", async () => {
+		vi.mocked(data.findProductById).mockResolvedValue(
+			product({ description: "Yerba." }),
+		);
+		const { db } = database();
+
+		await service.update({ ...updateInput, description: undefined }, actor, db);
+
+		expect(data.updateProduct).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ description: undefined }),
+		);
+	});
+});
+
 describe("product admin service category", () => {
 	it("saves the chosen category", async () => {
 		const { db } = database();
