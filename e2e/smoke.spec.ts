@@ -15,6 +15,16 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 	await expect(page.locator("#como-funciona")).toBeVisible();
 	await expect(page.locator("#como-funciona ol > li")).toHaveCount(5);
 	await expect(page.locator("#ofertas")).toBeVisible();
+	await expect(
+		page.locator("#ofertas").getByRole("heading", {
+			name: "Destacados de la semana",
+		}),
+	).toBeVisible();
+	await expect(
+		page
+			.locator("#ofertas")
+			.getByRole("group", { name: "Filtrar ofertas por unidad" }),
+	).toHaveCount(0);
 	await expect(page.locator("#preguntas-frecuentes")).toBeVisible();
 	await expect(page.locator("footer#contacto")).toBeVisible();
 	await expect(
@@ -44,10 +54,14 @@ test("the hero shows the system illustration and the spotlight has its own band"
 	await expect(hero.getByRole("button")).toHaveCount(0);
 	await expect(hero.getByRole("link")).toHaveCount(1);
 
-	const band = page.getByRole("region", { name: "Producto destacado" });
+	const band = page.getByRole("region", { name: "Destacado", exact: true });
 	test.skip(
 		(await band.count()) === 0,
 		"The current fixture has no active home offers.",
+	);
+	test.skip(
+		(await band.getByRole("button", { name: "Sumar combo" }).count()) > 0,
+		"The band holds a combo; the seed leaves it to the ranking's top product.",
 	);
 
 	const spotlightHref = await band
@@ -60,9 +74,10 @@ test("the hero shows the system illustration and the spotlight has its own band"
 	// The card keeps to about 400px so the band does not grow with the photo.
 	const cardBox = await band.locator("[data-slot='card']").boundingBox();
 	expect(cardBox?.width).toBeLessThanOrEqual(401);
-	await expect(page.locator(`#ofertas a[href='${spotlightHref}']`)).toHaveCount(
-		0,
-	);
+	// A combo card may list the same product; only a product card would repeat it.
+	await expect(
+		page.locator(`#ofertas h3 a[href='${spotlightHref}']`),
+	).toHaveCount(0);
 });
 
 test("a home offer opens and closes its URL-addressable product detail", async ({
