@@ -1,4 +1,5 @@
 import {
+	ChevronDownIcon,
 	HelpCircleIcon,
 	LogInIcon,
 	MenuIcon,
@@ -37,6 +38,15 @@ export function TutorialNavbar({
 				>
 					<MenuIcon data-icon="inline-start" />
 					Catálogo
+				</Button>
+				<Button
+					className="hidden shrink-0 rounded-full md:inline-flex"
+					tabIndex={-1}
+					type="button"
+					variant="ghost"
+				>
+					Categorías
+					<ChevronDownIcon data-icon="inline-end" />
 				</Button>
 				<div className="relative hidden max-w-[460px] flex-1 md:block">
 					<SearchIcon
