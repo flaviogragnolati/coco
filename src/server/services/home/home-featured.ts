@@ -56,9 +56,7 @@ export function normalizeComboGroup(groupName: string): string {
 	return groupName.trim().replace(/\s+/g, " ").toLocaleLowerCase("es");
 }
 
-export function comboCardKey(
-	combo: Pick<HomeComboRecord, "id" | "groupName">,
-) {
+export function comboCardKey(combo: Pick<HomeComboRecord, "id" | "groupName">) {
 	const group = combo.groupName ? normalizeComboGroup(combo.groupName) : "";
 	return group ? `group:${group}` : `combo:${combo.id}`;
 }

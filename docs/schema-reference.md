@@ -160,14 +160,17 @@ Operations no longer execute on creation. A draft is created with its parameters
 | --- | --- | --- | --- |
 | `Brand` | Product brand metadata | Has many `Product` | Optional brand association |
 | `Category` | *Category*: the catalog group a product is listed under | Has many `Product` (`onDelete: Restrict`) | Admin CRUD at `/admin/categories`: `name`, `sortOrder` (display order, lowest first), `active`/`deleted` flags. The `category` migration inserts the six initial rows. Soft delete keeps the products' reference; hard delete is refused while any product references it. The catalog DTO exposes only an active, non-deleted category (`{ id, name, sortOrder }`), otherwise `null` |
-| `Product` | Catalog item | Optional `Brand`; `Category` (required by the app, nullable column — modeling limit 13); optional `defaultSupplier`; has many client terms, supplier terms, and local constraints; back-relation `homeOfferSpotlightOf` | `defaultSupplier` is a hint, not the only sourcing path. `homeOfferRank` (nullable, indexed) pins the product's position in the home offers grid; null means the automatic ranking decides. The *Presentation* is `presentationContainer` (`ProductPresentationContainer`: botella, bidon, frasco, bolsa, paquete, unidad) plus free-text `presentationSize`, both nullable; weight units (`kg`, `gr`, `lb`) never carry one, enforced by the admin input schema |
+| `Product` | Catalog item | Optional `Brand`; `Category` (required by the app, nullable column — modeling limit 13); optional `defaultSupplier`; has many client terms, supplier terms, and local constraints; has many `ComboItem` (`Restrict`: a product inside a combo cannot be hard-deleted) and at most one `HomeFeaturedItem`; back-relation `homeOfferSpotlightOf` | `defaultSupplier` is a hint, not the only sourcing path. `homeOfferRank` (nullable, indexed) is deprecated: the featured list replaced it, nothing reads it, and a later contract migration drops it. The *Presentation* is `presentationContainer` (`ProductPresentationContainer`: botella, bidon, frasco, bolsa, paquete, unidad) plus free-text `presentationSize`, both nullable; weight units (`kg`, `gr`, `lb`) never carry one, enforced by the admin input schema |
 | `Supplier` | Supplier master data | Has many `ProductSupplierTerms`, `Lot`, `SupplierOrder`; optional default relation from `Product` | Address/contact structures remain JSON for now |
 | `ProductClientTerms` | Customer-facing sell terms | Belongs to `Product`; referenced by `CartItem` | Source of the unit price, MOQ, step, max, currency, and the offer discount used at request time — see the pricing columns below. Price changes edit the row in place: closing it invalidates the open carts and checkouts that reference it |
 | `ProductSupplierTerms` | Supplier-facing buy terms | Belongs to `Product` and `Supplier`; referenced by `LotItem` | Source of sourcing MOQ and buy-side price logic; still carries `refPrice` (see modeling limit 11). `supplierPresentation` (nullable text) is how the supplier packs the product ("caja de 10 kg"): admin-only, never shown to customers |
 | `ProductLocalConstraints` | Context-sensitive restrictions | Belongs to `Product` | Flexible JSON-based rule container, interpreted in app code |
 | `Destination` | Internal warehouse or operational destination | Referenced by `LotItem` and optionally by `Operation` | Not the same as the end-user address |
 | `PickupPoint` | Customer-facing *Pickup point*: where end-user shipments arrive and each customer collects | Referenced by `UserOrder.pickupPointId` and `Shipment.pickupPointId` (both `Restrict`) | Admin CRUD at `/admin/pickup-points`. Address, free-text `hours`, optional `instructions` and map URL; `active`/`deleted` flags. Checkout offers only active points; deactivating keeps serving the orders that chose it; hard delete refused while referenced (ADR 0011). Not a `Destination` and not an `Address` |
-| `HomeOfferSettings` | Home offers curation singleton | Optional `spotlightProduct` relation to `Product` (`onDelete: SetNull`) | One row, `id = 1`, always read and written through an upsert; holds the spotlight pick, the ranking `criterion`, and `offersLimit` (default `4`) |
+| `HomeOfferSettings` | Home featured curation singleton | Optional `spotlightProduct` relation to `Product` and optional `spotlightCombo` relation to `Combo` (both `onDelete: SetNull`) | One row, `id = 1`, always read and written through an upsert; holds the *Home spotlight* pick (a product or a combo, at most one: `CHECK`), the ranking `criterion`, `offersLimit` (places in the featured section, default `4`) and `fillWithRanking` (default `true`: the ranking fills the free places and picks the band when none is chosen) |
+| `Combo` | *Combo*: a named set of products a customer adds to the order in one action (ADR 0014) | Has many `ComboItem` (`Cascade`); at most one `HomeFeaturedItem`; referenced by `HomeOfferSettings.spotlightComboId` | Admin CRUD at `/admin/combos`: `name`, optional `description`, optional `people` (`CHECK > 0`), optional `groupName` (*Combo group*, compared trimmed and case-insensitive; within a group every non-deleted combo states a distinct `people`, checked on save), `active`, `deleted`. No price, stock or order line of its own |
+| `ComboItem` | One product of a combo | Belongs to `Combo` (`Cascade`) and `Product` (`Restrict`); unique `(comboId, productId)`; indexed by `productId` | `quantity` in the product's unit (`CHECK > 0`), a valid cart quantity for the product's terms when saved; `sortOrder` is the card order |
+| `HomeFeaturedItem` | One entry of the home featured list (*Featured item*) | Exactly one of `product` / `combo` (`CHECK`), both `Cascade` and each unique | `position` orders the list (ties by `id`); not unique, because a reorder rewrites 1..n in one transaction |
 
 #### `ProductClientTerms` pricing columns
 
@@ -396,14 +399,14 @@ The primary path below is the common successful case, as implemented. Every step
 
 ### 1. Catalog selection and request eligibility
 
-Records in play: `Product`, `ProductClientTerms`, `ProductSupplierTerms`, `ProductLocalConstraints`, `Supplier`, `HomeOfferSettings`.
+Records in play: `Product`, `ProductClientTerms`, `ProductSupplierTerms`, `ProductLocalConstraints`, `Supplier`, `HomeOfferSettings`, `HomeFeaturedItem`, `Combo`, `ComboItem`.
 
 App behavior (`src/server/services/catalog/`, `src/server/services/home/`):
 
 - resolve the active `ProductClientTerms` for the customer context (active, non-deleted, time-valid)
 - evaluate `ProductLocalConstraints` against destination, timing, quantity, and legal context
 - calculate display price and allowed quantity increments from MOQ, step, max, and currency, with `discountPercent` already applied
-- compose the home: products pinned by `Product.homeOfferRank` first, the rest ordered by the `HomeOfferSettings.criterion` ranking, the spotlight lifted out of the grid, cut to a pool of 24 (or `offersLimit` if larger) that the storefront shows `offersLimit` at a time and filters by unit on the client
+- compose the home (`composeHomeFeatured`): the `HomeFeaturedItem` list in `position` order, products with current terms and active combos, each combo shown with its whole group on one card, only the products available today and their summed line totals; when `fillWithRanking` is on, products ranked by `HomeOfferSettings.criterion` fill the free places and pick the band when none is chosen; nothing appears twice, the spotlight included; the section is cut at `offersLimit`, a combo card counting one
 - `orderVolume` ranks by paid orders per product over the last 90 days: distinct `UserOrder`s in `processing | completed` holding a `submitted`, non-deleted cart item of the product (under any of its client terms) and a `completed` `UserTransaction` whose `completedAt` falls in the window. A refund, chargeback or cancellation drops the order from the count; a product with no paid orders ranks last
 
 Clarifications:
@@ -698,7 +701,7 @@ Documented in the architecture doc's closure (§21.10), owned by future work, no
 
 ### 12. `HomeOfferSettings` is a singleton by convention, not by constraint
 
-The database allows more than one row; `id Int @id @default(1)` and an upsert on `id: 1` in the data layer are what keep there being exactly one. Anything reading the settings must go through that upsert so a fresh database returns the defaults instead of nothing. Curation is split on purpose: the spotlight, criterion and grid size live on this row, while a pinned position lives on the product it pins (`Product.homeOfferRank`).
+The database allows more than one row; `id Int @id @default(1)` and an upsert on `id: 1` in the data layer are what keep there being exactly one. Anything reading the settings must go through that upsert so a fresh database returns the defaults instead of nothing. Curation is split on purpose: the spotlight, criterion, place count and fill switch live on this row, while the featured list lives in `home_featured_item`. `Product.homeOfferRank` is the deprecated pin the list replaced.
 
 ### 13. `Product.categoryId` is nullable until the backfill runs
 
@@ -713,7 +716,7 @@ Where each capability the original checklist demanded now lives:
 | Status-transition and orchestration layer | `src/shared/common/fulfillment-transitions.ts` + command services under `src/server/services/admin/` and `src/server/services/operations/` |
 | Decimal-safe quantity/money helpers | `Prisma.Decimal` throughout; pure planners under `src/server/services/admin/` |
 | Sell-side pricing and the offer discount | `calculateLineTotal` and its display helpers in `src/shared/common/commerce.helpers.ts` (ADR 0008) |
-| Home offers curation and ranking | `src/server/services/home/` (composition and the pure ranking) + `src/server/services/admin/home-offers.{data,service}.ts` (settings, pins, spotlight) |
+| Home offers curation and ranking | `src/server/services/home/` (composition and the pure ranking) + `src/server/services/admin/home-offers.{data,service}.ts` (settings, featured list, spotlight, preview) + `src/server/services/admin/combo.*` (combos) |
 | Active/valid record query helpers | `src/server/services/_base/terms-validity.ts` |
 | Checkout submission service | `src/server/services/checkout/checkout.service.ts` + `mercadopago-reconciliation.service.ts` (ADR 0001) |
 | Aggregation service (draft/review/execute) | `src/server/services/admin/operation.service.ts` + `src/server/services/operations/{operation-execution.service,operation-review,operation-counters}.ts` (ADR 0006) |

@@ -170,9 +170,7 @@ describe("composeHomeFeatured", () => {
 			const [feature] = content.featured;
 			if (feature?.kind !== "combo") throw new Error("expected a combo");
 			const [option] = feature.combo.options;
-			expect(option?.items.map((item) => item.offer.productId)).toEqual([
-				1, 2,
-			]);
+			expect(option?.items.map((item) => item.offer.productId)).toEqual([1, 2]);
 			expect(option?.unavailableNames).toEqual(["Producto 3"]);
 			expect(option?.total).toBe("250.00");
 		});
@@ -224,10 +222,7 @@ describe("composeHomeFeatured", () => {
 
 		test("products in different currencies leave the combo out", () => {
 			const content = composeHomeFeatured(
-				[
-					offer({ productId: 1 }),
-					offer({ productId: 2, currency: "USD" }),
-				],
+				[offer({ productId: 1 }), offer({ productId: 2, currency: "USD" })],
 				[
 					combo({
 						id: 7,
@@ -293,9 +288,7 @@ describe("composeHomeFeatured", () => {
 				"product 3",
 			]);
 			const [feature] = content.featured;
-			expect(feature?.kind === "combo" && feature.combo.initialComboId).toBe(
-				7,
-			);
+			expect(feature?.kind === "combo" && feature.combo.initialComboId).toBe(7);
 		});
 
 		test("a combo without a group forms its own card", () => {
