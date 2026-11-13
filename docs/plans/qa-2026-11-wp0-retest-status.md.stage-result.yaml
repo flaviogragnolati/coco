@@ -8,29 +8,31 @@ stage_result:
   updated_outputs:
     - artifact_type: "implementation-plan"
       path: "docs/plans/qa-2026-11-wp0-retest-status.md"
-      change: "WP0 plan with execution record: retest status, qa:triage script and triage data on branch wp0-qa-retest-status (not merged)"
+      change: "WP0 plan with execution record, independent review corrections (B1, I1-I3, minors 1-9) and the second shared-database dry run; branch wp0-qa-retest-status rebased on main b3e5162, not merged"
   references_added: []
   traceability_delta:
-    - {item: "WP0 T0.1-T0.5", implemented_by: "commits b26ad9e, 9cb28e2, cbbee1c, 6f2f3a6, bdf5684 on wp0-qa-retest-status"}
+    - {item: "WP0 T0.1-T0.5", implemented_by: "commits 86083a9, b137f04, b83b310, 8e7529a, 5baa630 on wp0-qa-retest-status"}
+    - {item: "WP0 review B1, I1-I3, minors 1-9", implemented_by: "commits 1fa4ec1, 59125fd, c1fab50, 5c85bd7, bcc4c56, f3d53a8 on wp0-qa-retest-status"}
   decisions_added_or_updated:
     - "retest stays out of the tester's result selector: it is a queue position, like pending and inProgress"
     - "Dry run reads inside SET TRANSACTION READ ONLY and checks SHOW transaction_read_only before reading"
-    - "qa:triage refuses an in-progress ticket and a deleted ticket that still needs edits"
-    - "--apply re-reads each ticket and re-plans before calling the admin service"
+    - "The triage note marks a transition as done: with the note on the ticket only a pending soft delete is finished"
+    - "Transitions run only from their `from` statuses (pending by default); other statuses are conflicts skipped with a warning, never stopping --apply"
+    - "A code may have several entries with different dated notes or origins, planned in file order"
+    - "Re-test transitions free the assignee (Flavio, 13/11) through the audited update"
+    - "Tester notes say 'Tu pedido (el carrito)' for the cart and 'el pedido (en Mis pedidos)' for the order"
   risks_added_or_updated:
     - "Writing retest before the app with the new enum is deployed breaks /admin/qa-tickets; the script only checks the migration"
     - "#67 case A fixture probably gone from the shared database after the 11/10 purge"
   stale_artifacts: []
   blockers: []
   warnings:
-    - "q-review-code standards: pass with findings, 2 fixed with tests (trimmed definition compare, retire of an in-progress ticket)"
-    - "q-review-code specification: pass with findings (result selector and CONTEXT.md deviations recorded)"
-    - "q-review-comments: pass with findings, 1 rewrite applied"
-    - "Review done by the implementer; the orchestration handoff asks for an independent reviewer before merge"
-    - "CONTEXT.md QA re-test entry lives uncommitted in the main checkout, not in this branch"
+    - "Independent review: B1, I1-I3 and minors 1-9 corrected; awaiting the reviewer's confirmation"
+    - "q-review-comments on the corrections: pass (three file headers rewritten)"
+    - "All 39 tickets currently have an assignee; the 28 re-test tickets will be freed, the other 11 keep it"
   required_user_actions:
     - "Apply migration 20261113000000_qa_ticket_status_retest on the shared database and deploy before any qa:triage --apply"
-  next_recommended_action: "Independent review, merge to main, then migration and deploy by Flavio"
+  next_recommended_action: "Reviewer confirms the corrections, merge to main, then migration and deploy by Flavio"
 orchestration:
   mode: "standalone"
   global_state_updated: false
