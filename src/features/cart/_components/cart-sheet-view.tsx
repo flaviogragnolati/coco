@@ -23,6 +23,7 @@ import {
 } from "~/components/ui/sheet";
 import { Skeleton } from "~/components/ui/skeleton";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
+import { TransferTotalHint } from "~/features/cart/_components/transfer-total";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 
@@ -51,6 +52,7 @@ export function CartSheetView({
 	onRemove,
 	onNavigate,
 	targets,
+	transferDiscountPercent,
 }: CartLineHandlers & {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -66,6 +68,7 @@ export function CartSheetView({
 	onNavigate: () => void;
 	/** Marks regions for an outside walkthrough; absent on the real sheet. */
 	targets?: { content?: DataAttributes };
+	transferDiscountPercent: number | null;
 }) {
 	const hasItems = cart.itemCount > 0;
 
@@ -136,16 +139,19 @@ export function CartSheetView({
 					<SheetFooter className="border-t pt-4">
 						<div className="flex flex-col gap-2">
 							{cart.totals.map((total) => (
-								<div
-									className="flex items-center justify-between gap-3"
-									key={total.currency}
-								>
-									<span className="text-muted-foreground text-xs">
-										Total estimado
-									</span>
-									<span className="font-heading font-semibold text-lg">
-										{formatCurrency(total.amount, total.currency)}
-									</span>
+								<div className="flex flex-col gap-1" key={total.currency}>
+									<div className="flex items-center justify-between gap-3">
+										<span className="text-muted-foreground text-xs">
+											Total estimado
+										</span>
+										<span className="font-heading font-semibold text-lg">
+											{formatCurrency(total.amount, total.currency)}
+										</span>
+									</div>
+									<TransferTotalHint
+										percent={transferDiscountPercent}
+										total={total}
+									/>
 								</div>
 							))}
 						</div>

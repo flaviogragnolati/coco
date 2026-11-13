@@ -53,6 +53,7 @@ export function CartPageView({
 	onLeaveCheckout,
 	onDiscardPendingGuestItems,
 	targets,
+	transferDiscountPercent,
 }: CartLineHandlers & {
 	hasHydrated: boolean;
 	cart: CartSnapshot;
@@ -65,6 +66,7 @@ export function CartPageView({
 	onDiscardPendingGuestItems: () => void;
 	/** Marks regions for an outside walkthrough; absent on the real page. */
 	targets?: { lines?: DataAttributes; summary?: DataAttributes };
+	transferDiscountPercent: number | null;
 }) {
 	const summary = (
 		<CartSummary
@@ -74,6 +76,7 @@ export function CartPageView({
 			isPending={isPending}
 			onClear={onClear}
 			onLeaveCheckout={onLeaveCheckout}
+			transferDiscountPercent={transferDiscountPercent}
 		/>
 	);
 

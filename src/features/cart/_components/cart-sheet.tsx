@@ -4,6 +4,7 @@ import { CartSheetView } from "~/features/cart/_components/cart-sheet-view";
 import { useCartActions } from "~/features/cart/use-cart-sync";
 import { useCartStore } from "~/store/cart-store";
 import { useCartUiStore } from "~/store/cart-ui-store";
+import { api } from "~/trpc/react";
 
 export function CartSheet({
 	isAuthenticated,
@@ -20,6 +21,9 @@ export function CartSheet({
 		(state) => state.bootstrapState === "blocked",
 	);
 	const cartActions = useCartActions({ isAuthenticated, userId });
+	const transferDiscount = api.catalog.transferDiscount.useQuery(undefined, {
+		staleTime: 5 * 60_000,
+	});
 
 	return (
 		<CartSheetView
@@ -35,6 +39,7 @@ export function CartSheet({
 			onQuantityCommit={cartActions.updateQuantity}
 			onRemove={cartActions.removeItem}
 			open={isOpen}
+			transferDiscountPercent={transferDiscount.data?.percent ?? null}
 		/>
 	);
 }
