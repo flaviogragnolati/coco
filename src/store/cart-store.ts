@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { mergeCartItems } from "~/features/cart/cart-mappers";
 import type { CartBootstrapState } from "~/features/cart/checkout-start-gate.decision";
 import type {
 	CartItem,
@@ -41,6 +42,8 @@ type CartStoreState = PersistedCartState & {
 	/** Server refusal shown while `bootstrapState` is `"blocked"`. */
 	bootstrapBlockedMessage: string | null;
 	hasHydrated: boolean;
+	/** Additive, unlike `upsertItem`: for adding several products at once (combos). */
+	addItems: (items: CartItem[]) => void;
 	clear: () => void;
 	detachServerCart: () => void;
 	removeItem: (productClientTermsId: number) => void;
@@ -85,6 +88,8 @@ export const useCartStore = create<CartStoreState>()(
 			bootstrapState: "idle",
 			bootstrapBlockedMessage: null,
 			hasHydrated: false,
+			addItems: (items) =>
+				set((state) => ({ items: mergeCartItems(state.items, items) })),
 			// Keeps syncedUserId: the post-checkout cart empties but the user stays
 			// bound. resetForNewSession() is the one that drops the attribution.
 			clear: () =>
