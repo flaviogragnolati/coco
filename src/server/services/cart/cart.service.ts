@@ -8,7 +8,10 @@ import {
 } from "~/schemas/cart.schemas";
 import { db } from "~/server/db";
 import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
-import { releaseCheckoutCart } from "~/server/services/checkout/checkout-release";
+import {
+	type CheckoutReleasePolicy,
+	releaseCheckoutCart,
+} from "~/server/services/checkout/checkout-release";
 import { checkoutReleaseBlockedMessage } from "~/server/services/checkout/checkout-release.decision";
 import type {
 	CartAddedLine,
@@ -60,6 +63,17 @@ export type CartTransaction = Parameters<CartDb["$transaction"]>[0] extends (
 ) => unknown
 	? T
 	: never;
+
+/**
+ * A cart mutation that refuses live orders found one. Not a `TRPCError`: the
+ * caller that asked for the refusal words it for its own flow.
+ */
+export class LiveOrderRefusedError extends Error {
+	constructor() {
+		super("The current cart has a live order waiting for its payment.");
+		this.name = "LiveOrderRefusedError";
+	}
+}
 
 function emptyCart(): CartSnapshot {
 	return {
@@ -134,7 +148,8 @@ function mapCart(record: CartRecord | null): CartSnapshot {
  * not move under the payment.
  *
  * Runs inside the caller's transaction; every mutation entry point must go
- * through it before touching cart items.
+ * through it before touching cart items. With `refuseLiveOrder`, a live order
+ * throws `LiveOrderRefusedError` instead of being cancelled.
  */
 async function ensureCartMutable(
 	database: Parameters<CartDb["$transaction"]>[0] extends (
@@ -143,15 +158,19 @@ async function ensureCartMutable(
 		? T
 		: never,
 	cart: CartMutationRecord,
+	policy?: CheckoutReleasePolicy,
 ): Promise<CartMutationRecord> {
 	if (cart.status !== "atCheckout") return cart;
 
-	const outcome = await releaseCheckoutCart(database, cart);
+	const outcome = await releaseCheckoutCart(database, cart, policy);
 	if (outcome.decision === "notAtCheckout") return cart;
 
 	// The release only moves the status; the rest of the mutation record still
 	// describes the same cart, so there is nothing to re-read.
 	if (outcome.decision === "release") return { ...cart, status: "pending" };
+
+	if (outcome.decision === "refusedLiveOrder")
+		throw new LiveOrderRefusedError();
 
 	throw new TRPCError({
 		code: "PRECONDITION_FAILED",
@@ -166,9 +185,10 @@ async function getOrCreateCurrentCart(
 		? T
 		: never,
 	userId: string,
+	policy?: CheckoutReleasePolicy,
 ) {
 	const existing = await findCurrentCartForMutationByUserId(database, userId);
-	if (existing) return ensureCartMutable(database, existing);
+	if (existing) return ensureCartMutable(database, existing, policy);
 
 	return createCurrentCart(database, userId);
 }
@@ -371,7 +391,7 @@ export async function setItemQuantity(
 
 /** The terms each product sells under today; a product without any is absent. */
 export async function findCurrentTermsByProductId(
-	database: CartTransaction,
+	database: CartDb | CartTransaction,
 	productIds: number[],
 	now: Date,
 ): Promise<Map<number, CartProductClientTermsRecord>> {
@@ -392,24 +412,54 @@ export async function findCurrentTermsByProductId(
 /** `name` labels a product that turns out unavailable and has no terms to name it. */
 export type CartAddItemRequest = CartAddItemInput & { name?: string };
 
+function unavailableLine(
+	productId: number,
+	items: CartAddItemRequest[],
+): CartAddedLine {
+	const requested = items.find((item) => item.productId === productId);
+	return {
+		productId,
+		name: requested?.name ?? "-",
+		outcome: "unavailable",
+		quantity: null,
+	};
+}
+
+export type CartAddItemsMutation = {
+	/** Null when nothing could be added, so no cart was touched. */
+	cartId: number | null;
+	lines: CartAddedLine[];
+};
+
 /**
  * Adds products to the current cart at their current terms, inside the
  * caller's transaction and additively (`planCartAdditions`). A product with no
- * current terms is reported unavailable and leaves the cart untouched.
+ * current terms is reported unavailable; when none has any, the cart is not
+ * touched at all, so an abandoned checkout is not released for nothing.
  */
 export async function addItemsInTransaction(
 	tx: CartTransaction,
 	userId: string,
 	items: CartAddItemRequest[],
 	now: Date,
-): Promise<{ cartId: number; lines: CartAddedLine[] }> {
-	const cart = await getOrCreateCurrentCart(tx, userId);
+	policy?: CheckoutReleasePolicy,
+): Promise<CartAddItemsMutation> {
 	const termsByProductId = await findCurrentTermsByProductId(
 		tx,
 		items.map((item) => item.productId),
 		now,
 	);
+	if (termsByProductId.size === 0) {
+		const productIds = new Set(items.map((item) => item.productId));
+		return {
+			cartId: null,
+			lines: Array.from(productIds, (productId) =>
+				unavailableLine(productId, items),
+			),
+		};
+	}
 
+	const cart = await getOrCreateCurrentCart(tx, userId, policy);
 	const existingItems = await listActiveCartItemsByTerms(
 		tx,
 		cart.id,
@@ -440,13 +490,7 @@ export async function addItemsInTransaction(
 		const terms = termsByProductId.get(plan.productId);
 
 		if (plan.outcome === "unavailable" || !terms) {
-			const requested = items.find((item) => item.productId === plan.productId);
-			lines.push({
-				productId: plan.productId,
-				name: requested?.name ?? "-",
-				outcome: "unavailable",
-				quantity: null,
-			});
+			lines.push(unavailableLine(plan.productId, items));
 			continue;
 		}
 
@@ -469,19 +513,23 @@ export async function addItemsInTransaction(
 }
 
 /** Reads the cart back after `addItemsInTransaction` committed. */
-export async function readAddItemsOutput(mutation: {
-	cartId: number;
-	lines: CartAddedLine[];
-}): Promise<CartAddItemsOutput> {
+export async function readAddItemsOutput(
+	userId: string,
+	mutation: CartAddItemsMutation,
+): Promise<CartAddItemsOutput> {
 	return cartAddItemsOutputSchema.parse({
-		cart: await getCartSnapshot(mutation.cartId),
+		cart:
+			mutation.cartId === null
+				? await getCurrent(userId)
+				: await getCartSnapshot(mutation.cartId),
 		lines: mutation.lines,
 	});
 }
 
 /**
- * Adds several products to the current cart at once, by product id. Used by
- * "Repetir pedido" and meant for combos too.
+ * Adds several products to the current cart at once, by product id, in its own
+ * transaction. `repeat` composes `addItemsInTransaction` instead; meant for
+ * combos.
  */
 export async function addItems(
 	userId: string,
@@ -491,7 +539,7 @@ export async function addItems(
 	const mutation = await db.$transaction((tx) =>
 		addItemsInTransaction(tx, userId, items, now),
 	);
-	return readAddItemsOutput(mutation);
+	return readAddItemsOutput(userId, mutation);
 }
 
 export async function removeItem(

@@ -70,7 +70,16 @@ const waitingOrder = order({
 	id: 70,
 	code: "ORD-70",
 	status: "pending",
-	transactions: [{ id: 50, amount: "34900.00", currency: "ARS" }],
+	// An unreported transfer: editing the cart would cancel it.
+	transactions: [
+		{
+			id: 50,
+			amount: "34900.00",
+			currency: "ARS",
+			status: "pending",
+			declaredReceiptReference: null,
+		},
+	],
 });
 
 const pendingCart = {
@@ -323,4 +332,44 @@ test("a product sold under new terms is added with the current ones", async () =
 		tx,
 		expect.objectContaining({ productClientTermsId: 777, quantity: "1" }),
 	);
+});
+
+test("an order confirmed after the gate read is refused, not cancelled", async () => {
+	cartData.findCurrentCartForMutationByUserId.mockResolvedValue(checkoutCart);
+	checkoutData.findLiveOrderByCartId
+		.mockResolvedValueOnce(null)
+		.mockResolvedValueOnce(waitingOrder);
+
+	await expect(
+		service.repeat("user-1", { orderId: 7, productIds: [1, 2] }),
+	).rejects.toMatchObject({
+		code: "PRECONDITION_FAILED",
+		message: service.REPEAT_BLOCKED_MESSAGE,
+	});
+	expect(checkoutData.findLiveOrderByCartId).toHaveBeenCalledTimes(2);
+	expect(checkoutData.cancelTransaction).not.toHaveBeenCalled();
+	expect(checkoutData.updateOrderStatus).not.toHaveBeenCalled();
+	expectNoCartWrites();
+});
+
+test("when nothing can be added the cart is left alone and returned as it is", async () => {
+	cartData.findCurrentCartForMutationByUserId.mockResolvedValue(checkoutCart);
+	cartData.listCurrentClientTermsByProductIds.mockResolvedValue([]);
+	cartData.findCurrentCartByUserId.mockResolvedValue({
+		...checkoutCart,
+		cartItems: [],
+	});
+
+	const output = await service.repeat("user-1", {
+		orderId: 7,
+		productIds: [1, 2],
+	});
+
+	expect(release.releaseCheckoutCart).not.toHaveBeenCalled();
+	expectNoCartWrites();
+	expect(output.cart).toMatchObject({ id: 3, status: "atCheckout" });
+	expect(output.lines.map((line) => line.outcome)).toEqual([
+		"unavailable",
+		"unavailable",
+	]);
 });

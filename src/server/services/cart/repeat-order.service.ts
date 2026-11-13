@@ -27,6 +27,7 @@ import { findCurrentCartForMutationByUserId } from "./cart.data";
 import {
 	addItemsInTransaction,
 	findCurrentTermsByProductId,
+	LiveOrderRefusedError,
 	readAddItemsOutput,
 } from "./cart.service";
 import {
@@ -162,8 +163,8 @@ export async function previewRepeat(
 
 /**
  * Adds the chosen products of an earlier order to the current cart. The order
- * itself is only read. Refused before the cart is touched while another order
- * waits for its payment, so the release that editing performs never runs.
+ * itself is only read. Refused while another order waits for its payment, so
+ * repeating never cancels it the way editing does.
  */
 export async function repeat(
 	userId: string,
@@ -209,8 +210,22 @@ export async function repeat(
 			});
 		}
 
-		return addItemsInTransaction(tx, userId, requests, now);
+		try {
+			// The gate above is the fast path; this refusal also covers an order
+			// confirmed in another tab after the gate read.
+			return await addItemsInTransaction(tx, userId, requests, now, {
+				refuseLiveOrder: true,
+			});
+		} catch (error) {
+			if (error instanceof LiveOrderRefusedError) {
+				throw new TRPCError({
+					code: "PRECONDITION_FAILED",
+					message: REPEAT_BLOCKED_MESSAGE,
+				});
+			}
+			throw error;
+		}
 	});
 
-	return readAddItemsOutput(mutation);
+	return readAddItemsOutput(userId, mutation);
 }
