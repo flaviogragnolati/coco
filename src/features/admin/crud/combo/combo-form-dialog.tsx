@@ -105,12 +105,20 @@ export function ComboFormDialog({
 		[productOptions],
 	);
 	const comboboxOptions = useMemo<ComboboxOption[]>(
-		() =>
-			productOptions.map((option) => ({
+		() => [
+			...productOptions.map((option) => ({
 				value: String(option.productId),
 				label: option.name,
 			})),
-		[productOptions],
+			...(combo?.items ?? [])
+				.filter((item) => !optionById.has(item.productId))
+				.map((item) => ({
+					value: String(item.productId),
+					label: `${item.productName} — sin precio vigente`,
+					disabled: true,
+				})),
+		],
+		[combo?.items, optionById, productOptions],
 	);
 
 	useEffect(() => {
@@ -311,6 +319,12 @@ export function ComboFormDialog({
 												searchPlaceholder="Buscar producto..."
 												value={productId > 0 ? String(productId) : null}
 											/>
+											{productId > 0 && !option ? (
+												<FieldDescription>
+													Sin precio vigente. Reemplazá o quitá este producto
+													para guardar.
+												</FieldDescription>
+											) : null}
 											<FieldError errors={[itemErrors?.productId]} />
 										</Field>
 										<Field data-invalid={Boolean(itemErrors?.quantity)}>

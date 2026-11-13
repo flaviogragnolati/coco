@@ -5,6 +5,7 @@ import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import { calculateLineTotal } from "~/shared/common/commerce.helpers";
 import {
 	catalogProductToCartItem,
+	describeLocalCartAdditions,
 	homeOfferToCartItem,
 	mergeCartItems,
 } from "./cart-mappers";
@@ -112,4 +113,26 @@ test("merging caps the sum at the maximum", () => {
 	const merged = mergeCartItems({ "30": almond("4") }, [almond("3")]);
 
 	expect(merged["30"]).toMatchObject({ quantity: "5", lineTotal: "113000.00" });
+});
+
+test("local additive feedback reports a cap reached by an existing line", () => {
+	expect(
+		describeLocalCartAdditions({ "30": almond("4") }, [almond("3")]),
+	).toEqual([{ name: "Almendra", outcome: "adjusted" }]);
+});
+
+test("local additive feedback reports exact additions without a warning", () => {
+	expect(
+		describeLocalCartAdditions({ "30": almond("0.5") }, [almond("1")]),
+	).toEqual([{ name: "Almendra", outcome: "added" }]);
+});
+
+test("local additive feedback tolerates decimal arithmetic without claiming an adjustment", () => {
+	const current = almond("0.1");
+	const incoming = almond("0.2");
+	current.terms = { ...current.terms, moq: "0.1", step: "0.1" };
+	incoming.terms = current.terms;
+	expect(describeLocalCartAdditions({ "30": current }, [incoming])).toEqual([
+		{ name: "Almendra", outcome: "added" },
+	]);
 });

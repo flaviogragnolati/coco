@@ -134,10 +134,14 @@ export async function listComboGroupNames(db: AdminDbClient) {
 	const rows = await db.combo.findMany({
 		where: { deleted: false, groupName: { not: null } },
 		select: { groupName: true },
-		distinct: ["groupName"],
-		orderBy: { groupName: "asc" },
+		orderBy: [{ groupName: "asc" }, { id: "asc" }],
 	});
-	return rows.flatMap((row) => (row.groupName ? [row.groupName] : []));
+	const byKey = new Map<string, string>();
+	for (const { groupName } of rows) {
+		const key = groupName ? normalizeComboGroup(groupName) : "";
+		if (groupName && key && !byKey.has(key)) byKey.set(key, groupName);
+	}
+	return [...byKey.values()];
 }
 
 /**

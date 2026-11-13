@@ -41,6 +41,7 @@ import {
 	type HomeFeaturedItemRecord,
 	type HomeOfferCandidateTermsRecord,
 	type HomeOfferSettingsRecord,
+	listActiveComboGroups,
 	listComboCandidates as listComboCandidateRecords,
 	listFeaturedItems,
 	listHomeOfferCandidateTerms,
@@ -94,9 +95,8 @@ function toCandidate(
 }
 
 /**
- * Curation only ever points at products the home can actually render. A pick
- * on a product without vigente client terms is a silent no-op: the home skips
- * it and the admin has no way of telling it was ignored.
+ * Curation only points at products the home can render: a pick without
+ * vigente client terms would be skipped silently by the home.
  */
 async function assertOfferable(
 	database: Prisma.TransactionClient,
@@ -188,19 +188,28 @@ function itemName(item: HomeFeaturedItemRecord) {
 	return item.product?.name ?? item.combo?.name ?? "-";
 }
 
+export type FeaturedBand = {
+	/** The chosen band product, when it can be shown. */
+	productId: number | null;
+	/** The chosen band combo, when it is active. */
+	combo: HomeFeaturedComboRecord | null;
+};
+
 /**
  * What the home does with each entry of the list, in the order it walks it:
  * the same skips `composeHomeFeatured` makes, so the admin sees why an entry
- * takes no place.
+ * takes no place. A combo card shows when any active combo of its group has a
+ * product available (`shownGroupKeys`), even if the listed combo has none.
  */
 export function describeFeaturedItems(
 	items: HomeFeaturedItemRecord[],
 	availableProductIds: ReadonlySet<number>,
-	spotlightCombo: HomeFeaturedComboRecord | null,
+	shownGroupKeys: ReadonlySet<string>,
+	band: FeaturedBand,
 ): HomeFeaturedListItem[] {
 	const shownCardBy = new Map<string, string>();
-	if (spotlightCombo?.active && !spotlightCombo.deleted) {
-		shownCardBy.set(comboCardKey(spotlightCombo), spotlightCombo.name);
+	if (band.combo && shownGroupKeys.has(comboCardKey(band.combo))) {
+		shownCardBy.set(comboCardKey(band.combo), band.combo.name);
 	}
 
 	return items.flatMap((item) => {
@@ -216,7 +225,11 @@ export function describeFeaturedItems(
 			return homeFeaturedListItemSchema.parse({
 				...base,
 				target: { kind: "product", productId: item.productId },
-				status: showable ? "shown" : "noPrice",
+				status: !showable
+					? "noPrice"
+					: band.productId === item.productId
+						? "inBand"
+						: "shown",
 				sharedWithName: null,
 			});
 		}
@@ -234,47 +247,69 @@ export function describeFeaturedItems(
 		}
 
 		const key = comboCardKey(combo);
+		if (!shownGroupKeys.has(key)) {
+			return homeFeaturedListItemSchema.parse({
+				...base,
+				target,
+				status: "noPrice",
+				sharedWithName: null,
+			});
+		}
 		const sharedWithName = shownCardBy.get(key) ?? null;
 		if (sharedWithName === null) shownCardBy.set(key, combo.name);
-		const hasProduct = combo.items.some((comboItem) =>
-			availableProductIds.has(comboItem.productId),
-		);
 
 		return homeFeaturedListItemSchema.parse({
 			...base,
 			target,
-			status: !hasProduct
-				? "noPrice"
-				: sharedWithName !== null
-					? "sharedCard"
-					: "shown",
+			status: sharedWithName === null ? "shown" : "sharedCard",
 			sharedWithName,
 		});
 	});
 }
 
 export async function listFeatured(database: AdminDb) {
-	const [items, settings] = await Promise.all([
+	const [items, settings, activeCombos] = await Promise.all([
 		listFeaturedItems(database),
 		upsertHomeOfferSettings(database),
+		listActiveComboGroups(database),
 	]);
 	const spotlightCombo =
 		settings.spotlightComboId === null
 			? null
 			: await findHomeFeaturedCombo(database, settings.spotlightComboId);
 	const productIds = [
-		...new Set(
-			items.flatMap((item) =>
-				item.productId !== null
-					? [item.productId]
-					: (item.combo?.items.map((comboItem) => comboItem.productId) ?? []),
+		...new Set([
+			...items.flatMap((item) =>
+				item.productId === null ? [] : [item.productId],
 			),
-		),
+			...activeCombos.flatMap((combo) =>
+				combo.items.map((comboItem) => comboItem.productId),
+			),
+			...(settings.spotlightProductId === null
+				? []
+				: [settings.spotlightProductId]),
+		]),
 	];
 	const terms = await listCurrentComboTerms(database, new Date(), productIds);
+	const shownGroupKeys = new Set(
+		activeCombos
+			.filter((combo) =>
+				combo.items.some((comboItem) => terms.has(comboItem.productId)),
+			)
+			.map(comboCardKey),
+	);
+	const band: FeaturedBand = {
+		productId:
+			settings.spotlightProductId !== null &&
+			terms.has(settings.spotlightProductId)
+				? settings.spotlightProductId
+				: null,
+		combo:
+			spotlightCombo?.active && !spotlightCombo.deleted ? spotlightCombo : null,
+	};
 
 	return homeFeaturedListOutputSchema.parse(
-		describeFeaturedItems(items, new Set(terms.keys()), spotlightCombo),
+		describeFeaturedItems(items, new Set(terms.keys()), shownGroupKeys, band),
 	);
 }
 
@@ -431,9 +466,13 @@ function previewName(feature: HomeFeature) {
 }
 
 /** What the home shows right now, computed by the home itself. */
-export async function preview() {
-	const content = await composeCurrentHomeFeatured();
+export async function preview(database: AdminDb) {
+	const content = await composeCurrentHomeFeatured(database);
 	const entry = (feature: (typeof content.featured)[number]) => ({
+		id:
+			feature.kind === "product"
+				? feature.offer.productId
+				: feature.combo.initialComboId,
 		kind: feature.kind,
 		name: previewName(feature),
 		source: feature.source,

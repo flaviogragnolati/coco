@@ -7,6 +7,7 @@ import {
 	formatQuantity,
 	formatQuantityInput,
 	parseQuantityInput,
+	toNumber,
 	toQuantityString,
 } from "~/shared/common/commerce.helpers";
 
@@ -40,7 +41,16 @@ export function comboQuantityToSubmit(typed: string) {
 	return parsed === null ? typed.trim() : toQuantityString(parsed);
 }
 
-/** "Mínimo 1 kg, de a 0,5 kg", plus the cap when there is one. */
+/** The same test as `isFixedQuantity`: no step, or a cap that leaves no step above the minimum. */
+function isFixedComboQuantity(option: ComboProductOption) {
+	const moq = toNumber(option.moq) ?? 0;
+	const step = toNumber(option.step);
+	const max = toNumber(option.max);
+	if (step === null || step <= 0) return true;
+	return max !== null && max < moq + step;
+}
+
+/** "Mínimo 1 kg, de a 0,5 kg" plus the cap, or "Cantidad fija: 1 frasco". */
 export function describeComboQuantityRule(option: ComboProductOption) {
 	const presentation = {
 		presentationContainer: option.presentationContainer,
@@ -55,7 +65,7 @@ export function describeComboQuantityRule(option: ComboProductOption) {
 	const max = option.max
 		? `, hasta ${formatQuantity(option.max, option.unit, presentation)}`
 		: "";
-	return option.step
-		? `Mínimo ${moq}, de a ${step}${max}`
-		: `Cantidad fija: ${moq}`;
+	return isFixedComboQuantity(option)
+		? `Cantidad fija: ${moq}`
+		: `Mínimo ${moq}, de a ${step}${max}`;
 }

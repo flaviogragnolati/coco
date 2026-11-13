@@ -102,6 +102,9 @@ function comboLabel(combo: HomeComboCandidate) {
 }
 
 function FeaturedStatus({ item }: { item: HomeFeaturedListItem }) {
+	if (item.status === "inBand") {
+		return <Badge variant="info">Se muestra en la banda</Badge>;
+	}
 	if (item.status === "noPrice") {
 		return <Badge variant="destructive">Sin precio vigente</Badge>;
 	}
@@ -253,6 +256,10 @@ export function HomeOffersClient() {
 		[comboOptions, productOptions],
 	);
 
+	const missingSpotlightOption =
+		spotlightValue !== SPOTLIGHT_NONE &&
+		!spotlightOptions.some((option) => option.value === spotlightValue);
+
 	const listedValues = new Set(
 		featured.map((item) => targetValue(item.target)),
 	);
@@ -333,6 +340,15 @@ export function HomeOffersClient() {
 							Sin elección, va el primero del ranking (si el relleno está
 							prendido).
 						</FieldDescription>
+						{missingSpotlightOption ? (
+							<Alert>
+								<TriangleAlertIcon />
+								<AlertDescription>
+									La elección guardada está inactiva o no tiene precio vigente.
+									No se muestra. Elegí otra opción o quitá la elección.
+								</AlertDescription>
+							</Alert>
+						) : null}
 					</Field>
 				</CardContent>
 			</Card>
@@ -363,7 +379,7 @@ export function HomeOffersClient() {
 					{featured.length === 0 ? (
 						<p className="text-muted-foreground text-sm">
 							La lista está vacía.{" "}
-							{fillWithRanking
+							{settingsQuery.data?.fillWithRanking
 								? "La sección se arma sola con el ranking."
 								: "Con el relleno apagado, la sección queda vacía."}
 						</p>
@@ -562,7 +578,7 @@ export function HomeOffersClient() {
 							) : (
 								<ol className="flex list-decimal flex-col gap-1 pl-5">
 									{previewQuery.data.featured.map((entry) => (
-										<li key={`${entry.kind}-${entry.name}`}>
+										<li key={`${entry.kind}-${entry.id}`}>
 											{entry.name}{" "}
 											<span className="text-muted-foreground">
 												({entry.kind === "combo" ? "combo" : "producto"},{" "}

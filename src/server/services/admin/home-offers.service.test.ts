@@ -12,6 +12,7 @@ vi.mock("./home-offers.data", () => ({
 	findFeaturedItemByTarget: vi.fn(),
 	findHomeFeaturedCombo: vi.fn(),
 	findHomeOfferProduct: vi.fn(),
+	listActiveComboGroups: vi.fn(),
 	listComboCandidates: vi.fn(),
 	listFeaturedItems: vi.fn(),
 	listHomeOfferCandidateTerms: vi.fn(),
@@ -21,6 +22,8 @@ vi.mock("./home-offers.data", () => ({
 vi.mock("./combo.data", () => ({ listCurrentComboTerms: vi.fn() }));
 vi.mock("./_base/admin-audit", () => ({ writeAdminAuditLog: vi.fn() }));
 
+import { composeCurrentHomeFeatured } from "../home/home.service";
+import { listCurrentComboTerms } from "./combo.data";
 import * as data from "./home-offers.data";
 import * as service from "./home-offers.service";
 
@@ -161,6 +164,33 @@ it("a combo in the band clears the product that was there", async () => {
 });
 
 describe("describeFeaturedItems", () => {
+	it("shows the group card even when only a sibling has current products", () => {
+		const items = service.describeFeaturedItems(
+			[
+				comboItem(1, combo(7, { groupName: "Desayuno", products: [5] })),
+				comboItem(2, combo(8, { groupName: "Desayuno", products: [1] })),
+			] as never,
+			new Set([1]),
+			new Set(["group:desayuno"]),
+			{ productId: null, combo: null },
+		);
+
+		expect(items.map((item) => [item.status, item.sharedWithName])).toEqual([
+			["shown", null],
+			["sharedCard", "Combo 7"],
+		]);
+	});
+
+	it("does not count the band product as a section card", () => {
+		const [item] = service.describeFeaturedItems(
+			[productItem(1, 5)] as never,
+			new Set([5]),
+			new Set(),
+			{ productId: 5, combo: null },
+		);
+		expect(item?.status).toBe("inBand");
+	});
+
 	it("marks a sibling below in the list as sharing the first one's card", () => {
 		const items = service.describeFeaturedItems(
 			[
@@ -169,7 +199,8 @@ describe("describeFeaturedItems", () => {
 				comboItem(3, combo(8, { groupName: " desayuno" })),
 			] as never,
 			new Set([1, 2]),
-			null,
+			new Set(["group:desayuno"]),
+			{ productId: null, combo: null },
 		);
 
 		expect(items.map((item) => [item.status, item.sharedWithName])).toEqual([
@@ -183,7 +214,8 @@ describe("describeFeaturedItems", () => {
 		const [item] = service.describeFeaturedItems(
 			[comboItem(1, combo(8, { groupName: "Desayuno" }))] as never,
 			new Set([1]),
-			combo(7, { groupName: "Desayuno" }) as never,
+			new Set(["group:desayuno"]),
+			{ productId: null, combo: combo(7, { groupName: "Desayuno" }) as never },
 		);
 
 		expect(item?.status).toBe("sharedCard");
@@ -198,7 +230,8 @@ describe("describeFeaturedItems", () => {
 				comboItem(3, combo(8, { active: false })),
 			] as never,
 			new Set([1]),
-			null,
+			new Set(),
+			{ productId: null, combo: null },
 		);
 
 		expect(items.map((item) => item.status)).toEqual([
@@ -207,4 +240,35 @@ describe("describeFeaturedItems", () => {
 			"inactive",
 		]);
 	});
+});
+
+it("listFeatured includes siblings that are absent from the curated list", async () => {
+	vi.mocked(data.listFeaturedItems).mockResolvedValue([
+		comboItem(1, combo(7, { groupName: "Desayuno", products: [5] })),
+	] as never);
+	vi.mocked(data.listActiveComboGroups).mockResolvedValue([
+		combo(7, { groupName: "Desayuno", products: [5] }),
+		combo(8, { groupName: "Desayuno", products: [1] }),
+	] as never);
+	vi.mocked(listCurrentComboTerms).mockResolvedValue(
+		new Map([[1, {}]]) as never,
+	);
+
+	const [item] = await service.listFeatured(db);
+
+	expect(item?.status).toBe("shown");
+	expect(listCurrentComboTerms).toHaveBeenCalledWith(
+		db,
+		expect.any(Date),
+		[5, 1],
+	);
+});
+
+it("preview uses the caller's database", async () => {
+	vi.mocked(composeCurrentHomeFeatured).mockResolvedValue({
+		spotlight: null,
+		featured: [],
+	} as never);
+	await service.preview(db);
+	expect(composeCurrentHomeFeatured).toHaveBeenCalledWith(db);
 });

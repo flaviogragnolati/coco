@@ -1817,15 +1817,11 @@ async function seedHomeCombos(tx: Tx, data: SeedMasterData) {
 
 	const [onePersonComboId] = comboIds;
 	if (onePersonComboId === undefined) return;
-	const featured = await tx.homeFeaturedItem.findUnique({
+	await tx.homeFeaturedItem.upsert({
 		where: { comboId: onePersonComboId },
-		select: { id: true },
+		create: { comboId: onePersonComboId, position: 0 },
+		update: { position: 0 },
 	});
-	if (!featured) {
-		await tx.homeFeaturedItem.create({
-			data: { comboId: onePersonComboId, position: 1 },
-		});
-	}
 }
 
 async function createCart(

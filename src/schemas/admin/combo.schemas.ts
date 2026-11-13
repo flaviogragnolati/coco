@@ -22,6 +22,8 @@ const optionalTrimmedText = (max: number, message: string) =>
 
 export const comboItemInputSchema = z.object({
 	productId: z.number().int().positive("Elegí un producto"),
+	// Not the cart's decimal schema: its preprocess types the input as unknown,
+	// which the admin form cannot bind a text field to.
 	quantity: z
 		.string()
 		.trim()

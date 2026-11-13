@@ -31,10 +31,7 @@ test("a guest picks the people on a combo card and adds every product as its own
 	const card = page.locator("#ofertas [data-slot='card']").filter({
 		has: page.getByRole("heading", { name: COMBO_NAME, exact: true }),
 	});
-	test.skip(
-		(await card.count()) === 0,
-		"The fixture has no featured combo (seed it with prisma/seed.ts).",
-	);
+	await expect(card).toBeVisible();
 
 	const people = card.getByRole("group", { name: "Cantidad de personas" });
 	await expect(people.getByRole("radio", { name: "1 persona" })).toBeChecked();

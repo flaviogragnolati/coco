@@ -212,3 +212,11 @@ export async function listComboCandidates(db: AdminDbClient) {
 		orderBy: [{ groupName: "asc" }, { people: "asc" }, { name: "asc" }],
 	});
 }
+
+/** Active combos with their products, to tell which group cards can show. */
+export async function listActiveComboGroups(db: AdminDbClient) {
+	return db.combo.findMany({
+		where: { active: true, deleted: false },
+		select: homeFeaturedComboSelect,
+	});
+}

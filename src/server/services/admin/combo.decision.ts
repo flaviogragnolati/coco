@@ -46,7 +46,7 @@ function quantityError(product: ComboProductTerms, terms: CatalogClientTerms) {
 
 /**
  * A combo is saved only when every quantity is one the cart would accept as
- * is, so the card never quotes a quantity the add would change.
+ * is, so at save time the card quotes a quantity the add accepts unchanged.
  */
 export function validateComboItems(
 	items: { productId: number; quantity: string }[],
@@ -96,7 +96,7 @@ export function validateComboItems(
 /**
  * Within a group every combo declares its people and no two share the number,
  * so the card's selector has one distinct choice per combo. `siblings` are the
- * group's other non-deleted combos.
+ * group's non-deleted combos; the combo itself is skipped by id.
  */
 export function validateComboGroup(
 	combo: { id?: number; groupName: string | null; people: number | null },

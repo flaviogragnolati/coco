@@ -302,6 +302,7 @@ export async function replaceInitialCatalog(tx: Tx, input: Catalog) {
 			},
 		});
 	}
+	const restoredFeaturedProducts = new Set<number>();
 	for (const item of oldFeaturedItems) {
 		if (item.comboId !== null) {
 			await tx.homeFeaturedItem.create({
@@ -311,10 +312,11 @@ export async function replaceInitialCatalog(tx: Tx, input: Catalog) {
 		}
 		const name = item.product?.name;
 		const productId = name ? createdIdByName.get(name) : undefined;
-		if (productId === undefined) {
+		if (productId === undefined || restoredFeaturedProducts.has(productId)) {
 			droppedByReset.push(`destacado del home: ${name ?? "-"}`);
 			continue;
 		}
+		restoredFeaturedProducts.add(productId);
 		await tx.homeFeaturedItem.create({
 			data: { position: item.position, productId },
 		});

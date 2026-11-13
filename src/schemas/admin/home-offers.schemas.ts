@@ -41,17 +41,19 @@ export const homeOfferSetSpotlightInputSchema = z.object({
 });
 
 /**
- * - `noPrice`: a product without current terms, or a combo with none of its
- *   products available; the home skips it.
+ * - `noPrice`: a product without current terms, or a combo whose group has no
+ *   active combo with a product available; the home skips it.
  * - `inactive`: a combo switched off in Combos.
  * - `sharedCard`: a combo whose group already shows, through a sibling higher
  *   in the list or in the band; it takes no place of its own.
+ * - `inBand`: the product chosen for the band, which the section skips.
  */
 export const homeFeaturedStatusSchema = z.enum([
 	"shown",
 	"noPrice",
 	"inactive",
 	"sharedCard",
+	"inBand",
 ]);
 
 export const homeFeaturedListItemSchema = z.object({
@@ -85,6 +87,7 @@ export const homeComboCandidateSchema = z.object({
 });
 
 const previewEntrySchema = z.object({
+	id: z.number().int().positive(),
 	kind: z.enum(["product", "combo"]),
 	name: z.string(),
 	source: z.enum(["list", "ranking"]),

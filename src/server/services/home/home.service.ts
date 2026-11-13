@@ -51,18 +51,20 @@ function mapHomeOffer(
  * The home's band and featured section with where each entry came from. The
  * admin preview reads this same result, so it cannot disagree with the home.
  */
-export async function composeCurrentHomeFeatured(): Promise<ComposedHomeFeatured> {
+export async function composeCurrentHomeFeatured(
+	database: typeof db = db,
+): Promise<ComposedHomeFeatured> {
 	const now = new Date();
 	const [records, combos, list, settings] = await Promise.all([
-		listCurrentHomeOffers(db, now),
-		listHomeCombos(db),
-		listHomeFeaturedList(db),
-		getHomeOfferCuration(db),
+		listCurrentHomeOffers(database, now),
+		listHomeCombos(database),
+		listHomeFeaturedList(database),
+		getHomeOfferCuration(database),
 	]);
 	// Only the ranking reads paid orders, and the ranking is off without the fill.
 	const paidOrderCounts =
 		settings.fillWithRanking && settings.criterion === "orderVolume"
-			? await countPaidOrdersByProduct(db, now)
+			? await countPaidOrdersByProduct(database, now)
 			: new Map<number, number>();
 
 	return composeHomeFeatured(

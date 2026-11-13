@@ -17,7 +17,10 @@ import type { HomeComboOption } from "~/shared/common/home.types";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
 import { api } from "~/trpc/react";
 import { decideCartBootstrap } from "./cart-bootstrap.decision";
-import { homeOfferToCartItem } from "./cart-mappers";
+import {
+	describeLocalCartAdditions,
+	homeOfferToCartItem,
+} from "./cart-mappers";
 import { describeRepeatOutcome } from "./repeat-order.messages";
 import { useCartStorageSync } from "./use-cart-storage-sync";
 
@@ -272,16 +275,16 @@ export function useCartActions({
 				return;
 			}
 
-			addLocalItems(
-				option.items.map((item) =>
-					homeOfferToCartItem(item.offer, item.quantity),
-				),
+			const incoming = option.items.map((item) =>
+				homeOfferToCartItem(item.offer, item.quantity),
 			);
+			const outcomes = describeLocalCartAdditions(
+				useCartStore.getState().items,
+				incoming,
+			);
+			addLocalItems(incoming);
 			notifyAddOutcome([
-				...option.items.map((item) => ({
-					name: item.offer.productName,
-					outcome: "added" as const,
-				})),
+				...outcomes,
 				...option.unavailableNames.map((name) => ({
 					name,
 					outcome: "unavailable" as const,

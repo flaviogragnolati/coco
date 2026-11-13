@@ -40,7 +40,7 @@ export const homeOffersRouter = createTRPCRouter({
 
 	preview: adminProcedure
 		.output(homeFeaturedPreviewSchema)
-		.query(async () => homeOffersService.preview()),
+		.query(async ({ ctx }) => homeOffersService.preview(ctx.db)),
 
 	updateSettings: adminProcedure
 		.input(homeOfferSettingsUpdateInputSchema)

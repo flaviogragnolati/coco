@@ -265,7 +265,7 @@ enum ProductPresentationContainer {
 // At most one of spotlightProductId / spotlightComboId is set (CHECK in SQL).
 model HomeOfferSettings {
   id                 Int                 @id @default(1)
-  spotlightProductId Int? // explicit hero pick; falls back to the top of the ranking when null or no longer vigente
+  spotlightProductId Int? // explicit band pick; with neither pick, the ranking fills the band only when fillWithRanking is on
   spotlightComboId   Int?
   criterion          HomeOffersCriterion @default(marketSaving)
   offersLimit        Int                 @default(4)

@@ -1,10 +1,11 @@
 "use client";
 
-import type { CartItem } from "~/shared/common/cart.types";
+import type { CartAddedLine, CartItem } from "~/shared/common/cart.types";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import {
 	calculateLineTotal,
 	normalizeCartQuantity,
+	quantitiesEqual,
 	toNumber,
 	toQuantityString,
 } from "~/shared/common/commerce.helpers";
@@ -41,6 +42,25 @@ export function mergeCartItems(
 	}
 
 	return next;
+}
+
+/** Reports normalization of an additive local update, including an existing line's cap. */
+export function describeLocalCartAdditions(
+	current: Record<string, CartItem>,
+	incoming: CartItem[],
+): Pick<CartAddedLine, "name" | "outcome">[] {
+	const merged = mergeCartItems(current, incoming);
+	return incoming.map((item) => {
+		const key = String(item.productClientTermsId);
+		const wanted =
+			(toNumber(current[key]?.quantity) ?? 0) + (toNumber(item.quantity) ?? 0);
+		return {
+			name: item.product.name,
+			outcome: quantitiesEqual(merged[key]?.quantity ?? "0", wanted)
+				? "added"
+				: "adjusted",
+		};
+	});
 }
 
 export function catalogProductToCartItem(

@@ -114,6 +114,12 @@ describe.skipIf(!url)("initial catalog reset on isolated PostgreSQL", () => {
 		await db.homeFeaturedItem.create({
 			data: { position: 2, productId: product.id },
 		});
+		const namesake = await db.product.create({
+			data: { name: product.name, unit: product.unit },
+		});
+		await db.homeFeaturedItem.create({
+			data: { position: 3, productId: namesake.id },
+		});
 		await db.homeOfferSettings.update({
 			where: { id: 1 },
 			data: { spotlightProductId: product.id },
@@ -379,6 +385,7 @@ describe.skipIf(!url)("initial catalog reset on isolated PostgreSQL", () => {
 		).toEqual([[product.id, "2.5"]]);
 		expect(droppedByReset).toEqual([
 			expect.stringContaining("Old unrelated product"),
+			"destacado del home: Almendra Non Pareil 25/27",
 		]);
 		const input = toSeedInitCatalog(catalog);
 		const outcome = await db.$transaction(async (tx) =>
