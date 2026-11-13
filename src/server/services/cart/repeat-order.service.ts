@@ -60,7 +60,10 @@ async function findRequiredOrder(
 ) {
 	const order = await findOrderByUserId(database, userId, orderId);
 	if (!order) {
-		throw new TRPCError({ code: "NOT_FOUND", message: ORDER_NOT_FOUND_MESSAGE });
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: ORDER_NOT_FOUND_MESSAGE,
+		});
 	}
 	return order;
 }
@@ -189,7 +192,13 @@ export async function repeat(
 		const selected = new Set(input.productIds);
 		const requests = readRepeatLines(order).flatMap((line) =>
 			line.productId !== null && selected.has(line.productId)
-				? [{ productId: line.productId, quantity: line.quantity, name: line.name }]
+				? [
+						{
+							productId: line.productId,
+							quantity: line.quantity,
+							name: line.name,
+						},
+					]
 				: [],
 		);
 

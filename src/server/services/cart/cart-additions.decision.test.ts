@@ -2,7 +2,9 @@ import { expect, test } from "vitest";
 import type { CatalogClientTerms } from "~/shared/common/catalog.types";
 import { planCartAdditions } from "./cart-additions.decision";
 
-function terms(overrides: Partial<CatalogClientTerms> = {}): CatalogClientTerms {
+function terms(
+	overrides: Partial<CatalogClientTerms> = {},
+): CatalogClientTerms {
 	return {
 		id: 50,
 		moq: "0.5",
@@ -50,15 +52,15 @@ test("a quantity off the step is fitted to it", () => {
 test("a product already in the cart grows by the requested quantity", () => {
 	expect(
 		plan([{ productId: 1, quantity: "1" }], { existing: [[50, "0.5"]] }),
-	).toEqual([
-		{ productId: 1, termsId: 50, quantity: "1.5", outcome: "added" },
-	]);
+	).toEqual([{ productId: 1, termsId: 50, quantity: "1.5", outcome: "added" }]);
 });
 
 test("the sum is capped at the maximum", () => {
 	expect(
 		plan([{ productId: 1, quantity: "3" }], { existing: [[50, "4"]] }),
-	).toEqual([{ productId: 1, termsId: 50, quantity: "5", outcome: "adjusted" }]);
+	).toEqual([
+		{ productId: 1, termsId: 50, quantity: "5", outcome: "adjusted" },
+	]);
 });
 
 test("a fixed quantity always lands on the minimum", () => {
@@ -83,7 +85,5 @@ test("the same product requested twice is added once with both quantities", () =
 			{ productId: 1, quantity: "0.5" },
 			{ productId: 1, quantity: "1" },
 		]),
-	).toEqual([
-		{ productId: 1, termsId: 50, quantity: "1.5", outcome: "added" },
-	]);
+	).toEqual([{ productId: 1, termsId: 50, quantity: "1.5", outcome: "added" }]);
 });

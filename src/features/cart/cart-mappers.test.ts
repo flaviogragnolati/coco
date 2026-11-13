@@ -95,7 +95,10 @@ function almond(quantity: string, id = 30): CartItem {
 test("merging adds to a line that is already in the cart", () => {
 	const merged = mergeCartItems({ "30": almond("0.5") }, [almond("1")]);
 
-	expect(merged["30"]).toMatchObject({ quantity: "1.5", lineTotal: "33900.00" });
+	expect(merged["30"]).toMatchObject({
+		quantity: "1.5",
+		lineTotal: "33900.00",
+	});
 });
 
 test("merging inserts a line that is not in the cart yet", () => {

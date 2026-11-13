@@ -73,7 +73,12 @@ const waitingOrder = order({
 	transactions: [{ id: 50, amount: "34900.00", currency: "ARS" }],
 });
 
-const pendingCart = { id: 3, code: "CART-3", status: "pending", deleted: false };
+const pendingCart = {
+	id: 3,
+	code: "CART-3",
+	status: "pending",
+	deleted: false,
+};
 const checkoutCart = { ...pendingCart, status: "atCheckout" };
 
 const cartData = {
