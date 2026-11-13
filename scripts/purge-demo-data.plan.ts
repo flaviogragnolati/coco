@@ -63,6 +63,7 @@ export const KEPT_MODELS = [
 	"Category",
 	"Channel",
 	"HomeOfferSettings",
+	"WeeklyClosingSettings",
 	"AuditLog",
 	"DomainEventOutbox",
 	"QaTicket",
