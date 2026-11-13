@@ -171,9 +171,11 @@ const COMBO_MOSAIC_SIZE = 4;
 
 /** The first products with a photo, at most four, for the combo's mosaic. */
 export function selectComboMosaicImages(items: HomeComboItem[]) {
-	return items.flatMap((item) =>
-		item.offer.imageUrl
-			? [{ url: item.offer.imageUrl, name: item.offer.productName }]
-			: [],
-	).slice(0, COMBO_MOSAIC_SIZE);
+	return items
+		.flatMap((item) =>
+			item.offer.imageUrl
+				? [{ url: item.offer.imageUrl, name: item.offer.productName }]
+				: [],
+		)
+		.slice(0, COMBO_MOSAIC_SIZE);
 }

@@ -11,29 +11,22 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
-import type { HomeContent, HomeOffer } from "~/shared/common/home.types";
-import { HomeOfferAddButton } from "./home-offer-add-button";
-import { HomeOfferCard } from "./home-offer-card";
-import { HomeOffersGrid } from "./home-offers-grid";
+import type { HomeFeature } from "~/shared/common/home.types";
+import { HomeFeatureCard } from "./home-feature-card";
 import { SectionHeading } from "./section-heading";
 
-// The title promises what the admin's criterion actually ranks by.
-const offersTitleByCriterion: Record<HomeContent["offersCriterion"], string> = {
-	orderVolume: "Los productos más pedidos",
-	discountPercent: "Los mejores descuentos",
-	marketSaving: "Ofertas destacadas",
-};
+function featureKey(feature: HomeFeature) {
+	return feature.kind === "product"
+		? `product-${feature.offer.productId}`
+		: `combo-${feature.combo.key}`;
+}
 
-export function OffersSection({
-	offers,
-	offersLimit,
-	criterion,
+export function FeaturedSection({
+	featured,
 	isAuthenticated,
 	userId,
 }: {
-	offers: HomeOffer[];
-	offersLimit: number;
-	criterion: HomeContent["offersCriterion"];
+	featured: HomeFeature[];
 	isAuthenticated: boolean;
 	userId: string | null;
 }) {
@@ -49,37 +42,27 @@ export function OffersSection({
 							</Link>
 						</Button>
 					}
-					eyebrow="Ofertas"
-					title={offersTitleByCriterion[criterion]}
+					eyebrow="Destacados"
+					title="Destacados de la semana"
 				/>
-				{offers.length > 0 ? (
-					<HomeOffersGrid
-						items={offers.map((offer) => ({
-							key: offer.productClientTermsId,
-							unit: offer.unit,
-							card: (
-								<HomeOfferCard
-									action={
-										<HomeOfferAddButton
-											isAuthenticated={isAuthenticated}
-											offer={offer}
-											size="compact"
-											userId={userId}
-										/>
-									}
-									offer={offer}
-								/>
-							),
-						}))}
-						visibleCount={offersLimit}
-					/>
+				{featured.length > 0 ? (
+					<div className="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-5">
+						{featured.map((feature) => (
+							<HomeFeatureCard
+								feature={feature}
+								isAuthenticated={isAuthenticated}
+								key={featureKey(feature)}
+								userId={userId}
+							/>
+						))}
+					</div>
 				) : (
 					<Empty className="border bg-brand-warm text-brand-warm-foreground">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<PackageSearchIcon />
 							</EmptyMedia>
-							<EmptyTitle>Estamos preparando nuevas ofertas</EmptyTitle>
+							<EmptyTitle>Estamos preparando los destacados</EmptyTitle>
 							<EmptyDescription>
 								Si buscás un producto en particular, contanos y te ayudamos a
 								encontrar el próximo paso.
