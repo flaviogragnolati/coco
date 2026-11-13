@@ -818,7 +818,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		isRegressionPath: true,
 	},
 	{
-		code: 68,
+		code: 113,
 		section: SECTION_L,
 		title: "Tutorial rápido desde el menú de ayuda",
 		actor: "Cliente",
@@ -830,7 +830,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		isRegressionPath: false,
 	},
 	{
-		code: 69,
+		code: 114,
 		section: SECTION_L,
 		title: "Tutorial completo y Tu pedido real intacto",
 		actor: "Cliente",
@@ -842,7 +842,7 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		isRegressionPath: false,
 	},
 	{
-		code: 70,
+		code: 115,
 		section: SECTION_L,
 		title: "Invitación al tutorial en el primer ingreso",
 		actor: "Cliente",

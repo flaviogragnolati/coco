@@ -319,7 +319,7 @@ const implemented: TriageTransition[] = [
 	}),
 	retest(73, {
 		fix: "Re-testear después de #106 (b04ebdc)",
-		look: 'el selector − n + se puede editar en la tarjeta y en la ficha, arranca en el mínimo y no baja de ahí. Superado por #106: el total ya no se muestra en la ficha (queda para lectores de pantalla y en Tu pedido)',
+		look: "el selector − n + se puede editar en la tarjeta y en la ficha, arranca en el mínimo y no baja de ahí. Superado por #106: el total ya no se muestra en la ficha (queda para lectores de pantalla y en Tu pedido)",
 		preconditions: "ninguna",
 	}),
 	retest(84, {
@@ -327,6 +327,31 @@ const implemented: TriageTransition[] = [
 		look: "el orden foto, nombre, precio con su unidad, selector y botón a ancho completo. Superado por #106: no hay línea de total, y la unidad va dentro del campo solo en los productos por peso; en los envasados el campo muestra solo el número",
 		preconditions: "ninguna",
 	}),
+	// Lifecycle cases that had passed and whose text #106 rewrote (qa:seed).
+	{
+		...retest(5, {
+			fix: "Texto actualizado por #106 en b04ebdc: botón sin monto y precio por kg o por litro siempre",
+			look: 'la foto cuadrada, "$ 4.200 por frasco" sin tamaño, el precio por kg o por litro también en la botella de 1 L, "kg" en el campo solo en los productos por peso y la tarjeta sin total',
+			preconditions: TICKET_PRECONDITIONS,
+		}),
+		from: ["passed"],
+	},
+	{
+		...retest(6, {
+			fix: "Texto actualizado por #106 en b04ebdc: botón sin monto",
+			look: 'el botón dice "Sumar al pedido" y el total aparece en el resumen de Tu pedido',
+			preconditions: TICKET_PRECONDITIONS,
+		}),
+		from: ["passed"],
+	},
+	{
+		...retest(8, {
+			fix: "Texto actualizado por #106 en b04ebdc: botón sin monto",
+			look: 'la cantidad fija sigue diciendo "1 frasco 370 g" y el botón no tiene monto',
+			preconditions: TICKET_PRECONDITIONS,
+		}),
+		from: ["passed"],
+	},
 ];
 
 export const qaTicketTriageTransitions: TriageTransition[] = [

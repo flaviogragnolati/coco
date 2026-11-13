@@ -105,13 +105,13 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 		],
 	},
 	{ code: 54, mustMention: ["`/admin/packages`", "19/09/2026"] },
-	{ code: 68, mustMention: ["`/products`", '"Tutorial rápido · 1 min"'] },
+	{ code: 113, mustMention: ["`/products`", '"Tutorial rápido · 1 min"'] },
 	{
-		code: 69,
+		code: 114,
 		mustMention: ['"Tutorial completo · 3 min"', '"Ir al catálogo"'],
 	},
 	{
-		code: 70,
+		code: 115,
 		mustMention: [
 			"`/checkout`",
 			"`/checkout/mercadopago/success`",
@@ -128,11 +128,17 @@ function seedSource() {
 }
 
 describe("qaTicketSeedEntries", () => {
-	it("transcribes 68 active tests with codes 1-70 except the retired 15 and 17", () => {
+	it("transcribes 68 active tests: codes 1-67 except the retired 15 and 17, then the tutorial cases 113-115", () => {
+		// 68-112 were created from the admin board; the seed must never reuse them.
 		const codes = qaTicketSeedEntries.map((entry) => entry.code);
-		const expected = Array.from({ length: 70 }, (_, index) => index + 1).filter(
-			(code) => code !== 15 && code !== 17,
-		);
+		const expected = [
+			...Array.from({ length: 67 }, (_, index) => index + 1).filter(
+				(code) => code !== 15 && code !== 17,
+			),
+			113,
+			114,
+			115,
+		];
 
 		expect(qaTicketSeedEntries).toHaveLength(68);
 		expect(codes).toEqual(expected);
