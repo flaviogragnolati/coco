@@ -1,5 +1,5 @@
 import { ArrowRightIcon } from "lucide-react";
-import Link from "next/link";
+import { HashSafeLink } from "~/components/hash-safe-link";
 import { Button } from "~/components/ui/button";
 import { HomeSystemIllustration } from "./home-system-illustration";
 
@@ -26,10 +26,10 @@ export function HomeHero({ hasOffers }: { hasOffers: boolean }) {
 							size="lg"
 							variant="highlight"
 						>
-							<Link href={hasOffers ? "#ofertas" : "/products"}>
+							<HashSafeLink href={hasOffers ? "#ofertas" : "/products"}>
 								Ver qué se puede comprar
 								<ArrowRightIcon data-icon="inline-end" />
-							</Link>
+							</HashSafeLink>
 						</Button>
 						<p className="text-center text-brand-ink-foreground/80 text-xs">
 							Mirá el catálogo sin registrarte

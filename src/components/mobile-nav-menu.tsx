@@ -9,7 +9,7 @@ import {
 	ShoppingBagIcon,
 	SparklesIcon,
 } from "lucide-react";
-import Link from "next/link";
+import { HashSafeLink } from "~/components/hash-safe-link";
 import { NavbarSearch } from "~/components/navbar-search";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -40,13 +40,13 @@ function MobileSheetLink({
 }) {
 	return (
 		<SheetClose asChild>
-			<Link
+			<HashSafeLink
 				className={cn(buttonVariants({ variant }), "w-full justify-start")}
 				href={href}
 			>
 				<Icon data-icon="inline-start" />
 				{label}
-			</Link>
+			</HashSafeLink>
 		</SheetClose>
 	);
 }

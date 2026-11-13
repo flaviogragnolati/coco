@@ -1,6 +1,7 @@
 import { ArrowLeftIcon, CreditCardIcon, MapPinIcon } from "lucide-react";
 import Link from "next/link";
 
+import { HashSafeLink } from "~/components/hash-safe-link";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -229,12 +230,12 @@ export function OrderDetailView({
 										{order.status === "processing" ? (
 											<span className="text-muted-foreground">
 												¿Querés cambiarla?{" "}
-												<Link
+												<HashSafeLink
 													className="underline underline-offset-2"
 													href="/#contacto"
 												>
 													Escribinos.
-												</Link>
+												</HashSafeLink>
 											</span>
 										) : null}
 									</div>

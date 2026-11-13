@@ -1,6 +1,7 @@
 import { ArrowRightIcon, PackageSearchIcon } from "lucide-react";
 import Link from "next/link";
 
+import { HashSafeLink } from "~/components/hash-safe-link";
 import { Button } from "~/components/ui/button";
 import {
 	Empty,
@@ -86,7 +87,7 @@ export function OffersSection({
 						</EmptyHeader>
 						<EmptyContent>
 							<Button asChild variant="highlight">
-								<Link href="/#contacto">Contactar a Coco</Link>
+								<HashSafeLink href="/#contacto">Contactar a Coco</HashSafeLink>
 							</Button>
 						</EmptyContent>
 					</Empty>

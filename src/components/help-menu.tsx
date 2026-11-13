@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { HashSafeLink } from "~/components/hash-safe-link";
 import { buttonVariants } from "~/components/ui/button";
 import {
 	DropdownMenu,
@@ -62,16 +63,16 @@ export function HelpMenu() {
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem asChild>
-						<Link href="/#preguntas-frecuentes">
+						<HashSafeLink href="/#preguntas-frecuentes">
 							<HelpCircleIcon />
 							Preguntas frecuentes
-						</Link>
+						</HashSafeLink>
 					</DropdownMenuItem>
 					<DropdownMenuItem asChild>
-						<Link href="/#contacto">
+						<HashSafeLink href="/#contacto">
 							<MessageCircleIcon />
 							Contacto
-						</Link>
+						</HashSafeLink>
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
 			</DropdownMenuContent>
