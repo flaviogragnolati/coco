@@ -473,7 +473,17 @@ Ola 4: WP-H, WP-I (cuando llegue el contenido)
 
 | WP | Plan | Merge | Estado de QA aplicado | Notas |
 | --- | --- | --- | --- | --- |
-| | | | | |
+| WP-A | `qa-2026-11-wpa-quick-fixes.md` | `86f4f26` | Pendiente de cargar en `qa:triage` (espera WP0): #93, #97, #103 y #109 → Re-test. #107 y #92 siguen en Pendiente. | Revisión independiente con un bloqueante (aserción de e2e sobre `sr-only`), corregido. e2e en verde contra la base local: `home-section-links` 3×, `catalog-product-card`, `smoke`, `catalog-category-filter`, `home-offer-quantity` y `supplier-application`. #93: causa confirmada en Next 16.2.7 (la caché de rutas guarda el hash), fix con `HashSafeLink`. #92: el bug de vaciado en el admin no existía (`product.data.ts` escribe `?? null`). Preexistente en `main`: hydration mismatch en `/products` (sidebar de marcas) que vuelve intermitente `customer-tutorial.spec.ts:58`. |
+
+**Decisiones y hallazgos del orquestador (13/11):**
+- Los worktrees de los sub-agentes salen de `origin/main` (`a0ef619`). Por eso cada implementador hace `git rebase main` antes de empezar.
+- La base local de e2e es el contenedor `coco-e2e-postgres` (`localhost:5433/coco_e2e`), armada con `prisma migrate diff --from-empty` porque `pnpm db:migrate` no corre sobre una base vacía: la historia de migraciones no tiene baseline. Hay un dump sembrado para restaurarla.
+- Flavio, 13/11:
+  - #104 y #99: los textos preliminares los generan los agentes y Flavio los revisa en el re-test.
+  - Combos, mix (#91) y descripciones (#92): se cargan desde el admin.
+  - Re-test libera el asignado.
+  - `checkout-v4` aprobado.
+- Precondición de QA de #104: el único punto de retiro activo tiene datos de prueba ("Calle Falsa 123"). Flavio lo corrige o lo desactiva antes del re-test.
 
 ## 14. Instrucciones para el orquestador
 

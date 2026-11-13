@@ -37,7 +37,7 @@ Lo que se le pide transferir es exactamente lo que vio. El admin concilia contra
 | P5: cambio del % durante el checkout | El % se fija al confirmar. La pantalla manda el monto que mostró; si no coincide con el que calcula el servidor, se frena sin crear nada y se le muestra al cliente el monto nuevo. Un intento que ya existe y se reusa conserva su propio monto. | Flavio, 13/11 (opción A) |
 | P6: conciliación | "Monto" en `/admin/payments` sigue siendo lo que entra al banco, con la marca "−10 % transf.". El detalle del intento muestra "A cobrar en el banco" y el desglose. | Flavio, 13/11 (opción A) |
 | Exposición pública del % | Procedure pública `catalog.transferDiscount` → `{ percent: number \| null }`. Devuelve `null` si el pago externo está deshabilitado o el % es 0. El resto de los settings sigue siendo solo para admins. | Orquestador, 13/11 |
-| Términos | `checkout-v4`, con el texto de §13, **pendiente de aprobación de Flavio**. Incluye "a tu favor". | Flavio, 13/11 + orquestador |
+| Términos | `checkout-v4`, con el texto de §13, **aprobado por Flavio el 13/11**. Incluye "a tu favor". | Flavio, 13/11 + orquestador |
 
 **Opciones descartadas:**
 - P1: que el descuento no aplique a productos en oferta, o que se aplique solo el mayor de los dos.
