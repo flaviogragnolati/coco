@@ -361,6 +361,31 @@ test("selectSimilarProducts ranks category matches above brand and unit matches"
 	).toStrictEqual(["Misma categoría", "Misma marca", "Misma unidad"]);
 });
 
+test("selectSimilarProducts does not count shared connectors as a name match", () => {
+	const current = makeProduct({
+		name: "Mix para ensalada",
+		category: nuts,
+		terms: { moqPrice: "100", moq: "1" },
+	});
+	const sharesOnlyConnector = makeProduct({
+		name: "Granola para desayuno",
+		category: nuts,
+		terms: { moqPrice: "300", moq: "1" },
+	});
+	const closerInPrice = makeProduct({
+		name: "Semillas de chía",
+		category: nuts,
+		terms: { moqPrice: "110", moq: "1" },
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, sharesOnlyConnector, closerInPrice],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual(["Semillas de chía", "Granola para desayuno"]);
+});
+
 test("selectSimilarProducts proposes the other sizes of the same product before the rest of its category", () => {
 	const current = makeProduct({
 		name: "Aceite de oliva extra virgen 0,5 L",

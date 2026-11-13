@@ -169,19 +169,32 @@ export type SimilarProductReference = Pick<
 	"id" | "name" | "unit" | "brand" | "category" | "terms"
 >;
 
-/** Name words that tell what a product is, without sizes or short connectors. */
+const NAME_CONNECTORS = new Set([
+	"con",
+	"sin",
+	"del",
+	"para",
+	"los",
+	"las",
+	"por",
+]);
+
+/** Name words of three or more letters, without bare numbers (sizes) or common connectors. */
 function nameWords(name: string) {
 	return new Set(
 		normalizeSearch(name)
 			.split(/[^\p{L}\p{N}]+/u)
-			.filter((word) => word.length >= 3 && !/^\d+$/.test(word)),
+			.filter(
+				(word) =>
+					word.length >= 3 && !/^\d+$/.test(word) && !NAME_CONNECTORS.has(word),
+			),
 	);
 }
 
 /**
  * Products to propose alongside `current`: same category first, then same
  * brand, then same unit. Inside each tier, products whose names share more
- * words with the current one come first (the other sizes of the same oil),
+ * words with the current one come first (the other sizes of the same product),
  * then the ones closest in price.
  *
  * The relation is derived from category, brand and unit, not declared.
