@@ -1,5 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
 
+// Smooth scrolling lets `toBeInViewport` pass mid-scroll and the next click
+// land on whatever is passing under the pointer.
+test.use({ reducedMotion: "reduce" });
+
 const heroCta = (page: Page) =>
 	page.getByRole("link", { name: "Ver qué se puede comprar" });
 
@@ -17,16 +21,37 @@ async function skipWithoutOffers(page: Page) {
 	);
 }
 
-test("repeated clicks on the hero CTA keep a single #ofertas", async ({
+/**
+ * Counts router navigations (RSC requests that are not prefetches) from now on.
+ * A section link must scroll in place without asking the server for anything.
+ */
+function countNavigationRequests(page: Page) {
+	let count = 0;
+	page.on("request", (request) => {
+		const headers = request.headers();
+		const isRsc =
+			headers.rsc === "1" || new URL(request.url()).searchParams.has("_rsc");
+		if (isRsc && headers["next-router-prefetch"] === undefined) count += 1;
+	});
+	return () => count;
+}
+
+async function clickHeroCtaThreeTimes(page: Page) {
+	const navigations = countNavigationRequests(page);
+	for (let click = 0; click < 3; click++) {
+		await heroCta(page).click();
+		await expectSingleOffersFragment(page);
+	}
+	expect(navigations()).toBe(0);
+}
+
+test("repeated clicks on the hero CTA keep a single #ofertas without navigating", async ({
 	page,
 }) => {
 	await page.goto("/");
 	await skipWithoutOffers(page);
 
-	for (let click = 0; click < 3; click++) {
-		await heroCta(page).click();
-		await expectSingleOffersFragment(page);
-	}
+	await clickHeroCtaThreeTimes(page);
 });
 
 test("arriving from the mobile menu and clicking the hero CTA keeps a single #ofertas", async ({
@@ -42,10 +67,7 @@ test("arriving from the mobile menu and clicking the hero CTA keeps a single #of
 	await expect(page).toHaveURL(/\/#ofertas$/);
 	await expectSingleOffersFragment(page);
 
-	for (let click = 0; click < 3; click++) {
-		await heroCta(page).click();
-		await expectSingleOffersFragment(page);
-	}
+	await clickHeroCtaThreeTimes(page);
 
 	await page.getByRole("link", { name: "coco" }).first().click();
 	await expect(page).toHaveURL(/\/$/);

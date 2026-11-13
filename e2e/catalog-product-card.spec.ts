@@ -127,14 +127,21 @@ test("the product detail has a single close control and no filler texts", async 
 
 	await card.getByRole("button", { name, exact: true }).click();
 	const dialog = page.getByRole("dialog");
-	await expect(dialog.getByRole("heading", { name })).toBeVisible();
+	// The title reads "Detalle de producto" until the detail query resolves; the
+	// absence checks below only mean something once the body has rendered.
+	await expect(dialog.getByRole("heading", { name, exact: true })).toBeVisible({
+		timeout: 15_000,
+	});
+	await expect(dialog.locator("[data-slot='skeleton']")).toHaveCount(0);
 	await expect(dialog.getByText("Sin galería adicional")).toHaveCount(0);
 	await expect(
 		dialog.getByText(
 			"Producto disponible para pedidos mayoristas compartidos.",
 		),
 	).toHaveCount(0);
-	await expect(dialog.getByText(/^Información comercial vigente/)).toBeHidden();
+	await expect(dialog.locator("[data-slot='dialog-description']")).toHaveClass(
+		/\bsr-only\b/,
+	);
 	await expect(dialog.getByRole("button", { name: "Cerrar" })).toHaveCount(1);
 
 	await dialog.getByRole("button", { name: "Cerrar" }).click();
