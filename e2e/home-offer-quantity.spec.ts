@@ -4,7 +4,7 @@ test("a home offer adds the quantity chosen on its card", async ({ page }) => {
 	await page.goto("/");
 	const add = page
 		.locator("#ofertas")
-		.getByRole("button", { name: /^Sumar al pedido.*\$/ })
+		.getByRole("button", { name: "Sumar al pedido", exact: true })
 		.first();
 	test.skip(
 		(await add.count()) === 0,
@@ -37,14 +37,18 @@ test("a home offer adds the quantity chosen on its card", async ({ page }) => {
 	await expect(
 		card.getByRole("button", { name: "Reducir cantidad" }),
 	).toBeDisabled();
-	// The total rides in the add button; the "Total" line is for screen readers.
-	await expect(card.getByText(/^Total /)).toHaveClass(/\bsr-only\b/);
-	const cardAdd = card.getByRole("button", { name: /^Sumar al pedido.*\$/ });
-	const minimumName = (await cardAdd.textContent()) ?? "";
+	// The total is for screen readers only; it shows in the order once added.
+	const total = card.getByText(/^Total /);
+	await expect(total).toHaveClass(/\bsr-only\b/);
+	const minimumTotal = (await total.textContent()) ?? "";
+	const cardAdd = card.getByRole("button", {
+		name: "Sumar al pedido",
+		exact: true,
+	});
 
 	await card.getByRole("button", { name: "Aumentar cantidad" }).click();
 	await expect(quantity).not.toHaveValue(minimum);
-	await expect(cardAdd).not.toHaveText(minimumName);
+	await expect(total).not.toHaveText(minimumTotal);
 	const chosen = await quantity.inputValue();
 
 	await cardAdd.click();
