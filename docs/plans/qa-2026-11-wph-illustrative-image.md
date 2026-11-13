@@ -73,7 +73,7 @@ El archivo de la foto no se modifica.
      -- Additive only, no backfill: an admin loads each category's color; null draws the legend in neutral gray.
      ALTER TABLE "category" ADD COLUMN "photoBackgroundColor" TEXT;
      ```
-   - **La aplica Flavio en la DB compartida** (`pnpm db:migrate`) antes del deploy del código que la lee (§9 de la orquestación).
+   - **La aplica Flavio en la DB compartida** (`pnpm exec prisma db execute --file prisma/migrations/<nombre>/migration.sql`; no `db:migrate`, que falla con P3005 porque la base compartida no tiene historial de migraciones: ver `docs/README.md:116`) antes del deploy del código que la lee (§9 de la orquestación).
    - Correr `pnpm db:generate`.
 3. **`src/schemas/admin/category.schemas.ts`:**
    - Exportar `categoryPhotoBackgroundColorSchema`:
@@ -208,7 +208,7 @@ El archivo de la foto no se modifica.
 ## 6. Aceptación
 
 - `pnpm typecheck`, `pnpm test` y `pnpm check` en verde, incluido el drift test del glosario.
-- Contra la DB local con la migración aplicada (`pnpm db:migrate`, `db:seed:init` y `db:seed:test`), en verde: `pnpm test:e2e e2e/catalog-product-card.spec.ts e2e/smoke.spec.ts e2e/customer-tutorial.spec.ts`.
+- Contra la DB local con la migración aplicada (sobre la base local restaurada con `E2E_PREP` del script `run-e2e-local.sh` (§13); `db:migrate` no corre sobre una base vacía), en verde: `pnpm test:e2e e2e/catalog-product-card.spec.ts e2e/smoke.spec.ts e2e/customer-tutorial.spec.ts`.
 - En Admin → Categorías, en la DB local:
   - editar "Frutos secos", elegir `#e8dcc8` y ver la muestra con la leyenda en marrón oscuro;
   - guardar y ver la columna "Fondo de fotos" con la muestra;

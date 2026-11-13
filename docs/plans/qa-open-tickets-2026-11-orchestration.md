@@ -93,7 +93,7 @@
 
 - **Siempre, sin preguntar:** lectura con `SET default_transaction_read_only = on`.
 - **Solo con el OK explícito de Flavio** en esta conversación y por cada ejecución: `pnpm qa:triage --apply`.
-- **Lo corre Flavio:** migraciones (`pnpm db:migrate`), scripts de datos y deploys.
+- **Lo corre Flavio:** migraciones (`pnpm exec prisma db execute --file prisma/migrations/<nombre>/migration.sql`; no `db:migrate`, que falla con P3005 porque la base compartida no tiene historial de migraciones: ver `docs/README.md:116`), scripts de datos y deploys.
 - **Nunca:** `db:seed:test`, `db:purge-demo`, e2e que escriben (`supplier-application.spec.ts`, flujos de carrito o checkout), ni SQL a mano.
 
 ## 5. Protocolo de estados de QA
@@ -437,7 +437,7 @@ Ola 4: WP-H, WP-I (cuando llegue el contenido)
 - **e2e y DB.** `playwright.config.ts` levanta `pnpm dev`, que usa `.env`, y `.env` apunta a la Neon compartida.
   - Para e2e, levantar una DB local con Docker (Docker Desktop está disponible) y pasar un `DATABASE_URL` local por variable de entorno.
   - `start-database.sh` deduce la contraseña, el puerto y el nombre del `DATABASE_URL` de `.env`. Con la URL de Neon activa no sirve: correrlo con la URL local (`.env:16`, comentada) o crear el contenedor a mano.
-  - Antes de los e2e, sembrar con `pnpm db:migrate`, `db:seed:init` y `db:seed:test`.
+  - Antes de los e2e: el script `run-e2e-local.sh` restaura la base local sembrada y aplica con `E2E_PREP` las migraciones nuevas del WP (§13). `pnpm db:migrate` no corre sobre una base vacía.
 - **Notas de QA.** Siempre se **agregan arriba**, sin pisar la nota del tester; la historia también queda en `AuditLog`. Un ticket en papelera no se puede editar.
 - **Vocabulario.** Los textos al cliente usan "pedido" y no "carrito", y "CoCo" después de WP-A. El *Combo* no es una "promoción" (`CONTEXT.md`).
 - **Preguntas a Flavio.** Siempre con el contexto del ticket y un mockup antes/después; nunca abrir con jerga (MOQ, step).
@@ -479,7 +479,8 @@ Ola 4: WP-H, WP-I (cuando llegue el contenido)
 
 **Decisiones y hallazgos del orquestador (13/11):**
 - Los worktrees de los sub-agentes salen de `origin/main` (`a0ef619`). Por eso cada implementador hace `git rebase main` antes de empezar.
-- La base local de e2e es el contenedor `coco-e2e-postgres` (`localhost:5433/coco_e2e`), armada con `prisma migrate diff --from-empty` porque `pnpm db:migrate` no corre sobre una base vacía: la historia de migraciones no tiene baseline. Hay un dump sembrado para restaurarla.
+- La base local de e2e es el contenedor `coco-e2e-postgres` (`localhost:5433/coco_e2e`), armada con `prisma migrate diff --from-empty` porque `pnpm db:migrate` no corre sobre una base vacía: la historia de migraciones no tiene baseline. Hay un dump sembrado para restaurarla. Los agentes corren los e2e solo con `/tmp/claude-1000/-home-flavio-quasar-coco/faa97d93-7356-42ca-ba3c-0f31cff820da/scratchpad/run-e2e-local.sh <specs>`, que toma un lock global (puerto 3000 y base), apunta el `.env` del worktree a la base local, restaura el dump, corre `E2E_PREP` si está definido (por ejemplo, para aplicar la migración del WP) y restaura el `.env` al salir, verificándolo con sha256.
+- La base compartida no tiene historial de Prisma: `pnpm db:migrate` falla con P3005 (le pasó a Flavio el 13/11 con la migración de WP0). Cada migración se aplica con `pnpm exec prisma db execute --file prisma/migrations/<nombre>/migration.sql` y se verifica con `pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma` (`docs/README.md:116`).
 - Flavio, 13/11:
   - #104 y #99: los textos preliminares los generan los agentes y Flavio los revisa en el re-test.
   - Combos, mix (#91) y descripciones (#92): se cargan desde el admin.

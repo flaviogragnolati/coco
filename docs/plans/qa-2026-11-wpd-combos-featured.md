@@ -362,7 +362,7 @@ Salen `offers`, `offersLimit` y `offersCriterion`. Ya no hay pool para el filtro
      FROM "product"
      WHERE "homeOfferRank" IS NOT NULL AND "deleted" = false;
      ```
-   - Verificar en local: `pnpm db:migrate` sobre una base con 2 productos fijados (rangos 2 y 5) deja las posiciones 1 y 2. Un INSERT con los dos destinos, o con ninguno, falla.
+   - Verificar en local: la migración, aplicada sobre la base local restaurada con `E2E_PREP` del script `run-e2e-local.sh` (§13); `db:migrate` no corre sobre una base vacía, sobre una base con 2 productos fijados (rangos 2 y 5) deja las posiciones 1 y 2. Un INSERT con los dos destinos, o con ninguno, falla.
    - **Riesgo de bloqueos:** las tablas son nuevas y `home_offer_settings` tiene una fila. `ADD COLUMN` con un default constante no reescribe la tabla.
 
 ### 7.2. Lógica pura (tests primero)
@@ -712,7 +712,7 @@ Salen `offers`, `offersLimit` y `offersCriterion`. Ya no hay pool para el filtro
   - `combo.service.test.ts`, `home-offers.service.test.ts`, `combo-cart.service.test.ts`;
   - `glossary.data.test.ts`, `admin-nav.test.ts`;
   - `purge-demo-data.plan.test.ts`, `reset-initial-catalog.plan.test.ts`.
-- Contra la **DB local**, con `pnpm db:migrate`, `db:seed:init` y `db:seed:test` (§9 y §10 de la orquestación):
+- Contra la **DB local**, con la migración aplicada sobre la base local restaurada con `E2E_PREP` del script `run-e2e-local.sh` (§13); `db:migrate` no corre sobre una base vacía (§9 y §10 de la orquestación):
   - `pnpm test:e2e e2e/smoke.spec.ts e2e/home-combo.spec.ts e2e/home-offer-quantity.spec.ts e2e/customer-tutorial.spec.ts` en verde;
   - `reset-initial-catalog.integration.test.ts` en verde, si corre contra la DB local como hoy.
 - `grep -rn "homeOfferRank" src` solo encuentra el comentario de `schema.prisma`. `grep -rn "HOME_OFFERS_POOL_SIZE\|composeHomeContent\|setPinnedRank\|home-offers-filter" src` no encuentra nada.
@@ -733,7 +733,7 @@ Salen `offers`, `offersLimit` y `offersCriterion`. Ya no hay pool para el filtro
 ## 10. Despliegue y vuelta atrás
 
 1. **Rama y merge.** Rama `wpd-combos-featured` → revisión → merge `--no-ff` a `main`. Sin push sin el OK de Flavio.
-2. **Migración en la DB compartida (la corre Flavio, antes del deploy):** `pnpm db:migrate`. El código viejo sigue andando: ignora las tablas y columnas nuevas y `homeOfferRank` sigue ahí. **Validación** con una consulta de solo lectura, que el orquestador puede correr:
+2. **Migración en la DB compartida (la corre Flavio, antes del deploy):** (`pnpm exec prisma db execute --file prisma/migrations/<nombre>/migration.sql`; no `db:migrate`, que falla con P3005 porque la base compartida no tiene historial de migraciones: ver `docs/README.md:116`). El código viejo sigue andando: ignora las tablas y columnas nuevas y `homeOfferRank` sigue ahí. **Validación** con una consulta de solo lectura, que el orquestador puede correr:
    ```sql
    SELECT p.id FROM product p
    WHERE p."homeOfferRank" IS NOT NULL AND p.deleted = false

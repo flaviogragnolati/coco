@@ -43,7 +43,7 @@ Cada nota de re-test dice qué se corrigió, sin jerga interna (con el commit: `
 
 ## Riesgo de orden (sin cambios respecto del handoff)
 
-1. Flavio aplica la migración en la base compartida (`pnpm db:migrate`).
+1. Flavio aplica la migración en la base compartida (`pnpm exec prisma db execute --file prisma/migrations/<nombre>/migration.sql`; no `db:migrate`, que falla con P3005 porque la base compartida no tiene historial de migraciones: ver `docs/README.md:116`).
 2. Se despliega la app con el enum nuevo.
 3. Recién ahí `pnpm qa:triage --apply --confirm-production --actor-email <superadmin>`. El script frena solo el paso 1 faltante (consulta el enum); el paso 2 no lo puede comprobar.
 

@@ -246,7 +246,7 @@ Además:
       CHECK (("subtotalAmount" IS NULL) = ("transferDiscountPercent" IS NULL)
          AND ("subtotalAmount" IS NULL) = ("transferDiscountAmount" IS NULL));
     ```
-    Generar con `pnpm db:migrate-dev --create-only` contra la DB **local** y agregar el CHECK a mano, como en `20261009000000_customer_delivery_preference`. **No** aplicarla en la DB compartida: eso lo hace Flavio.
+    Generar con `prisma migrate diff --from-schema <schema.prisma de main> --to-schema prisma/schema.prisma --script` (sin conectarse a ninguna base) y agregar el CHECK a mano, como en `20261009000000_customer_delivery_preference`. **No** aplicarla en la DB compartida: eso lo hace Flavio.
 11. **`checkout.data.ts`:**
     - `orderTransactionSelect` suma `subtotalAmount`, `transferDiscountPercent` y `transferDiscountAmount`.
     - `createPendingTransaction` recibe `transferDiscount?: TransferDiscountBreakdown | null` y escribe las 3 columnas solo si no es `null`.
@@ -416,7 +416,7 @@ Además:
 ## 9. Rollout y rollback
 
 1. Se mergea la rama (con `checkout-v4` aprobado).
-2. **Flavio** aplica la migración en la DB compartida (`pnpm db:migrate`). Es aditiva y no tiene backfill.
+2. **Flavio** aplica la migración en la DB compartida (`pnpm exec prisma db execute --file prisma/migrations/<nombre>/migration.sql`; no `db:migrate`, que falla con P3005 porque la base compartida no tiene historial de migraciones: ver `docs/README.md:116`). Es aditiva y no tiene backfill.
 3. Deploy del código.
 4. Un superadmin carga el % en "Pago externo". Mientras esté en 0, nada cambia para el cliente: es el interruptor natural.
 
