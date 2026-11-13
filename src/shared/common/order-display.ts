@@ -7,6 +7,16 @@ import {
 } from "lucide-react";
 
 import type { OrderListItem } from "./checkout.types";
+import {
+	formatCurrency,
+	formatQuantity,
+	isWeightUnit,
+	productUnitLabelMap,
+} from "./commerce.helpers";
+import {
+	readSnapshotQuantityUnit,
+	readSnapshotUnitPrice,
+} from "./product-snapshot";
 
 /**
  * Customer-facing display vocabulary for orders: labels, status chips and the
@@ -129,3 +139,29 @@ export const orderStatusFilterLabelMap: Record<OrderStatusFilterKey, string> = {
 	cancelled: orderStatusFilterGroups.cancelled.label,
 	refunded: orderStatusFilterGroups.refunded.label,
 };
+
+/** A pending order is still waiting for its payment, so it is not repeated. */
+export function canRepeatOrder(status: OrderStatus) {
+	return status !== "pending";
+}
+
+/**
+ * An order line's quantity followed by the unit price it was charged: "1,5 kg
+ * × $ 22.600 / kg" by weight, "2 frascos 500 g × $ 6.500 c/u" otherwise. Lines
+ * whose snapshot froze no client terms show the quantity alone.
+ */
+export function formatOrderLineQuantityPrice(item: {
+	quantity: string;
+	productSnapshot: unknown;
+	priceSnapshot: unknown;
+}) {
+	const { unit, presentation } = readSnapshotQuantityUnit(item.productSnapshot);
+	const quantity = formatQuantity(item.quantity, unit, presentation);
+	const price = readSnapshotUnitPrice(item.priceSnapshot);
+	if (!price) return quantity;
+
+	const unitPrice = formatCurrency(price.unitPrice, price.currency);
+	return isWeightUnit(unit)
+		? `${quantity} × ${unitPrice} / ${productUnitLabelMap[unit]}`
+		: `${quantity} × ${unitPrice} c/u`;
+}

@@ -1,9 +1,10 @@
 import {
+	catalogCurrencySchema,
 	catalogProductUnitSchema,
 	productPresentationContainerSchema,
 } from "~/schemas/catalog.schemas";
-import type { CatalogProductUnit } from "./catalog.types";
-import type { ProductPresentation } from "./commerce.helpers";
+import type { CatalogCurrency, CatalogProductUnit } from "./catalog.types";
+import { getPerUnitPrice, type ProductPresentation } from "./commerce.helpers";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
 	return typeof value === "object" && value !== null
@@ -34,6 +35,58 @@ export function readSnapshotQuantityUnit(snapshot: unknown): {
 			presentationSize: typeof size === "string" ? size : null,
 		},
 	};
+}
+
+/**
+ * The product a persisted `productSnapshot` points at. The id is null when the
+ * snapshot is too old or malformed to carry one.
+ */
+export function readSnapshotProduct(snapshot: unknown): {
+	id: number | null;
+	name: string;
+} {
+	const product = asRecord(asRecord(snapshot)?.product);
+	const id = product?.id;
+	const name = product?.name;
+
+	return {
+		id: typeof id === "number" && Number.isInteger(id) && id > 0 ? id : null,
+		name: typeof name === "string" && name.length > 0 ? name : "-",
+	};
+}
+
+function asDecimalString(value: unknown): string | null {
+	if (typeof value === "string") return value;
+	if (typeof value === "number") return String(value);
+	return null;
+}
+
+/**
+ * The offer unit price an order line was charged, read from the client terms
+ * its `priceSnapshot` froze at checkout (ADR 0008). Null for snapshots that
+ * carry no terms or no usable price.
+ */
+export function readSnapshotUnitPrice(
+	priceSnapshot: unknown,
+): { unitPrice: number; currency: CatalogCurrency } | null {
+	const snapshot = asRecord(priceSnapshot);
+	const terms = asRecord(snapshot?.productClientTerms);
+	if (!terms) return null;
+
+	const currency = catalogCurrencySchema.safeParse(
+		terms.currency ?? snapshot?.currency,
+	);
+	if (!currency.success) return null;
+
+	const unitPrice = getPerUnitPrice({
+		unitPrice: asDecimalString(terms.unitPrice),
+		moqPrice: asDecimalString(terms.moqPrice) ?? "",
+		moq: asDecimalString(terms.moq) ?? "",
+		discountPercent: asDecimalString(terms.discountPercent),
+	});
+	if (unitPrice === null) return null;
+
+	return { unitPrice, currency: currency.data };
 }
 
 /**
