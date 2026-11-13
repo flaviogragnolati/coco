@@ -2,6 +2,9 @@ import { expect, test } from "vitest";
 import { homeOfferTerms } from "~/features/cart/cart-mappers";
 import type { HomeOffer } from "~/shared/common/home.types";
 import {
+	formatComboForPeople,
+	formatComboItemQuantity,
+	formatPeopleLabel,
 	getMarketSavingLabel,
 	getOfferComparisonPrice,
 	getOfferDiscountLabel,
@@ -13,6 +16,7 @@ import {
 	getOfferStrikethroughPrice,
 	getOfferTotalAmount,
 	getOfferTotalLabel,
+	selectComboMosaicImages,
 } from "./home-formatters";
 
 const offer: HomeOffer = {
@@ -269,4 +273,46 @@ test("a fixed quantity states only the quantity", () => {
 test("the in-cart notice names the quantity already in the order", () => {
 	expect(getOfferInCartLabel("15", "kg")).toBe("Ya tenés 15 kg en tu pedido");
 	expect(getOfferInCartLabel("1", "box")).toBe("Ya tenés 1 caja en tu pedido");
+});
+
+test("the people label agrees in number", () => {
+	expect(formatPeopleLabel(1)).toBe("1 persona");
+	expect(formatPeopleLabel(2)).toBe("2 personas");
+	expect(formatComboForPeople(1)).toBe("Para 1 persona");
+	expect(formatComboForPeople(2)).toBe("Para 2 personas");
+});
+
+test("a combo product's quantity names the kilo or the container, without its size", () => {
+	expect(
+		formatComboItemQuantity({ offer, quantity: "0.5", lineTotal: "750.00" }),
+	).toBe("0,5 kg");
+	const jar = {
+		...offer,
+		unit: "piece" as const,
+		presentationContainer: "frasco" as const,
+		presentationSize: "370 g",
+	};
+	expect(
+		formatComboItemQuantity({ offer: jar, quantity: "1", lineTotal: "1.00" }),
+	).toBe("1 frasco");
+	expect(
+		formatComboItemQuantity({ offer: jar, quantity: "2", lineTotal: "2.00" }),
+	).toBe("2 frascos");
+});
+
+test("the combo mosaic takes the first four photos and skips products without one", () => {
+	const items = [null, "a.jpg", "b.jpg", null, "c.jpg", "d.jpg", "e.jpg"].map(
+		(imageUrl, index) => ({
+			offer: { ...offer, imageUrl, productName: `P${index}` },
+			quantity: "1",
+			lineTotal: "1.00",
+		}),
+	);
+
+	expect(selectComboMosaicImages(items)).toEqual([
+		{ url: "a.jpg", name: "P1" },
+		{ url: "b.jpg", name: "P2" },
+		{ url: "c.jpg", name: "P4" },
+		{ url: "d.jpg", name: "P5" },
+	]);
 });

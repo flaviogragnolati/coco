@@ -1,10 +1,7 @@
 "use client";
 
 import type { CartItem } from "~/shared/common/cart.types";
-import type {
-	CatalogClientTerms,
-	CatalogProductListItem,
-} from "~/shared/common/catalog.types";
+import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import {
 	calculateLineTotal,
 	normalizeCartQuantity,
@@ -12,6 +9,9 @@ import {
 	toQuantityString,
 } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
+import { homeOfferTerms } from "~/shared/common/home-offer-terms";
+
+export { homeOfferTerms };
 
 /**
  * Adds items to a cart keyed by terms id: a line already there grows by the
@@ -64,23 +64,6 @@ export function catalogProductToCartItem(
 			imageUrl: product.imageUrl,
 		},
 		terms: product.terms,
-	};
-}
-
-export function homeOfferTerms(offer: HomeOffer): CatalogClientTerms {
-	return {
-		id: offer.productClientTermsId,
-		moq: offer.moq,
-		moqPrice: offer.moqPrice,
-		step: offer.step,
-		stepPrice: offer.stepPrice,
-		max: offer.max,
-		unitPrice: offer.unitPrice,
-		marketPrice: offer.marketPrice,
-		discountPercent: offer.discountPercent,
-		currency: offer.currency,
-		fromDate: offer.fromDate,
-		toDate: offer.toDate,
 	};
 }
 

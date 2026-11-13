@@ -2,24 +2,10 @@ import type { HomeOffersCriterion } from "~/prisma/client";
 import { getMarketSaving, toNumber } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
 
-// The admin pin and the order count are used only for ranking and stripped
-// from the public offer.
+// The order count is used only for ranking and stripped from the public offer.
 export type RankableHomeOffer = HomeOffer & {
-	homeOfferRank: number | null;
 	paidOrderCount: number;
 };
-
-export type HomeOfferCuration = {
-	spotlightProductId: number | null;
-	criterion: HomeOffersCriterion;
-	offersLimit: number;
-};
-
-type PinnedHomeOffer = RankableHomeOffer & { homeOfferRank: number };
-
-function isPinned(offer: RankableHomeOffer): offer is PinnedHomeOffer {
-	return offer.homeOfferRank !== null;
-}
 
 /**
  * `marketSaving` is measured on the whole MOQ block, not per unit: a kilo and a
@@ -80,17 +66,7 @@ export function rankHomeOffers(
 	offers: RankableHomeOffer[],
 	criterion: HomeOffersCriterion,
 ): RankableHomeOffer[] {
-	const pinned = offers
-		.filter(isPinned)
-		.sort(
-			(left, right) =>
-				left.homeOfferRank - right.homeOfferRank || compareRecency(left, right),
-		);
-	const ranked = offers
-		.filter((offer) => !isPinned(offer))
-		.sort(compareByCriterion(criterion));
-
-	return [...pinned, ...ranked];
+	return [...offers].sort(compareByCriterion(criterion));
 }
 
 export function dedupeHomeOffersByProduct(offers: RankableHomeOffer[]) {
@@ -100,33 +76,4 @@ export function dedupeHomeOffersByProduct(offers: RankableHomeOffer[]) {
 		seen.add(offer.productId);
 		return true;
 	});
-}
-
-// More than the grid shows, so the unit filter can refill it on the client.
-export const HOME_OFFERS_POOL_SIZE = 24;
-
-export function composeHomeContent(
-	offers: RankableHomeOffer[],
-	curation: HomeOfferCuration,
-): { spotlight: RankableHomeOffer | null; offers: RankableHomeOffer[] } {
-	// Dedupe before ranking: a product with two current terms rows would
-	// otherwise compete with itself and could take two slots in the grid.
-	const ranked = rankHomeOffers(
-		dedupeHomeOffersByProduct(offers),
-		curation.criterion,
-	);
-	// A spotlight whose terms are no longer vigente is simply absent from
-	// `ranked`; the pin is skipped silently and the top of the ranking fills the
-	// spotlight band rather than leaving it empty.
-	const spotlight =
-		ranked.find((offer) => offer.productId === curation.spotlightProductId) ??
-		ranked[0] ??
-		null;
-
-	return {
-		spotlight,
-		offers: ranked
-			.filter((offer) => offer !== spotlight)
-			.slice(0, Math.max(HOME_OFFERS_POOL_SIZE, curation.offersLimit)),
-	};
 }

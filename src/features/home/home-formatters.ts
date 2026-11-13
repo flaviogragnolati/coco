@@ -18,7 +18,7 @@ import {
 	toNumber,
 	toQuantityString,
 } from "~/shared/common/commerce.helpers";
-import type { HomeOffer } from "~/shared/common/home.types";
+import type { HomeComboItem, HomeOffer } from "~/shared/common/home.types";
 
 export type OfferPricing = Pick<
 	HomeOffer,
@@ -146,4 +146,34 @@ export function getMarketSavingLabel(offer: OfferPricing) {
 	const saving = getMarketSaving(offer);
 	if (saving === null) return null;
 	return `Ahorrás ${formatCurrency(saving.perUnit, offer.currency)} por ${perUnitLabel(offer)} vs. góndola`;
+}
+
+export function formatPeopleLabel(people: number) {
+	return people === 1 ? "1 persona" : `${people} personas`;
+}
+
+export function formatComboForPeople(people: number) {
+	return `Para ${formatPeopleLabel(people)}`;
+}
+
+/**
+ * A combo product's quantity: "1 kg", "0,5 kg", "2 frascos". The container
+ * goes without its size, which the product name already carries.
+ */
+export function formatComboItemQuantity(item: HomeComboItem) {
+	return formatQuantity(item.quantity, item.offer.unit, {
+		presentationContainer: item.offer.presentationContainer,
+		presentationSize: null,
+	});
+}
+
+const COMBO_MOSAIC_SIZE = 4;
+
+/** The first products with a photo, at most four, for the combo's mosaic. */
+export function selectComboMosaicImages(items: HomeComboItem[]) {
+	return items.flatMap((item) =>
+		item.offer.imageUrl
+			? [{ url: item.offer.imageUrl, name: item.offer.productName }]
+			: [],
+	).slice(0, COMBO_MOSAIC_SIZE);
 }
