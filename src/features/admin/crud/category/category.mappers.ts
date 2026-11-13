@@ -7,6 +7,7 @@ import type {
 export const defaultCategoryFormValues: CategoryFormValues = {
 	name: "",
 	sortOrder: 1,
+	photoBackgroundColor: null,
 	active: true,
 };
 
@@ -26,6 +27,7 @@ export function categoryDetailToFormValues(
 	return {
 		name: category.name,
 		sortOrder: category.sortOrder,
+		photoBackgroundColor: category.photoBackgroundColor,
 		active: category.active,
 	};
 }

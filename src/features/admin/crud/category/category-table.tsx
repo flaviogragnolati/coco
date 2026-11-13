@@ -33,6 +33,22 @@ const categoryColumns: CrudColumn<CategoryListItem>[] = [
 		),
 	},
 	{
+		key: "photoBackgroundColor",
+		header: "Fondo de fotos",
+		className: "w-32",
+		cell: (category) =>
+			category.photoBackgroundColor ? (
+				<span
+					aria-label={category.photoBackgroundColor}
+					className="inline-block size-4 rounded-full border align-middle"
+					role="img"
+					style={{ backgroundColor: category.photoBackgroundColor }}
+				/>
+			) : (
+				<span className="text-muted-foreground">—</span>
+			),
+	},
+	{
 		key: "productCount",
 		header: "Productos",
 		className: "w-28",

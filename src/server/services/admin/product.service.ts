@@ -132,6 +132,7 @@ function mapPreviewHomeOffer(product: CatalogProductDetail): HomeOffer {
 		presentationSize: product.presentationSize,
 		brandName: product.brand?.name ?? null,
 		imageUrl: product.imageUrl,
+		photoBackgroundColor: product.category?.photoBackgroundColor ?? null,
 		moq: product.terms.moq,
 		moqPrice: product.terms.moqPrice,
 		unitPrice: product.terms.unitPrice,

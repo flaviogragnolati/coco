@@ -198,6 +198,17 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		aliases: ["Presentación", "Pack del proveedor"],
 		href: "/admin/product-terms",
 	},
+	{
+		slug: "concepto-imagen-ilustrativa",
+		kind: "concept",
+		section: "catalog",
+		label: "Imagen ilustrativa",
+		term: "Illustrative legend",
+		definition:
+			"La leyenda «Imagen ilustrativa» que la tienda escribe encima de las fotos grandes de producto (tarjetas, destacado, foto principal de la ficha y vista previa), abajo a la derecha. No se graba en el archivo: la foto descargada no la lleva. Su color es un tono oscuro del color de fondo de las fotos de la categoría, o gris oscuro si la categoría no tiene color. No aparece en miniaturas ni en productos sin foto.",
+		aliases: ["Leyenda de la foto", "Marca de agua"],
+		href: "/admin/categories",
+	},
 
 	// --- Entidades -----------------------------------------------------------
 	{
@@ -217,7 +228,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Categoría",
 		term: "Category",
 		definition:
-			"El grupo del catálogo al que pertenece cada producto (frutos secos, mixes y snacks, etc.), con el orden en que se muestra. Cada producto tiene exactamente una; una categoría inactiva o eliminada deja de mostrarse al cliente.",
+			"El grupo del catálogo al que pertenece cada producto (frutos secos, mixes y snacks, etc.), con el orden en que se muestra. Cada producto tiene exactamente una; una categoría inactiva o eliminada deja de mostrarse al cliente. Puede tener el color de fondo de las fotos de sus productos, del que sale el tono de la leyenda «Imagen ilustrativa».",
 		aliases: ["Rubro", "Familia", "Cabecera"],
 		occurrences: [{ code: "Category", db: "category" }],
 		href: "/admin/categories",

@@ -11,6 +11,7 @@ const categoryListSelect = {
 	id: true,
 	name: true,
 	sortOrder: true,
+	photoBackgroundColor: true,
 	active: true,
 	deleted: true,
 	updatedAt: true,
@@ -25,6 +26,7 @@ export const categoryDetailSelect = {
 	id: true,
 	name: true,
 	sortOrder: true,
+	photoBackgroundColor: true,
 	active: true,
 	deleted: true,
 } satisfies Prisma.CategorySelect;
@@ -83,6 +85,7 @@ export async function createCategory(
 		data: {
 			name: input.name,
 			sortOrder: input.sortOrder,
+			photoBackgroundColor: input.photoBackgroundColor,
 			active: input.active,
 			deleted: false,
 		},
@@ -99,6 +102,7 @@ export async function updateCategory(
 		data: {
 			name: input.name,
 			sortOrder: input.sortOrder,
+			photoBackgroundColor: input.photoBackgroundColor,
 			active: input.active,
 		},
 		select: categoryDetailSelect,

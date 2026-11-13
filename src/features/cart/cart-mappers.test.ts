@@ -51,6 +51,7 @@ test.each([
 		presentationSize: product.presentationSize,
 		brandName: product.brand?.name,
 		imageUrl: product.imageUrl,
+		photoBackgroundColor: null,
 		...product.terms,
 	});
 	expect(homeOfferToCartItem(offer)).toEqual(catalogProductToCartItem(product));

@@ -15,6 +15,7 @@ vi.mock("./_base/admin-audit", () => ({
 	writeAdminAuditLog: vi.fn(),
 }));
 
+import { writeAdminAuditLog } from "./_base/admin-audit";
 import { AdminCrudError } from "./_base/admin-crud.errors";
 import * as data from "./category.data";
 import * as service from "./category.service";
@@ -25,6 +26,7 @@ const frutosSecos = {
 	id: 1,
 	name: "Frutos secos",
 	sortOrder: 1,
+	photoBackgroundColor: null,
 	active: true,
 	deleted: false,
 	createdAt: new Date("2026-10-11T00:00:00.000Z"),
@@ -53,7 +55,12 @@ describe("category names", () => {
 
 		await expect(
 			service.create(
-				{ name: "frutos secos ", sortOrder: 7, active: true },
+				{
+					name: "frutos secos ",
+					sortOrder: 7,
+					photoBackgroundColor: null,
+					active: true,
+				},
 				actor,
 				db,
 			),
@@ -67,7 +74,13 @@ describe("category names", () => {
 		vi.mocked(data.updateCategory).mockResolvedValue(frutosSecos as never);
 
 		await service.update(
-			{ id: 1, name: "Frutos secos", sortOrder: 1, active: true },
+			{
+				id: 1,
+				name: "Frutos secos",
+				sortOrder: 1,
+				photoBackgroundColor: null,
+				active: true,
+			},
 			actor,
 			db,
 		);
@@ -78,5 +91,66 @@ describe("category names", () => {
 			}),
 		);
 		expect(data.updateCategory).toHaveBeenCalled();
+	});
+});
+
+describe("category photo background color", () => {
+	it("creates the category with the color it was given", async () => {
+		const { db } = database(null);
+		vi.mocked(data.createCategory).mockResolvedValue({
+			...frutosSecos,
+			photoBackgroundColor: "#e8dcc8",
+		} as never);
+
+		const created = await service.create(
+			{
+				name: "Frutos secos",
+				sortOrder: 1,
+				photoBackgroundColor: "#e8dcc8",
+				active: true,
+			},
+			actor,
+			db,
+		);
+
+		expect(data.createCategory).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ photoBackgroundColor: "#e8dcc8" }),
+		);
+		expect(created.photoBackgroundColor).toBe("#e8dcc8");
+	});
+
+	it("clears the color and audits it before and after", async () => {
+		const { db } = database(null);
+		vi.mocked(data.findCategoryById).mockResolvedValue({
+			...frutosSecos,
+			photoBackgroundColor: "#e8dcc8",
+		} as never);
+		vi.mocked(data.updateCategory).mockResolvedValue(frutosSecos as never);
+
+		await service.update(
+			{
+				id: 1,
+				name: "Frutos secos",
+				sortOrder: 1,
+				photoBackgroundColor: null,
+				active: true,
+			},
+			actor,
+			db,
+		);
+
+		expect(data.updateCategory).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ photoBackgroundColor: null }),
+		);
+		expect(writeAdminAuditLog).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({
+				action: "category.update",
+				before: expect.objectContaining({ photoBackgroundColor: "#e8dcc8" }),
+				after: expect.objectContaining({ photoBackgroundColor: null }),
+			}),
+		);
 	});
 });

@@ -6,16 +6,18 @@ const frutosSecos = {
 	id: 1,
 	name: "Frutos secos",
 	sortOrder: 1,
+	photoBackgroundColor: "#e8dcc8",
 	active: true,
 	deleted: false,
 };
 
 describe("toCatalogCategory", () => {
-	it("exposes an active category without its flags", () => {
+	it("exposes an active category and its photo color without its flags", () => {
 		expect(toCatalogCategory(frutosSecos)).toEqual({
 			id: 1,
 			name: "Frutos secos",
 			sortOrder: 1,
+			photoBackgroundColor: "#e8dcc8",
 		});
 	});
 

@@ -38,6 +38,23 @@ describe("tutorial scenes", () => {
 		expect(html).toContain(`${TUTORIAL_TARGET_ATTRIBUTE}="${step.target}"`);
 	});
 
+	it("the catalog's photos carry the legend in their category's tone, the photo-less honey none", () => {
+		const html = renderToStaticMarkup(
+			<TooltipProvider>
+				<TutorialScene
+					fixtures={fixtures}
+					scene={{ id: "catalog", added: false }}
+				/>
+			</TooltipProvider>,
+		);
+		const legends = html.match(/style="color:#724f27">Imagen ilustrativa/g);
+		const photos = fixtures.catalogProducts.filter(
+			(product) => product.imageUrl,
+		);
+		expect(legends).toHaveLength(photos.length);
+		expect(html).toContain("Sin imagen para Miel pura");
+	});
+
 	it("the browser-only exceptions are real targets of their scene", () => {
 		for (const target of browserOnlyTargets) {
 			expect(targetsByScene.catalog).toContain(target);

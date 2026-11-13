@@ -42,6 +42,9 @@ export function ProductCard({
 					<ProductImage
 						className="flex aspect-square w-full items-center justify-center"
 						imageUrl={product.imageUrl}
+						legend={{
+							backdropColor: product.category?.photoBackgroundColor ?? null,
+						}}
 						name={product.name}
 						placeholderClassName="bg-muted text-muted-foreground"
 					/>

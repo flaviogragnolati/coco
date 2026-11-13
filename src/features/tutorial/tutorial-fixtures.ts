@@ -51,10 +51,28 @@ const ids = {
 	external: 990_002,
 };
 
+/** The beige behind every photo in `public/tutorial/`. */
+const TUTORIAL_PHOTO_BACKDROP = "#e2c8ab";
+
 const categories = {
-	nuts: { id: 990_001, name: "Frutos secos", sortOrder: 1 },
-	driedFruit: { id: 990_002, name: "Frutas secas", sortOrder: 2 },
-	pantry: { id: 990_003, name: "Almacén", sortOrder: 3 },
+	nuts: {
+		id: 990_001,
+		name: "Frutos secos",
+		sortOrder: 1,
+		photoBackgroundColor: TUTORIAL_PHOTO_BACKDROP,
+	},
+	driedFruit: {
+		id: 990_002,
+		name: "Frutas secas",
+		sortOrder: 2,
+		photoBackgroundColor: TUTORIAL_PHOTO_BACKDROP,
+	},
+	pantry: {
+		id: 990_003,
+		name: "Almacén",
+		sortOrder: 3,
+		photoBackgroundColor: null,
+	},
 };
 
 type ProductSeed = Pick<

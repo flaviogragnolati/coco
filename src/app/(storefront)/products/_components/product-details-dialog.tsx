@@ -141,6 +141,10 @@ export function ProductDetailsDialog({
 									<ProductImage
 										className="flex aspect-square w-full items-center justify-center rounded-2xl"
 										imageUrl={mainImage}
+										legend={{
+											backdropColor:
+												product.category?.photoBackgroundColor ?? null,
+										}}
 										name={product.name}
 										placeholderClassName="bg-muted text-muted-foreground"
 									/>

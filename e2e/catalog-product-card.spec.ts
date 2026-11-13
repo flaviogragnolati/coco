@@ -189,3 +189,48 @@ test("the product detail has a single close control and no filler texts", async 
 	await dialog.getByRole("button", { name: "Cerrar" }).click();
 	await expect(page).not.toHaveURL(/[?&]product=/);
 });
+
+test("large product photos carry the illustrative legend, placeholders and thumbnails do not", async ({
+	page,
+}) => {
+	await page.goto("/products");
+	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
+
+	const cards = page.locator("main [data-slot='card']");
+	const photoCard = cards
+		.filter({ has: page.locator("button[aria-label^='Ver '] [role='img']") })
+		.first();
+	test.skip(
+		(await photoCard.count()) === 0,
+		"The current fixture has no catalog product with a photo.",
+	);
+	const name = (await photoCard.getByRole("heading").textContent()) ?? "";
+	const image = photoCard.getByRole("button", {
+		name: `Ver ${name}`,
+		exact: true,
+	});
+	await expect(
+		image.getByText("Imagen ilustrativa", { exact: true }),
+	).toBeVisible();
+	// The legend is decorative: the photo is still named after the product.
+	await expect(image.getByRole("img", { name, exact: true })).toBeVisible();
+
+	const placeholderCard = cards
+		.filter({ has: page.getByText(/^Sin imagen para /) })
+		.first();
+	if ((await placeholderCard.count()) > 0) {
+		await expect(placeholderCard.getByText("Imagen ilustrativa")).toHaveCount(
+			0,
+		);
+	}
+
+	await image.click();
+	const dialog = page.getByRole("dialog");
+	await expect(dialog.getByRole("heading", { name, exact: true })).toBeVisible({
+		timeout: 15_000,
+	});
+	// Only the main photo: the gallery thumbnails stay bare.
+	await expect(
+		dialog.getByText("Imagen ilustrativa", { exact: true }),
+	).toHaveCount(1);
+});

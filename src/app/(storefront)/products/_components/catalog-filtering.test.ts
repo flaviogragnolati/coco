@@ -57,7 +57,9 @@ function makeProduct(overrides: ProductOverrides = {}): CatalogProductListItem {
 		presentationContainer: null,
 		presentationSize: null,
 		brand: overrides.brand === undefined ? null : overrides.brand,
-		category: overrides.category === undefined ? null : overrides.category,
+		category: overrides.category
+			? { ...overrides.category, photoBackgroundColor: null }
+			: null,
 		imageUrl: null,
 		createdAt: overrides.createdAt ?? new Date("2024-01-01"),
 		terms,

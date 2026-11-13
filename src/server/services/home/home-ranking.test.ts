@@ -26,6 +26,7 @@ function offer(
 		presentationSize: null,
 		brandName: input.brandName ?? null,
 		imageUrl: input.imageUrl ?? null,
+		photoBackgroundColor: input.photoBackgroundColor ?? null,
 		moq: input.moq ?? "10",
 		moqPrice: input.moqPrice ?? "1000",
 		unitPrice: input.unitPrice ?? null,

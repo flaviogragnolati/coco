@@ -15,6 +15,7 @@ const catalogCategorySelect = {
 	id: true,
 	name: true,
 	sortOrder: true,
+	photoBackgroundColor: true,
 	active: true,
 	deleted: true,
 } satisfies Prisma.CategorySelect;

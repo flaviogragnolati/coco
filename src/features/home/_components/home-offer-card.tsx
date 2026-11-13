@@ -36,6 +36,7 @@ export function HomeOfferCard({
 					<ProductImage
 						className="flex aspect-square w-full items-center justify-center"
 						imageUrl={offer.imageUrl}
+						legend={{ backdropColor: offer.photoBackgroundColor }}
 						name={offer.productName}
 						placeholderClassName="bg-brand-soft text-brand-soft-foreground"
 					/>
