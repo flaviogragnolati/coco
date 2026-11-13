@@ -310,7 +310,7 @@ Supporting relationships that shape behavior around that chain are:
 | `DeliveryMode` | Shipment | `homeDelivery \| pickupPoint`; null on internal transfers | Classification value | Set at end-user shipment creation; depot pickup is deliberately not a value |
 | `HomeOffersCriterion` | Home offer settings | How the automatic offers ranking sorts: `marketSaving \| discountPercent \| orderVolume`; also picks the home grid's title | Configuration value, not a lifecycle | Admin, through the home offers section |
 | `DomainEventOutboxStatus` | Outbox row | Dispatch lifecycle of a durable domain event | Infrastructure state | `DomainEventDispatcher` |
-| `QaTicketStatus` | QA ticket | Where one manual test case stands in the current pass: `pending \| inProgress \| passed \| failed \| blocked \| skipped \| needsClarification` | Detailed single-live-state | `qa-ticket.service.ts`; the tester writes results and claims, an admin corrects tracking from the form. No ladder — the next pass overwrites the value and the history lives in `AuditLog` |
+| `QaTicketStatus` | QA ticket | Where one manual test case stands in the current pass: `pending \| inProgress \| passed \| failed \| blocked \| skipped \| needsClarification \| retest` | Detailed single-live-state | `qa-ticket.service.ts`; the tester writes results and claims, an admin corrects tracking from the form. No ladder — the next pass overwrites the value and the history lives in `AuditLog` |
 | `QaTicketEvidenceKind` | QA evidence | Which artifact a row holds: `image \| consoleLog \| networkLog` | Classification value | Set at creation, never moved |
 
 ### Legal transitions live in one shared module

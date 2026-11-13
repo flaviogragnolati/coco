@@ -178,4 +178,16 @@ export const qaGlossaryEntries: GlossaryEntry[] = [
 		occurrences: [{ code: "QaTicketStatus.skipped", db: "qa_ticket.status" }],
 		href: "/admin/qa-tickets",
 	},
+	{
+		slug: "estado-qa-re-test",
+		kind: "status",
+		section: "qa",
+		label: qaTicketStatusLabelMap.retest,
+		term: "QA re-test",
+		definition:
+			"El defecto se corrigió, o el cambio pedido se implementó, después de la última corrida: el caso espera que un tester lo vuelva a correr. Distinto de pendiente, que es «nunca se corrió contra su definición actual», y de Completo OK, que todavía hay que ganarse.",
+		aliases: ["Reabierto", "Pendiente de nuevo", "Retest pendiente"],
+		occurrences: [{ code: "QaTicketStatus.retest", db: "qa_ticket.status" }],
+		href: "/admin/qa-tickets",
+	},
 ];

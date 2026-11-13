@@ -26,6 +26,17 @@ describe("qaTicketStatusConfig", () => {
 		);
 	});
 
+	it("shows Re-test apart from Pendiente, En curso and Completo OK", () => {
+		const { retest, pending, inProgress, passed } = qaTicketStatusConfig;
+
+		expect(retest.label).toBe("Re-test");
+		expect(retest.variant).not.toBe(pending.variant);
+		expect(retest.variant).not.toBe(passed.variant);
+		expect(retest.icon).not.toBe(inProgress.icon);
+		expect(retest.icon).not.toBe(pending.icon);
+		expect(retest.hint?.length).toBeGreaterThan(0);
+	});
+
 	it("distinguishes a missing environment from a missing definition", () => {
 		expect(qaTicketStatusConfig.needsClarification.label).toBe(
 			"Requiere aclaración",
@@ -63,6 +74,7 @@ describe("qaTicketResultOptions", () => {
 
 		expect(values).not.toContain("pending");
 		expect(values).not.toContain("inProgress");
+		expect(values).not.toContain("retest");
 	});
 
 	it("reuses the chip metadata instead of a parallel list", () => {

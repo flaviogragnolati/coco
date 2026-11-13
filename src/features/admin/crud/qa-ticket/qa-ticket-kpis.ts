@@ -19,6 +19,7 @@ export const QA_TICKET_RATE_PLACEHOLDER = "—";
  * Only `passed` and `failed` count as executed: blocked, skipped and
  * `needsClarification` are interruptions, and letting them into the denominator
  * would make the OK rate drop for reasons that say nothing about the product.
+ * `retest` is not executed either: its last run predates the fix.
  */
 export function buildQaTicketKpis(stats: QaTicketStats): CrudStatItem[] {
 	const active = stats.total - stats.deleted;
@@ -43,7 +44,7 @@ export function buildQaTicketKpis(stats: QaTicketStats): CrudStatItem[] {
 			description: "Con resultado verificable",
 			icon: PlayIcon,
 			accent: "info",
-			hint: "Completo OK más Fallido. Bloqueado, omitido y por aclarar quedan afuera porque no verificaron nada.",
+			hint: "Completo OK más Fallido. Bloqueado, omitido, por aclarar y re-test quedan afuera porque no verificaron nada.",
 		},
 		{
 			label: "Tasa OK",
