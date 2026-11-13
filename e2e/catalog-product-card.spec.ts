@@ -100,6 +100,31 @@ test("a catalog card adds the quantity chosen on its stepper", async ({
 	expect(await cartQuantities(page)).toEqual([chosen.replace(",", ".")]);
 });
 
+test("only a weighed product names its unit inside the quantity field", async ({
+	page,
+}) => {
+	await page.goto("/products");
+	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
+	const fields = page
+		.locator("main [data-slot='card']")
+		.getByRole("textbox", { name: /^Cantidad \(.+\)$/ });
+	test.skip(
+		(await fields.count()) === 0,
+		"The current fixture has no catalog product with a stepper.",
+	);
+
+	for (const field of await fields.all()) {
+		const name = (await field.getAttribute("aria-label")) ?? "";
+		// The field sits in a <label>; its text is the visible unit, if any.
+		const unit = ((await field.locator("xpath=..").textContent()) ?? "").trim();
+		if (/^Cantidad \((kg|gr|lb)\)$/.test(name)) {
+			expect(unit, name).not.toBe("");
+		} else {
+			expect(unit, name).toBe("");
+		}
+	}
+});
+
 test("a catalog card's image and name open the product detail", async ({
 	page,
 }) => {
