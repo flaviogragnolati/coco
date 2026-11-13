@@ -2,6 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { PrismaClient } from "~/prisma/client";
+import { describeDatabaseTarget } from "../reset-initial-catalog.plan";
 import { readOnlyTransaction } from "./read-only-transaction";
 
 /** Mimics Postgres: `SET TRANSACTION READ ONLY` flips what `SHOW` reports. */
@@ -56,8 +57,21 @@ describe("readOnlyTransaction", () => {
 });
 
 // Opt-in: a throwaway local Postgres, e.g.
-// QA_TRIAGE_TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:55432/postgres
+// QA_TRIAGE_TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:55432/qa_triage_test
 const url = process.env.QA_TRIAGE_TEST_DATABASE_URL;
+if (url) {
+	const parsed = new URL(url);
+	if (
+		!["127.0.0.1", "localhost"].includes(parsed.hostname) ||
+		!parsed.pathname.endsWith("_test") ||
+		(process.env.DATABASE_URL &&
+			describeDatabaseTarget(url) ===
+				describeDatabaseTarget(process.env.DATABASE_URL))
+	)
+		throw new Error(
+			"QA_TRIAGE_TEST_DATABASE_URL must be an isolated local *_test database, different from DATABASE_URL",
+		);
+}
 
 describe.skipIf(!url)("readOnlyTransaction on PostgreSQL", () => {
 	let db: PrismaClient;
