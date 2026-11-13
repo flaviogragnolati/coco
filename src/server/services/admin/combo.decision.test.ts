@@ -46,9 +46,9 @@ describe("validateComboItems", () => {
 	test("a kilo product accepts a quantity on its step and rejects one off it", () => {
 		const catalog = products([[1, granola]]);
 
-		expect(validateComboItems([{ productId: 1, quantity: "1" }], catalog)).toEqual(
-			[],
-		);
+		expect(
+			validateComboItems([{ productId: 1, quantity: "1" }], catalog),
+		).toEqual([]);
 		expect(
 			validateComboItems([{ productId: 1, quantity: "0.7" }], catalog),
 		).toEqual([
@@ -59,9 +59,9 @@ describe("validateComboItems", () => {
 	test("a jar sold one by one names the container", () => {
 		const catalog = products([[2, peanutButter]]);
 
-		expect(validateComboItems([{ productId: 2, quantity: "2" }], catalog)).toEqual(
-			[],
-		);
+		expect(
+			validateComboItems([{ productId: 2, quantity: "2" }], catalog),
+		).toEqual([]);
 		expect(
 			validateComboItems([{ productId: 2, quantity: "1.5" }], catalog),
 		).toEqual([
