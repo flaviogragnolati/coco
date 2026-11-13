@@ -3,7 +3,7 @@
 import { RotateCcwIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "~/components/ui/alert";
@@ -125,9 +125,15 @@ export function RepeatOrderDialog({
 }) {
 	const router = useRouter();
 	const utils = api.useUtils();
+	const lineIdPrefix = useId();
 	const [open, setOpen] = useState(false);
 	// Null means the default selection: every available line checked.
 	const [selection, setSelection] = useState<Set<number> | null>(null);
+
+	const handleOpenChange = (next: boolean) => {
+		setOpen(next);
+		if (!next) setSelection(null);
+	};
 
 	const preview = api.orders.repeatPreview.useQuery(
 		{ orderId },
@@ -135,15 +141,22 @@ export function RepeatOrderDialog({
 	);
 	const repeat = api.orders.repeat.useMutation({
 		onSuccess(output) {
-			useCartStore.getState().replaceCart(output.cart, userId);
-			void utils.cart.getCurrent.invalidate();
-
 			const messages = describeRepeatOutcome(output.lines);
-			if (messages.success) toast.success(messages.success);
-			for (const message of messages.info) toast.info(message);
 			for (const message of messages.warning) toast.warning(message);
 
-			setOpen(false);
+			// Nothing was added and the cart is untouched: stay and show what changed.
+			if (!messages.success) {
+				setSelection(null);
+				void preview.refetch();
+				return;
+			}
+
+			useCartStore.getState().replaceCart(output.cart, userId);
+			void utils.cart.getCurrent.invalidate();
+			toast.success(messages.success);
+			for (const message of messages.info) toast.info(message);
+
+			handleOpenChange(false);
 			router.push("/cart");
 		},
 		onError(error) {
@@ -162,11 +175,6 @@ export function RepeatOrderDialog({
 		if (checked) next.add(productId);
 		else next.delete(productId);
 		setSelection(next);
-	};
-
-	const handleOpenChange = (next: boolean) => {
-		setOpen(next);
-		if (!next) setSelection(null);
 	};
 
 	return (
@@ -210,7 +218,7 @@ export function RepeatOrderDialog({
 								checked={
 									line.productId !== null && selected.has(line.productId)
 								}
-								id={`repeat-line-${index}`}
+								id={`${lineIdPrefix}-${index}`}
 								key={line.productId ?? `unknown-${index}`}
 								line={line}
 								onCheckedChange={(checked) => {
