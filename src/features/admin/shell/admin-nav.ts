@@ -19,6 +19,7 @@ import {
 	ScrollTextIcon,
 	ShapesIcon,
 	ShoppingBagIcon,
+	ShoppingBasketIcon,
 	ShoppingCartIcon,
 	SparklesIcon,
 	StoreIcon,
@@ -93,7 +94,12 @@ export const adminNavGroups: AdminNavGroup[] = [
 				icon: ScrollTextIcon,
 			},
 			{
-				title: "Ofertas del home",
+				title: "Combos",
+				href: "/admin/combos",
+				icon: ShoppingBasketIcon,
+			},
+			{
+				title: "Destacados",
 				href: "/admin/home-offers",
 				icon: SparklesIcon,
 			},

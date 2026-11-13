@@ -37,7 +37,7 @@ function product(
 		name,
 		defaultSupplierId: quintal.id,
 		brandId: null,
-		homeOfferRank: null,
+		featured: false,
 		active: true,
 		deleted: false,
 		...overrides,
@@ -52,7 +52,7 @@ function state(overrides: Partial<PurgeCatalogState> = {}): PurgeCatalogState {
 			product(20, "Tomate perita fresco", {
 				defaultSupplierId: valleVerde.id,
 				brandId: 100,
-				homeOfferRank: 1,
+				featured: true,
 			}),
 			product(21, "Mix de frutos secos discontinuado", {
 				defaultSupplierId: packNorte.id,
@@ -81,6 +81,8 @@ function state(overrides: Partial<PurgeCatalogState> = {}): PurgeCatalogState {
 			{ id: 7, productId: 10 },
 			{ id: 8, productId: 20 },
 		],
+		comboItems: [],
+		featuredItems: [],
 		spotlightProductId: null,
 		...overrides,
 	};
@@ -103,6 +105,26 @@ describe("planDemoPurge", () => {
 		expect(plan.demo.supplierTermIds).toEqual([2000, 2001, 2002]);
 		expect(plan.demo.localConstraintIds).toEqual([8]);
 		expect(plan.unclassified).toEqual({ suppliers: [], products: [] });
+	});
+
+	it("removes the combo items and featured entries of demo products only", () => {
+		const plan = planDemoPurge(
+			identity,
+			state({
+				comboItems: [
+					{ id: 50, productId: 10 },
+					{ id: 51, productId: 20 },
+				],
+				featuredItems: [
+					{ id: 60, productId: 20 },
+					{ id: 61, productId: 10 },
+					{ id: 62, productId: null },
+				],
+			}),
+		);
+
+		expect(plan.demo.comboItemIds).toEqual([51]);
+		expect(plan.demo.featuredItemIds).toEqual([60]);
 	});
 
 	it("keeps a product Quintal supplies even when it defaults to a demo supplier", () => {

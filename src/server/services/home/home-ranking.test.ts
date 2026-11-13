@@ -1,70 +1,12 @@
 import { expect, test } from "vitest";
-import {
-	composeHomeContent,
-	HOME_OFFERS_POOL_SIZE,
-	type HomeOfferCuration,
-	type RankableHomeOffer,
-	rankHomeOffers,
-} from "./home-ranking";
-
-const defaultFromDate = new Date("2026-06-01T00:00:00.000Z");
-
-function offer(
-	input: Partial<RankableHomeOffer> & { productId: number },
-): RankableHomeOffer {
-	return {
-		productId: input.productId,
-		productDescription: null,
-		step: null,
-		stepPrice: null,
-		max: null,
-		toDate: null,
-		productClientTermsId: input.productClientTermsId ?? input.productId,
-		productName: input.productName ?? `Producto ${input.productId}`,
-		unit: input.unit ?? "kg",
-		presentationContainer: null,
-		presentationSize: null,
-		brandName: input.brandName ?? null,
-		imageUrl: input.imageUrl ?? null,
-		photoBackgroundColor: input.photoBackgroundColor ?? null,
-		moq: input.moq ?? "10",
-		moqPrice: input.moqPrice ?? "1000",
-		unitPrice: input.unitPrice ?? null,
-		marketPrice: input.marketPrice ?? null,
-		discountPercent: input.discountPercent ?? null,
-		currency: input.currency ?? "ARS",
-		homeOfferRank: input.homeOfferRank ?? null,
-		paidOrderCount: input.paidOrderCount ?? 0,
-		fromDate: input.fromDate ?? defaultFromDate,
-	};
-}
-
-function curation(input: Partial<HomeOfferCuration> = {}): HomeOfferCuration {
-	return {
-		spotlightProductId: input.spotlightProductId ?? null,
-		criterion: input.criterion ?? "marketSaving",
-		offersLimit: input.offersLimit ?? 4,
-	};
-}
+import { type RankableHomeOffer, rankHomeOffers } from "./home-ranking";
+import { offer } from "./home-test-fixtures";
 
 function productIds(offers: RankableHomeOffer[]) {
 	return offers.map((entry) => entry.productId);
 }
 
-test("pinned offers come first, in ascending rank order", () => {
-	const ranked = rankHomeOffers(
-		[
-			offer({ productId: 1, marketPrice: "500" }),
-			offer({ productId: 2, homeOfferRank: 2 }),
-			offer({ productId: 3, homeOfferRank: 1 }),
-		],
-		"marketSaving",
-	);
-
-	expect(productIds(ranked)).toEqual([3, 2, 1]);
-});
-
-test("unpinned offers sort by the market saving on the whole MOQ block", () => {
+test("offers sort by the market saving on the whole MOQ block", () => {
 	const ranked = rankHomeOffers(
 		[
 			// 20 saved per unit over 10 kg
@@ -98,7 +40,7 @@ test("the market saving is measured against the discounted unit price", () => {
 	expect(productIds(ranked)).toEqual([2, 1]);
 });
 
-test("unpinned offers sort by discount percentage descending", () => {
+test("offers sort by discount percentage descending", () => {
 	const ranked = rankHomeOffers(
 		[
 			offer({ productId: 1, discountPercent: "10" }),
@@ -148,7 +90,7 @@ test("an offer without a discount ranks last under discountPercent", () => {
 	expect(productIds(ranked)).toEqual([2, 1]);
 });
 
-test("unpinned offers sort by paid orders descending under orderVolume", () => {
+test("offers sort by paid orders descending under orderVolume", () => {
 	const ranked = rankHomeOffers(
 		[
 			offer({ productId: 1, paidOrderCount: 3 }),
@@ -181,18 +123,6 @@ test("an offer without paid orders ranks last under orderVolume, by recency", ()
 	expect(productIds(ranked)).toEqual([3, 2, 1]);
 });
 
-test("pinned offers still come first under orderVolume", () => {
-	const ranked = rankHomeOffers(
-		[
-			offer({ productId: 1, paidOrderCount: 50 }),
-			offer({ productId: 2, homeOfferRank: 1 }),
-		],
-		"orderVolume",
-	);
-
-	expect(productIds(ranked)).toEqual([2, 1]);
-});
-
 test("offers the criterion cannot separate break the tie by fromDate then id", () => {
 	const ranked = rankHomeOffers(
 		[
@@ -216,76 +146,4 @@ test("offers the criterion cannot separate break the tie by fromDate then id", (
 	);
 
 	expect(productIds(ranked)).toEqual([3, 2, 1]);
-});
-
-test("the spotlight is resolved from the curation and excluded from the grid", () => {
-	const content = composeHomeContent(
-		[
-			offer({ productId: 1, unitPrice: "100", marketPrice: "500" }),
-			offer({ productId: 2 }),
-			offer({ productId: 3 }),
-		],
-		curation({ spotlightProductId: 2 }),
-	);
-
-	expect(content.spotlight?.productId).toBe(2);
-	expect(productIds(content.offers)).toEqual([1, 3]);
-});
-
-test("a spotlight without current terms falls back to the top of the ranking", () => {
-	const content = composeHomeContent(
-		[
-			offer({ productId: 1, unitPrice: "100", marketPrice: "110" }),
-			offer({ productId: 2, unitPrice: "100", marketPrice: "500" }),
-		],
-		curation({ spotlightProductId: 99 }),
-	);
-
-	expect(content.spotlight?.productId).toBe(2);
-	expect(productIds(content.offers)).toEqual([1]);
-});
-
-test("a product with two current terms rows appears once", () => {
-	const content = composeHomeContent(
-		[
-			offer({ productId: 1, productClientTermsId: 11 }),
-			offer({ productId: 1, productClientTermsId: 12 }),
-			offer({ productId: 2, productClientTermsId: 21 }),
-		],
-		curation({ spotlightProductId: 1 }),
-	);
-
-	expect(content.spotlight?.productClientTermsId).toBe(11);
-	expect(productIds(content.offers)).toEqual([2]);
-});
-
-test("the grid receives a pool larger than its limit, for the unit filter", () => {
-	const content = composeHomeContent(
-		Array.from({ length: HOME_OFFERS_POOL_SIZE + 5 }, (_, index) =>
-			offer({ productId: index + 1 }),
-		),
-		curation({ offersLimit: 2 }),
-	);
-
-	expect(content.offers).toHaveLength(HOME_OFFERS_POOL_SIZE);
-});
-
-test("the pool keeps pinned offers first, ahead of the ranking", () => {
-	const content = composeHomeContent(
-		[
-			offer({ productId: 1, paidOrderCount: 9 }),
-			offer({ productId: 2, homeOfferRank: 1 }),
-			offer({ productId: 3, paidOrderCount: 4 }),
-		],
-		curation({ criterion: "orderVolume", spotlightProductId: 1 }),
-	);
-
-	expect(productIds(content.offers)).toEqual([2, 3]);
-});
-
-test("no current offers leaves the spotlight band and the grid empty", () => {
-	const content = composeHomeContent([], curation());
-
-	expect(content.spotlight).toBeNull();
-	expect(content.offers).toEqual([]);
 });

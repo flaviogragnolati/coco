@@ -219,6 +219,24 @@ describe("product admin service image cleanup", () => {
 		});
 	});
 
+	it("refuses to hard-delete a product that is in a combo", async () => {
+		vi.mocked(data.getProductRelationCounts).mockResolvedValue({
+			...product({ deleted: true, active: false }),
+			_count: {
+				productClientTerms: 0,
+				productSupplierTerms: 0,
+				productLocalConstraints: 0,
+				comboItems: 2,
+			},
+		});
+		const { db } = database();
+
+		await expect(service.hardDelete({ id: 5 }, actor, db)).rejects.toThrow(
+			"porque tiene 2 combos relacionados",
+		);
+		expect(data.hardDeleteProduct).not.toHaveBeenCalled();
+	});
+
 	it("deletes every uploaded image of a hard-deleted product after commit", async () => {
 		vi.mocked(data.getProductRelationCounts).mockResolvedValue({
 			...product({ deleted: true, active: false }),
@@ -226,6 +244,7 @@ describe("product admin service image cleanup", () => {
 				productClientTerms: 0,
 				productSupplierTerms: 0,
 				productLocalConstraints: 0,
+				comboItems: 0,
 			},
 		});
 		vi.mocked(data.hardDeleteProduct).mockResolvedValue({ id: 5 });

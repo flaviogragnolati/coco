@@ -84,6 +84,10 @@ export const cartMutationOutputSchema = z.object({
 	warnings: z.array(cartWarningSchema),
 });
 
+export const cartAddComboInputSchema = z.object({
+	comboId: z.number().int().positive(),
+});
+
 export const cartAddItemInputSchema = z.object({
 	productId: z.number().int().positive(),
 	quantity: positiveDecimalStringSchema,

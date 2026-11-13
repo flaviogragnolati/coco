@@ -3,15 +3,25 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
-import type { CartItem, CartMutationOutput } from "~/shared/common/cart.types";
+import type {
+	CartAddedLine,
+	CartItem,
+	CartMutationOutput,
+} from "~/shared/common/cart.types";
 import {
 	getNextQuantity,
 	getPreviousQuantity,
 	normalizeCartQuantity,
 } from "~/shared/common/commerce.helpers";
+import type { HomeComboOption } from "~/shared/common/home.types";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
 import { api } from "~/trpc/react";
 import { decideCartBootstrap } from "./cart-bootstrap.decision";
+import {
+	describeLocalCartAdditions,
+	homeOfferToCartItem,
+} from "./cart-mappers";
+import { describeRepeatOutcome } from "./repeat-order.messages";
 import { useCartStorageSync } from "./use-cart-storage-sync";
 
 type UseCartSyncOptions = {
@@ -23,6 +33,13 @@ function notifyWarnings(output: CartMutationOutput) {
 	for (const warning of output.warnings) {
 		toast.warning(warning.message);
 	}
+}
+
+function notifyAddOutcome(lines: Pick<CartAddedLine, "name" | "outcome">[]) {
+	const messages = describeRepeatOutcome(lines);
+	if (messages.success) toast.success(messages.success);
+	for (const message of messages.info) toast.info(message);
+	for (const message of messages.warning) toast.warning(message);
 }
 
 export function useCartSync({ isAuthenticated, userId }: UseCartSyncOptions) {
@@ -150,6 +167,7 @@ export function useCartActions({
 	userId,
 }: UseCartSyncOptions) {
 	const upsertItem = useCartStore((state) => state.upsertItem);
+	const addLocalItems = useCartStore((state) => state.addItems);
 	const setLocalItemQuantity = useCartStore((state) => state.setItemQuantity);
 	const removeLocalItem = useCartStore((state) => state.removeItem);
 	const clearLocalCart = useCartStore((state) => state.clear);
@@ -211,11 +229,22 @@ export function useCartActions({
 		},
 	});
 
+	const addComboMutation = api.cart.addCombo.useMutation({
+		onError(error) {
+			toast.error(error.message || "No se pudo sumar el combo");
+		},
+		onSuccess(output) {
+			replaceCart(output.cart, userId ?? null);
+			notifyAddOutcome(output.lines);
+		},
+	});
+
 	const isPending =
 		setItemMutation.isPending ||
 		removeMutation.isPending ||
 		clearMutation.isPending ||
-		leaveCheckoutMutation.isPending;
+		leaveCheckoutMutation.isPending ||
+		addComboMutation.isPending;
 
 	const setItem = useCallback(
 		(item: CartItem) => {
@@ -232,6 +261,37 @@ export function useCartActions({
 			});
 		},
 		[isAuthenticated, setItemMutation, upsertItem, userId],
+	);
+
+	/**
+	 * Adds every available product of the combo as its own line, on top of what
+	 * the order holds. With a session the server reads the combo and today's
+	 * terms; a guest adds what the card showed.
+	 */
+	const addCombo = useCallback(
+		(option: HomeComboOption) => {
+			if (isAuthenticated && userId) {
+				addComboMutation.mutate({ comboId: option.comboId });
+				return;
+			}
+
+			const incoming = option.items.map((item) =>
+				homeOfferToCartItem(item.offer, item.quantity),
+			);
+			const outcomes = describeLocalCartAdditions(
+				useCartStore.getState().items,
+				incoming,
+			);
+			addLocalItems(incoming);
+			notifyAddOutcome([
+				...outcomes,
+				...option.unavailableNames.map((name) => ({
+					name,
+					outcome: "unavailable" as const,
+				})),
+			]);
+		},
+		[addComboMutation, addLocalItems, isAuthenticated, userId],
 	);
 
 	const updateQuantity = useCallback(
@@ -294,6 +354,7 @@ export function useCartActions({
 
 	return useMemo(
 		() => ({
+			addCombo,
 			cart,
 			clear,
 			decrement,
@@ -305,6 +366,7 @@ export function useCartActions({
 			updateQuantity,
 		}),
 		[
+			addCombo,
 			cart,
 			clear,
 			decrement,

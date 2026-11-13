@@ -40,6 +40,8 @@ export const TRANSACTIONAL_DELETE_ORDER = [
 
 /** Runs after the transactional wipe, restricted to the demo rows. */
 export const CATALOG_DELETE_ORDER = [
+	"HomeFeaturedItem",
+	"ComboItem",
 	"ProductLocalConstraints",
 	"ProductClientTerms",
 	"ProductSupplierTerms",
@@ -61,6 +63,7 @@ export const KEPT_MODELS = [
 	"PickupPoint",
 	"Destination",
 	"Category",
+	"Combo",
 	"Channel",
 	"HomeOfferSettings",
 	"WeeklyClosingSettings",
@@ -84,7 +87,8 @@ export type PurgeProduct = Flags & {
 	name: string;
 	defaultSupplierId: number | null;
 	brandId: number | null;
-	homeOfferRank: number | null;
+	/** In the home's featured list; reported, the purge removes the entry. */
+	featured: boolean;
 };
 
 export type PurgeBrand = { id: number; name: string };
@@ -104,6 +108,8 @@ export type PurgeCatalogState = {
 	supplierTerms: PurgeSupplierTerms[];
 	clientTerms: PurgeProductRow[];
 	localConstraints: PurgeProductRow[];
+	comboItems: PurgeProductRow[];
+	featuredItems: Array<{ id: number; productId: number | null }>;
 	spotlightProductId: number | null;
 };
 
@@ -127,6 +133,8 @@ export type DemoPurgePlan = {
 		clientTermIds: number[];
 		supplierTermIds: number[];
 		localConstraintIds: number[];
+		comboItemIds: number[];
+		featuredItemIds: number[];
 		clearSpotlight: boolean;
 	};
 	unclassified: { suppliers: Unclassified[]; products: Unclassified[] };
@@ -290,6 +298,14 @@ export function planDemoPurge(
 			clientTermIds: rowsOfDemo(state.clientTerms),
 			supplierTermIds: rowsOfDemo(state.supplierTerms),
 			localConstraintIds: rowsOfDemo(state.localConstraints),
+			comboItemIds: rowsOfDemo(state.comboItems),
+			featuredItemIds: rowsOfDemo(
+				state.featuredItems.flatMap((row) =>
+					row.productId === null
+						? []
+						: [{ id: row.id, productId: row.productId }],
+				),
+			),
 			clearSpotlight:
 				state.spotlightProductId !== null &&
 				demoProductIds.has(state.spotlightProductId),

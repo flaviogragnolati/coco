@@ -96,6 +96,7 @@ const productRelationCountSelect = {
 			productClientTerms: true,
 			productSupplierTerms: true,
 			productLocalConstraints: true,
+			comboItems: true,
 		},
 	},
 } satisfies Prisma.ProductSelect;

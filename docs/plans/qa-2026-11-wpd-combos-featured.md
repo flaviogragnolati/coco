@@ -1,6 +1,6 @@
 # Plan: WP-D, combos y destacados (#101)
 
-> **Estado:** Working. Feature grill del 13/11/2026. Flavio contestó las 6 preguntas por el orquestador. En la P1 y la P5 eligió distinto de lo recomendado; ver §2.
+> **Estado:** implementado en `wpd-combos-featured`; revisiones inicial y de recuperación cerradas, pendiente de integración sobre `main` con WP-B y WP-H. Registro en §16. Feature grill del 13/11/2026. Flavio contestó las 6 preguntas por el orquestador. En la P1 y la P5 eligió distinto de lo recomendado; ver §2.
 > **Origen:**
 > - `docs/plans/qa-open-tickets-2026-11-orchestration.md`: §2, §6 WP-D, §7 y §8.
 > - La fila #101 de `docs/plans/qa-open-tickets-2026-11-report.md`.
@@ -811,3 +811,51 @@ Cargar en `scripts/qa-ticket-triage.data.ts` (WP0), con la nota **arriba**:
   - el registro de ejecución en el **registro del orquestador** (§13 de la orquestación, no en este plan);
   - la transición de §14 cargada;
   - la migración de contracción anotada como pendiente en §13 de la orquestación.
+
+
+## 16. Registro de ejecución y recuperación (13/11/2026)
+
+La implementación original llegó a `5b30919` en `wpd-combos-featured`. La sesión de Claude se cortó mientras aplicaba los hallazgos de su revisor independiente. Se retomaron los cambios sin commit, preservando tanto el índice como las transiciones de QA de otros paquetes que ya estaban staged. Este registro documenta el trabajo del paquete; la integración y el estado del tablero los registra el orquestador en §13 de su handoff.
+
+### Implementación
+
+Quedaron implementados los modelos y su migración de expansión `20261113100000_combos_home_featured`, el ABM de combos, Destacados con lista mixta y banda, composición del home, mosaico y selector de personas, y el agregado aditivo al pedido para clientes e invitados. Los scripts de reset y purga contemplan las relaciones nuevas. El fixture local siembra dos combos del mismo grupo y fija su tarjeta al principio de la sección. El glosario, la navegación, `CONTEXT.md`, el ADR 0014 y la referencia de schema acompañan el cambio.
+
+### Mini review
+
+La revisión inicial de Claude usó `q-review-code` en sus dos ejes y `q-review-comments`. Estándares y especificación pasaron con hallazgos; comentarios detectó dos textos desactualizados. Se aplicaron estas correcciones:
+
+- La edición de un combo conserva el nombre de los productos que perdieron su precio y muestra que deben reemplazarse o quitarse antes de guardar. Se mantiene la validación de guardado de §7.2; no se aprobó una excepción para productos ya existentes.
+- Los estados de la lista de destacados contemplan un grupo cuyo primer combo no tiene productos disponibles pero otro hermano sí. Un producto que aparece en la banda tiene el estado «Se muestra en la banda» y no cuenta como tarjeta oculta por el límite.
+- La elección guardada de la banda, si ya no aparece entre las opciones activas, tiene un aviso explícito.
+- El reset deduplica productos destacados que convergen al mismo producto nuevo por nombre y registra los descartados. La regresión de integración incluye dos productos antiguos de igual nombre.
+- Los invitados reciben el aviso de cantidad ajustada cuando sumar alcanza el máximo de una línea existente. Se sigue el resultado visible de §8, extendiendo el texto de §5.3 que solo nombraba `added` y `unavailable`.
+- La ayuda reconoce una cantidad fija cuando el máximo no admite otro paso. Los grupos se deduplican con la misma normalización que usa el home.
+- La vista previa usa la base inyectada y devuelve un identificador estable además del nombre para las claves de React. La lista vacía usa el valor de relleno guardado.
+- Se corrigieron los cinco textos señalados por la revisión de comentarios. El schema de cantidad del ABM conserva un input string tipado: el preprocess del schema del pedido expone `unknown` y no sirve directamente para el formulario.
+- El e2e de combos exige la tarjeta del fixture visible: ya no omite la prueba si falta.
+
+La revisión independiente de recuperación, sobre `5b30919` más los cambios sin commit, cerró los dos ejes de `q-review-code` en **pass** y `q-review-comments` en **pass**. Detectó y se corrigió además un falso aviso de cantidad ajustada por `0,1 + 0,2`: se usa `quantitiesEqual`, con regresión decimal. El revisor confirmó el arreglo y 25 tests enfocados en verde. La validación después de integrar con WP-B/WP-H sigue a cargo del orquestador.
+
+### Validación
+
+Sobre la rama con los cambios de recuperación:
+
+- `./node_modules/.bin/tsgo --noEmit`: exit 0.
+- `./node_modules/.bin/vitest run`: **2088 tests pasan**, 6 omitidos del archivo de integración que requiere una base aislada; 144 archivos pasan y 1 queda omitido.
+- `./node_modules/.bin/biome check .`: **904 archivos**, sin errores.
+- Después del último hallazgo decimal: `cart-mappers.test.ts` **9/9** pasan, `tsgo` y Biome en verde; confirmación del revisor **25/25** tests enfocados.
+- `git diff --check`: sin errores.
+- E2E locales ejecutados por el orquestador con schema completo generado desde la rama y seed actual: `home-combo`, `smoke`, `home-offer-quantity` y `customer-tutorial`, **26 pasan en 37,4 s, sin omitidos**. Evidencia de esta sesión: `/tmp/coco-qa-resume/wpd-e2e.log`. El runner pasa `DATABASE_URL` local por entorno y no modifica `.env`.
+- La pasada anterior de Claude registró 30 e2e en verde, incluyendo `catalog-product-card`, antes de los cambios de revisión. No reemplaza la evidencia de recuperación.
+
+La prueba de reset se ejecutó además por el orquestador en una base nueva local `coco_qa_resume_reset_test`, separada de la de Playwright: **4/4 pasan**, evidencia `/tmp/coco-qa-resume/wpd-reset-integration.log`. Pendientes las pruebas después de integrar con WP-B/WP-H. No hubo escrituras en la base compartida, staging, commits, merge ni push durante esta recuperación del paquete.
+
+### Desvíos, límites y próximos pasos
+
+- La tarjeta de combos agrega una identidad en la vista previa, además de la forma mínima del plan, para evitar claves duplicadas cuando hay productos con nombres iguales.
+- Los grupos del formulario usan `Input` y `datalist`, permitido por §12.
+- El formulario y la configuración del admin requieren re-test con sesión de Google; no se declaran verificados por los e2e anónimos.
+- Antes de integrar, reconciliar con WP-B y WP-H; las leyendas de imágenes del mosaico se deciden según el tamaño real de sus fotos, conservando las exclusiones de miniaturas de WP-H.
+- El orquestador agrega #101 a Re-test con sus precondiciones después de migración y deploy, o lo bloquea si falta cargar los combos reales. No se crean combos reales desde scripts.
+- Sigue diferida la contracción de `Product.homeOfferRank`, posterior a una pasada de QA con WP-D desplegado.

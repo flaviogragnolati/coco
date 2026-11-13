@@ -1,17 +1,18 @@
 "use client";
 
-import type { CartItem } from "~/shared/common/cart.types";
-import type {
-	CatalogClientTerms,
-	CatalogProductListItem,
-} from "~/shared/common/catalog.types";
+import type { CartAddedLine, CartItem } from "~/shared/common/cart.types";
+import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import {
 	calculateLineTotal,
 	normalizeCartQuantity,
+	quantitiesEqual,
 	toNumber,
 	toQuantityString,
 } from "~/shared/common/commerce.helpers";
 import type { HomeOffer } from "~/shared/common/home.types";
+import { homeOfferTerms } from "~/shared/common/home-offer-terms";
+
+export { homeOfferTerms };
 
 /**
  * Adds items to a cart keyed by terms id: a line already there grows by the
@@ -43,6 +44,25 @@ export function mergeCartItems(
 	return next;
 }
 
+/** Reports normalization of an additive local update, including an existing line's cap. */
+export function describeLocalCartAdditions(
+	current: Record<string, CartItem>,
+	incoming: CartItem[],
+): Pick<CartAddedLine, "name" | "outcome">[] {
+	const merged = mergeCartItems(current, incoming);
+	return incoming.map((item) => {
+		const key = String(item.productClientTermsId);
+		const wanted =
+			(toNumber(current[key]?.quantity) ?? 0) + (toNumber(item.quantity) ?? 0);
+		return {
+			name: item.product.name,
+			outcome: quantitiesEqual(merged[key]?.quantity ?? "0", wanted)
+				? "added"
+				: "adjusted",
+		};
+	});
+}
+
 export function catalogProductToCartItem(
 	product: CatalogProductListItem,
 	quantity = product.terms.moq,
@@ -64,23 +84,6 @@ export function catalogProductToCartItem(
 			imageUrl: product.imageUrl,
 		},
 		terms: product.terms,
-	};
-}
-
-export function homeOfferTerms(offer: HomeOffer): CatalogClientTerms {
-	return {
-		id: offer.productClientTermsId,
-		moq: offer.moq,
-		moqPrice: offer.moqPrice,
-		step: offer.step,
-		stepPrice: offer.stepPrice,
-		max: offer.max,
-		unitPrice: offer.unitPrice,
-		marketPrice: offer.marketPrice,
-		discountPercent: offer.discountPercent,
-		currency: offer.currency,
-		fromDate: offer.fromDate,
-		toDate: offer.toDate,
 	};
 }
 

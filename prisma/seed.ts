@@ -98,6 +98,9 @@ const requiredTables = [
 	"cart_item_tracking_event",
 	"domain_event_outbox",
 	"audit_log",
+	"combo",
+	"combo_item",
+	"home_featured_item",
 ] as const;
 
 const seedProductSelect = {
@@ -1754,6 +1757,72 @@ async function seedMasterData(tx: Tx) {
 }
 
 type SeedMasterData = Awaited<ReturnType<typeof seedMasterData>>;
+
+const E2E_COMBO_NAME = "Combo desayuno (e2e)";
+const E2E_COMBO_GROUP = "Desayuno (e2e)";
+
+/**
+ * Two combos of one group for the home e2e: 1 and 2 people, a kilo product
+ * and a unit product each, at the minimum and at twice it. Only the 1-person
+ * combo goes to the featured list; the band is left to the ranking.
+ */
+async function seedHomeCombos(tx: Tx, data: SeedMasterData) {
+	const { products } = data;
+	const options = [
+		{
+			people: 1,
+			items: [
+				{ productId: products.tomate.id, quantity: "20" },
+				{ productId: products.aceite.id, quantity: "2" },
+			],
+		},
+		{
+			people: 2,
+			items: [
+				{ productId: products.tomate.id, quantity: "40" },
+				{ productId: products.aceite.id, quantity: "4" },
+				{ productId: products.arroz.id, quantity: "10" },
+			],
+		},
+	];
+
+	const comboIds: number[] = [];
+	for (const option of options) {
+		const existing = await tx.combo.findFirst({
+			where: { name: E2E_COMBO_NAME, people: option.people },
+			select: { id: true },
+		});
+		const values = {
+			name: E2E_COMBO_NAME,
+			description: "Lo justo para arrancar el día.",
+			people: option.people,
+			groupName: E2E_COMBO_GROUP,
+			active: true,
+			deleted: false,
+		};
+		const combo = existing
+			? await tx.combo.update({ where: { id: existing.id }, data: values })
+			: await tx.combo.create({ data: values });
+		await tx.comboItem.deleteMany({ where: { comboId: combo.id } });
+		await tx.comboItem.createMany({
+			data: option.items.map((item, index) => ({
+				comboId: combo.id,
+				productId: item.productId,
+				quantity: item.quantity,
+				sortOrder: index,
+			})),
+		});
+		comboIds.push(combo.id);
+	}
+
+	const [onePersonComboId] = comboIds;
+	if (onePersonComboId === undefined) return;
+	await tx.homeFeaturedItem.upsert({
+		where: { comboId: onePersonComboId },
+		create: { comboId: onePersonComboId, position: 0 },
+		update: { position: 0 },
+	});
+}
 
 async function createCart(
 	tx: Tx,
@@ -5231,6 +5300,7 @@ async function main() {
 		async (tx) => {
 			await resetDemoTransactionalData(tx);
 			const data = await seedMasterData(tx);
+			await seedHomeCombos(tx, data);
 			await seedTransactionalData(tx, data);
 			return buildSummary(tx);
 		},

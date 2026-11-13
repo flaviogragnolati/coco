@@ -21,14 +21,15 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		slug: "concepto-oferta-destacada",
 		kind: "concept",
 		section: "catalog",
-		label: "Oferta destacada",
-		term: "Featured offer",
+		label: "Destacado",
+		term: "Featured item",
 		definition:
-			"Un producto vigente del catálogo que aparece en la grilla de ofertas de la home, fijado por un administrador o elegido por el ranking de ofertas. Los fijados van primero y el ranking completa el resto, así la grilla nunca queda vacía ni desactualizada.",
+			"Una entrada de la sección Destacados de la home: un producto vigente o un combo. El administrador arma la lista en el orden que quiere, y el ranking de ofertas completa con productos los lugares libres, salvo que se apague. Un combo destacado trae a todo su grupo en una sola tarjeta. Lo que no tiene precio no se muestra: un producto sin términos vigentes o un combo sin ningún producto disponible se saltean. El título de la sección es fijo.",
 		aliases: [
+			"Oferta destacada",
+			"Oferta fijada",
 			"Promoción",
 			"Operación",
-			"Oferta protagonista",
 			"Pedido abierto",
 		],
 		href: "/admin/home-offers",
@@ -37,11 +38,11 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		slug: "concepto-producto-destacado",
 		kind: "concept",
 		section: "catalog",
-		label: "Producto destacado",
+		label: "Banda destacada",
 		term: "Home spotlight",
 		definition:
-			"El único producto que la home destaca en su propia banda, justo arriba de la grilla de ofertas: la elección explícita de un administrador o, cuando nadie eligió, el primero del ranking de ofertas. Queda excluido de la grilla de ofertas, así ningún producto aparece dos veces en la página.",
-		aliases: ["Oferta protagonista", "Oferta del hero", "Oferta destacada"],
+			'El producto o combo que la home muestra en su propia banda, arriba de los destacados: la elección de un administrador o, cuando nadie eligió y el relleno está prendido, el primero del ranking de ofertas. No se repite en la sección, y un combo en la banda se lleva a todo su grupo. La banda dice "Destacado".',
+		aliases: ["Producto destacado", "Oferta protagonista", "Oferta del hero"],
 		href: "/admin/home-offers",
 	},
 	{
@@ -62,9 +63,20 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Ranking de ofertas",
 		term: "Offers ranking",
 		definition:
-			"El orden en que los productos vigentes no fijados compiten por la grilla de la home: por ahorro contra el precio de góndola, por descuento de oferta o por volumen de pedidos (pedidos pagados por producto en una ventana reciente), según el criterio que eligió el administrador. Los términos sin el dato del criterio quedan últimos.",
+			"El orden en que los productos vigentes que no están en la lista de destacados compiten por los lugares que la lista deja libres: por ahorro contra el precio de góndola, por descuento de oferta o por volumen de pedidos (pedidos pagados por producto en una ventana reciente), según el criterio que eligió el administrador. Ordena solo productos, nunca combos, y el administrador lo puede apagar. Los términos sin el dato del criterio quedan últimos.",
 		aliases: ["Orden", "Top de ofertas", "Consulta"],
 		href: "/admin/home-offers",
+	},
+	{
+		slug: "concepto-grupo-de-combos",
+		kind: "concept",
+		section: "catalog",
+		label: "Grupo de combos",
+		term: "Combo group",
+		definition:
+			'Los combos que el administrador junta bajo un mismo nombre de grupo para que la home los muestre en una sola tarjeta, con un selector por personas ("1 persona", "2 personas"). Dentro de un grupo cada combo declara sus personas y no hay dos con el mismo número. Destacar cualquier combo del grupo muestra al grupo entero, abierto en ese combo.',
+		aliases: ["Familia de combos", "Combo base", "Tamaño", "Variante"],
+		href: "/admin/combos",
 	},
 	{
 		slug: "concepto-moq",
@@ -323,12 +335,42 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		href: "/admin/products",
 	},
 	{
+		slug: "entidad-combo",
+		kind: "entity",
+		section: "catalog",
+		label: "Combo",
+		definition:
+			"Un conjunto con nombre de productos del catálogo, cada uno en su cantidad, que el cliente suma al pedido de una vez. Cada producto entra como una línea más, a su precio de hoy. No tiene precio, stock ni línea propia (ADR 0014). Puede tener descripción, personas y grupo.",
+		occurrences: [{ code: "Combo", db: "combo" }],
+		href: "/admin/combos",
+	},
+	{
+		slug: "entidad-producto-de-combo",
+		kind: "entity",
+		section: "catalog",
+		label: "Producto de combo",
+		definition:
+			"Un producto dentro de un combo, con la cantidad que suma y su orden. La cantidad se valida contra el mínimo y el paso del producto al guardar. Un producto que está en un combo no se puede borrar definitivamente.",
+		occurrences: [{ code: "ComboItem", db: "combo_item" }],
+		href: "/admin/combos",
+	},
+	{
+		slug: "entidad-destacado",
+		kind: "entity",
+		section: "catalog",
+		label: "Destacado",
+		definition:
+			"Una entrada de la lista de destacados de la home: un producto o un combo, en la posición que eligió el administrador.",
+		occurrences: [{ code: "HomeFeaturedItem", db: "home_featured_item" }],
+		href: "/admin/home-offers",
+	},
+	{
 		slug: "entidad-configuracion-de-ofertas-del-home",
 		kind: "entity",
 		section: "catalog",
-		label: "Configuración de ofertas del home",
+		label: "Configuración de destacados",
 		definition:
-			"La única fila que guarda cómo se arma la home: el producto destacado elegido, el criterio del ranking de ofertas y cuántas ofertas entran en la grilla. Las posiciones fijadas viven en cada producto, no acá.",
+			"La única fila que guarda cómo se arma la home: la banda destacada (un producto o un combo), el criterio del ranking de ofertas, cuántos lugares tiene la sección y si el ranking completa los libres. La lista vive en Destacado.",
 		occurrences: [{ code: "HomeOfferSettings", db: "home_offer_settings" }],
 		href: "/admin/home-offers",
 	},

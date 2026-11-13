@@ -180,6 +180,9 @@ function buildRelationBlockMessage(record: ProductRelationCountRecord) {
 		record._count.productLocalConstraints > 0
 			? `${record._count.productLocalConstraints} restricciones locales`
 			: null,
+		record._count.comboItems > 0
+			? `${record._count.comboItems} combo${record._count.comboItems === 1 ? "" : "s"}`
+			: null,
 	].filter(Boolean);
 
 	return `No se puede eliminar definitivamente "${record.name}" porque tiene ${blockingParts.join(", ")} relacionados.`;
@@ -525,7 +528,8 @@ export async function hardDelete(
 		const hasRestrictiveRelations =
 			product._count.productClientTerms > 0 ||
 			product._count.productSupplierTerms > 0 ||
-			product._count.productLocalConstraints > 0;
+			product._count.productLocalConstraints > 0 ||
+			product._count.comboItems > 0;
 
 		if (hasRestrictiveRelations) {
 			throw new AdminCrudError(

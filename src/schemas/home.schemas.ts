@@ -36,15 +36,37 @@ export const homeOfferSchema = z.object({
 	currency: catalogCurrencySchema,
 });
 
-export const homeOffersOutputSchema = z.array(homeOfferSchema);
+export const homeComboItemSchema = z.object({
+	offer: homeOfferSchema,
+	quantity: decimalOutputSchema,
+	lineTotal: decimalOutputSchema,
+});
 
-/**
- * `offers` is a pool larger than the grid so the unit filter can refill it on
- * the client; `offersLimit` is how many of them the grid shows at once.
- */
+/** One combo as the card shows it today: only the products with current terms. */
+export const homeComboOptionSchema = z.object({
+	comboId: z.number().int().positive(),
+	name: z.string(),
+	description: z.string().nullable(),
+	people: z.number().int().positive().nullable(),
+	items: z.array(homeComboItemSchema).min(1),
+	unavailableNames: z.array(z.string()),
+	total: decimalOutputSchema,
+	currency: catalogCurrencySchema,
+});
+
+/** The combos of one group, shown as one card with a people selector. */
+export const homeComboCardSchema = z.object({
+	key: z.string(),
+	initialComboId: z.number().int().positive(),
+	options: z.array(homeComboOptionSchema).min(1),
+});
+
+export const homeFeatureSchema = z.discriminatedUnion("kind", [
+	z.object({ kind: z.literal("product"), offer: homeOfferSchema }),
+	z.object({ kind: z.literal("combo"), combo: homeComboCardSchema }),
+]);
+
 export const homeContentOutputSchema = z.object({
-	spotlight: homeOfferSchema.nullable(),
-	offers: homeOffersOutputSchema,
-	offersLimit: z.number().int().positive(),
-	offersCriterion: homeOffersCriterionSchema,
+	spotlight: homeFeatureSchema.nullable(),
+	featured: z.array(homeFeatureSchema),
 });

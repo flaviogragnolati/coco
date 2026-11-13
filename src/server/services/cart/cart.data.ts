@@ -289,3 +289,23 @@ export async function findCartById(database: CartDbClient, id: number) {
 		select: cartSelect,
 	});
 }
+
+/** An active combo's products in their saved order, for adding them to the cart. */
+export async function findActiveComboForCart(
+	database: CartDbClient,
+	comboId: number,
+) {
+	return database.combo.findFirst({
+		where: { id: comboId, active: true, deleted: false },
+		select: {
+			items: {
+				orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+				select: {
+					productId: true,
+					quantity: true,
+					product: { select: { name: true } },
+				},
+			},
+		},
+	});
+}

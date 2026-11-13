@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
 import { FaqSection } from "~/features/home/_components/faq-section";
+import { FeaturedSection } from "~/features/home/_components/featured-section";
 import { HomeFooter } from "~/features/home/_components/home-footer";
 import { HomeHero } from "~/features/home/_components/home-hero";
 import { HomeSpotlightBand } from "~/features/home/_components/home-spotlight-band";
 import { HowItWorksSection } from "~/features/home/_components/how-it-works-section";
-import { OffersSection } from "~/features/home/_components/offers-section";
 import { getFaqItems } from "~/features/home/home-content";
 import { getSession } from "~/server/better-auth/server";
 import {
@@ -21,17 +21,13 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-	const [
-		session,
-		{ spotlight, offers, offersLimit, offersCriterion },
-		schedule,
-		pickupPoints,
-	] = await Promise.all([
-		getSession(),
-		getHomeContent(),
-		getWeeklyClosingSchedule(),
-		getFaqPickupPoints(),
-	]);
+	const [session, { spotlight, featured }, schedule, pickupPoints] =
+		await Promise.all([
+			getSession(),
+			getHomeContent(),
+			getWeeklyClosingSchedule(),
+			getFaqPickupPoints(),
+		]);
 	const user = session?.user;
 	const cartProps = {
 		isAuthenticated: Boolean(user),
@@ -43,14 +39,9 @@ export default async function Home() {
 			<HomeHero schedule={schedule} />
 			<HowItWorksSection schedule={schedule} />
 			{spotlight ? (
-				<HomeSpotlightBand offer={spotlight} {...cartProps} />
+				<HomeSpotlightBand feature={spotlight} {...cartProps} />
 			) : null}
-			<OffersSection
-				criterion={offersCriterion}
-				offers={offers}
-				offersLimit={offersLimit}
-				{...cartProps}
-			/>
+			<FeaturedSection featured={featured} {...cartProps} />
 			<FaqSection items={getFaqItems(schedule, pickupPoints)} />
 			<HomeFooter />
 		</main>
