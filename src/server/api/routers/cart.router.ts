@@ -1,4 +1,6 @@
 import {
+	cartAddComboInputSchema,
+	cartAddItemsOutputSchema,
 	cartMutationOutputSchema,
 	cartRemoveItemInputSchema,
 	cartSetItemQuantityInputSchema,
@@ -7,6 +9,7 @@ import {
 } from "~/schemas/cart.schemas";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import * as cartService from "~/server/services/cart/cart.service";
+import * as comboCartService from "~/server/services/cart/combo-cart.service";
 
 export const cartRouter = createTRPCRouter({
 	getCurrent: protectedProcedure.output(cartSnapshotSchema).query(({ ctx }) => {
@@ -25,6 +28,13 @@ export const cartRouter = createTRPCRouter({
 		.output(cartMutationOutputSchema)
 		.mutation(({ ctx, input }) => {
 			return cartService.setItemQuantity(ctx.session.user.id, input);
+		}),
+
+	addCombo: protectedProcedure
+		.input(cartAddComboInputSchema)
+		.output(cartAddItemsOutputSchema)
+		.mutation(({ ctx, input }) => {
+			return comboCartService.addCombo(ctx.session.user.id, input.comboId);
 		}),
 
 	removeItem: protectedProcedure
