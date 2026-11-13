@@ -89,7 +89,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Precio por paso",
 		term: "Step price",
 		definition:
-			'El precio de oferta de un paso de cantidad: precio por unidad por el paso, con el descuento de oferta aplicado. Es el precio principal de la tarjeta de producto y se rotula con lo que compra el paso ("por 500 g", "por frasco 370 g"). Sin paso, toma la cantidad mínima. Nunca se muestra el precio del paso guardado en los términos.',
+			'El precio de oferta de un paso de cantidad: precio por unidad por el paso, con el descuento de oferta aplicado. Es el precio principal de la tarjeta de producto y se rotula con lo que compra el paso ("por 500 g", "por bidón"). En los envasados se nombra solo el envase, porque el tamaño ya está en el nombre. Sin paso, toma la cantidad mínima. Nunca se muestra el precio del paso guardado en los términos.',
 		aliases: ["Precio del paso", "Precio del bloque"],
 		href: "/admin/product-terms",
 	},
@@ -100,7 +100,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Precio comparativo",
 		term: "Comparison price",
 		definition:
-			'El precio de oferta por kg o por litro que se muestra debajo del precio por paso, para comparar productos que se venden en pasos y envases distintos ("$ 22.600 / kg"). En productos por peso es el precio por unidad llevado a kg; en productos por unidad se lee del tamaño de la presentación ("370 g", "0,5 L"). No se muestra si el tamaño no se puede leer o si repite el precio por paso (paso de 1 kg o 1 L).',
+			'El precio de oferta por kg o por litro que se muestra debajo del precio por paso, para comparar productos que se venden en pasos y envases distintos ("$ 22.600 / kg"). En productos por peso es el precio por unidad llevado a kg; en productos por unidad se lee del tamaño de la presentación ("370 g", "0,5 L"). No se muestra si el tamaño no se puede leer.',
 		aliases: ["Precio por kg", "Precio por litro"],
 		href: "/admin/product-terms",
 	},
