@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
+import { TRANSFER_DISCOUNT_MAX_PERCENT } from "~/shared/common/transfer-discount";
 
 export const catalogCurrencySchema = z.enum(["ARS", "USD", "EUR", "BRL"]);
 
@@ -74,3 +75,8 @@ export const catalogProductDetailSchema = catalogProductListItemSchema.extend({
 export const catalogProductListOutputSchema = z.array(
 	catalogProductListItemSchema,
 );
+
+/** Null when there is no transfer discount to show (ADR 0013). */
+export const transferDiscountSchema = z.object({
+	percent: z.number().positive().max(TRANSFER_DISCOUNT_MAX_PERCENT).nullable(),
+});

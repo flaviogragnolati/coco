@@ -12,6 +12,7 @@ import type {
 import { selectProductImage } from "~/shared/common/commerce.helpers";
 import { toCatalogCategory } from "../_base/catalog-category.mapper";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
+import { getPublicTransferDiscountPercent } from "../payments/external/external-payment-config.service";
 import {
 	type CatalogProductDetailRecord,
 	type CatalogProductListRecord,
@@ -67,4 +68,8 @@ export async function getProductDetail(id: number) {
 
 	const detail = mapDetail(record);
 	return detail ? catalogProductDetailSchema.parse(detail) : null;
+}
+
+export async function getTransferDiscount() {
+	return { percent: await getPublicTransferDiscountPercent(db) };
 }

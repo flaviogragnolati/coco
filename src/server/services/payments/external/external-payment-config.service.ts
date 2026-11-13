@@ -5,6 +5,7 @@ import { externalPaymentSettingsSchema } from "~/schemas/admin/payment.schemas";
 import type { db } from "~/server/db";
 import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
 import type { ExternalPaymentSettings } from "~/shared/common/admin-crud/payment.types";
+import { normalizeTransferDiscountPercent } from "~/shared/common/transfer-discount";
 
 type PaymentDb = typeof db | Prisma.TransactionClient;
 
@@ -18,6 +19,7 @@ export const defaultExternalPaymentSettings: ExternalPaymentSettings = {
 	taxId: null,
 	instructions: null,
 	expiresInHours: 72,
+	transferDiscountPercent: 0,
 };
 
 export function parseExternalPaymentSettings(input: unknown) {
@@ -40,6 +42,17 @@ export async function getExternalPaymentConfig(database: PaymentDb) {
 		createdAt: config?.createdAt ?? null,
 		updatedAt: config?.updatedAt ?? null,
 	};
+}
+
+/**
+ * The transfer discount a customer can see before paying: only the percent,
+ * and only while the external provider is enabled (ADR 0013).
+ */
+export async function getPublicTransferDiscountPercent(database: PaymentDb) {
+	const config = await getExternalPaymentConfig(database);
+	return config.enabled
+		? normalizeTransferDiscountPercent(config.settings.transferDiscountPercent)
+		: null;
 }
 
 export async function upsertExternalPaymentConfig(

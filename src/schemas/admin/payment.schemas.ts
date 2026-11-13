@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { decimalOutputSchema } from "~/schemas/_schema-helpers";
 import { catalogCurrencySchema } from "~/schemas/catalog.schemas";
+import { TRANSFER_DISCOUNT_MAX_PERCENT } from "~/shared/common/transfer-discount";
 
 const emptyStringToNull = (value: unknown) => {
 	if (typeof value !== "string") return value;
@@ -240,6 +241,18 @@ export const externalPaymentSettingsSchema = z.object({
 		.int()
 		.positive("La expiración debe ser positiva")
 		.default(72),
+	transferDiscountPercent: z.coerce
+		.number()
+		.min(0, "El descuento no puede ser negativo")
+		.max(
+			TRANSFER_DISCOUNT_MAX_PERCENT,
+			`El descuento no puede superar el ${TRANSFER_DISCOUNT_MAX_PERCENT} %`,
+		)
+		.refine(
+			(value) => Number.isInteger(Number((value * 100).toPrecision(12))),
+			"Usá hasta dos decimales",
+		)
+		.default(0),
 });
 
 export const externalPaymentInstructionsSchema =
