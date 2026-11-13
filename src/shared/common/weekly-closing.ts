@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { BUSINESS_TZ, getNextClosing } from "./date.helpers";
+import { BUSINESS_TZ, pad2 } from "./date.helpers";
 
 export type WeeklyClosingSchedule = {
 	/** 0 = domingo … 6 = sábado, the `Date#getDay` convention. */
@@ -37,14 +37,10 @@ export function weekdayName(weekday: number) {
 	return WEEKDAY_NAMES[weekday] ?? "";
 }
 
-/** "los miércoles", "los sábados": only the weekend names take an s. */
+/** "miércoles", "sábados": only the weekend names take an s. */
 export function weekdayPlural(weekday: number) {
 	const name = weekdayName(weekday);
 	return weekday === 0 || weekday === 6 ? `${name}s` : name;
-}
-
-function pad2(value: number) {
-	return String(value).padStart(2, "0");
 }
 
 /** "12", "18:30", "9". */
@@ -119,7 +115,7 @@ export function formatTimeUntilClosing(now: Date, closing: Date) {
 	return remaining(minuteCount, "min");
 }
 
-/** "Los pedidos cierran los miércoles al mediodía y llegan en 7 a 10 días." */
+/** "Los pedidos cierran los miércoles al mediodía y llegan en 7 a 10 días."; any time but 12:00 reads "a las 18:30". */
 export function heroClosingLine(schedule: WeeklyClosingSchedule) {
 	const { closingHour, closingMinute } = schedule;
 	const time =
@@ -132,8 +128,11 @@ export function heroClosingLine(schedule: WeeklyClosingSchedule) {
 }
 
 /** "Entra en el cierre del miércoles 18/11 a las 12 · Llega en 7 a 10 días". */
-export function productClosingLine(now: Date, schedule: WeeklyClosingSchedule) {
+export function productClosingLine(
+	nextClosing: Date,
+	schedule: WeeklyClosingSchedule,
+) {
 	return `Entra en el cierre del ${formatClosingDate(
-		getNextClosing(now, schedule),
+		nextClosing,
 	)} · Llega en ${formatDeliveryLeadTime(schedule)}`;
 }

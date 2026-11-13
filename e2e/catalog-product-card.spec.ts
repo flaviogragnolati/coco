@@ -177,7 +177,7 @@ test("the product detail has a single close control and no filler texts", async 
 			"Producto disponible para pedidos mayoristas compartidos.",
 		),
 	).toHaveCount(0);
-	// The generic subtitle gave way to the weekly closing the product joins.
+	// The visible subtitle is the weekly closing the product joins.
 	await expect(
 		dialog.locator("[data-slot='dialog-description']"),
 	).toBeVisible();

@@ -57,7 +57,7 @@ export function formatDateTimeMedium(value: Date | string) {
 	return mediumFormatter.format(toDate(value));
 }
 
-function pad2(value: number) {
+export function pad2(value: number) {
 	return String(value).padStart(2, "0");
 }
 

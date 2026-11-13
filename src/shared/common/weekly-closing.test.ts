@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { weeklyClosingScheduleSchema } from "~/schemas/weekly-closing.schemas";
+import { getNextClosing } from "./date.helpers";
 import {
 	DEFAULT_WEEKLY_CLOSING,
 	formatClosingDate,
@@ -91,7 +92,10 @@ describe("closing copy", () => {
 	it("tells the product detail which closing it joins", () => {
 		expect(
 			productClosingLine(
-				new Date("2026-11-13T18:00:00Z"),
+				getNextClosing(
+					new Date("2026-11-13T18:00:00Z"),
+					DEFAULT_WEEKLY_CLOSING,
+				),
 				DEFAULT_WEEKLY_CLOSING,
 			),
 		).toBe(
@@ -118,6 +122,17 @@ describe("weeklyClosingScheduleSchema", () => {
 				...override,
 			}).success,
 		).toBe(false);
+	});
+
+	it("asks in Spanish for a field left blank", () => {
+		const result = weeklyClosingScheduleSchema.safeParse({
+			...DEFAULT_WEEKLY_CLOSING,
+			closingHour: Number.NaN,
+		});
+
+		expect(result.error?.issues[0]?.message).toBe(
+			"Completá la hora del cierre",
+		);
 	});
 
 	it("rejects a maximum below the minimum on the maximum field", () => {

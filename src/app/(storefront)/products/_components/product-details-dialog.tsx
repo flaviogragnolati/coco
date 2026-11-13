@@ -92,7 +92,7 @@ export function ProductDetailsDialog({
 					</DialogTitle>
 					{closing ? (
 						<DialogDescription className="text-muted-foreground text-sm">
-							{productClosingLine(closing.now, closing.schedule)}
+							{productClosingLine(closing.nextClosing, closing.schedule)}
 						</DialogDescription>
 					) : (
 						<DialogDescription className="sr-only">

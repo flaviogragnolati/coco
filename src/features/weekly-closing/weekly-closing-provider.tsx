@@ -26,6 +26,18 @@ const MINUTE_MS = 60_000;
 const MAX_TRUSTED_SKEW_MS = 2 * MINUTE_MS;
 
 /**
+ * Measured once per document, at the hydrating mount. A later remount can get
+ * a cached layout payload (back/forward), whose server instant is stale, not a
+ * sign of a wrong device clock.
+ */
+let documentSkewMs: number | undefined;
+
+function measureSkew(serverNowIso: string) {
+	const measured = Date.parse(serverNowIso) - Date.now();
+	return Math.abs(measured) > MAX_TRUSTED_SKEW_MS ? measured : 0;
+}
+
+/**
  * One minute-resolution clock for every closing text in the storefront. The
  * first client render reuses the server instant so hydration matches; after
  * mount the clock follows the device, corrected by the server offset when the
@@ -43,8 +55,8 @@ export function WeeklyClosingProvider({
 	const [now, setNow] = useState(() => new Date(serverNowIso));
 
 	useEffect(() => {
-		const measured = Date.parse(serverNowIso) - Date.now();
-		const skew = Math.abs(measured) > MAX_TRUSTED_SKEW_MS ? measured : 0;
+		documentSkewMs ??= measureSkew(serverNowIso);
+		const skew = documentSkewMs;
 		const current = () => Date.now() + skew;
 		const tick = () => setNow(new Date(current()));
 

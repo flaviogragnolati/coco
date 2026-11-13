@@ -1,7 +1,7 @@
 "use client";
 
 import { SaveIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
@@ -26,7 +26,7 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { weeklyClosingScheduleSchema } from "~/schemas/weekly-closing.schemas";
-import { getNextClosing } from "~/shared/common/date.helpers";
+import { getNextClosing, pad2 } from "~/shared/common/date.helpers";
 import {
 	formatClosingDate,
 	WEEKDAYS_FROM_MONDAY,
@@ -46,10 +46,6 @@ type FormState = {
 };
 
 type FieldName = "closingWeekday" | "closingTime" | "deliveryDaysMax";
-
-function pad2(value: number) {
-	return String(value).padStart(2, "0");
-}
 
 function capitalize(text: string) {
 	return text.charAt(0).toUpperCase() + text.slice(1);
@@ -89,9 +85,15 @@ export function WeeklyClosingClient() {
 	});
 	const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
 
+	// A window-focus refetch hands back a new object for the same row; reseeding
+	// on it would throw away unsaved edits, so only a newer save reseeds.
+	const seededAt = useRef<number | null>(null);
 	useEffect(() => {
-		if (!settingsQuery.data) return;
 		const settings = settingsQuery.data;
+		if (!settings) return;
+		const savedAt = settings.updatedAt.getTime();
+		if (seededAt.current === savedAt) return;
+		seededAt.current = savedAt;
 		setForm({
 			weekday: String(settings.closingWeekday),
 			time: `${pad2(settings.closingHour)}:${pad2(settings.closingMinute)}`,
