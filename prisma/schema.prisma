@@ -274,6 +274,22 @@ model HomeOfferSettings {
   @@map("home_offer_settings")
 }
 
+// Weekly closing shown to customers. Informative only: nothing in ordering or
+// operations reads it. Singleton by convention (id = 1), like HomeOfferSettings;
+// readers fall back to the code defaults while the row does not exist.
+model WeeklyClosingSettings {
+  id              Int      @id @default(1)
+  closingWeekday  Int      @default(3) // 0 = domingo … 6 = sábado (Date#getDay convention)
+  closingHour     Int      @default(12) // Argentina time (BUSINESS_TZ)
+  closingMinute   Int      @default(0)
+  deliveryDaysMin Int      @default(7)
+  deliveryDaysMax Int      @default(10)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@map("weekly_closing_settings")
+}
+
 enum HomeOffersCriterion {
   marketSaving
   discountPercent

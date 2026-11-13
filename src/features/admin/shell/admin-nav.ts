@@ -1,5 +1,6 @@
 import {
 	BoxesIcon,
+	CalendarClockIcon,
 	ClipboardCheckIcon,
 	ClipboardListIcon,
 	CreditCardIcon,
@@ -95,6 +96,11 @@ export const adminNavGroups: AdminNavGroup[] = [
 				title: "Ofertas del home",
 				href: "/admin/home-offers",
 				icon: SparklesIcon,
+			},
+			{
+				title: "Cierre semanal",
+				href: "/admin/weekly-closing",
+				icon: CalendarClockIcon,
 			},
 			{
 				title: "Transportistas",

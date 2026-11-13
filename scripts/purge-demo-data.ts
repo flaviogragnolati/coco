@@ -184,6 +184,10 @@ const kept: Record<
 		label: "Configuración del home",
 		count: (tx) => tx.homeOfferSettings.count(),
 	},
+	WeeklyClosingSettings: {
+		label: "Cierre semanal",
+		count: (tx) => tx.weeklyClosingSettings.count(),
+	},
 	AuditLog: { label: "Auditoría", count: (tx) => tx.auditLog.count() },
 	DomainEventOutbox: {
 		label: "Outbox de eventos",

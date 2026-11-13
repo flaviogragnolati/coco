@@ -6,6 +6,7 @@ import { MobileNavMenu } from "~/components/mobile-nav-menu";
 import { NavbarSearch } from "~/components/navbar-search";
 import { Button } from "~/components/ui/button";
 import { UserMenu } from "~/components/user-menu";
+import { ClosingCountdown } from "~/features/weekly-closing/closing-countdown";
 import { isAdminRole } from "~/server/auth/auth.utils";
 import type { Session } from "~/server/better-auth";
 
@@ -41,6 +42,7 @@ export function AppNavbar({ session }: AppNavbarProps) {
 				<NavbarSearch className="hidden max-w-[460px] flex-1 md:block" />
 
 				<div className="ml-auto flex items-center gap-2">
+					<ClosingCountdown className="hidden text-muted-foreground text-sm lg:block" />
 					<HelpMenu />
 					<CartNavButton
 						isAuthenticated={Boolean(user)}

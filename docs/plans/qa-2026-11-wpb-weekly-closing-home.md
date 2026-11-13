@@ -1,6 +1,7 @@
 # Plan reducido: WP-B, cierre semanal y textos del home (#98, #99, #100, #104 y la línea de cierre de #107)
 
-> **Estado:** Working. Simple grill del 13/11/2026; Flavio contestó las 5 preguntas por el orquestador (eligió la opción recomendada en todas).
+> **Estado:** implementado el 13/11/2026 en la rama `wpb-weekly-closing-home`, sobre `main` con WP-A, WP-C, WP-G y WP0 mergeados. Revisión hecha y hallazgos corregidos; e2e en verde contra la base local. Sin merge ni push. Registro de ejecución en §13.
+> Simple grill del 13/11/2026; Flavio contestó las 5 preguntas por el orquestador (eligió la opción recomendada en todas).
 > **Origen:** `docs/plans/qa-open-tickets-2026-11-orchestration.md` (§2, §6 WP-B, §7, §8, §9) y `docs/plans/qa-open-tickets-2026-11-report.md` (filas #98, #99, #100, #104, #107).
 > **Base:** `main` con **WP-A ya mergeado** (rama `wpa-quick-fixes`, plan `docs/plans/qa-2026-11-wpa-quick-fixes.md`). WP-A deja:
 > - la marca "CoCo" en los textos (el wordmark "coco" queda en minúscula);
@@ -111,7 +112,9 @@ model WeeklyClosingSettings {
     ```
   - **No inserta fila.** Sin fila, los lectores usan los defaults del código (miércoles 12:00, 7 a 10 días).
   - El timestamp va después de `20261113000000_qa_ticket_status_retest` (WP0).
-- **La aplica Flavio** en la base compartida (`pnpm db:migrate`), antes del deploy del código.
+- **La aplica Flavio** en la base compartida, antes del deploy del código. La base no tiene historial de Prisma (`pnpm db:migrate` falla con P3005), así que se aplica como script:
+  `pnpm exec prisma db execute --file prisma/migrations/20261113120000_weekly_closing_settings/migration.sql`
+  y se verifica con `pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma`, que debe dar vacío (ver `docs/README.md`).
 - `docs/schema-reference.md`:
   - una fila en la tabla de modelos, junto a `HomeOfferSettings` (`:170`): "Weekly closing singleton · One row, `id = 1`; read with defaults when missing, written through an upsert; informative only";
   - una mención en la sección de singletons (`:699`).
@@ -509,3 +512,136 @@ Ninguna bloqueante. A revisar por Flavio en el re-test: los textos preliminares 
 ## 12. Definición de hecho
 
 Se cumplen todos los ítems de §10. El registro de ejecución se agrega a este plan (commits, salida de validación y desvíos) y hay una fila en §13 de la orquestación. Las transiciones de §11 están en `scripts/qa-ticket-triage.data.ts`. La revisión está hecha y sus hallazgos corregidos o registrados.
+
+## 13. Registro de ejecución (13/11/2026)
+
+Rama `wpb-weekly-closing-home`. Arrancó sobre `main` `6d53286` (WP-A mergeado en `86f4f26`). Antes de cerrar se rebaseó sobre `7b97050`, que trae WP-C (`b04ebdc`), WP-G y WP0, sin conflictos. El plan coincidió con el código. Lo que cambió en `main` después del grill:
+- **WP0 ya está en `main`.** Su migración es `20261113000000_qa_ticket_status_retest`, y la de WP-B (`20261113120000`) va después, como pedía §5.1.
+- **WP-C se mergeó primero.** El diálogo de la ficha ya tenía su imagen, su precio y su botón. WP-B solo cambia el `DialogDescription`.
+
+### 13.1. Commits
+
+| Pasos | Commit | Qué se hizo |
+| --- | --- | --- |
+| 5.1, 5.2 | `e4e20b7` | Modelo `WeeklyClosingSettings` y migración `20261113120000_weekly_closing_settings`. La migración crea la tabla con el CHECK `weekly_closing_settings_values_check` y no inserta fila. Se generó con `prisma migrate diff --from-schema … --to-schema … --script`, sin conectarse a ninguna base, y el CHECK se agregó a mano. También entran `weeklyClosingScheduleSchema`, `getNextClosing` en `date.helpers.ts`, los formateadores en `src/shared/common/weekly-closing.ts` y sus tests. |
+| 5.3, 5.4 | `1339f4c` | Lectura pública `findWeeklyClosingSettings` y `getWeeklyClosingSchedule` (`cache` de React). Del lado del admin: data, servicio con `AuditLog` `weeklyClosingSettings.update`, router `admin.weeklyClosing` con `adminProcedure` y la pantalla `/admin/weekly-closing`. Además, el ítem de nav "Cierre semanal", las 2 entradas del glosario, `listFaqPickupPoints` y el test del servicio. |
+| — | `67cd3e1` | `scripts/purge-demo-data*` cuentan el modelo nuevo entre los que nunca se borran (ver §13.3). |
+| 5.5 | `f1b1f9d` | `WeeklyClosingProvider`, `ClosingCountdown`, el layout de la tienda, la franja y la barra. |
+| 5.6, 5.7, 5.9 | `9d0ea22` | `home-content.ts` pasa a funciones puras: `heroCopy`, `getHowItWorksSteps` y `getFaqItems`. También el hero, "Cómo funciona" con el diagrama, el FAQ por props, la home, la escena del tutorial con `tutorialWeeklyClosing`, el guion y sus tests. |
+| 5.8 | `1b06a31` | Línea de cierre en el subtítulo de la ficha. |
+| §7 e2e | `202c70b` | `smoke`, `home-section-links` y la aserción del subtítulo de `catalog-product-card`. |
+| 5.1, 5.10 | `a3821c2` | `docs/schema-reference.md` y las dos enmiendas de `home-community-redesign.md`. |
+| Revisión | `7730595` | Hallazgos de la revisión (§13.4). |
+| e2e | `0cdbe33` | Reintento del clic en "Ayuda" en `customer-tutorial.spec.ts:58` (§13.3) y la fila del guion en `docs/plans/customer-tutorial.md`. |
+
+### 13.2. Validación
+
+| Comando | Resultado |
+| --- | --- |
+| `pnpm typecheck` | Sin errores. |
+| `pnpm test` | 142 archivos pasan y 1 se saltea; 2084 tests pasan y 6 se saltean. |
+| `pnpm check` | 898 archivos, sin cambios ni errores. |
+| `TZ=UTC pnpm vitest run src/shared/common/date.helpers.test.ts src/shared/common/weekly-closing.test.ts` | 41/41. |
+| `TZ=Asia/Tokyo pnpm vitest run …` (los mismos archivos) | 41/41. El revisor los corrió además con `TZ=America/Santiago`: también pasan. |
+| Barrido de T18 (`grep -rniE "…cierra(n)? el|esta semana|garantizad"` sobre `src/features/home`, `src/components`, `src/features/weekly-closing` y `weekly-closing.ts`) | Vacío. |
+
+**e2e contra la base local.** Se corrieron con el script con lock y `E2E_PREP` aplicando la migración de WP-B sobre el dump sembrado. Corrida final, con todo commiteado: **32/32**.
+
+| Spec | Resultado |
+| --- | --- |
+| `smoke` | 16/16. Incluye el test nuevo del contador: barra a 1280 y franja a 390. |
+| `home-section-links` | 3/3. Los tests se reescribieron sobre el link del pie "Cómo funciona". |
+| `catalog-product-card` | 4/4. |
+| `customer-tutorial` | 9/9 (ver `:58` en §13.3). |
+
+**Revisión visual**, con un spec temporal de capturas que no se commiteó:
+- **A 1024, 1100, 1280 y 390 px:** la barra mide 64 px, una sola fila, sin sesión. A 1024 entran el buscador (achicado), "Cierre del pedido: faltan 4 días y 23 h", ayuda, pedido e ingresar. **No hizo falta subir el corte a `xl`.**
+- **Consola en `/`:** sin errores ni warnings de hidratación.
+- **Ficha:** "Entra en el cierre del miércoles 18/11 a las 12 · Llega en 7 a 10 días".
+- **Tutorial:** la escena del home hace 0 requests a `/api/trpc`.
+
+**No se pudo mirar:**
+- **La barra con sesión iniciada.** El avatar mide lo mismo que el ícono de ingresar (42 px).
+- **La pantalla del admin.** No hay spec del admin con login, así que el e2e opcional de §7 no se agregó.
+- **La respuesta 5 del FAQ con un punto de retiro.** La base sembrada no tiene puntos activos. Los tres casos (0, 1 y 2 puntos) están en `home-content.test.ts`.
+
+### 13.3. Desvíos y decisiones
+
+- **Migración para Flavio:** el §5.1 corregido dice que se aplica con `prisma db execute`, porque la base compartida no tiene historial (P3005), y que se verifica con `prisma migrate diff`. Corrección del orquestador.
+- **Zod:** el objeto sin `refine` se exporta aparte (`weeklyClosingScheduleObjectSchema`). Así la salida del admin lo extiende con `updatedAt`, porque Zod 4 no permite `extend` sobre un esquema refinado. Los campos vacíos dan mensajes en castellano ("Completá la hora del cierre").
+- **Formateadores extra**, además de los de §5.2:
+  - `formatClosingTime` ("a las 12");
+  - `formatClosingSlot` ("miércoles a las 12");
+  - `formatDeliveryLeadTimeBetween` ("entre 7 y 10 días", o "7 días").
+
+  Los usan los pasos y el FAQ.
+- **`productClosingLine`:** recibe el `nextClosing` del contexto, no `now`, para que la ficha y el contador no puedan diferir.
+- **Gramática:** 1:00 dice "a la 1". Medianoche dice "a las 0", porque la UI no lo prohíbe; se dejó así.
+- **Contador:**
+  - El reloj mide el desvío contra el servidor **una vez por documento**: un layout cacheado al volver atrás trae una hora vieja, y no por eso el reloj del dispositivo está mal.
+  - Si falla la lectura de la tienda (tabla sin migrar o fila inválida), se usan los defaults y se loguea: la página no da 500.
+- **Glosario:** los alias de `concepto-cierre-semanal` son el `_Avoid_` de `CONTEXT.md` ("Fecha límite", "Ventana de compra", "Deadline").
+- **Scripts de datos:** `KEPT_MODELS` de `purge-demo-data.plan.ts` (y por herencia `RESET_PRESERVED_MODELS`) incluye `WeeklyClosingSettings`. El test de cobertura de modelos lo exigía y el plan no lo nombraba.
+- **e2e `catalog-product-card`:** la aserción de WP-A "el subtítulo es sr-only" pasa a "el subtítulo visible es la línea de cierre".
+- **`customer-tutorial.spec.ts:58`:**
+  - **El síntoma:** en esta rama fallaba en cada corrida completa con el servidor en frío, 4 de 4. En `main` pasó 3 de 3. El clic en "Ayuda" se perdía porque `/products` se regenera por el hydration mismatch preexistente del sidebar de marcas.
+  - **Lo que se descartó:** sacar el provider lo hizo pasar en una sola corrida. Sacar la actualización del reloj al montar dejó 1 de 4.
+  - **La causa probable:** la tienda hidrata más tarde en frío, porque ahora carga dayjs con timezone en el cliente. No es un bug del contador.
+  - **El arreglo:** el mismo reintento "clic antes de la hidratación" que usan `smoke` y `home-section-links`. Con eso, 3 de 3 en frío y la corrida final.
+  - **Lo que queda pendiente:** el mismatch de `/products`, que es preexistente.
+- **Tutorial:**
+  - `TutorialNavbar` y `TutorialModeBar` no muestran contador (§5.9).
+  - En el paso "Comprás junto a otros vecinos", el bloque destacado ahora incluye el diagrama y es más alto que la pantalla. El popover queda arriba y tapa el comienzo de la sección (el título en el celular, el paso 1 en la computadora). Sigue legible y usable, y el e2e "on a phone" pasa.
+- **§13 de la orquestación y `scripts/qa-ticket-triage.data.ts`:** no se tocaron. Los carga el orquestador al mergear, como con WP-C. Las notas de QA están en §13.5.
+
+### 13.4. Revisión
+
+Revisor independiente, con `q-review-code` (dos ejes) y `q-review-comments`, sobre `main...wpb-weekly-closing-home`. **Sin bloqueantes.** Corregido en `7730595`:
+- el desvío del reloj, que ahora se mide una vez por documento;
+- los mensajes de Zod en inglés en los campos vacíos;
+- el formulario del admin, que se re-sembraba en cada refetch al volver a la ventana y perdía lo que no estaba guardado; ahora solo se re-siembra con un `updatedAt` nuevo;
+- el fallback de la lectura de la tienda;
+- la ficha, que ahora usa `nextClosing`;
+- `pad2` en un solo lugar;
+- tres comentarios reescritos.
+
+Queda registrado, sin cambio: "a las 0" a medianoche.
+
+### 13.5. Estado de QA al terminar (las notas van arriba, sin borrar las anteriores)
+
+Reemplazar `<commit>` por el merge de `wpb-weekly-closing-home` en `main`.
+
+**Precondiciones para el tester:**
+- **Migración.** Flavio aplicó `20261113120000_weekly_closing_settings` en la base compartida y desplegó:
+  - aplicarla: `pnpm exec prisma db execute --file prisma/migrations/20261113120000_weekly_closing_settings/migration.sql`;
+  - verificar: `pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma`, que debe dar vacío.
+
+  Sin la migración, la tienda muestra los defaults: no se rompe.
+- **Punto de retiro "Calle Falsa 123".** El único punto activo (`pickup_point.id = 1`, "Coco Ushuaia · Calle Falsa 123 · Lunes a Viernes 10 a 19") tiene datos de prueba. Flavio lo corrige en `/admin/pickup-points` o lo desactiva **antes** del re-test de #104. Si no, la respuesta "¿Cómo recibo mi pedido?" dice "El punto de retiro está en Calle Falsa 123, …".
+- **Cuenta.** Hace falta una cuenta "Administrador" que no sea superadmin, para probar "Cierre semanal".
+
+**Transiciones:**
+- **#98 → Re-test.**
+  > `[13/11/2026 · triage] Implementado en <commit>. Mirar: contador "Cierre del pedido: faltan …" en la barra (computadora) y en la franja (celular/tableta), sin segundos, en hora de Argentina; pantalla Admin › Catálogo › Cierre semanal (cambiar día/hora y ver que cambie todo). Es solo informativo: la compra se sigue lanzando a mano. Precondiciones: migración aplicada; cuenta Administrador.`
+- **#99 → Re-test.**
+  > `[13/11/2026 · triage] Implementado en <commit>. Mirar: título "Comprar en grupo sale menos.", bajada, línea de cierre, "Ver el catálogo" → /products y "No hace falta registrarte para mirar"; la franja ya no repite la frase. Textos preliminares, a revisar por Flavio.`
+- **#100 → Re-test.**
+  > `[13/11/2026 · triage] Implementado en <commit>. Mirar: diagrama con su leyenda en Cómo funciona y 4 pasos; el paso 4 se adaptó al flujo actual (la entrega se elige al confirmar el pedido). Textos preliminares.`
+- **#104 → Re-test.**
+  > `[13/11/2026 · triage] Implementado en <commit>. Mirar: 6 preguntas en el orden del ticket; "¿Cómo recibo mi pedido?" adaptada al flujo actual y con la dirección del punto de retiro activo. Respuestas preliminares, redactadas sin el documento del recorrido. Precondición: corregir el punto de retiro "Calle Falsa 123".`
+- **#107 → Re-test.** WP-A y WP-C ya están en `main`, así que no queda nada pendiente.
+  > `[13/11/2026 · triage] Línea de cierre de la ficha implementada en <commit> ("Entra en el cierre del … · Llega en …"). Con WP-A y WP-C ya en main, la ficha queda completa: re-testear entera.`
+- **#70 → Re-test.**
+  > `[13/11/2026 · triage] La ilustración del sistema se movió del hero a "Cómo funciona" (#100) en <commit>. Mirar que se vea ahí y que el hero quede solo con texto y botón.`
+
+#71 y #75–#79 se cierran como superados por #100 y #104 en el triage del orquestador, no acá.
+
+**Textos preliminares que revisa Flavio:**
+- el hero (§5.6);
+- los 4 pasos;
+- las 6 respuestas del FAQ;
+- la descripción del FAQ;
+- la línea de la ficha;
+- el paso `howItWorks` del tutorial.
+
+Si cambian, se tocan `home-content.ts`, `weekly-closing.ts` y `tutorial-script.ts`, con sus tests.

@@ -4,21 +4,14 @@ import { expect, type Page, test } from "@playwright/test";
 // land on whatever is passing under the pointer.
 test.use({ contextOptions: { reducedMotion: "reduce" } });
 
-const heroCta = (page: Page) =>
-	page.getByRole("link", { name: "Ver qué se puede comprar" });
+const footerHowItWorks = (page: Page) =>
+	page.locator("footer").getByRole("link", { name: "Cómo funciona" });
 
-async function expectSingleOffersFragment(page: Page) {
+async function expectSingleHowItWorksFragment(page: Page) {
 	const { hash, href } = new URL(page.url());
-	expect(hash).toBe("#ofertas");
-	expect(href.split("#ofertas")).toHaveLength(2);
-	await expect(page.locator("#ofertas")).toBeInViewport();
-}
-
-async function skipWithoutOffers(page: Page) {
-	test.skip(
-		(await heroCta(page).getAttribute("href")) !== "#ofertas",
-		"The current fixture has no active home offers.",
-	);
+	expect(hash).toBe("#como-funciona");
+	expect(href.split("#como-funciona")).toHaveLength(2);
+	await expect(page.locator("#como-funciona")).toBeInViewport();
 }
 
 /**
@@ -36,30 +29,35 @@ function countNavigationRequests(page: Page) {
 	return () => count;
 }
 
-async function clickHeroCtaThreeTimes(page: Page) {
+async function clickFooterHowItWorksThreeTimes(page: Page) {
 	const navigations = countNavigationRequests(page);
 	for (let click = 0; click < 3; click++) {
-		await heroCta(page).click();
-		await expectSingleOffersFragment(page);
+		await footerHowItWorks(page).click();
+		await expectSingleHowItWorksFragment(page);
 	}
 	expect(navigations()).toBe(0);
 }
 
-test("repeated clicks on the hero CTA keep a single #ofertas without navigating", async ({
+test("the hero CTA goes straight to the catalog", async ({ page }) => {
+	await page.goto("/");
+
+	await expect(
+		page.getByRole("link", { name: "Ver el catálogo" }),
+	).toHaveAttribute("href", "/products");
+});
+
+test("repeated clicks on a section link keep a single #como-funciona without navigating", async ({
 	page,
 }) => {
 	await page.goto("/");
-	await skipWithoutOffers(page);
 
-	await clickHeroCtaThreeTimes(page);
+	await clickFooterHowItWorksThreeTimes(page);
 });
 
-test("arriving from the mobile menu and clicking the hero CTA keeps a single #ofertas", async ({
+test("arriving from the mobile menu and clicking a section link keeps a single fragment", async ({
 	page,
 }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
-	await page.goto("/");
-	await skipWithoutOffers(page);
 
 	await page.goto("/products");
 	const offersLink = page.getByRole("link", { name: "Ofertas" });
@@ -70,9 +68,8 @@ test("arriving from the mobile menu and clicking the hero CTA keeps a single #of
 	}).toPass();
 	await offersLink.click();
 	await expect(page).toHaveURL(/\/#ofertas$/);
-	await expectSingleOffersFragment(page);
 
-	await clickHeroCtaThreeTimes(page);
+	await clickFooterHowItWorksThreeTimes(page);
 
 	await page.getByRole("link", { name: "coco" }).first().click();
 	await expect(page).toHaveURL(/\/$/);

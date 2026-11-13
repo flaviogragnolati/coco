@@ -240,7 +240,7 @@ Regressions are avoided by keeping the real pages' containers as thin wrappers a
 | # E / # C | Scene | Target | Title | Body |
 | --- | --- | --- | --- | --- |
 | 1 / 1 | home | — | Así es una compra en Coco | Te mostramos una compra completa, desde el catálogo hasta la entrega. Todo es de ejemplo: no se compra ni se guarda nada. |
-| 2 / 2 | home | home-how-it-works | Comprás junto a otros vecinos | Coco suma los pedidos de todos para comprar al precio mayorista. No somos una distribuidora: coordinamos la compra por vos. |
+| 2 / 2 | home | home-how-it-works | Comprás junto a otros vecinos | CoCo junta los pedidos de todos los vecinos y hace una sola compra al por mayor. Cerramos los miércoles y la mercadería llega en 7 a 10 días. |
 | — / 3 | catalog | catalog-categories | Encontrá lo que buscás | Usá el buscador o las categorías para recorrer el catálogo. |
 | 3 / 4 | catalog | product-card | Precio por paso | $ 11.300 es lo que pagás por 500 g, el paso en que se vende. El precio por kg de abajo te sirve para comparar productos. |
 | — / 5 | catalog | product-purchase | Cantidad de a pasos | Con − y + sumás o restás de a 500 g desde el mínimo. Al sumar, ves el total en tu pedido. |

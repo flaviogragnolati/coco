@@ -117,7 +117,7 @@ const steps = {
 		scene: home,
 		target: "home-how-it-works",
 		title: "Comprás junto a otros vecinos",
-		body: "CoCo suma los pedidos de todos para comprar al precio mayorista. No somos una distribuidora: coordinamos la compra por vos.",
+		body: "CoCo junta los pedidos de todos los vecinos y hace una sola compra al por mayor. Cerramos los miércoles y la mercadería llega en 7 a 10 días.",
 	},
 	catalogSearch: {
 		id: "catalog-search",

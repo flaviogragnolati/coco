@@ -4,10 +4,10 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "~/components/ui/accordion";
-import { faqItems } from "../home-content";
+import type { FaqItem } from "../home-content";
 import { SectionHeading } from "./section-heading";
 
-export function FaqSection() {
+export function FaqSection({ items }: { items: FaqItem[] }) {
 	return (
 		<section
 			className="scroll-mt-20 bg-brand-warm px-4 py-12 text-brand-warm-foreground md:px-6 md:py-16"
@@ -15,7 +15,7 @@ export function FaqSection() {
 		>
 			<div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-start lg:gap-16">
 				<SectionHeading
-					description="Lo esencial sobre el registro, el pago y el seguimiento de tu compra."
+					description="Lo esencial sobre el cierre, el pago y la entrega de tu pedido."
 					eyebrow="Ayuda rápida"
 					title="Preguntas frecuentes"
 				/>
@@ -24,7 +24,7 @@ export function FaqSection() {
 					collapsible
 					type="single"
 				>
-					{faqItems.map((item, index) => (
+					{items.map((item, index) => (
 						<AccordionItem key={item.question} value={`faq-${index + 1}`}>
 							<AccordionTrigger>{item.question}</AccordionTrigger>
 							<AccordionContent>{item.answer}</AccordionContent>

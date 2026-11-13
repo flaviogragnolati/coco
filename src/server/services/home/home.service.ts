@@ -3,12 +3,13 @@ import "server-only";
 import { homeContentOutputSchema } from "~/schemas/home.schemas";
 import { db } from "~/server/db";
 import { selectProductImage } from "~/shared/common/commerce.helpers";
-import type { HomeContent } from "~/shared/common/home.types";
+import type { FaqPickupPoint, HomeContent } from "~/shared/common/home.types";
 import {
 	type CurrentHomeOfferRecord,
 	countPaidOrdersByProduct,
 	getHomeOfferCuration,
 	listCurrentHomeOffers,
+	listFaqPickupPoints,
 } from "./home.data";
 import { composeHomeContent, type RankableHomeOffer } from "./home-ranking";
 
@@ -62,4 +63,8 @@ export async function getHomeContent(): Promise<HomeContent> {
 		offersLimit: curation.offersLimit,
 		offersCriterion: curation.criterion,
 	});
+}
+
+export async function getFaqPickupPoints(): Promise<FaqPickupPoint[]> {
+	return listFaqPickupPoints(db);
 }

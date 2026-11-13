@@ -9,40 +9,53 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 	await expect(
 		page.getByRole("heading", {
 			level: 1,
-			name: "coco",
+			name: "Comprar en grupo sale menos.",
 		}),
 	).toBeVisible();
 	await expect(page.locator("#como-funciona")).toBeVisible();
-	await expect(page.locator("#como-funciona ol > li")).toHaveCount(5);
+	await expect(page.locator("#como-funciona ol > li")).toHaveCount(4);
 	await expect(page.locator("#ofertas")).toBeVisible();
 	await expect(page.locator("#preguntas-frecuentes")).toBeVisible();
 	await expect(page.locator("footer#contacto")).toBeVisible();
 	await expect(
-		page.getByRole("link", { name: "Ver qué se puede comprar" }),
-	).toHaveAttribute(
-		"href",
-		(await page.locator("#ofertas h3").count()) > 0 ? "#ofertas" : "/products",
-	);
+		page.getByRole("link", { name: "Ver el catálogo" }),
+	).toHaveAttribute("href", "/products");
 	await expect(
-		page.locator("#preguntas-frecuentes").getByRole("button"),
-	).toHaveCount(6);
+		page.getByText("No hace falta registrarte para mirar"),
+	).toBeVisible();
+	const faqQuestions = page
+		.locator("#preguntas-frecuentes")
+		.getByRole("button");
+	await expect(faqQuestions).toHaveCount(6);
+	await expect(faqQuestions.first()).toHaveText("¿Cuándo cierran los pedidos?");
 });
 
-test("the hero shows the system illustration and the spotlight has its own band", async ({
+test("the hero is text only, the illustration explains how it works and the spotlight has its own band", async ({
 	page,
 }) => {
 	await page.setViewportSize({ width: 1280, height: 800 });
 	await page.goto("/");
 
 	const hero = page.locator("section").filter({
-		has: page.getByRole("heading", { level: 1, name: "coco" }),
+		has: page.getByRole("heading", {
+			level: 1,
+			name: "Comprar en grupo sale menos.",
+		}),
 	});
-	await expect(
-		hero.getByRole("img", { name: /CoCo junta los pedidos/ }),
-	).toBeVisible();
+	await expect(hero.getByRole("img")).toHaveCount(0);
 	await expect(hero.locator("a[href^='/products?product=']")).toHaveCount(0);
 	await expect(hero.getByRole("button")).toHaveCount(0);
 	await expect(hero.getByRole("link")).toHaveCount(1);
+
+	const howItWorks = page.locator("#como-funciona");
+	await expect(
+		howItWorks.getByRole("img", { name: /CoCo junta los pedidos/ }),
+	).toBeVisible();
+	await expect(
+		howItWorks.getByText(
+			"CoCo junta los pedidos de los vecinos, le compra al proveedor y reparte lo que llega.",
+		),
+	).toBeVisible();
 
 	const band = page.getByRole("region", { name: "Producto destacado" });
 	test.skip(
@@ -63,6 +76,29 @@ test("the hero shows the system illustration and the spotlight has its own band"
 	await expect(page.locator(`#ofertas a[href='${spotlightHref}']`)).toHaveCount(
 		0,
 	);
+});
+
+test("the weekly closing countdown sits in the navbar on desktop and in the strip below lg", async ({
+	page,
+}) => {
+	await page.goto("/");
+
+	// The strip renders before the navbar, so the first match is the strip's.
+	const countdown = /^Cierre del pedido: falta/;
+	const stripCountdown = page.getByText(countdown).first();
+	const navbarCountdown = page.getByRole("banner").getByText(countdown);
+	const stripMessage = page.getByText("Compras comunitarias en Ushuaia", {
+		exact: true,
+	});
+
+	await expect(navbarCountdown).toBeVisible();
+	await expect(stripCountdown).toBeHidden();
+	await expect(stripMessage).toBeVisible();
+
+	await page.setViewportSize({ width: 390, height: 844 });
+	await expect(stripCountdown).toBeVisible();
+	await expect(navbarCountdown).toBeHidden();
+	await expect(stripMessage).toBeHidden();
 });
 
 test("a home offer opens and closes its URL-addressable product detail", async ({

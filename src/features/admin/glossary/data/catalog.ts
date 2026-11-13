@@ -45,6 +45,17 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		href: "/admin/home-offers",
 	},
 	{
+		slug: "concepto-cierre-semanal",
+		kind: "concept",
+		section: "catalog",
+		label: "Cierre semanal",
+		term: "Weekly closing",
+		definition:
+			"El día y la hora (de Argentina) en que, cada semana, se le dice al cliente que cierran los pedidos, junto con el plazo de entrega que se muestra desde ese cierre. Es solo informativo: ningún pedido ni operación lo lee, y la compra se sigue lanzando a mano.",
+		aliases: ["Fecha límite", "Ventana de compra", "Deadline"],
+		href: "/admin/weekly-closing",
+	},
+	{
 		slug: "concepto-ranking-de-ofertas",
 		kind: "concept",
 		section: "catalog",
@@ -309,6 +320,18 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 			"La única fila que guarda cómo se arma la home: el producto destacado elegido, el criterio del ranking de ofertas y cuántas ofertas entran en la grilla. Las posiciones fijadas viven en cada producto, no acá.",
 		occurrences: [{ code: "HomeOfferSettings", db: "home_offer_settings" }],
 		href: "/admin/home-offers",
+	},
+	{
+		slug: "entidad-cierre-semanal",
+		kind: "entity",
+		section: "catalog",
+		label: "Configuración del cierre semanal",
+		definition:
+			"La única fila que guarda el día, la hora y el plazo de entrega del cierre semanal. Si no existe, la tienda usa miércoles 12:00 y 7 a 10 días.",
+		occurrences: [
+			{ code: "WeeklyClosingSettings", db: "weekly_closing_settings" },
+		],
+		href: "/admin/weekly-closing",
 	},
 
 	// --- Estados: unidad de producto -----------------------------------------

@@ -177,8 +177,12 @@ test("the product detail has a single close control and no filler texts", async 
 			"Producto disponible para pedidos mayoristas compartidos.",
 		),
 	).toHaveCount(0);
-	await expect(dialog.locator("[data-slot='dialog-description']")).toHaveClass(
-		/\bsr-only\b/,
+	// The visible subtitle is the weekly closing the product joins.
+	await expect(
+		dialog.locator("[data-slot='dialog-description']"),
+	).toBeVisible();
+	await expect(dialog.locator("[data-slot='dialog-description']")).toHaveText(
+		/^Entra en el cierre del \S+ \d{2}\/\d{2} a las? .+ · Llega en /,
 	);
 	await expect(dialog.getByRole("button", { name: "Cerrar" })).toHaveCount(1);
 

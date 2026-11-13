@@ -13,6 +13,7 @@ import {
 	buildCustomerOrderJourneyView,
 	type CustomerOrderJourneyView,
 } from "~/features/tracking/customer-order-journey";
+import { weeklyClosingScheduleSchema } from "~/schemas/weekly-closing.schemas";
 import type { CartItem, CartSnapshot } from "~/shared/common/cart.types";
 import type {
 	CatalogClientTerms,
@@ -30,9 +31,15 @@ import { buildCartSnapshot } from "~/shared/common/commerce.helpers";
 import type { PickupPointData } from "~/shared/common/pickup-point-snapshot";
 import type { UserOrderItemTimeline } from "~/shared/common/tracking.types";
 import { userTrackingStageDefinitions } from "~/shared/common/tracking-display";
+import { DEFAULT_WEEKLY_CLOSING } from "~/shared/common/weekly-closing";
 import type { TutorialJourneyPoint } from "./tutorial-script";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The example closing the home scene shows; the tutorial never reads the real one. */
+export const tutorialWeeklyClosing = weeklyClosingScheduleSchema.parse(
+	DEFAULT_WEEKLY_CLOSING,
+);
 
 const ids = {
 	cart: 990_001,

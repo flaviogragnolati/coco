@@ -3,6 +3,7 @@ import "server-only";
 import type { Prisma } from "~/prisma/client";
 import type { db } from "~/server/db";
 import { currentTermsWhere } from "../_base/terms-validity";
+import { activePickupPointWhere } from "../admin/pickup-point.data";
 import type { HomeOfferCuration } from "./home-ranking";
 
 type HomeDb = typeof db;
@@ -140,4 +141,21 @@ export async function getHomeOfferCuration(
 	});
 
 	return settings ?? uncuratedHomeOffers;
+}
+
+const faqPickupPointSelect = {
+	name: true,
+	line1: true,
+	line2: true,
+	city: true,
+	hours: true,
+} satisfies Prisma.PickupPointSelect;
+
+/** The points checkout offers, in the same order, for the delivery FAQ. */
+export async function listFaqPickupPoints(database: HomeDb) {
+	return database.pickupPoint.findMany({
+		where: activePickupPointWhere,
+		select: faqPickupPointSelect,
+		orderBy: [{ name: "asc" }, { id: "asc" }],
+	});
 }

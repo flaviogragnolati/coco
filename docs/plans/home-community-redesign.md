@@ -51,6 +51,12 @@
 > el pedido entra en preparación (ver la enmienda de T21). La FAQ ya no explica el Roll over: se
 > quitaron "¿Qué pasa si mi demanda no entra en una operación?" y "¿Qué significa cantidad mínima?",
 > y la FAQ queda en 5 preguntas.
+>
+> **Enmienda 2026-11-13 (WP-B, #98/#99):** se revierte "sin fecha de cierre". La franja muestra el
+> contador del cierre semanal debajo de 1024 px y el texto "Compras comunitarias en Ushuaia" desde
+> 1024 px; el hero, "Cómo funciona", el FAQ y la ficha citan el cierre y el plazo de
+> `WeeklyClosingSettings`. El barrido de copy de T18 sigue vigente: los textos nuevos ("cierran los",
+> "Cerramos el", "Entra en el cierre del") no lo violan. Ver `docs/plans/qa-2026-11-wpb-weekly-closing-home.md`.
 
 ## 3. Scope
 
@@ -540,6 +546,9 @@ la tarjeta sin botón activo. No aparece ningún texto de la lista prohibida de 
 - **Enmienda 2026-10-08:** "10 días" sale de la lista prohibida. La FAQ "¿Cuánto tarda en llegar
   mi compra?" dice "entre 7 y 10 días desde que tu pedido entra en preparación"; el plazo se cuenta
   desde ahí y no promete fecha de cierre. El resto del barrido sigue vigente.
+- **Enmienda 2026-11-13 (WP-B, #98/#99):** se revierte "sin fecha de cierre": el plazo de la FAQ se
+  cuenta desde el cierre semanal configurado en `WeeklyClosingSettings`. El grep de arriba sigue
+  devolviendo vacío con los textos nuevos ("cierran los", "Cerramos el", "Entra en el cierre del").
 
 ## 9. Cross-cutting concerns
 

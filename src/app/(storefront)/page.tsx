@@ -6,8 +6,13 @@ import { HomeHero } from "~/features/home/_components/home-hero";
 import { HomeSpotlightBand } from "~/features/home/_components/home-spotlight-band";
 import { HowItWorksSection } from "~/features/home/_components/how-it-works-section";
 import { OffersSection } from "~/features/home/_components/offers-section";
+import { getFaqItems } from "~/features/home/home-content";
 import { getSession } from "~/server/better-auth/server";
-import { getHomeContent } from "~/server/services/home/home.service";
+import {
+	getFaqPickupPoints,
+	getHomeContent,
+} from "~/server/services/home/home.service";
+import { getWeeklyClosingSchedule } from "~/server/services/weekly-closing/weekly-closing.service";
 
 export const metadata: Metadata = {
 	title: "CoCo | Compras comunitarias en Ushuaia",
@@ -16,8 +21,17 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-	const [session, { spotlight, offers, offersLimit, offersCriterion }] =
-		await Promise.all([getSession(), getHomeContent()]);
+	const [
+		session,
+		{ spotlight, offers, offersLimit, offersCriterion },
+		schedule,
+		pickupPoints,
+	] = await Promise.all([
+		getSession(),
+		getHomeContent(),
+		getWeeklyClosingSchedule(),
+		getFaqPickupPoints(),
+	]);
 	const user = session?.user;
 	const cartProps = {
 		isAuthenticated: Boolean(user),
@@ -26,8 +40,8 @@ export default async function Home() {
 
 	return (
 		<main className="flex min-h-screen flex-col">
-			<HomeHero hasOffers={offers.length > 0} />
-			<HowItWorksSection />
+			<HomeHero schedule={schedule} />
+			<HowItWorksSection schedule={schedule} />
 			{spotlight ? (
 				<HomeSpotlightBand offer={spotlight} {...cartProps} />
 			) : null}
@@ -37,7 +51,7 @@ export default async function Home() {
 				offersLimit={offersLimit}
 				{...cartProps}
 			/>
-			<FaqSection />
+			<FaqSection items={getFaqItems(schedule, pickupPoints)} />
 			<HomeFooter />
 		</main>
 	);

@@ -1,9 +1,10 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
 	formatDateTimeFull,
 	formatDateTimeMedium,
 	formatDateTimeShort,
 	fromDateTimeLocalValue,
+	getNextClosing,
 	toDateTimeLocalValue,
 } from "./date.helpers";
 
@@ -75,4 +76,61 @@ test("accepts an ISO string as well as a Date", () => {
 	expect(formatDateTimeShort("2026-07-22T14:30:00Z")).toBe(
 		formatDateTimeShort(new Date("2026-07-22T14:30:00Z")),
 	);
+});
+
+describe("getNextClosing", () => {
+	const wednesdayNoon = {
+		closingWeekday: 3,
+		closingHour: 12,
+		closingMinute: 0,
+	};
+	const cases: Array<[label: string, now: string, expected: string]> = [
+		[
+			"from a Friday afternoon",
+			"2026-11-13T18:00:00Z",
+			"2026-11-18T15:00:00.000Z",
+		],
+		[
+			"the same Wednesday morning",
+			"2026-11-18T14:59:00Z",
+			"2026-11-18T15:00:00.000Z",
+		],
+		[
+			"at the exact closing instant",
+			"2026-11-18T15:00:00.000Z",
+			"2026-11-25T15:00:00.000Z",
+		],
+		[
+			"one second after closing",
+			"2026-11-18T15:00:01Z",
+			"2026-11-25T15:00:00.000Z",
+		],
+		[
+			"Tuesday 23:30 in Argentina, already Wednesday in UTC",
+			"2026-11-18T02:30:00Z",
+			"2026-11-18T15:00:00.000Z",
+		],
+		[
+			"Wednesday 21:30 in Argentina, already Thursday in UTC",
+			"2026-11-19T00:30:00Z",
+			"2026-11-25T15:00:00.000Z",
+		],
+		["across the year end", "2026-12-30T16:00:00Z", "2027-01-06T15:00:00.000Z"],
+	];
+
+	test.each(cases)("%s", (_label, now, expected) => {
+		expect(getNextClosing(new Date(now), wednesdayNoon).toISOString()).toBe(
+			expected,
+		);
+	});
+
+	test("honors another weekday and minute", () => {
+		expect(
+			getNextClosing(new Date("2026-11-13T18:00:00Z"), {
+				closingWeekday: 0,
+				closingHour: 18,
+				closingMinute: 30,
+			}).toISOString(),
+		).toBe("2026-11-15T21:30:00.000Z");
+	});
 });
