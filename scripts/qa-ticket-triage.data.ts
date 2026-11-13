@@ -312,6 +312,21 @@ const implemented: TriageTransition[] = [
 		preconditions:
 			"una cuenta de cliente con al menos un pedido pagado; para el aviso, un pedido confirmado con transferencia sin informar",
 	}),
+	retest(106, {
+		fix: "Implementado en b04ebdc",
+		look: 'foto cuadrada completa; "Sumar al pedido" sin ícono ni monto en el catálogo, el home, el destacado y la ficha; "$ X por bidón" sin el tamaño; el precio por kg o por litro siempre (también en la botella de 1 L); el selector muestra solo el número en los envasados y "0,5 kg" en los productos por peso; el total se ve en Tu pedido. Las fotos con fondo beige se ven como un recuadro dentro de la tarjeta blanca: avisar si molesta',
+		preconditions: "ninguna (sin ingresar)",
+	}),
+	retest(73, {
+		fix: "Re-testear después de #106 (b04ebdc)",
+		look: 'el selector − n + se puede editar en la tarjeta y en la ficha, arranca en el mínimo y no baja de ahí. Superado por #106: el total ya no se muestra en la ficha (queda para lectores de pantalla y en Tu pedido)',
+		preconditions: "ninguna",
+	}),
+	retest(84, {
+		fix: "Re-testear después de #106 (b04ebdc)",
+		look: "el orden foto, nombre, precio con su unidad, selector y botón a ancho completo. Superado por #106: no hay línea de total, y la unidad va dentro del campo solo en los productos por peso; en los envasados el campo muestra solo el número",
+		preconditions: "ninguna",
+	}),
 ];
 
 export const qaTicketTriageTransitions: TriageTransition[] = [
