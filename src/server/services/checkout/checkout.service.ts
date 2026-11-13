@@ -36,10 +36,16 @@ import { CHECKOUT_TERMS } from "~/shared/common/checkout-terms";
 import {
 	buildCartSnapshot,
 	calculateLineTotal,
+	formatCurrency,
 	selectProductImage,
 } from "~/shared/common/commerce.helpers";
 import { readPickupPointSnapshot } from "~/shared/common/delivery-display";
 import { withSnapshotPresentation } from "~/shared/common/product-snapshot";
+import {
+	decideAttemptCharge,
+	moneyEquals,
+	normalizeTransferDiscountPercent,
+} from "~/shared/common/transfer-discount";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
 import {
@@ -53,6 +59,7 @@ import {
 	type CheckoutCartRecord,
 	type CheckoutDbClient,
 	type CheckoutPaymentMethodRecord,
+	cancelTransaction,
 	createCheckoutAddress,
 	createPendingTransaction,
 	createUserOrder,
@@ -86,6 +93,7 @@ import {
 import { releaseCheckoutCart } from "./checkout-release";
 import { checkoutReleaseBlockedMessage } from "./checkout-release.decision";
 import { isSpentPaymentAttempt } from "./payment-attempt.decision";
+import { decideOpenAttemptHandling } from "./payment-charge.decision";
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 
@@ -224,6 +232,21 @@ function buildOrderCode() {
 	return `ORD-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
+function toAttemptTransferDiscount(
+	transaction: Pick<
+		OrderDetailRecord["transactions"][number],
+		"subtotalAmount" | "transferDiscountPercent" | "transferDiscountAmount"
+	>,
+) {
+	return {
+		subtotalAmount: transaction.subtotalAmount?.toString() ?? null,
+		transferDiscountPercent:
+			transaction.transferDiscountPercent?.toString() ?? null,
+		transferDiscountAmount:
+			transaction.transferDiscountAmount?.toString() ?? null,
+	};
+}
+
 function toOrderListItem(record: OrderListRecord) {
 	const latestTransaction = record.transactions[0];
 
@@ -273,6 +296,7 @@ function toOrderDetail(
 		transactions: record.transactions.map((transaction) => ({
 			...transaction,
 			amount: transaction.amount.toString(),
+			...toAttemptTransferDiscount(transaction),
 		})),
 	});
 }
@@ -353,6 +377,7 @@ function buildPaymentResult(input: {
 			failureMessage: input.transaction.failureMessage,
 			checkoutUrl: input.transaction.checkoutUrl,
 			sandboxCheckoutUrl: input.transaction.sandboxCheckoutUrl,
+			...toAttemptTransferDiscount(input.transaction),
 		},
 		redirectUrl:
 			input.transaction.provider === "mercadopago"
@@ -465,6 +490,11 @@ export async function start(userId: string): Promise<CheckoutState> {
 			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
 			pickupPoints,
 			termsText: CHECKOUT_TERMS.text,
+			transferDiscountPercent: externalConfig.enabled
+				? normalizeTransferDiscountPercent(
+						externalConfig.settings.transferDiscountPercent,
+					)
+				: null,
 		});
 	});
 }
@@ -495,6 +525,11 @@ export async function getState(userId: string): Promise<CheckoutState> {
 			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
 			pickupPoints,
 			termsText: CHECKOUT_TERMS.text,
+			transferDiscountPercent: externalConfig.enabled
+				? normalizeTransferDiscountPercent(
+						externalConfig.settings.transferDiscountPercent,
+					)
+				: null,
 		});
 	});
 }
@@ -610,6 +645,7 @@ async function resolvePaymentProviderConfig(
 	});
 }
 
+/** Why confirming answered with the attempt that was already open. */
 function buildReusedAttemptMessage(
 	transaction: OrderDetailRecord["transactions"][number],
 ) {
@@ -708,6 +744,17 @@ async function resolveRequestedDelivery(
 	});
 }
 
+/**
+ * Confirms the order and opens a payment attempt for the chosen method. A
+ * repeated idempotency key answers with its attempt before anything else, and
+ * a cart has at most one live order: confirming again reuses it.
+ *
+ * The amount depends on the method (ADR 0013): a transfer may carry the
+ * discount, Mercado Pago never does. So the live order's open attempt is
+ * reused only for the same method and is otherwise replaced while the customer
+ * may still abandon it (`decideOpenAttemptHandling`). A new attempt is created
+ * only when its amount equals `expectedAmount`, the one the screen showed.
+ */
 export async function confirmAndPay(
 	userId: string,
 	input: CheckoutConfirmInput,
@@ -750,12 +797,29 @@ export async function confirmAndPay(
 			? await updateOrderDelivery(tx, foundLiveOrder.id, delivery)
 			: null;
 		const latestAttempt = liveOrder?.transactions[0] ?? null;
+		// Read inside the transaction: the percent in force now is the one the
+		// attempt freezes (ADR 0013).
+		const charge = decideAttemptCharge({
+			provider: providerConfig.provider,
+			subtotal: total.amount,
+			currency: total.currency,
+			transferDiscountPercent:
+				providerConfig.provider === "external"
+					? providerConfig.config.settings.transferDiscountPercent
+					: null,
+		});
 
-		if (
-			liveOrder &&
-			latestAttempt &&
-			!isSpentPaymentAttempt(latestAttempt, now)
-		) {
+		const openAttemptHandling =
+			liveOrder && latestAttempt && !isSpentPaymentAttempt(latestAttempt, now)
+				? decideOpenAttemptHandling({
+						attempt: latestAttempt,
+						requestedProvider: providerConfig.provider,
+					})
+				: null;
+
+		// A reused attempt keeps the amount it froze, so it is never compared
+		// with the one the screen showed.
+		if (liveOrder && latestAttempt && openAttemptHandling === "reuse") {
 			return {
 				kind: "existing" as const,
 				result: buildPaymentResult({
@@ -771,11 +835,25 @@ export async function confirmAndPay(
 			};
 		}
 
+		if (latestAttempt && openAttemptHandling === "replace") {
+			await cancelTransaction(tx, latestAttempt.id);
+		}
+
 		if (!liveOrder && cart.status !== "atCheckout") {
 			throw new TRPCError({
 				code: "PRECONDITION_FAILED",
 				message:
 					"El checkout no está iniciado. Volvé a la pantalla de checkout.",
+			});
+		}
+
+		// Throwing here rolls back the whole transaction, the cancellation and
+		// the delivery change included: nothing is created for a figure the
+		// customer did not see.
+		if (!moneyEquals(input.expectedAmount, charge.amount)) {
+			throw new TRPCError({
+				code: "CONFLICT",
+				message: `El total cambió: ahora pagás ${formatCurrency(charge.amount, total.currency)}. Revisalo y confirmá de nuevo.`,
 			});
 		}
 
@@ -801,7 +879,7 @@ export async function confirmAndPay(
 			}));
 
 		const transaction = await createPendingTransaction(tx, {
-			amount: total.amount,
+			amount: charge.amount,
 			currency: total.currency,
 			idempotencyKey: input.idempotencyKey,
 			paymentMethodId: paymentMethod.id,
@@ -810,7 +888,9 @@ export async function confirmAndPay(
 				idempotencyKey: input.idempotencyKey,
 				cart: { id: cart.id, code: cart.code },
 				order: { id: order.id, code: order.code },
-				amount: total.amount,
+				amount: charge.amount,
+				subtotal: total.amount,
+				transferDiscount: charge.transferDiscount,
 				currency: total.currency,
 				paymentMethod,
 				provider: providerConfig.provider,
@@ -820,14 +900,17 @@ export async function confirmAndPay(
 				providerConfig.provider === "mercadopago"
 					? providerConfig.config.mode
 					: null,
+			transferDiscount: charge.transferDiscount,
 		});
 
 		return {
 			kind: "created" as const,
 			cart,
+			charge,
 			order,
 			paymentMethod,
 			providerConfig,
+			subtotal: total.amount,
 			transaction,
 		};
 	});
@@ -875,6 +958,8 @@ export async function confirmAndPay(
 			cart: { id: prepared.cart.id, code: prepared.cart.code },
 			order: { id: prepared.order.id, code: prepared.order.code },
 			amount: prepared.transaction.amount.toString(),
+			subtotal: prepared.subtotal,
+			transferDiscount: prepared.charge.transferDiscount,
 			currency: prepared.transaction.currency,
 			paymentMethod: prepared.paymentMethod,
 			provider: EXTERNAL_PROVIDER,

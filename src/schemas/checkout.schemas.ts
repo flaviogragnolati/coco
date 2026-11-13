@@ -9,6 +9,7 @@ import {
 	pickupPointDataSchema,
 	pickupPointSnapshotSchema,
 } from "~/schemas/pickup-point.schemas";
+import { TRANSFER_DISCOUNT_MAX_PERCENT } from "~/shared/common/transfer-discount";
 
 const requiredText = (message: string) => z.string().trim().min(1, message);
 
@@ -87,6 +88,12 @@ export const checkoutStateSchema = z.object({
 	/** Active points only; empty hides the pickup option. */
 	pickupPoints: z.array(checkoutPickupPointSchema),
 	termsText: z.string(),
+	/** Null when paying by transfer gives no discount (ADR 0013). */
+	transferDiscountPercent: z
+		.number()
+		.positive()
+		.max(TRANSFER_DISCOUNT_MAX_PERCENT)
+		.nullable(),
 });
 
 export const checkoutDeliveryInputSchema = z.discriminatedUnion("mode", [
@@ -107,7 +114,19 @@ export const checkoutConfirmInputSchema = z.object({
 		error: "Tenés que aceptar los términos para confirmar el pedido",
 	}),
 	idempotencyKey: z.string().uuid(),
+	/** The amount the screen showed for the chosen payment method. */
+	expectedAmount: z.string().regex(/^\d{1,16}(\.\d{1,2})?$/, "Monto inválido"),
 });
+
+/**
+ * The transfer discount an attempt froze at confirmation (ADR 0013); all three
+ * null when it carries none.
+ */
+export const attemptTransferDiscountFields = {
+	subtotalAmount: decimalOutputSchema.nullable(),
+	transferDiscountPercent: decimalOutputSchema.nullable(),
+	transferDiscountAmount: decimalOutputSchema.nullable(),
+};
 
 export const checkoutPaymentStatusSchema = z.enum([
 	"succeeded",
@@ -150,6 +169,7 @@ export const checkoutPaymentResultSchema = z.object({
 		failureMessage: z.string().nullable(),
 		checkoutUrl: z.string().nullable().optional(),
 		sandboxCheckoutUrl: z.string().nullable().optional(),
+		...attemptTransferDiscountFields,
 	}),
 	redirectUrl: z.string().nullable().optional(),
 	/** Transfer data the user needs while an external attempt stays pending (ADR 0010). */
@@ -256,6 +276,7 @@ export const orderDetailSchema = orderListItemSchema.extend({
 			failureCode: z.string().nullable(),
 			failureMessage: z.string().nullable(),
 			createdAt: z.date(),
+			...attemptTransferDiscountFields,
 			paymentMethod: checkoutPaymentMethodSchema.pick({
 				id: true,
 				type: true,

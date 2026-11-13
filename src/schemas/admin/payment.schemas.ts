@@ -53,6 +53,9 @@ export const paymentListInputSchema = z.object({
 export const paymentAttemptListItemSchema = z.object({
 	id: paymentAttemptIdSchema,
 	amount: decimalOutputSchema,
+	subtotalAmount: decimalOutputSchema.nullable(),
+	transferDiscountPercent: decimalOutputSchema.nullable(),
+	transferDiscountAmount: decimalOutputSchema.nullable(),
 	currency: catalogCurrencySchema,
 	status: paymentAttemptStatusSchema,
 	provider: z.string(),

@@ -198,6 +198,7 @@ test("re-confirming with a pickup point refreshes the live order before answerin
 		acceptedTerms: true,
 		paymentMethodId: 2,
 		delivery: { mode: "pickupPoint", pickupPointId: 3 },
+		expectedAmount: "500.00",
 	});
 
 	expect(data.updateOrderDelivery).toHaveBeenCalledWith(

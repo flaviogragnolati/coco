@@ -17,12 +17,17 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
+import {
+	TransferDiscountBreakdownRows,
+	TransferTotalHint,
+} from "~/features/cart/_components/transfer-total";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import {
 	formatCurrency,
 	formatQuantity,
 } from "~/shared/common/commerce.helpers";
+import { getCheckoutCharge } from "./checkout-charge";
 import type { CheckoutDeliverySelection } from "./checkout-delivery-step";
 import type { CheckoutStepId } from "./checkout-steps";
 
@@ -74,6 +79,7 @@ export function CheckoutSummary({
 	currentStep,
 	onEditStep,
 	className,
+	transferDiscountPercent,
 }: {
 	cart: CartSnapshot;
 	delivery?: CheckoutDeliverySelection;
@@ -81,9 +87,15 @@ export function CheckoutSummary({
 	currentStep: CheckoutStepId;
 	onEditStep: (step: CheckoutStepId) => void;
 	className?: string;
+	transferDiscountPercent: number | null;
 }) {
 	const peekItems = cart.items.slice(0, ITEM_PEEK_LIMIT);
 	const remaining = cart.items.length - peekItems.length;
+	const transferDiscount = getCheckoutCharge(
+		cart,
+		selectedPaymentMethod,
+		transferDiscountPercent,
+	)?.transferDiscount;
 
 	return (
 		<Card className={className}>
@@ -128,18 +140,27 @@ export function CheckoutSummary({
 
 				<Separator />
 				<div className="flex flex-col gap-2">
-					{cart.totals.length > 0 ? (
+					{transferDiscount && cart.totals[0] ? (
+						<TransferDiscountBreakdownRows
+							breakdown={transferDiscount}
+							currency={cart.totals[0].currency}
+							totalLabel="Total"
+						/>
+					) : cart.totals.length > 0 ? (
 						cart.totals.map((total) => (
-							<div
-								className="flex items-center justify-between gap-3"
-								key={total.currency}
-							>
-								<span className="text-muted-foreground text-xs">
-									Total estimado
-								</span>
-								<span className="font-heading font-semibold text-lg">
-									{formatCurrency(total.amount, total.currency)}
-								</span>
+							<div className="flex flex-col gap-1" key={total.currency}>
+								<div className="flex items-center justify-between gap-3">
+									<span className="text-muted-foreground text-xs">
+										Total estimado
+									</span>
+									<span className="font-heading font-semibold text-lg">
+										{formatCurrency(total.amount, total.currency)}
+									</span>
+								</div>
+								<TransferTotalHint
+									percent={transferDiscountPercent}
+									total={total}
+								/>
 							</div>
 						))
 					) : (
@@ -183,6 +204,8 @@ export function CheckoutMobileBar({
 	isSubmitting,
 	onPrimary,
 	onOpenSummary,
+	selectedPaymentMethod,
+	transferDiscountPercent,
 }: {
 	cart: CartSnapshot;
 	currentStep: CheckoutStepId;
@@ -191,6 +214,8 @@ export function CheckoutMobileBar({
 	isSubmitting?: boolean;
 	onPrimary: () => void;
 	onOpenSummary: () => void;
+	selectedPaymentMethod?: CheckoutPaymentMethod | null;
+	transferDiscountPercent: number | null;
 }) {
 	const isReview = currentStep === "review";
 	const primaryLabel = isReview
@@ -201,6 +226,11 @@ export function CheckoutMobileBar({
 	const primaryDisabled = isReview ? !canConfirm || isSubmitting : !canContinue;
 	const primaryTotal = cart.totals[0];
 	const extraCurrencies = cart.totals.length - 1;
+	const charge = getCheckoutCharge(
+		cart,
+		selectedPaymentMethod,
+		transferDiscountPercent,
+	);
 
 	return (
 		<div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur lg:hidden">
@@ -212,7 +242,10 @@ export function CheckoutMobileBar({
 				>
 					<span className="font-heading font-semibold text-base leading-none">
 						{primaryTotal
-							? formatCurrency(primaryTotal.amount, primaryTotal.currency)
+							? formatCurrency(
+									charge?.amount ?? primaryTotal.amount,
+									primaryTotal.currency,
+								)
 							: "—"}
 						{extraCurrencies > 0 ? (
 							<span className="ml-1 font-normal text-muted-foreground text-xs">

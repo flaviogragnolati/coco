@@ -5,6 +5,7 @@ import { TRPCError } from "@trpc/server";
 import type { Prisma } from "~/prisma/client";
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
 import {
+	cancelOtherPendingAttempts,
 	updateCartStatus,
 	updateOrderStatus,
 } from "~/server/services/checkout/checkout.data";
@@ -58,6 +59,12 @@ export async function submitOrderForCompletedPayment(
 	});
 	await updateCartStatus(tx, input.cartId, "submitted");
 	const order = await updateOrderStatus(tx, input.orderId, "processing");
+	// A switch of payment method can leave an older attempt payable (ADR 0013);
+	// once one is paid, no other may be offered.
+	await cancelOtherPendingAttempts(tx, {
+		userOrderId: input.orderId,
+		keepTransactionId: input.transactionId,
+	});
 
 	await DomainEventPublisher.publishMany(
 		tx,
