@@ -5,7 +5,7 @@ import { getSession } from "~/server/better-auth/server";
 import { api, HydrateClient } from "~/trpc/server";
 
 export const metadata: Metadata = {
-	title: "Productos | Coco",
+	title: "Productos | CoCo",
 	description:
 		"Explorá productos mayoristas disponibles y sumá cantidades a tu pedido.",
 };

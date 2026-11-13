@@ -72,7 +72,7 @@ export function MobileNavMenu({
 			</SheetTrigger>
 			<SheetContent className="w-[min(22rem,calc(100%-1rem))]">
 				<SheetHeader>
-					<SheetTitle>Explorá Coco</SheetTitle>
+					<SheetTitle>Explorá CoCo</SheetTitle>
 					<SheetDescription>
 						Ofertas, ayuda y accesos a tu compra en un solo lugar.
 					</SheetDescription>

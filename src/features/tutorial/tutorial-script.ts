@@ -109,7 +109,7 @@ const steps = {
 		id: "intro",
 		scene: home,
 		target: null,
-		title: "Así es una compra en Coco",
+		title: "Así es una compra en CoCo",
 		body: "Te mostramos una compra completa, desde el catálogo hasta la entrega. Todo es de ejemplo: no se compra ni se guarda nada.",
 	},
 	howItWorks: {
@@ -117,7 +117,7 @@ const steps = {
 		scene: home,
 		target: "home-how-it-works",
 		title: "Comprás junto a otros vecinos",
-		body: "Coco suma los pedidos de todos para comprar al precio mayorista. No somos una distribuidora: coordinamos la compra por vos.",
+		body: "CoCo suma los pedidos de todos para comprar al precio mayorista. No somos una distribuidora: coordinamos la compra por vos.",
 	},
 	catalogSearch: {
 		id: "catalog-search",
@@ -226,7 +226,7 @@ const journeySteps: TutorialStep[] = [
 		scene: { id: "orderDetail", journey: "preparation" },
 		target: "order-journey",
 		title: "Preparación",
-		body: "Coco agrupa los pedidos de todos para armar una sola compra mayorista.",
+		body: "CoCo agrupa los pedidos de todos para armar una sola compra mayorista.",
 	},
 	{
 		id: "journey-supplier",
@@ -278,7 +278,7 @@ export const tutorialScripts: Record<TutorialVersion, TutorialStep[]> = {
 			scene: delivered,
 			target: null,
 			title: "¡Listo!",
-			body: "Así es una compra en Coco. ¿Querés ver cada etapa en detalle?",
+			body: "Así es una compra en CoCo. ¿Querés ver cada etapa en detalle?",
 			closing: true,
 		},
 	],

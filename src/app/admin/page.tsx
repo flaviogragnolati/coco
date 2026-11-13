@@ -25,7 +25,7 @@ export default async function AdminPage() {
 					{firstName ? `Hola, ${firstName}` : "Hola"}
 				</h1>
 				<p className="max-w-2xl text-brand-ink-foreground/75 text-sm/relaxed">
-					Panel de administración de Coco. Revisá el flujo operativo, los pagos
+					Panel de administración de CoCo. Revisá el flujo operativo, los pagos
 					y el catálogo desde la navegación lateral.
 				</p>
 			</section>

@@ -87,7 +87,7 @@ export function OffersSection({
 						</EmptyHeader>
 						<EmptyContent>
 							<Button asChild variant="highlight">
-								<HashSafeLink href="/#contacto">Contactar a Coco</HashSafeLink>
+								<HashSafeLink href="/#contacto">Contactar a CoCo</HashSafeLink>
 							</Button>
 						</EmptyContent>
 					</Empty>

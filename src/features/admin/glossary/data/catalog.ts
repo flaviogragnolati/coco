@@ -126,7 +126,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Precio de góndola",
 		term: "Market price",
 		definition:
-			"El precio por unidad al que se vende el mismo producto fuera de Coco, cargado por un administrador para poder decir cuánto ahorra el cliente. Es un dato declarado y sin verificar: nunca se cobra ni entra en el precio de un carrito.",
+			"El precio por unidad al que se vende el mismo producto fuera de CoCo, cargado por un administrador para poder decir cuánto ahorra el cliente. Es un dato declarado y sin verificar: nunca se cobra ni entra en el precio de un carrito.",
 		aliases: ["Precio de referencia", "Precio de lista"],
 		href: "/admin/product-terms",
 	},

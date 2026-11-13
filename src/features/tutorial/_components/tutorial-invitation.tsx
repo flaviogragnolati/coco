@@ -59,7 +59,7 @@ export function TutorialInvitation({ eligible }: { eligible: boolean }) {
 						<SparklesIcon className="size-4" />
 					</span>
 					<h2 className="font-heading font-semibold text-base" id={titleId}>
-						¿Primera vez en Coco?
+						¿Primera vez en CoCo?
 					</h2>
 				</div>
 				<Button
@@ -73,7 +73,7 @@ export function TutorialInvitation({ eligible }: { eligible: boolean }) {
 				</Button>
 			</div>
 			<p className="text-muted-foreground text-sm/relaxed">
-				Te mostramos cómo es una compra en Coco, de punta a punta, con datos de
+				Te mostramos cómo es una compra en CoCo, de punta a punta, con datos de
 				ejemplo.
 			</p>
 			<div className="flex flex-col gap-2">

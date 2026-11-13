@@ -55,7 +55,7 @@ export function HomeFooter() {
 				</div>
 				<Separator />
 				<p className="text-xs">
-					© {new Date().getFullYear()} Coco. Todos los derechos reservados.
+					© {new Date().getFullYear()} CoCo. Todos los derechos reservados.
 				</p>
 			</div>
 		</footer>

@@ -46,8 +46,8 @@ export function HomeSystemIllustration() {
 				viewBox="0 60 440 120"
 			>
 				<title id="home-system-illustration-title">
-					Vecinos en distintas casas hacen su pedido; Coco junta los pedidos y
-					le compra al proveedor; cuando llega la mercadería, Coco se la entrega
+					Vecinos en distintas casas hacen su pedido; CoCo junta los pedidos y
+					le compra al proveedor; cuando llega la mercadería, CoCo se la entrega
 					a cada vecino.
 				</title>
 				{houses.map(({ cx, cy, highlighted }) => (
@@ -106,7 +106,7 @@ export function HomeSystemIllustration() {
 				))}
 			</div>
 			<figcaption className="mt-5 text-center text-sm/relaxed sm:text-base/relaxed">
-				Coco junta los pedidos de los vecinos, le compra al proveedor y reparte
+				CoCo junta los pedidos de los vecinos, le compra al proveedor y reparte
 				lo que llega.
 			</figcaption>
 		</figure>

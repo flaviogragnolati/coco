@@ -10,7 +10,7 @@ test("the footer leads to the supplier page", async ({ page }) => {
 
 	await expect(page).toHaveURL(/\/proveedores$/);
 	await expect(
-		page.getByRole("heading", { level: 1, name: "Sé proveedor de Coco" }),
+		page.getByRole("heading", { level: 1, name: "Sé proveedor de CoCo" }),
 	).toBeVisible();
 });
 

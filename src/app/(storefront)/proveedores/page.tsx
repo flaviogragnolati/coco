@@ -5,7 +5,7 @@ import { PageHeader } from "~/components/page-header";
 import { SupplierApplicationForm } from "./_components/supplier-application-form";
 
 export const metadata: Metadata = {
-	title: "Sé proveedor | Coco",
+	title: "Sé proveedor | CoCo",
 	description:
 		"Vendé por volumen a la comunidad de Ushuaia. Dejanos tus datos y te contactamos.",
 };
@@ -34,9 +34,9 @@ export default function SupplierApplicationPage() {
 	return (
 		<main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 md:py-12">
 			<PageHeader
-				description="Coco reúne los pedidos de la comunidad de Ushuaia para comprar por volumen. Si vendés por mayor, contanos qué ofrecés y te contactamos."
+				description="CoCo reúne los pedidos de la comunidad de Ushuaia para comprar por volumen. Si vendés por mayor, contanos qué ofrecés y te contactamos."
 				eyebrow="Proveedores"
-				title="Sé proveedor de Coco"
+				title="Sé proveedor de CoCo"
 			/>
 
 			<ul className="grid gap-4 md:grid-cols-3">

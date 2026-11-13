@@ -10,7 +10,7 @@ import { getSession } from "~/server/better-auth/server";
 import { getHomeContent } from "~/server/services/home/home.service";
 
 export const metadata: Metadata = {
-	title: "Coco | Compras comunitarias en Ushuaia",
+	title: "CoCo | Compras comunitarias en Ushuaia",
 	description:
 		"Compras comunitarias en Ushuaia. Sumate al pedido de otros vecinos, accedé a precios mayoristas y seguí tu compra hasta la entrega.",
 };

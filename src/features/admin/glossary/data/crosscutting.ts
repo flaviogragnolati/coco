@@ -140,7 +140,7 @@ export const crosscuttingGlossaryEntries: GlossaryEntry[] = [
 		label: "Invitación al tutorial",
 		term: "Tutorial invitation",
 		definition:
-			"La oferta única y no bloqueante de empezar el tutorial que recibe un cliente con sesión en la primera página de la tienda que no sea el ingreso, el checkout ni el regreso de un pago. Cualquier respuesta, elegir una versión o «Ahora no», la cierra para ese usuario en todos sus dispositivos. El tutorial sigue disponible desde el menú de ayuda. En la tienda se titula «¿Primera vez en Coco?».",
+			"La oferta única y no bloqueante de empezar el tutorial que recibe un cliente con sesión en la primera página de la tienda que no sea el ingreso, el checkout ni el regreso de un pago. Cualquier respuesta, elegir una versión o «Ahora no», la cierra para ese usuario en todos sus dispositivos. El tutorial sigue disponible desde el menú de ayuda. En la tienda se titula «¿Primera vez en CoCo?».",
 		aliases: ["Popup de bienvenida"],
 	},
 

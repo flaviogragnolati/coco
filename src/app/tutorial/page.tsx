@@ -4,7 +4,7 @@ import { TutorialPlayer } from "~/features/tutorial/_components/tutorial-player"
 import { parseTutorialParams } from "~/features/tutorial/tutorial-script";
 
 export const metadata: Metadata = {
-	title: "Tutorial | Coco",
+	title: "Tutorial | CoCo",
 	robots: { index: false, follow: false },
 };
 

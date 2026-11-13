@@ -37,7 +37,7 @@ test("the hero shows the system illustration and the spotlight has its own band"
 		has: page.getByRole("heading", { level: 1, name: "coco" }),
 	});
 	await expect(
-		hero.getByRole("img", { name: /Coco junta los pedidos/ }),
+		hero.getByRole("img", { name: /CoCo junta los pedidos/ }),
 	).toBeVisible();
 	await expect(hero.locator("a[href^='/products?product=']")).toHaveCount(0);
 	await expect(hero.getByRole("button")).toHaveCount(0);
@@ -94,7 +94,7 @@ test("mobile navigation keeps purchase and public anchors accessible", async ({
 
 	await page.getByRole("button", { name: "Abrir menú" }).click();
 	await expect(
-		page.getByRole("heading", { name: "Explorá Coco" }),
+		page.getByRole("heading", { name: "Explorá CoCo" }),
 	).toBeVisible();
 	await expect(
 		page

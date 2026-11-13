@@ -6,7 +6,7 @@ import { assertActiveUser } from "~/server/auth/auth.utils";
 import { getSession } from "~/server/better-auth/server";
 
 export const metadata: Metadata = {
-	title: "Checkout | Coco",
+	title: "Checkout | CoCo",
 	description: "Confirmá dirección, pago y resumen de tu pedido mayorista.",
 };
 

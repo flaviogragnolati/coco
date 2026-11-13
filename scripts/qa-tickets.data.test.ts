@@ -115,7 +115,7 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 		mustMention: [
 			"`/checkout`",
 			"`/checkout/mercadopago/success`",
-			'"¿Primera vez en Coco?"',
+			'"¿Primera vez en CoCo?"',
 			'"Ahora no"',
 		],
 	},

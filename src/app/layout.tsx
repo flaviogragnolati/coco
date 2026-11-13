@@ -30,8 +30,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Coco",
-	description: "Plataforma Coco",
+	title: "CoCo",
+	description: "Plataforma CoCo",
 	icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
