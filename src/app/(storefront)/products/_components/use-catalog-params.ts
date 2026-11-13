@@ -3,7 +3,6 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { CatalogProductUnit } from "~/shared/common/catalog.types";
 import type { CatalogFilters, CatalogSort } from "./catalog-filtering";
 
 export const PER_PAGE_OPTIONS = [12, 24, 48] as const;
@@ -19,30 +18,12 @@ const SORT_VALUES: CatalogSort[] = [
 	"newest",
 ];
 
-const UNIT_VALUES: CatalogProductUnit[] = [
-	"kg",
-	"lb",
-	"piece",
-	"box",
-	"gr",
-	"other",
-];
-
 function parseCsvNumbers(value: string | null): number[] {
 	if (!value) return [];
 	return value
 		.split(",")
 		.map((part) => Number(part))
 		.filter((part) => Number.isInteger(part) && part > 0);
-}
-
-function parseUnits(value: string | null): CatalogProductUnit[] {
-	if (!value) return [];
-	return value
-		.split(",")
-		.filter((part): part is CatalogProductUnit =>
-			UNIT_VALUES.includes(part as CatalogProductUnit),
-		);
 }
 
 function parsePositiveId(value: string | null): number | null {
@@ -116,7 +97,6 @@ export function useCatalogParams() {
 		() => ({
 			search: searchParams.get("q") ?? "",
 			brandIds: parseCsvNumbers(searchParams.get("brand")),
-			units: parseUnits(searchParams.get("unit")),
 			minPrice: searchParams.get("min") ?? "",
 			maxPrice: searchParams.get("max") ?? "",
 			inCartOnly: searchParams.get("inCart") === "1",
@@ -147,11 +127,6 @@ export function useCatalogParams() {
 	const setBrandIds = useCallback(
 		(ids: number[]) =>
 			commit({ brand: ids.length ? ids.join(",") : null, page: null }),
-		[commit],
-	);
-	const setUnits = useCallback(
-		(units: CatalogProductUnit[]) =>
-			commit({ unit: units.length ? units.join(",") : null, page: null }),
 		[commit],
 	);
 	const setMinPrice = useCallback(
@@ -212,6 +187,7 @@ export function useCatalogParams() {
 		commit({
 			q: null,
 			brand: null,
+			// Retired filter: old links may still carry it.
 			unit: null,
 			min: null,
 			max: null,
@@ -232,7 +208,6 @@ export function useCatalogParams() {
 		productId,
 		setSearch,
 		setBrandIds,
-		setUnits,
 		setMinPrice,
 		setMaxPrice,
 		setPriceRange,

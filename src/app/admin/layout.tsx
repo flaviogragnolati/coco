@@ -8,7 +8,7 @@ import { AdminSidebar } from "~/features/admin/shell/admin-sidebar";
 import { requireAdmin } from "~/server/auth/route-guards";
 
 export const metadata: Metadata = {
-	title: { template: "%s · Coco Admin", default: "Coco Admin" },
+	title: { template: "%s · CoCo Admin", default: "CoCo Admin" },
 };
 
 export default async function AdminLayout({

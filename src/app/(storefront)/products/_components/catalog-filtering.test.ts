@@ -8,7 +8,6 @@ import type {
 import {
 	computeBrandFacets,
 	computeCategoryChips,
-	computeUnitFacets,
 	emptyCatalogFilters,
 	filterCatalog,
 	matchScore,
@@ -111,7 +110,6 @@ test("filterCatalog narrows by accent-insensitive search", () => {
 	const result = filterCatalog(products, {
 		search: "cafe",
 		brandIds: [],
-		units: [],
 		minPrice: "",
 		maxPrice: "",
 		inCartOnly: false,
@@ -129,30 +127,12 @@ test("filterCatalog narrows by brand membership", () => {
 	const result = filterCatalog(products, {
 		search: "",
 		brandIds: [1, 2],
-		units: [],
 		minPrice: "",
 		maxPrice: "",
 		inCartOnly: false,
 		categoryId: null,
 	});
 	expect(result.map((product) => product.name)).toStrictEqual(["A", "B"]);
-});
-
-test("filterCatalog narrows by unit membership", () => {
-	const products = [
-		makeProduct({ name: "A", unit: "kg" }),
-		makeProduct({ name: "B", unit: "box" }),
-	];
-	const result = filterCatalog(products, {
-		search: "",
-		brandIds: [],
-		units: ["kg"],
-		minPrice: "",
-		maxPrice: "",
-		inCartOnly: false,
-		categoryId: null,
-	});
-	expect(result.map((product) => product.name)).toStrictEqual(["A"]);
 });
 
 test("filterCatalog narrows by price range", () => {
@@ -164,7 +144,6 @@ test("filterCatalog narrows by price range", () => {
 	const result = filterCatalog(products, {
 		search: "",
 		brandIds: [],
-		units: [],
 		minPrice: "100",
 		maxPrice: "200",
 		inCartOnly: false,
@@ -181,7 +160,6 @@ test("filterCatalog narrows by inCartOnly", () => {
 		{
 			search: "",
 			brandIds: [],
-			units: [],
 			minPrice: "",
 			maxPrice: "",
 			inCartOnly: true,
@@ -345,6 +323,132 @@ test("sortCatalog relevance orders by match score when searching", () => {
 	expect(
 		sortCatalog(products, "relevance", "aceite").map((product) => product.name),
 	).toStrictEqual(["Aceite puro", "Mezcla con aceite", "Otro"]);
+});
+
+const pantry = { id: 1, name: "Aceites y despensa", sortOrder: 1 };
+const nuts = { id: 2, name: "Frutos secos", sortOrder: 2 };
+
+test("selectSimilarProducts ranks category matches above brand and unit matches", () => {
+	const current = makeProduct({
+		name: "Actual",
+		category: pantry,
+		brand: { id: 1, name: "Alfa" },
+		unit: "kg",
+	});
+	const sameCategory = makeProduct({
+		name: "Misma categoría",
+		category: pantry,
+		unit: "box",
+		terms: { moqPrice: "900" },
+	});
+	const sameBrand = makeProduct({
+		name: "Misma marca",
+		category: nuts,
+		brand: { id: 1, name: "Alfa" },
+		unit: "box",
+	});
+	const sameUnit = makeProduct({
+		name: "Misma unidad",
+		category: nuts,
+		unit: "kg",
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, sameUnit, sameBrand, sameCategory],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual(["Misma categoría", "Misma marca", "Misma unidad"]);
+});
+
+test("selectSimilarProducts does not count shared connectors as a name match", () => {
+	const current = makeProduct({
+		name: "Mix para ensalada",
+		category: nuts,
+		terms: { moqPrice: "100", moq: "1" },
+	});
+	const sharesOnlyConnector = makeProduct({
+		name: "Granola para desayuno",
+		category: nuts,
+		terms: { moqPrice: "300", moq: "1" },
+	});
+	const closerInPrice = makeProduct({
+		name: "Semillas de chía",
+		category: nuts,
+		terms: { moqPrice: "110", moq: "1" },
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, sharesOnlyConnector, closerInPrice],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual(["Semillas de chía", "Granola para desayuno"]);
+});
+
+test("selectSimilarProducts proposes the other sizes of the same product before the rest of its category", () => {
+	const current = makeProduct({
+		name: "Aceite de oliva extra virgen 0,5 L",
+		category: pantry,
+		terms: { moqPrice: "16900", moq: "1" },
+	});
+	const oneLitre = makeProduct({
+		name: "Aceite de oliva extra virgen 1 L",
+		category: pantry,
+		terms: { moqPrice: "30400", moq: "1" },
+	});
+	const fiveLitres = makeProduct({
+		name: "Aceite de oliva extra virgen 5 L",
+		category: pantry,
+		terms: { moqPrice: "137400", moq: "1" },
+	});
+	const salt = makeProduct({
+		name: "Sal rosada del Himalaya",
+		category: pantry,
+		terms: { moqPrice: "7500", moq: "1" },
+	});
+	const peanutButter = makeProduct({
+		name: "Pasta de maní Entre Nuts 370 g",
+		category: pantry,
+		terms: { moqPrice: "5150", moq: "1" },
+	});
+	const almonds = makeProduct({
+		name: "Almendras",
+		category: nuts,
+		terms: { moqPrice: "16000", moq: "1" },
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, salt, almonds, peanutButter, fiveLitres, oneLitre],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual([
+		"Aceite de oliva extra virgen 1 L",
+		"Aceite de oliva extra virgen 5 L",
+		"Sal rosada del Himalaya",
+	]);
+});
+
+test("selectSimilarProducts does not group uncategorized products by their missing category", () => {
+	const current = makeProduct({ name: "Actual", category: null, unit: "kg" });
+	const uncategorizedOtherUnit = makeProduct({
+		name: "Sin categoría otra unidad",
+		category: null,
+		unit: "box",
+	});
+	const sameUnit = makeProduct({
+		name: "Misma unidad",
+		category: nuts,
+		unit: "kg",
+	});
+
+	expect(
+		selectSimilarProducts(
+			[current, uncategorizedOtherUnit, sameUnit],
+			current,
+		).map((product) => product.name),
+	).toStrictEqual(["Misma unidad"]);
 });
 
 test("selectSimilarProducts ranks brand matches above unit matches", () => {
@@ -540,19 +644,4 @@ test("computeBrandFacets counts products per brand sorted by label", () => {
 		{ id: 1, label: "Alfa", count: 2 },
 		{ id: 2, label: "Zeta", count: 1 },
 	]);
-});
-
-test("computeUnitFacets counts products per unit with labels", () => {
-	const products = [
-		makeProduct({ unit: "kg" }),
-		makeProduct({ unit: "kg" }),
-		makeProduct({ unit: "box" }),
-	];
-	const facets = computeUnitFacets(products);
-	const kg = facets.find((facet) => facet.unit === "kg");
-	const box = facets.find((facet) => facet.unit === "box");
-	expect(kg?.count).toBe(2);
-	expect(kg?.label).toBe("kg");
-	expect(box?.count).toBe(1);
-	expect(box?.label).toBe("caja");
 });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HashSafeLink } from "~/components/hash-safe-link";
 import { Separator } from "~/components/ui/separator";
 import { contactItems, footerColumns } from "../home-content";
 
@@ -26,13 +27,13 @@ export function HomeFooter() {
 						>
 							<h2 className="font-semibold text-sm">{column.title}</h2>
 							{column.links.map((link) => (
-								<Link
+								<HashSafeLink
 									className="text-sm underline-offset-4 hover:underline"
 									href={link.href}
 									key={link.href}
 								>
 									{link.label}
-								</Link>
+								</HashSafeLink>
 							))}
 						</nav>
 					))}
@@ -54,7 +55,7 @@ export function HomeFooter() {
 				</div>
 				<Separator />
 				<p className="text-xs">
-					© {new Date().getFullYear()} Coco. Todos los derechos reservados.
+					© {new Date().getFullYear()} CoCo. Todos los derechos reservados.
 				</p>
 			</div>
 		</footer>

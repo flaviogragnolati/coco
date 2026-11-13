@@ -221,7 +221,7 @@ const externalPayment: CheckoutPaymentMethod = {
 };
 
 const TERMS_TEXT =
-	"Términos de ejemplo. Al confirmar un pedido real aceptás los términos y condiciones vigentes de Coco, que vas a poder leer completos en este paso.";
+	"Términos de ejemplo. Al confirmar un pedido real aceptás los términos y condiciones vigentes de CoCo, que vas a poder leer completos en este paso.";
 
 const ORDER_CODE = "EJEMPLO";
 const CART_CODE = "EJEMPLO-ARMADO";

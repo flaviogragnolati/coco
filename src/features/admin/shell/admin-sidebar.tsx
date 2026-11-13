@@ -36,14 +36,14 @@ export function AdminSidebar({ user }: { user: AuthUser }) {
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton asChild size="lg" tooltip="Coco · Admin">
+						<SidebarMenuButton asChild size="lg" tooltip="CoCo · Admin">
 							<Link href={adminHome.href}>
 								<span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary font-heading font-semibold text-sidebar-primary-foreground">
 									C
 								</span>
 								<span className="flex min-w-0 flex-col">
 									<span className="truncate font-heading font-semibold">
-										Coco
+										CoCo
 									</span>
 									<span className="truncate text-sidebar-foreground/70 text-xs">
 										Administración

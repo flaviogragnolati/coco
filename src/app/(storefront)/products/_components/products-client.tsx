@@ -31,7 +31,6 @@ import { CatalogCategoryChips } from "./catalog-category-chips";
 import {
 	computeBrandFacets,
 	computeCategoryChips,
-	computeUnitFacets,
 	filterCatalog,
 	resolveCategoryId,
 	sortCatalog,
@@ -99,7 +98,6 @@ export function ProductsClient({
 	);
 
 	const brandFacets = useMemo(() => computeBrandFacets(products), [products]);
-	const unitFacets = useMemo(() => computeUnitFacets(products), [products]);
 	const categoryChips = useMemo(
 		() => computeCategoryChips(products),
 		[products],
@@ -144,10 +142,8 @@ export function ProductsClient({
 
 	const sidebarProps = {
 		brands: brandFacets,
-		units: unitFacets,
 		filters,
 		onBrandIdsChange: params.setBrandIds,
-		onUnitsChange: params.setUnits,
 		onMinPriceChange: params.setMinPrice,
 		onMaxPriceChange: params.setMaxPrice,
 		onInCartOnlyChange: params.setInCartOnly,
@@ -263,9 +259,6 @@ export function ProductsClient({
 						onRemoveInCart={() => params.setInCartOnly(false)}
 						onRemovePrice={() => params.setPriceRange("", "")}
 						onRemoveSearch={() => params.setSearch("")}
-						onRemoveUnit={(unit) =>
-							params.setUnits(filters.units.filter((value) => value !== unit))
-						}
 					/>
 					{content}
 				</div>

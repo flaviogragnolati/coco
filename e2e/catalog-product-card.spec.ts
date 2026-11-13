@@ -114,3 +114,36 @@ test("a catalog card's image and name open the product detail", async ({
 	await expect(page).toHaveURL(/[?&]product=\d+/);
 	await expect(page.getByRole("dialog")).toBeVisible();
 });
+
+test("the product detail has a single close control and no filler texts", async ({
+	page,
+}) => {
+	await page.goto("/products");
+	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
+
+	const card = page.locator("main [data-slot='card']").first();
+	test.skip((await card.count()) === 0, "The current fixture has no products.");
+	const name = (await card.getByRole("heading").textContent()) ?? "";
+
+	await card.getByRole("button", { name, exact: true }).click();
+	const dialog = page.getByRole("dialog");
+	// The title reads "Detalle de producto" until the detail query resolves; the
+	// absence checks below only mean something once the body has rendered.
+	await expect(dialog.getByRole("heading", { name, exact: true })).toBeVisible({
+		timeout: 15_000,
+	});
+	await expect(dialog.locator("[data-slot='skeleton']")).toHaveCount(0);
+	await expect(dialog.getByText("Sin galería adicional")).toHaveCount(0);
+	await expect(
+		dialog.getByText(
+			"Producto disponible para pedidos mayoristas compartidos.",
+		),
+	).toHaveCount(0);
+	await expect(dialog.locator("[data-slot='dialog-description']")).toHaveClass(
+		/\bsr-only\b/,
+	);
+	await expect(dialog.getByRole("button", { name: "Cerrar" })).toHaveCount(1);
+
+	await dialog.getByRole("button", { name: "Cerrar" }).click();
+	await expect(page).not.toHaveURL(/[?&]product=/);
+});

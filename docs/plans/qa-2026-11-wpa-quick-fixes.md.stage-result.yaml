@@ -1,0 +1,41 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: "q-code-implement"
+  mode: "standalone"
+  outcome: "completed_with_warnings"
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_type: "implementation-plan"
+      path: "docs/plans/qa-2026-11-wpa-quick-fixes.md"
+      change: "WP-A plan with execution record: #93 cause, per-ticket changes, validation, pending e2e, QA checks"
+    - artifact_type: "domain-context"
+      path: "CONTEXT.md"
+      change: "Similar product: category first, then brand, then unit; name affinity before price"
+  references_added: []
+  traceability_delta:
+    - {item: "#93", implemented_by: "commit 198ee92 on wpa-quick-fixes"}
+    - {item: "#97 + #107 partial", implemented_by: "commit d6da60b on wpa-quick-fixes"}
+    - {item: "#107 similar products", implemented_by: "commit c6856e3, ad5710f on wpa-quick-fixes"}
+    - {item: "#109", implemented_by: "commit 4f07175 on wpa-quick-fixes"}
+    - {item: "#103", implemented_by: "commit 560fb62 on wpa-quick-fixes"}
+    - {item: "#92 code", implemented_by: "commit a56591c on wpa-quick-fixes"}
+  decisions_added_or_updated:
+    - "#93: fragment hrefs render a native anchor (HashSafeLink); cross-page section links now reload the page"
+    - "#107: name-word affinity (ignoring connectors) orders each similar-products tier before price proximity"
+  risks_added_or_updated:
+    - "#93 workaround depends on Next 16.2 route-cache behavior; revisit on Next upgrade"
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "Independent review done; findings applied (connector stoplist, comments, e2e, QA notes)"
+    - "e2e green against the disposable local database: home-section-links 6/6 and 10/10 repeated, catalog-product-card, smoke, catalog-category-filter, home-offer-quantity, supplier-application (24/24)"
+    - "/products logs a hydration mismatch in the filters sidebar; also present on main, not addressed here"
+    - "#93 cause confirmed in an isolated repro; the triple fragment and the page freeze were not reproduced"
+    - "#92 admin clearing bug did not reproduce; the new tests pass on unchanged code"
+  required_user_actions: []
+  next_recommended_action: "Merge --no-ff wpa-quick-fixes into main"
+orchestration:
+  mode: "standalone"
+  global_state_updated: false
+  reconciliation_required: true

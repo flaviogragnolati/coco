@@ -48,7 +48,7 @@ export function LoginForm({ callbackURL = "/" }: { callbackURL?: string }) {
 	return (
 		<Card className="w-full">
 			<CardHeader>
-				<CardTitle>Ingresar a Coco</CardTitle>
+				<CardTitle>Ingresar a CoCo</CardTitle>
 				<CardDescription>
 					Usa tu cuenta de Google para acceder a la plataforma.
 				</CardDescription>

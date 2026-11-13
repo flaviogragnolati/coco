@@ -12,7 +12,7 @@ export const announcementMessage =
 
 export const howItWorksSteps = [
 	"Cuando armás tu pedido, estás comprando con otros vecinos.",
-	"Coco consolida los pedidos para acceder al precio mayorista.",
+	"CoCo consolida los pedidos para acceder al precio mayorista.",
 	"No somos una distribuidora: coordinamos los recursos para comprar lo que vos necesitás.",
 	"El pedido sale desde origen con destino a tu ciudad.",
 	"Al llegar, lo retirás en el punto de retiro que elegiste o te lo llevamos a tu dirección.",

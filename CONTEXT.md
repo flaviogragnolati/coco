@@ -245,8 +245,8 @@ The range of days, counted from a weekly closing, that customers are told an ord
 _Avoid_: ETA, delivery date, SLA
 
 **Similar product**:
-Another current catalog product proposed alongside the one a customer is looking at, related by shared brand first and shared unit second. The relation is derived, not declared: nothing in the data marks two products as similar. Spanish-facing UI labels it "Productos similares".
-_Avoid_: Related product, category, recommendation
+Another current catalog product proposed alongside the one a customer is looking at, related by shared category first, shared brand second and shared unit third; inside each tier, products whose names share more words come first (the other sizes of the same product), then the closest in price. The relation is derived, not declared: nothing in the data marks two products as similar. Never padded with unrelated products. Spanish-facing UI labels it "Productos similares".
+_Avoid_: Related product, recommendation
 
 **Client terms**:
 The active customer-facing commercial terms for a product: unit price, minimum order quantity, optional step and maximum, optional market price, optional offer discount, currency, and validity window. The minimum and step prices are stored beside them but derived from the unit price, never entered. The single price source for catalog and cart; a price change edits them in place, because closing them invalidates open carts.

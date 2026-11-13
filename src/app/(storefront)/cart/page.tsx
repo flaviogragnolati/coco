@@ -4,7 +4,7 @@ import { CartClient } from "~/app/(storefront)/cart/_components/cart-client";
 import { getSession } from "~/server/better-auth/server";
 
 export const metadata: Metadata = {
-	title: "Tu pedido | Coco",
+	title: "Tu pedido | CoCo",
 	description:
 		"Revisá tus productos, cantidades y resumen antes de iniciar checkout.",
 };

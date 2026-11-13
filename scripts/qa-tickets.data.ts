@@ -848,9 +848,9 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		actor: "Cliente",
 		feature: "Invitación al tutorial",
 		steps:
-			'Precondiciones: una cuenta de Google que nunca ingresó a Coco (o un usuario con la invitación sin responder), y un segundo navegador.\n1) Sin sesión, agregar un producto e ir a pagar: ingresar con Google hasta llegar a `/checkout`.\n2) Pagar con Mercado Pago (sandbox) hasta volver a `/checkout/mercadopago/success`.\n3) Ir a `/` y mirar la esquina inferior.\n4) Elegir "Ahora no", recargar y navegar por la tienda.\n5) Ingresar con la misma cuenta en el segundo navegador.',
+			'Precondiciones: una cuenta de Google que nunca ingresó a CoCo (o un usuario con la invitación sin responder), y un segundo navegador.\n1) Sin sesión, agregar un producto e ir a pagar: ingresar con Google hasta llegar a `/checkout`.\n2) Pagar con Mercado Pago (sandbox) hasta volver a `/checkout/mercadopago/success`.\n3) Ir a `/` y mirar la esquina inferior.\n4) Elegir "Ahora no", recargar y navegar por la tienda.\n5) Ingresar con la misma cuenta en el segundo navegador.',
 		expectedResult:
-			'En `/checkout` y en la página de regreso de Mercado Pago no aparece ninguna invitación.\nEn `/` aparece la tarjeta "¿Primera vez en Coco?" con "Tutorial rápido · 1 min", "Tutorial completo · 3 min" y "Ahora no".\nDespués de "Ahora no" no vuelve a aparecer, ni al recargar ni en el segundo navegador; elegir una versión en lugar de "Ahora no" abre el tutorial y también la cierra para siempre.',
+			'En `/checkout` y en la página de regreso de Mercado Pago no aparece ninguna invitación.\nEn `/` aparece la tarjeta "¿Primera vez en CoCo?" con "Tutorial rápido · 1 min", "Tutorial completo · 3 min" y "Ahora no".\nDespués de "Ahora no" no vuelve a aparecer, ni al recargar ni en el segundo navegador; elegir una versión en lugar de "Ahora no" abre el tutorial y también la cierra para siempre.',
 		isRegressionPath: false,
 	},
 ];

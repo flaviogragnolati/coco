@@ -1,13 +1,8 @@
 import type {
 	CatalogCategorySummary,
 	CatalogProductListItem,
-	CatalogProductUnit,
 } from "~/shared/common/catalog.types";
-import {
-	getPerUnitPrice,
-	productUnitLabelMap,
-	toNumber,
-} from "~/shared/common/commerce.helpers";
+import { getPerUnitPrice, toNumber } from "~/shared/common/commerce.helpers";
 
 export type CatalogSort =
 	| "relevance"
@@ -20,7 +15,6 @@ export type CatalogSort =
 export type CatalogFilters = {
 	search: string;
 	brandIds: number[];
-	units: CatalogProductUnit[];
 	minPrice: string;
 	maxPrice: string;
 	inCartOnly: boolean;
@@ -30,7 +24,6 @@ export type CatalogFilters = {
 export const emptyCatalogFilters: CatalogFilters = {
 	search: "",
 	brandIds: [],
-	units: [],
 	minPrice: "",
 	maxPrice: "",
 	inCartOnly: false,
@@ -38,11 +31,6 @@ export const emptyCatalogFilters: CatalogFilters = {
 };
 
 export type CatalogBrandFacet = { id: number; label: string; count: number };
-export type CatalogUnitFacet = {
-	unit: CatalogProductUnit;
-	label: string;
-	count: number;
-};
 export type CatalogCategoryChip = { id: number; label: string };
 
 export function normalizeSearch(value: string) {
@@ -103,7 +91,6 @@ export function filterCatalog(
 	const minPrice = toNumber(filters.minPrice);
 	const maxPrice = toNumber(filters.maxPrice);
 	const brandIds = new Set(filters.brandIds);
-	const units = new Set(filters.units);
 	const inCartTermsIds = options.inCartTermsIds ?? new Set<number>();
 
 	return products.filter((product) => {
@@ -115,8 +102,6 @@ export function filterCatalog(
 		) {
 			return false;
 		}
-
-		if (units.size > 0 && !units.has(product.unit)) return false;
 
 		if (
 			filters.categoryId !== null &&
@@ -181,14 +166,38 @@ export function sortCatalog(
 
 export type SimilarProductReference = Pick<
 	CatalogProductListItem,
-	"id" | "unit" | "brand" | "terms"
+	"id" | "name" | "unit" | "brand" | "category" | "terms"
 >;
 
+const NAME_CONNECTORS = new Set([
+	"con",
+	"sin",
+	"del",
+	"para",
+	"los",
+	"las",
+	"por",
+]);
+
+/** Name words of three or more letters, without bare numbers (sizes) or common connectors. */
+function nameWords(name: string) {
+	return new Set(
+		normalizeSearch(name)
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter(
+				(word) =>
+					word.length >= 3 && !/^\d+$/.test(word) && !NAME_CONNECTORS.has(word),
+			),
+	);
+}
+
 /**
- * Products to propose alongside `current`: same brand first, same unit second,
- * each tier ordered by how close its price is to the current product's.
+ * Products to propose alongside `current`: same category first, then same
+ * brand, then same unit. Inside each tier, products whose names share more
+ * words with the current one come first (the other sizes of the same product),
+ * then the ones closest in price.
  *
- * The relation is derived from brand and unit, not declared.
+ * The relation is derived from category, brand and unit, not declared.
  * It never falls through to unrelated products: returning fewer than `limit`
  * results — or none — is the intended behavior, because padding the list would
  * make "Productos similares" a lie.
@@ -199,10 +208,20 @@ export function selectSimilarProducts(
 	limit = 3,
 ): CatalogProductListItem[] {
 	const referencePrice = productPrice(current);
+	const referenceWords = nameWords(current.name);
+	const sharedWords = (product: CatalogProductListItem) => {
+		let count = 0;
+		for (const word of nameWords(product.name)) {
+			if (referenceWords.has(word)) count += 1;
+		}
+		return count;
+	};
 	const compare = (
 		left: CatalogProductListItem,
 		right: CatalogProductListItem,
 	) => {
+		const affinity = sharedWords(right) - sharedWords(left);
+		if (affinity !== 0) return affinity;
 		const distance =
 			Math.abs(productPrice(left) - referencePrice) -
 			Math.abs(productPrice(right) - referencePrice);
@@ -213,24 +232,27 @@ export function selectSimilarProducts(
 	};
 
 	const candidates = products.filter((product) => product.id !== current.id);
+	const picked = new Set<number>();
+	const takeTier = (matches: (product: CatalogProductListItem) => boolean) => {
+		const tier = candidates
+			.filter((product) => !picked.has(product.id) && matches(product))
+			.sort(compare);
+		for (const product of tier) picked.add(product.id);
+		return tier;
+	};
 
-	// A missing brand is not a brand two products can share, so a brandless
-	// current product skips this tier instead of matching every other one.
-	const brandTier = current.brand
-		? candidates
-				.filter((product) => product.brand?.id === current.brand?.id)
-				.sort(compare)
+	// A missing category or brand is not one two products can share, so a
+	// current product without it skips that tier instead of matching every
+	// other product that also lacks it.
+	const categoryTier = current.category
+		? takeTier((product) => product.category?.id === current.category?.id)
 		: [];
+	const brandTier = current.brand
+		? takeTier((product) => product.brand?.id === current.brand?.id)
+		: [];
+	const unitTier = takeTier((product) => product.unit === current.unit);
 
-	const brandTierIds = new Set(brandTier.map((product) => product.id));
-	const unitTier = candidates
-		.filter(
-			(product) =>
-				product.unit === current.unit && !brandTierIds.has(product.id),
-		)
-		.sort(compare);
-
-	return [...brandTier, ...unitTier].slice(0, limit);
+	return [...categoryTier, ...brandTier, ...unitTier].slice(0, limit);
 }
 
 export function computeBrandFacets(
@@ -283,22 +305,4 @@ export function resolveCategoryId(
 	categoryId: number | null,
 ): number | null {
 	return chips.some((chip) => chip.id === categoryId) ? categoryId : null;
-}
-
-export function computeUnitFacets(
-	products: CatalogProductListItem[],
-): CatalogUnitFacet[] {
-	const unitMap = new Map<CatalogProductUnit, number>();
-
-	for (const product of products) {
-		unitMap.set(product.unit, (unitMap.get(product.unit) ?? 0) + 1);
-	}
-
-	return Array.from(unitMap.entries())
-		.map(([unit, count]) => ({
-			unit,
-			label: productUnitLabelMap[unit],
-			count,
-		}))
-		.sort((left, right) => left.label.localeCompare(right.label, "es"));
 }
