@@ -1,6 +1,15 @@
 # Implementation Plan: product card — step price first, compact layout, badge slots
 
 > **Status:** Implemented 2026-10-23 (see Execution record), commit `573f722` on `main`. Feature grill 2026-10-23. Decisions confirmed by Flavio.
+>
+> **En parte reemplazado por #106 (2026-11-13).** Ver `docs/plans/qa-2026-11-wpc-product-card.md`. Lo que cambia de este plan:
+> - El total sale del botón: "Sumar al pedido" va sin monto ni ícono en todas las superficies, y el catálogo deja de decir "Agregar". El total queda solo para lectores de pantalla.
+> - El precio comparativo se muestra siempre, también con paso de 1 kg o 1 L.
+> - Los envasados se rotulan sin tamaño: "por bidón" en vez de "por bidón 5 L".
+> - El selector muestra solo el número en los envasados.
+> - La imagen pasa a 1:1 completa (`contain`) en vez de 3:2 o 4:3 recortada.
+>
+> Siguen vigentes la jerarquía de precios, la tarjeta compacta y los badges.
 
 ## 1. Objective & outcome
 

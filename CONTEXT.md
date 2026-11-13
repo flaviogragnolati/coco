@@ -237,11 +237,11 @@ The price charged per unit of a product (per kg, per jar) under its client terms
 _Avoid_: Reference price, refPrice, precio de referencia, MOQ price
 
 **Step price**:
-The offer price of one step of quantity: unit price × step, with the offer discount applied. It is a product card's headline price, labelled by the step it buys ("por 500 g", "por frasco 370 g").
+The offer price of one step of quantity: unit price × step, with the offer discount applied. It is a product card's headline price, labelled by the step it buys: weights keep the amount ("por 500 g", "por kg"), packaged products name only the container ("por bidón", "por 6 frascos"), because the size is already in the product name.
 _Avoid_: Block price, MOQ price, precio del bloque
 
 **Comparison price**:
-The offer price per kg or per litre, shown beside the step price so customers can compare products sold in different steps and packages. For products sold by weight it is the unit price; for products sold by the unit it is read from the presentation size, and it is left out when that size can't be read or when it equals the step price. Spanish-facing UI shows only the amount and its measure ("$ 22.600 / kg").
+The offer price per kg or per litre, shown beside the step price so customers can compare products sold in different steps and packages. For products sold by weight it is the unit price; for products sold by the unit it is read from the presentation size, and it is left out only when that size can't be read. It shows even when it equals the step price (a 1 kg or 1 L step), so every card carries the same yardstick. Spanish-facing UI shows only the amount and its measure ("$ 22.600 / kg").
 _Avoid_: Reference price, precio de referencia, unit price
 
 **Price sheet**:
@@ -291,6 +291,10 @@ _Avoid_: Order placement, purchase flow
 **Leave checkout**:
 The explicit way back from a frozen at-checkout cart to an editable one: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why editing the cart mid-checkout is offered as leaving rather than as a direct edit. Blocked while a payment is in process. Spanish-facing UI labels it "Volver a editar el pedido".
 _Avoid_: Cancel checkout, abort checkout, unfreeze
+
+**Repeat order**:
+Putting the products of an earlier order back into the customer's open cart, at today's client terms. The customer picks which products in a dialog that shows today's price and marks those no longer purchasable; the chosen quantities add to what the cart already holds, adjusted to the minimum, step and maximum. The earlier order and its snapshots never change, and nothing is confirmed: the result is an ordinary editable cart that goes through checkout as usual. Not offered on a pending order, and refused while another order is waiting for its payment, so it never cancels a payment the way editing does. Spanish-facing UI labels it "Repetir pedido".
+_Avoid_: Repetir compra, reorder, duplicate order, clone order
 
 ### Customer help
 
