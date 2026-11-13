@@ -1,7 +1,13 @@
+import { z } from "zod";
+
 import {
+	homeComboCandidateListOutputSchema,
+	homeFeaturedAddInputSchema,
+	homeFeaturedListOutputSchema,
+	homeFeaturedPreviewSchema,
+	homeFeaturedRemoveInputSchema,
+	homeFeaturedReorderInputSchema,
 	homeOfferCandidateListOutputSchema,
-	homeOfferPinSchema,
-	homeOfferSetPinnedRankInputSchema,
 	homeOfferSetSpotlightInputSchema,
 	homeOfferSettingsSchema,
 	homeOfferSettingsUpdateInputSchema,
@@ -10,6 +16,8 @@ import { mapServiceError } from "~/server/api/_shared/map-service-error";
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
 import { toAdminActor } from "~/server/auth/auth.utils";
 import * as homeOffersService from "~/server/services/admin/home-offers.service";
+
+const featuredIdResultSchema = z.object({ id: z.number().int().positive() });
 
 // Curating the home is merchandising, not language or payment governance, so
 // every procedure here stops at `adminProcedure`.
@@ -21,6 +29,18 @@ export const homeOffersRouter = createTRPCRouter({
 	listCandidates: adminProcedure
 		.output(homeOfferCandidateListOutputSchema)
 		.query(async ({ ctx }) => homeOffersService.listCandidates(ctx.db)),
+
+	listComboCandidates: adminProcedure
+		.output(homeComboCandidateListOutputSchema)
+		.query(async ({ ctx }) => homeOffersService.listComboCandidates(ctx.db)),
+
+	listFeatured: adminProcedure
+		.output(homeFeaturedListOutputSchema)
+		.query(async ({ ctx }) => homeOffersService.listFeatured(ctx.db)),
+
+	preview: adminProcedure
+		.output(homeFeaturedPreviewSchema)
+		.query(async () => homeOffersService.preview()),
 
 	updateSettings: adminProcedure
 		.input(homeOfferSettingsUpdateInputSchema)
@@ -52,12 +72,42 @@ export const homeOffersRouter = createTRPCRouter({
 			}
 		}),
 
-	setPinnedRank: adminProcedure
-		.input(homeOfferSetPinnedRankInputSchema)
-		.output(homeOfferPinSchema)
+	addFeatured: adminProcedure
+		.input(homeFeaturedAddInputSchema)
+		.output(featuredIdResultSchema)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				return await homeOffersService.setPinnedRank(
+				return await homeOffersService.addFeatured(
+					input,
+					toAdminActor(ctx.session.user),
+					ctx.db,
+				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	removeFeatured: adminProcedure
+		.input(homeFeaturedRemoveInputSchema)
+		.output(featuredIdResultSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await homeOffersService.removeFeatured(
+					input,
+					toAdminActor(ctx.session.user),
+					ctx.db,
+				);
+			} catch (error) {
+				mapServiceError(error);
+			}
+		}),
+
+	reorderFeatured: adminProcedure
+		.input(homeFeaturedReorderInputSchema)
+		.output(homeFeaturedReorderInputSchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				return await homeOffersService.reorderFeatured(
 					input,
 					toAdminActor(ctx.session.user),
 					ctx.db,

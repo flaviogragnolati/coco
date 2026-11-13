@@ -3,10 +3,9 @@
 import {
 	ArrowDownIcon,
 	ArrowUpIcon,
-	PinOffIcon,
-	PlusIcon,
 	SaveIcon,
 	TriangleAlertIcon,
+	XIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -21,8 +20,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { Checkbox } from "~/components/ui/checkbox";
 import { Combobox, type ComboboxOption } from "~/components/ui/combobox";
-import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
+import {
+	Field,
+	FieldContent,
+	FieldDescription,
+	FieldLabel,
+} from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
@@ -30,21 +35,18 @@ import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
-import { compareRankedOffers } from "~/server/services/home/home-ranking";
 import type {
-	HomeOfferCandidate,
+	FeaturedTargetInput,
+	HomeComboCandidate,
+	HomeFeaturedListItem,
 	HomeOffersCriterion,
 } from "~/shared/common/admin-crud/home-offers.types";
-import {
-	formatCurrency,
-	productUnitLabelMap,
-	toNumber,
-} from "~/shared/common/commerce.helpers";
-import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { api } from "~/trpc/react";
-import { resolvePreviewSpotlightId } from "./home-offers-preview";
 
-const spotlightNoneValue = "none";
+const PAGE_TITLE = "Destacados";
+const PAGE_DESCRIPTION =
+	"Elegí qué combos y productos se ven en el home y qué va en la banda destacada.";
+const SPOTLIGHT_NONE = "none";
 
 const criterionOptions: Array<{
 	value: HomeOffersCriterion;
@@ -71,29 +73,49 @@ const criterionOptions: Array<{
 	},
 ];
 
-function describeCandidate(candidate: HomeOfferCandidate) {
-	const parts: string[] = [];
-	if (candidate.brandName) parts.push(candidate.brandName);
-	parts.push(productUnitLabelMap[candidate.unit]);
-	return parts.join(" · ");
+function targetValue(target: FeaturedTargetInput | null) {
+	if (!target) return SPOTLIGHT_NONE;
+	return target.kind === "product"
+		? `product:${target.productId}`
+		: `combo:${target.comboId}`;
 }
 
-function describeOfferValue(candidate: HomeOfferCandidate) {
-	const parts: string[] = [];
+function parseTargetValue(value: string): FeaturedTargetInput | null {
+	const [kind, rawId] = value.split(":");
+	const id = Number(rawId);
+	if (!Number.isInteger(id) || id <= 0) return null;
+	if (kind === "product") return { kind: "product", productId: id };
+	if (kind === "combo") return { kind: "combo", comboId: id };
+	return null;
+}
 
-	if (candidate.offerUnitPrice !== null) {
-		parts.push(
-			`${formatCurrency(candidate.offerUnitPrice, candidate.currency ?? "ARS")} por ${productUnitLabelMap[candidate.unit]}`,
+function comboLabel(combo: HomeComboCandidate) {
+	const details = [
+		combo.groupName,
+		combo.people === null
+			? null
+			: `${combo.people} persona${combo.people === 1 ? "" : "s"}`,
+	].filter(Boolean);
+	return details.length > 0
+		? `${combo.name} (${details.join(", ")})`
+		: combo.name;
+}
+
+function FeaturedStatus({ item }: { item: HomeFeaturedListItem }) {
+	if (item.status === "noPrice") {
+		return <Badge variant="destructive">Sin precio vigente</Badge>;
+	}
+	if (item.status === "inactive") {
+		return <Badge variant="warning">Inactivo</Badge>;
+	}
+	if (item.status === "sharedCard") {
+		return (
+			<Badge variant="info">
+				Se muestra en la tarjeta de {item.sharedWithName}
+			</Badge>
 		);
 	}
-	if (candidate.discountPercent) parts.push(`-${candidate.discountPercent}%`);
-	if (candidate.marketSaving !== null) {
-		parts.push(
-			`ahorra ${formatCurrency(candidate.marketSaving, candidate.currency ?? "ARS")}`,
-		);
-	}
-
-	return parts.join(" · ");
+	return null;
 }
 
 export function HomeOffersClient() {
@@ -101,294 +123,360 @@ export function HomeOffersClient() {
 
 	const settingsQuery = api.admin.homeOffers.getSettings.useQuery();
 	const candidatesQuery = api.admin.homeOffers.listCandidates.useQuery();
+	const comboCandidatesQuery =
+		api.admin.homeOffers.listComboCandidates.useQuery();
+	const featuredQuery = api.admin.homeOffers.listFeatured.useQuery();
+	const previewQuery = api.admin.homeOffers.preview.useQuery();
 
 	const [criterion, setCriterion] =
 		useState<HomeOffersCriterion>("marketSaving");
 	const [offersLimit, setOffersLimit] = useState("4");
+	const [fillWithRanking, setFillWithRanking] = useState(true);
 
-	// The criterion and the grid size are edited together and saved with one
+	// The fill, the criterion and the number of places are saved with one
 	// button, so they live in local state until the settings row answers again.
 	useEffect(() => {
 		if (!settingsQuery.data) return;
 		setCriterion(settingsQuery.data.criterion);
 		setOffersLimit(String(settingsQuery.data.offersLimit));
+		setFillWithRanking(settingsQuery.data.fillWithRanking);
 	}, [settingsQuery.data]);
 
 	const invalidateHomeOffers = async () => {
-		await Promise.all([
-			utils.admin.homeOffers.getSettings.invalidate(),
-			utils.admin.homeOffers.listCandidates.invalidate(),
-		]);
+		await utils.admin.homeOffers.invalidate();
 	};
+
+	const onMutationError = (fallback: string) => (error: { message: string }) =>
+		toast.error(error.message || fallback);
 
 	const updateSettingsMutation =
 		api.admin.homeOffers.updateSettings.useMutation({
 			onSuccess: async () => {
-				toast.success("Configuración de ofertas guardada");
+				toast.success("Configuración de destacados guardada");
 				await invalidateHomeOffers();
 			},
-			onError: (error) => {
-				toast.error(error.message || "No se pudo guardar la configuración");
-			},
+			onError: onMutationError("No se pudo guardar la configuración"),
 		});
 
 	const setSpotlightMutation = api.admin.homeOffers.setSpotlight.useMutation({
 		onSuccess: async () => {
-			toast.success("Producto destacado actualizado");
+			toast.success("Banda destacada actualizada");
 			await invalidateHomeOffers();
 		},
-		onError: (error) => {
-			toast.error(error.message || "No se pudo cambiar el producto destacado");
-		},
+		onError: onMutationError("No se pudo cambiar la banda destacada"),
 	});
 
-	const setPinnedRankMutation =
-		api.admin.homeOffers.setPinnedRank.useMutation();
+	const addFeaturedMutation = api.admin.homeOffers.addFeatured.useMutation({
+		onSuccess: async () => {
+			toast.success("Agregado a destacados");
+			await invalidateHomeOffers();
+		},
+		onError: onMutationError("No se pudo agregar a destacados"),
+	});
 
+	const removeFeaturedMutation =
+		api.admin.homeOffers.removeFeatured.useMutation({
+			onSuccess: async () => {
+				toast.success("Quitado de destacados");
+				await invalidateHomeOffers();
+			},
+			onError: onMutationError("No se pudo quitar de destacados"),
+		});
+
+	const reorderFeaturedMutation =
+		api.admin.homeOffers.reorderFeatured.useMutation({
+			onSuccess: async () => {
+				await invalidateHomeOffers();
+			},
+			onError: async (error) => {
+				toast.error(error.message || "No se pudo cambiar el orden");
+				await invalidateHomeOffers();
+			},
+		});
+
+	const featured = useMemo(
+		() => featuredQuery.data ?? [],
+		[featuredQuery.data],
+	);
 	const candidates = useMemo(
 		() => candidatesQuery.data ?? [],
 		[candidatesQuery.data],
 	);
-	const spotlightProductId = settingsQuery.data?.spotlightProductId ?? null;
+	const comboCandidates = useMemo(
+		() => comboCandidatesQuery.data ?? [],
+		[comboCandidatesQuery.data],
+	);
 
-	const parsedLimit = toNumber(offersLimit);
-	const gridSize =
-		parsedLimit !== null && parsedLimit >= 1
-			? Math.floor(parsedLimit)
-			: (settingsQuery.data?.offersLimit ?? 4);
+	// Measured against the saved settings, which are what the preview reflects.
+	const placeCount = settingsQuery.data?.offersLimit ?? 4;
+	const spotlightValue = targetValue(settingsQuery.data?.spotlight ?? null);
+	const placedFromList =
+		previewQuery.data?.featured.filter((entry) => entry.source === "list")
+			.length ?? 0;
+	const showableListCount = featured.filter(
+		(item) =>
+			item.status === "shown" && targetValue(item.target) !== spotlightValue,
+	).length;
+	const hiddenByLimit = previewQuery.data
+		? Math.max(0, showableListCount - placedFromList)
+		: 0;
 
-	const pinned = useMemo(
+	const productOptions = useMemo<ComboboxOption[]>(
 		() =>
-			candidates
-				.filter((candidate) => candidate.pinnedRank !== null)
-				.sort(
-					(left, right) =>
-						(left.pinnedRank ?? 0) - (right.pinnedRank ?? 0) ||
-						left.name.localeCompare(right.name),
-				),
+			candidates.map((candidate) => ({
+				value: targetValue({ kind: "product", productId: candidate.productId }),
+				label: candidate.name,
+				keywords: candidate.brandName ? [candidate.brandName] : undefined,
+				group: "Productos",
+			})),
 		[candidates],
 	);
-
-	// Ordered by the home's own comparator, not a lookalike: a preview that
-	// disagreed with the grid it predicts would be worse than no preview.
-	const rankingFill = useMemo(
+	const comboOptions = useMemo<ComboboxOption[]>(
 		() =>
-			candidates
-				.filter(
-					(candidate) =>
-						candidate.hasCurrentTerms && candidate.pinnedRank === null,
-				)
-				.map((candidate) => ({
-					...candidate,
-					fromDate: candidate.termsFromDate ?? new Date(0),
-					productClientTermsId: candidate.productClientTermsId ?? 0,
-				}))
-				.sort(
-					compareRankedOffers((candidate) => {
-						if (criterion === "orderVolume") return candidate.paidOrderCount;
-						return criterion === "marketSaving"
-							? candidate.marketSaving
-							: toNumber(candidate.discountPercent);
-					}),
-				),
-		[candidates, criterion],
-	);
-
-	const showablePinned = pinned.filter(
-		(candidate) => candidate.hasCurrentTerms,
-	);
-	const bandProductId = resolvePreviewSpotlightId(spotlightProductId, [
-		...showablePinned,
-		...rankingFill,
-	]);
-	const renderedPinned = showablePinned.filter(
-		(candidate) => candidate.productId !== bandProductId,
-	);
-	const shownPinned = renderedPinned.slice(0, gridSize);
-	const hiddenPinnedCount = renderedPinned.length - shownPinned.length;
-	const previewFill = rankingFill
-		.filter((candidate) => candidate.productId !== bandProductId)
-		.slice(0, Math.max(0, gridSize - shownPinned.length));
-	const rankedBandCandidate = rankingFill.find(
-		(candidate) =>
-			candidate.productId === bandProductId &&
-			candidate.productId !== spotlightProductId,
+			comboCandidates
+				.filter((combo) => combo.active)
+				.map((combo) => ({
+					value: targetValue({ kind: "combo", comboId: combo.comboId }),
+					label: comboLabel(combo),
+					keywords: combo.groupName ? [combo.groupName] : undefined,
+					group: "Combos",
+				})),
+		[comboCandidates],
 	);
 
 	const spotlightOptions = useMemo<ComboboxOption[]>(
 		() => [
-			{ value: spotlightNoneValue, label: "Sin destacado (usa el ranking)" },
-			...candidates
-				.filter((candidate) => candidate.hasCurrentTerms)
-				.map((candidate) => ({
-					value: String(candidate.productId),
-					label: candidate.name,
-					keywords: candidate.brandName ? [candidate.brandName] : undefined,
-				})),
+			{ value: SPOTLIGHT_NONE, label: "Sin elección" },
+			...comboOptions,
+			...productOptions,
 		],
-		[candidates],
+		[comboOptions, productOptions],
 	);
 
-	const pinnableOptions = useMemo<ComboboxOption[]>(
-		() =>
-			candidates
-				.filter(
-					(candidate) =>
-						candidate.hasCurrentTerms && candidate.pinnedRank === null,
-				)
-				.map((candidate) => ({
-					value: String(candidate.productId),
-					label: candidate.name,
-					keywords: candidate.brandName ? [candidate.brandName] : undefined,
-				})),
-		[candidates],
+	const listedValues = new Set(
+		featured.map((item) => targetValue(item.target)),
+	);
+	const addOptions = [...comboOptions, ...productOptions].filter(
+		(option) => !listedValues.has(option.value),
 	);
 
-	const isReordering = setPinnedRankMutation.isPending;
+	const isEditingList =
+		addFeaturedMutation.isPending ||
+		removeFeaturedMutation.isPending ||
+		reorderFeaturedMutation.isPending;
 
-	const runPinUpdates = async (
-		updates: Array<{ productId: number; rank: number | null }>,
-		successMessage: string,
-	) => {
-		try {
-			for (const update of updates) {
-				await setPinnedRankMutation.mutateAsync(update);
-			}
-			toast.success(successMessage);
-		} catch (error) {
-			toast.error(
-				error instanceof Error
-					? error.message
-					: "No se pudieron actualizar las ofertas fijadas",
-			);
-		} finally {
-			await invalidateHomeOffers();
-		}
-	};
-
-	// Ranks are renormalized to 1..n on every reorder: gaps and ties would make
-	// the pinned order depend on a tie-break the admin never chose.
-	const applyPinnedOrder = async (
-		ordered: HomeOfferCandidate[],
-		successMessage: string,
-	) => {
-		const updates = ordered
-			.map((candidate, index) => ({
-				productId: candidate.productId,
-				rank: index + 1,
-				currentRank: candidate.pinnedRank,
-			}))
-			.filter((update) => update.currentRank !== update.rank)
-			.map(({ productId, rank }) => ({ productId, rank }));
-
-		if (updates.length === 0) return;
-		await runPinUpdates(updates, successMessage);
-	};
-
-	const movePinned = async (index: number, offset: number) => {
+	const moveFeatured = (index: number, offset: number) => {
 		const target = index + offset;
-		if (target < 0 || target >= pinned.length) return;
-
-		const ordered = [...pinned];
-		const [moved] = ordered.splice(index, 1);
-		if (!moved) return;
-		ordered.splice(target, 0, moved);
-
-		await applyPinnedOrder(ordered, "Orden de ofertas fijadas actualizado");
+		if (target < 0 || target >= featured.length) return;
+		const ids = featured.map((item) => item.id);
+		const [moved] = ids.splice(index, 1);
+		if (moved === undefined) return;
+		ids.splice(target, 0, moved);
+		reorderFeaturedMutation.mutate({ ids });
 	};
 
-	const addPinned = async (productId: number) => {
-		// One past the highest rank in use, not `pinned.length + 1`: the ranks in
-		// the database may have gaps and a collision would make the new pin land
-		// on an arbitrary tie-break.
-		const lastRank = pinned.reduce(
-			(highest, candidate) => Math.max(highest, candidate.pinnedRank ?? 0),
-			0,
-		);
-		await runPinUpdates([{ productId, rank: lastRank + 1 }], "Oferta fijada");
-	};
-
-	const removePinned = async (candidate: HomeOfferCandidate) => {
-		await runPinUpdates(
-			[{ productId: candidate.productId, rank: null }],
-			`${candidate.name} ya no está fijado`,
-		);
-	};
-
-	if (settingsQuery.isLoading || candidatesQuery.isLoading) {
+	const queries = [
+		settingsQuery,
+		candidatesQuery,
+		comboCandidatesQuery,
+		featuredQuery,
+	];
+	if (queries.some((query) => query.isLoading)) {
 		return (
-			<CrudPageShell
-				description="Elegí qué productos ocupan la grilla de ofertas del home y cuál es el producto destacado."
-				title="Ofertas del home"
-			>
+			<CrudPageShell description={PAGE_DESCRIPTION} title={PAGE_TITLE}>
 				<CrudLoadingState />
 			</CrudPageShell>
 		);
 	}
 
-	if (settingsQuery.isError || candidatesQuery.isError) {
+	const failed = queries.find((query) => query.isError);
+	if (failed) {
 		return (
-			<CrudPageShell
-				description="Elegí qué productos ocupan la grilla de ofertas del home y cuál es el producto destacado."
-				title="Ofertas del home"
-			>
+			<CrudPageShell description={PAGE_DESCRIPTION} title={PAGE_TITLE}>
 				<CrudErrorState
-					message={
-						settingsQuery.error?.message ??
-						candidatesQuery.error?.message ??
-						"Error desconocido"
-					}
+					message={failed.error?.message ?? "Error desconocido"}
 				/>
 			</CrudPageShell>
 		);
 	}
 
 	return (
-		<CrudPageShell
-			description="Elegí qué productos ocupan la grilla de ofertas del home y cuál es el producto destacado."
-			title="Ofertas del home"
-		>
+		<CrudPageShell description={PAGE_DESCRIPTION} title={PAGE_TITLE}>
 			<Card>
 				<CardHeader>
-					<CardTitle>Configuración</CardTitle>
+					<CardTitle>Banda destacada</CardTitle>
 					<CardDescription>
-						El producto destacado va en su propia banda, arriba de la grilla, y
-						no se repite en ella. El criterio ordena todo lo que no esté fijado.
+						Un producto o un combo en su propia banda, arriba de los destacados.
+						No se repite en la sección.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="flex flex-col gap-5">
+				<CardContent>
 					<Field>
 						<FieldLabel htmlFor="home-offers-spotlight">
-							Producto destacado
+							Qué va en la banda
 						</FieldLabel>
 						<Combobox
 							disabled={setSpotlightMutation.isPending}
-							emptyText="Sin productos con términos vigentes"
+							emptyText="Sin productos ni combos para mostrar"
 							id="home-offers-spotlight"
 							onChange={(value) =>
 								setSpotlightMutation.mutate({
-									productId:
-										value === spotlightNoneValue ? null : Number(value),
+									target: parseTargetValue(value),
 								})
 							}
 							options={spotlightOptions}
-							placeholder="Sin destacado (usa el ranking)"
-							searchPlaceholder="Buscar producto..."
-							value={
-								spotlightProductId === null
-									? spotlightNoneValue
-									: String(spotlightProductId)
-							}
+							placeholder="Sin elección"
+							searchPlaceholder="Buscar producto o combo..."
+							value={targetValue(settingsQuery.data?.spotlight ?? null)}
 						/>
 						<FieldDescription>
-							Solo se ofrecen productos con términos de cliente vigentes: sin
-							ellos la banda no tendría precio que mostrar.
+							Sin elección, va el primero del ranking (si el relleno está
+							prendido).
 						</FieldDescription>
+					</Field>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Lista de destacados</CardTitle>
+					<CardDescription>
+						Los combos y productos de la sección, en este orden. Un combo
+						muestra a todo su grupo en una sola tarjeta.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="flex flex-col gap-4">
+					{hiddenByLimit > 0 ? (
+						<Alert>
+							<TriangleAlertIcon />
+							<AlertTitle>
+								Hay más destacados que lugares en la sección
+							</AlertTitle>
+							<AlertDescription>
+								La sección muestra {placeCount} lugares. Los últimos{" "}
+								{hiddenByLimit} de la lista no se van a ver hasta que sumes
+								lugares o quites otros.
+							</AlertDescription>
+						</Alert>
+					) : null}
+
+					{featured.length === 0 ? (
+						<p className="text-muted-foreground text-sm">
+							La lista está vacía.{" "}
+							{fillWithRanking
+								? "La sección se arma sola con el ranking."
+								: "Con el relleno apagado, la sección queda vacía."}
+						</p>
+					) : (
+						<ul className="flex flex-col gap-2">
+							{featured.map((item, index) => (
+								<li
+									className="flex flex-wrap items-center gap-3 rounded-2xl border p-3"
+									key={item.id}
+								>
+									<span className="font-mono text-muted-foreground text-xs">
+										#{index + 1}
+									</span>
+									<Badge variant="outline">
+										{item.target.kind === "combo" ? "Combo" : "Producto"}
+									</Badge>
+									<span className="min-w-40 flex-1 font-medium text-foreground text-sm">
+										{item.name}
+									</span>
+									<FeaturedStatus item={item} />
+									<div className="flex items-center gap-1">
+										<Button
+											aria-label={`Subir ${item.name}`}
+											disabled={index === 0 || isEditingList}
+											onClick={() => moveFeatured(index, -1)}
+											size="icon"
+											variant="outline"
+										>
+											<ArrowUpIcon />
+										</Button>
+										<Button
+											aria-label={`Bajar ${item.name}`}
+											disabled={index === featured.length - 1 || isEditingList}
+											onClick={() => moveFeatured(index, 1)}
+											size="icon"
+											variant="outline"
+										>
+											<ArrowDownIcon />
+										</Button>
+										<Button
+											aria-label={`Quitar ${item.name}`}
+											disabled={isEditingList}
+											onClick={() =>
+												removeFeaturedMutation.mutate({ id: item.id })
+											}
+											variant="outline"
+										>
+											<XIcon data-icon="inline-start" />
+											Quitar
+										</Button>
+									</div>
+								</li>
+							))}
+						</ul>
+					)}
+
+					<Field className="md:w-96">
+						<FieldLabel htmlFor="home-offers-add">
+							Agregar combo o producto
+						</FieldLabel>
+						<Combobox
+							disabled={isEditingList || addOptions.length === 0}
+							emptyText="Sin combos ni productos para agregar"
+							id="home-offers-add"
+							onChange={(value) => {
+								const target = parseTargetValue(value);
+								if (target) addFeaturedMutation.mutate({ target });
+							}}
+							options={addOptions}
+							placeholder="Agregar combo o producto…"
+							searchPlaceholder="Buscar..."
+							value={null}
+						/>
+						<FieldDescription>
+							Se agrega al final. Solo aparecen combos activos y productos con
+							precio vigente.
+						</FieldDescription>
+					</Field>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Relleno</CardTitle>
+					<CardDescription>
+						El ranking completa con productos los lugares que la lista deja
+						libres.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="flex flex-col gap-5">
+					<Field orientation="horizontal">
+						<Checkbox
+							checked={fillWithRanking}
+							id="home-offers-fill"
+							onCheckedChange={(checked) =>
+								setFillWithRanking(checked === true)
+							}
+						/>
+						<FieldContent>
+							<FieldLabel htmlFor="home-offers-fill">
+								Completar con productos del ranking
+							</FieldLabel>
+							<FieldDescription>
+								Apagado, la sección muestra solo la lista y la banda solo lo que
+								elijas.
+							</FieldDescription>
+						</FieldContent>
 					</Field>
 
 					<Field>
 						<FieldLabel>Criterio del ranking</FieldLabel>
 						<ToggleGroup
+							disabled={!fillWithRanking}
 							onValueChange={(value) => {
 								if (value) setCriterion(value as HomeOffersCriterion);
 							}}
@@ -412,7 +500,7 @@ export function HomeOffersClient() {
 
 					<Field className="md:w-48">
 						<FieldLabel htmlFor="home-offers-limit">
-							Ofertas en la grilla
+							Lugares en la sección
 						</FieldLabel>
 						<Input
 							id="home-offers-limit"
@@ -423,7 +511,9 @@ export function HomeOffersClient() {
 							type="number"
 							value={offersLimit}
 						/>
-						<FieldDescription>Entre 1 y 12 tarjetas.</FieldDescription>
+						<FieldDescription>
+							Entre 1 y 12. Un combo ocupa un lugar.
+						</FieldDescription>
 					</Field>
 
 					<div>
@@ -433,6 +523,7 @@ export function HomeOffersClient() {
 								updateSettingsMutation.mutate({
 									criterion,
 									offersLimit: Number(offersLimit),
+									fillWithRanking,
 								})
 							}
 							variant="highlight"
@@ -446,161 +537,43 @@ export function HomeOffersClient() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Ofertas fijadas</CardTitle>
+					<CardTitle>Vista previa</CardTitle>
 					<CardDescription>
-						Las fijadas ocupan la grilla en este orden; el ranking completa los
-						lugares que sobran.
+						Lo que el home muestra ahora, calculado igual que el home.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="flex flex-col gap-4">
-					{hiddenPinnedCount > 0 ? (
-						<Alert>
-							<TriangleAlertIcon />
-							<AlertTitle>Hay más fijadas que lugares en la grilla</AlertTitle>
-							<AlertDescription>
-								Fijaste {renderedPinned.length} ofertas y la grilla muestra{" "}
-								{gridSize}. Las últimas {hiddenPinnedCount} no se van a ver
-								hasta que subas el tamaño de la grilla o las desfijes.
-							</AlertDescription>
-						</Alert>
-					) : null}
-
-					{pinned.length === 0 ? (
-						<p className="text-muted-foreground text-sm">
-							No hay ofertas fijadas. La grilla se arma sola con el ranking.
+				<CardContent className="flex flex-col gap-3 text-sm">
+					{previewQuery.isLoading ? (
+						<p className="text-muted-foreground">Calculando…</p>
+					) : previewQuery.isError || !previewQuery.data ? (
+						<p className="text-destructive">
+							No se pudo calcular la vista previa.
 						</p>
 					) : (
-						<ul className="flex flex-col gap-2">
-							{pinned.map((candidate, index) => {
-								const isSpotlight = candidate.productId === bandProductId;
-								const isOverLimit =
-									candidate.hasCurrentTerms &&
-									!isSpotlight &&
-									renderedPinned.indexOf(candidate) >= gridSize;
-
-								return (
-									<li
-										className="flex flex-wrap items-center gap-3 rounded-2xl border p-3"
-										key={candidate.productId}
-									>
-										<span className="font-mono text-muted-foreground text-xs">
-											#{index + 1}
-										</span>
-										<div className="flex min-w-48 flex-1 flex-col gap-0.5">
-											<span className="font-medium text-foreground text-sm">
-												{candidate.name}
+						<>
+							<p>
+								<span className="font-medium">Banda: </span>
+								{previewQuery.data.spotlight
+									? `${previewQuery.data.spotlight.name} (${previewQuery.data.spotlight.kind === "combo" ? "combo" : "producto"}, ${previewQuery.data.spotlight.source === "list" ? "elegido" : "ranking"})`
+									: "sin banda"}
+							</p>
+							{previewQuery.data.featured.length === 0 ? (
+								<p className="text-muted-foreground">La sección queda vacía.</p>
+							) : (
+								<ol className="flex list-decimal flex-col gap-1 pl-5">
+									{previewQuery.data.featured.map((entry) => (
+										<li key={`${entry.kind}-${entry.name}`}>
+											{entry.name}{" "}
+											<span className="text-muted-foreground">
+												({entry.kind === "combo" ? "combo" : "producto"},{" "}
+												{entry.source === "list" ? "a mano" : "ranking"})
 											</span>
-											<span className="text-muted-foreground text-xs">
-												{describeCandidate(candidate)}
-												{describeOfferValue(candidate)
-													? ` · ${describeOfferValue(candidate)}`
-													: ""}
-											</span>
-											{candidate.termsToDate ? (
-												<span className="text-muted-foreground text-xs">
-													Términos vigentes hasta{" "}
-													{formatDateTimeShort(candidate.termsToDate)}
-												</span>
-											) : null}
-										</div>
-										{candidate.hasCurrentTerms ? null : (
-											<Badge variant="destructive">Sin términos vigentes</Badge>
-										)}
-										{isSpotlight ? (
-											<Badge variant="info">
-												Destacado, fuera de la grilla
-											</Badge>
-										) : null}
-										{isOverLimit ? (
-											<Badge variant="warning">Fuera de la grilla</Badge>
-										) : null}
-										<div className="flex items-center gap-1">
-											<Button
-												aria-label={`Subir ${candidate.name}`}
-												disabled={index === 0 || isReordering}
-												onClick={() => void movePinned(index, -1)}
-												size="icon"
-												variant="outline"
-											>
-												<ArrowUpIcon />
-											</Button>
-											<Button
-												aria-label={`Bajar ${candidate.name}`}
-												disabled={index === pinned.length - 1 || isReordering}
-												onClick={() => void movePinned(index, 1)}
-												size="icon"
-												variant="outline"
-											>
-												<ArrowDownIcon />
-											</Button>
-											<Button
-												disabled={isReordering}
-												onClick={() => void removePinned(candidate)}
-												variant="outline"
-											>
-												<PinOffIcon data-icon="inline-start" />
-												Desfijar
-											</Button>
-										</div>
-									</li>
-								);
-							})}
-						</ul>
+										</li>
+									))}
+								</ol>
+							)}
+						</>
 					)}
-
-					<Field className="md:w-96">
-						<FieldLabel htmlFor="home-offers-add">Fijar un producto</FieldLabel>
-						<Combobox
-							disabled={isReordering || pinnableOptions.length === 0}
-							emptyText="Sin productos con términos vigentes"
-							id="home-offers-add"
-							onChange={(value) => void addPinned(Number(value))}
-							options={pinnableOptions}
-							placeholder="Agregar a las fijadas"
-							searchPlaceholder="Buscar producto..."
-							value={null}
-						/>
-						<FieldDescription>
-							Se agrega al final de la lista. Solo aparecen productos con
-							términos de cliente vigentes.
-						</FieldDescription>
-					</Field>
-
-					<div className="flex flex-col gap-2 rounded-2xl border border-dashed p-3">
-						<div className="flex items-center gap-2">
-							<PlusIcon className="size-3.5 text-muted-foreground" />
-							<span className="font-medium text-sm">
-								Completa el ranking ({previewFill.length}{" "}
-								{previewFill.length === 1 ? "lugar" : "lugares"})
-							</span>
-						</div>
-						{rankedBandCandidate ? (
-							<p className="text-muted-foreground text-xs">
-								Sin producto destacado elegido, {rankedBandCandidate.name} (el
-								primero del ranking) va a la banda y no ocupa lugar en la
-								grilla.
-							</p>
-						) : null}
-						{previewFill.length === 0 ? (
-							<p className="text-muted-foreground text-xs">
-								Las fijadas ya llenan la grilla.
-							</p>
-						) : (
-							<ol className="flex flex-col gap-1">
-								{previewFill.map((candidate, index) => (
-									<li
-										className="text-muted-foreground text-xs"
-										key={candidate.productId}
-									>
-										{shownPinned.length + index + 1}. {candidate.name}
-										{describeOfferValue(candidate)
-											? ` — ${describeOfferValue(candidate)}`
-											: ""}
-									</li>
-								))}
-							</ol>
-						)}
-					</div>
 				</CardContent>
 			</Card>
 		</CrudPageShell>

@@ -8,8 +8,10 @@ const HOME_OFFER_SETTINGS_ID = 1;
 
 const homeOfferSettingsSelect = {
 	spotlightProductId: true,
+	spotlightComboId: true,
 	criterion: true,
 	offersLimit: true,
+	fillWithRanking: true,
 	updatedAt: true,
 } satisfies Prisma.HomeOfferSettingsSelect;
 
@@ -18,16 +20,25 @@ const homeOfferProductSelect = {
 	name: true,
 	active: true,
 	deleted: true,
-	homeOfferRank: true,
 } satisfies Prisma.ProductSelect;
 
-const homeOfferPinnedProductSelect = {
+const homeFeaturedComboSelect = {
 	id: true,
 	name: true,
-	unit: true,
-	homeOfferRank: true,
-	brand: { select: { name: true } },
-} satisfies Prisma.ProductSelect;
+	active: true,
+	deleted: true,
+	groupName: true,
+	items: { select: { productId: true } },
+} satisfies Prisma.ComboSelect;
+
+const homeFeaturedItemSelect = {
+	id: true,
+	position: true,
+	productId: true,
+	comboId: true,
+	product: { select: homeOfferProductSelect },
+	combo: { select: homeFeaturedComboSelect },
+} satisfies Prisma.HomeFeaturedItemSelect;
 
 const homeOfferCandidateTermsSelect = {
 	id: true,
@@ -44,7 +55,6 @@ const homeOfferCandidateTermsSelect = {
 			id: true,
 			name: true,
 			unit: true,
-			homeOfferRank: true,
 			brand: { select: { name: true } },
 		},
 	},
@@ -58,8 +68,12 @@ export type HomeOfferProductRecord = Prisma.ProductGetPayload<{
 	select: typeof homeOfferProductSelect;
 }>;
 
-export type HomeOfferPinnedProductRecord = Prisma.ProductGetPayload<{
-	select: typeof homeOfferPinnedProductSelect;
+export type HomeFeaturedComboRecord = Prisma.ComboGetPayload<{
+	select: typeof homeFeaturedComboSelect;
+}>;
+
+export type HomeFeaturedItemRecord = Prisma.HomeFeaturedItemGetPayload<{
+	select: typeof homeFeaturedItemSelect;
 }>;
 
 export type HomeOfferCandidateTermsRecord =
@@ -70,7 +84,9 @@ export type HomeOfferCandidateTermsRecord =
 type HomeOfferSettingsWrite = {
 	criterion?: HomeOffersCriterion;
 	offersLimit?: number;
+	fillWithRanking?: boolean;
 	spotlightProductId?: number | null;
+	spotlightComboId?: number | null;
 };
 
 /**
@@ -97,18 +113,6 @@ export async function findHomeOfferProduct(db: AdminDbClient, id: number) {
 	});
 }
 
-export async function setProductHomeOfferRank(
-	db: AdminDbClient,
-	id: number,
-	rank: number | null,
-) {
-	return db.product.update({
-		where: { id },
-		data: { homeOfferRank: rank },
-		select: homeOfferProductSelect,
-	});
-}
-
 export async function countCurrentClientTerms(
 	db: AdminDbClient,
 	productId: number,
@@ -123,14 +127,6 @@ export async function countCurrentClientTerms(
 	});
 }
 
-export async function listPinnedProducts(db: AdminDbClient) {
-	return db.product.findMany({
-		where: { homeOfferRank: { not: null } },
-		select: homeOfferPinnedProductSelect,
-		orderBy: [{ homeOfferRank: "asc" }, { id: "asc" }],
-	});
-}
-
 export async function listHomeOfferCandidateTerms(
 	db: AdminDbClient,
 	now: Date,
@@ -142,5 +138,77 @@ export async function listHomeOfferCandidateTerms(
 		},
 		select: homeOfferCandidateTermsSelect,
 		orderBy: [{ fromDate: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
+	});
+}
+
+export async function findHomeFeaturedCombo(db: AdminDbClient, id: number) {
+	return db.combo.findUnique({
+		where: { id },
+		select: homeFeaturedComboSelect,
+	});
+}
+
+export async function listFeaturedItems(db: AdminDbClient) {
+	return db.homeFeaturedItem.findMany({
+		select: homeFeaturedItemSelect,
+		orderBy: [{ position: "asc" }, { id: "asc" }],
+	});
+}
+
+export async function findFeaturedItemByTarget(
+	db: AdminDbClient,
+	target: { productId: number } | { comboId: number },
+) {
+	return db.homeFeaturedItem.findFirst({
+		where: target,
+		select: { id: true },
+	});
+}
+
+/** Appends to the end of the list. */
+export async function createFeaturedItem(
+	db: AdminDbClient,
+	target: { productId: number } | { comboId: number },
+) {
+	const last = await db.homeFeaturedItem.aggregate({
+		_max: { position: true },
+	});
+	return db.homeFeaturedItem.create({
+		data: { ...target, position: (last._max.position ?? 0) + 1 },
+		select: homeFeaturedItemSelect,
+	});
+}
+
+export async function deleteFeaturedItem(db: AdminDbClient, id: number) {
+	return db.homeFeaturedItem.delete({
+		where: { id },
+		select: homeFeaturedItemSelect,
+	});
+}
+
+/** Positions become 1..n in the given order; the caller holds the transaction. */
+export async function rewriteFeaturedPositions(
+	db: AdminDbClient,
+	ids: number[],
+) {
+	for (const [index, id] of ids.entries()) {
+		await db.homeFeaturedItem.update({
+			where: { id },
+			data: { position: index + 1 },
+		});
+	}
+}
+
+export async function listComboCandidates(db: AdminDbClient) {
+	return db.combo.findMany({
+		where: { deleted: false },
+		select: {
+			id: true,
+			name: true,
+			people: true,
+			groupName: true,
+			active: true,
+		},
+		orderBy: [{ groupName: "asc" }, { people: "asc" }, { name: "asc" }],
 	});
 }

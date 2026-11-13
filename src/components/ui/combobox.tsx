@@ -23,7 +23,17 @@ type ComboboxOption = {
 	label: string;
 	disabled?: boolean;
 	keywords?: string[];
+	/** Options sharing a group render under its heading, in first-seen order. */
+	group?: string;
 };
+
+function groupOptions(options: ComboboxOption[]) {
+	const groups = new Map<string | undefined, ComboboxOption[]>();
+	for (const option of options) {
+		groups.set(option.group, [...(groups.get(option.group) ?? []), option]);
+	}
+	return [...groups];
+}
 
 function Combobox({
 	options,
@@ -103,27 +113,29 @@ function Combobox({
 						) : (
 							<CommandEmpty>{emptyText}</CommandEmpty>
 						)}
-						<CommandGroup>
-							{options.map((option) => (
-								<CommandItem
-									disabled={option.disabled}
-									key={option.value}
-									keywords={[option.label, ...(option.keywords ?? [])]}
-									onSelect={() => {
-										onChange(option.value);
-										setOpen(false);
-									}}
-									value={option.value}
-								>
-									<CheckIcon
-										className={cn(
-											option.value === value ? "opacity-100" : "opacity-0",
-										)}
-									/>
-									<span className="line-clamp-1">{option.label}</span>
-								</CommandItem>
-							))}
-						</CommandGroup>
+						{groupOptions(options).map(([group, groupedOptions]) => (
+							<CommandGroup heading={group} key={group ?? ""}>
+								{groupedOptions.map((option) => (
+									<CommandItem
+										disabled={option.disabled}
+										key={option.value}
+										keywords={[option.label, ...(option.keywords ?? [])]}
+										onSelect={() => {
+											onChange(option.value);
+											setOpen(false);
+										}}
+										value={option.value}
+									>
+										<CheckIcon
+											className={cn(
+												option.value === value ? "opacity-100" : "opacity-0",
+											)}
+										/>
+										<span className="line-clamp-1">{option.label}</span>
+									</CommandItem>
+								))}
+							</CommandGroup>
+						))}
 					</CommandList>
 				</Command>
 			</PopoverContent>
