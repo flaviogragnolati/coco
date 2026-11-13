@@ -543,11 +543,11 @@ test.each([
 		{ amount: 22600, measure: "kg" },
 	],
 	[
-		"a 1 kg step repeats the step price",
+		"a 1 kg step still compares per kg",
 		{ moq: "1", step: "1", unitPrice: "7850" },
 		"kg",
 		null,
-		null,
+		{ amount: 7850, measure: "kg" },
 	],
 	[
 		"a jar compares per kg of content",
@@ -564,18 +564,18 @@ test.each([
 		{ amount: 33800, measure: "L" },
 	],
 	[
-		"a 1 L bottle repeats the step price",
+		"a 1 L bottle still compares per litre",
 		{ step: "1", unitPrice: "9000" },
 		"piece",
 		"1 L",
-		null,
+		{ amount: 9000, measure: "L" },
 	],
 	[
-		"a 1 kg bag repeats the step price",
+		"a 1 kg bag still compares per kg",
 		{ step: "1", unitPrice: "9000" },
 		"piece",
 		"1 kg",
-		null,
+		{ amount: 9000, measure: "kg" },
 	],
 	[
 		"a 5 L jug compares per litre",

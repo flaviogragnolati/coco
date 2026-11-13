@@ -311,8 +311,7 @@ const weightUnitKilograms: Partial<Record<CatalogProductUnit, number>> = {
 
 /**
  * The offer price per kg or L, for comparing products sold in different steps.
- * Null when it cannot be read, or when one step already is 1 kg / 1 L and the
- * comparison would only repeat the step price.
+ * Null when it cannot be read.
  */
 export function getComparisonPrice(
 	terms: Pick<
@@ -331,8 +330,6 @@ export function getComparisonPrice(
 			? { amount: kilograms, measure: "kg" }
 			: parsePresentationMeasure(presentation?.presentationSize);
 	if (!perUnit) return null;
-	if (Math.abs(getStepQuantity(terms) * perUnit.amount - 1) < epsilon)
-		return null;
 
 	return { amount: unitPrice / perUnit.amount, measure: perUnit.measure };
 }

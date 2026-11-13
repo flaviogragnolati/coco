@@ -4,6 +4,7 @@ import {
 	getInitialPurchaseQuantity,
 	getPurchasePanelMode,
 	getPurchasePrice,
+	showsQuantityUnit,
 	toOfferPricing,
 } from "./purchase-panel";
 
@@ -48,17 +49,17 @@ test("the price line is the step price, with the price per kg below it", () => {
 	);
 	expect(getPurchasePrice(jars)).toMatchObject({
 		amount: "$ 4.200",
-		unitLabel: "por frasco 370 g",
+		unitLabel: "por frasco",
 		comparison: { amount: "$ 11.351", measureLabel: "/ kg" },
 	});
 });
 
-test("a whole kilo step has no comparison line", () => {
+test("a whole kilo step still has its comparison line", () => {
 	expect(
 		getPurchasePrice(
 			toOfferPricing({ ...terms, moq: "1", step: "1" }, "kg", loose),
 		).comparison,
-	).toBeNull();
+	).toMatchObject({ measureLabel: "/ kg" });
 });
 
 test("a discount strikes through the undiscounted step price", () => {
@@ -87,4 +88,14 @@ test("the selection starts at the minimum the terms allow", () => {
 	expect(getInitialPurchaseQuantity({ ...terms, moq: "3", step: "2" })).toBe(
 		"3",
 	);
+});
+
+test.each([
+	["kg", true],
+	["gr", true],
+	["lb", true],
+	["piece", false],
+	["box", false],
+] as const)("the quantity field names the unit for %s: %s", (unit, expected) => {
+	expect(showsQuantityUnit(unit)).toBe(expected);
 });

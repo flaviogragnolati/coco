@@ -72,7 +72,17 @@ test.each([
 			presentationContainer: "frasco",
 			presentationSize: "370 g",
 		},
-		"por frasco 370 g",
+		"por frasco",
+	],
+	[
+		"one jug",
+		{
+			unit: "piece",
+			step: "1",
+			presentationContainer: "bidon",
+			presentationSize: "5 L",
+		},
+		"por bidón",
 	],
 	[
 		"several jars",
@@ -82,7 +92,7 @@ test.each([
 			presentationContainer: "frasco",
 			presentationSize: "370 g",
 		},
-		"por 6 frascos 370 g",
+		"por 6 frascos",
 	],
 	[
 		"no step falls back to the fixed minimum",
@@ -93,19 +103,23 @@ test.each([
 			presentationContainer: "frasco",
 			presentationSize: "370 g",
 		},
-		"por 6 frascos 370 g",
+		"por 6 frascos",
 	],
 ] as const)("getOfferStepLabel: %s", (_name, overrides, expected) => {
 	expect(getOfferStepLabel({ ...offer, ...overrides })).toBe(expected);
 });
 
-test("the comparison price is per kg or litre, and absent when it repeats the step", () => {
+test("the comparison price is per kg or litre, and shown even when it equals the step", () => {
 	expect(getOfferComparisonPrice(halfKilos)).toEqual({
 		amount: "$ 22.600",
 		measureLabel: "/ kg",
 		spokenLabel: "por kg",
 	});
-	expect(getOfferComparisonPrice({ ...halfKilos, step: "1" })).toBeNull();
+	expect(getOfferComparisonPrice({ ...halfKilos, step: "1" })).toEqual({
+		amount: "$ 22.600",
+		measureLabel: "/ kg",
+		spokenLabel: "por kg",
+	});
 	expect(
 		getOfferComparisonPrice({
 			...offer,
@@ -128,7 +142,11 @@ test("the comparison price is per kg or litre, and absent when it repeats the st
 			presentationContainer: "botella",
 			presentationSize: "1 L",
 		}),
-	).toBeNull();
+	).toEqual({
+		amount: "$ 1.500",
+		measureLabel: "/ L",
+		spokenLabel: "por litro",
+	});
 });
 
 test("discount and strike-through apply to the same step basis", () => {

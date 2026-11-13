@@ -13,6 +13,7 @@ import type {
 } from "~/shared/common/catalog.types";
 import {
 	isFixedQuantity,
+	isWeightUnit,
 	normalizeCartQuantity,
 	type ProductPresentation,
 } from "~/shared/common/commerce.helpers";
@@ -26,6 +27,14 @@ export function getPurchasePanelMode(
 ): PurchasePanelMode {
 	if (inCartQuantity !== null) return "in-cart";
 	return isFixedQuantity(terms) ? "fixed" : "stepper";
+}
+
+/**
+ * Whether the quantity field names its unit ("0,5 kg"). A container is counted
+ * bare ("1"): its name and size are already on the card.
+ */
+export function showsQuantityUnit(unit: CatalogProductUnit) {
+	return isWeightUnit(unit);
 }
 
 export function getInitialPurchaseQuantity(terms: CatalogClientTerms) {
@@ -48,8 +57,8 @@ export function toOfferPricing(
 /**
  * The headline is the offer step price and the step it buys ("$ 9.750"
  * "por 500 g"), with the undiscounted step price and discount when there is
- * one; below it, the comparison price per kg or litre when it says something
- * the headline does not.
+ * one; below it, the comparison price per kg or litre whenever the size can
+ * be read.
  */
 export function getPurchasePrice(pricing: OfferPricing) {
 	const { amount, unitLabel } = getOfferHeadlinePrice(pricing);
