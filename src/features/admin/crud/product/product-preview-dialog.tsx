@@ -98,6 +98,10 @@ function ProductDetailPreview({ preview }: { preview: ProductPreview }) {
 						adminProduct.cardImageUrl ??
 						adminProduct.cartImageUrl
 					}
+					legend={{
+						backdropColor:
+							catalogProduct?.category?.photoBackgroundColor ?? null,
+					}}
 					name={adminProduct.name}
 					placeholderClassName="bg-muted text-muted-foreground"
 				/>
