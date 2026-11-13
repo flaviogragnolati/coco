@@ -3,11 +3,11 @@
  * settles for them and adds its note above the tester's.
  *
  * Dry run by default: it reads inside a read-only transaction and prints, for
- * each ticket, the current state → the new one and the note. `--apply
- * --actor-email <superadmin>` writes through the admin QA ticket service, one
- * ticket at a time, so every change leaves its `qaTicket.update` or
- * `qaTicket.softDelete` row in `AuditLog`. The decisions live in
- * `qa-ticket-triage.plan.ts`.
+ * each ticket, the current state → the new one, the assignee and the note.
+ * `--apply --actor-email <superadmin>` writes through the admin QA ticket
+ * service, one ticket at a time, so every change leaves its `qaTicket.update`
+ * or `qaTicket.softDelete` row in `AuditLog`; a conflict skips that ticket
+ * only. The decisions live in `qa-ticket-triage.plan.ts`.
  *
  * Ordering hazard: a ticket written as `retest` breaks `/admin/qa-tickets` on a
  * deployment whose Prisma client predates the value. Apply only after the
