@@ -1,10 +1,17 @@
+import { cartAddItemsOutputSchema } from "~/schemas/cart.schemas";
 import {
 	orderDeclareReceiptInputSchema,
 	orderDetailSchema,
 	orderGetInputSchema,
 	orderListOutputSchema,
 } from "~/schemas/checkout.schemas";
+import {
+	repeatOrderInputSchema,
+	repeatOrderPreviewInputSchema,
+	repeatOrderPreviewSchema,
+} from "~/schemas/repeat-order.schemas";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import * as repeatOrderService from "~/server/services/cart/repeat-order.service";
 import * as checkoutService from "~/server/services/checkout/checkout.service";
 
 export const ordersRouter = createTRPCRouter({
@@ -26,5 +33,22 @@ export const ordersRouter = createTRPCRouter({
 		.output(orderDetailSchema)
 		.mutation(({ ctx, input }) => {
 			return checkoutService.declareExternalReceipt(ctx.session.user.id, input);
+		}),
+
+	repeatPreview: protectedProcedure
+		.input(repeatOrderPreviewInputSchema)
+		.output(repeatOrderPreviewSchema)
+		.query(({ ctx, input }) => {
+			return repeatOrderService.previewRepeat(
+				ctx.session.user.id,
+				input.orderId,
+			);
+		}),
+
+	repeat: protectedProcedure
+		.input(repeatOrderInputSchema)
+		.output(cartAddItemsOutputSchema)
+		.mutation(({ ctx, input }) => {
+			return repeatOrderService.repeat(ctx.session.user.id, input);
 		}),
 });

@@ -16,6 +16,11 @@ import type {
 	cartTotalSchema,
 	cartWarningSchema,
 } from "~/schemas/cart.schemas";
+import type {
+	repeatOrderInputSchema,
+	repeatOrderPreviewLineSchema,
+	repeatOrderPreviewSchema,
+} from "~/schemas/repeat-order.schemas";
 
 export type CartStatus = z.output<typeof cartStatusSchema>;
 export type CartProductSummary = z.output<typeof cartProductSummarySchema>;
@@ -33,3 +38,8 @@ export type CartMutationOutput = z.output<typeof cartMutationOutputSchema>;
 export type CartAddItemInput = z.output<typeof cartAddItemInputSchema>;
 export type CartAddedLine = z.output<typeof cartAddedLineSchema>;
 export type CartAddItemsOutput = z.output<typeof cartAddItemsOutputSchema>;
+export type RepeatOrderPreview = z.output<typeof repeatOrderPreviewSchema>;
+export type RepeatOrderPreviewLine = z.output<
+	typeof repeatOrderPreviewLineSchema
+>;
+export type RepeatOrderInput = z.output<typeof repeatOrderInputSchema>;

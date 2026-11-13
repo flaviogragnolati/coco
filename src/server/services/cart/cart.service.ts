@@ -369,6 +369,26 @@ export async function setItemQuantity(
 	return cartMutationOutputSchema.parse(output);
 }
 
+/** The terms each product sells under today; a product without any is absent. */
+export async function findCurrentTermsByProductId(
+	database: CartTransaction,
+	productIds: number[],
+	now: Date,
+): Promise<Map<number, CartProductClientTermsRecord>> {
+	const records = await listCurrentClientTermsByProductIds(
+		database,
+		Array.from(new Set(productIds)),
+		now,
+	);
+	const termsByProductId = new Map<number, CartProductClientTermsRecord>();
+	for (const terms of records) {
+		if (!termsByProductId.has(terms.product.id)) {
+			termsByProductId.set(terms.product.id, terms);
+		}
+	}
+	return termsByProductId;
+}
+
 /** `name` labels a product that turns out unavailable and has no terms to name it. */
 export type CartAddItemRequest = CartAddItemInput & { name?: string };
 
@@ -385,19 +405,11 @@ export async function addItemsInTransaction(
 	now: Date,
 ): Promise<{ cartId: number; lines: CartAddedLine[] }> {
 	const cart = await getOrCreateCurrentCart(tx, userId);
-	const productIds = Array.from(new Set(items.map((item) => item.productId)));
-	const termsRecords = await listCurrentClientTermsByProductIds(
+	const termsByProductId = await findCurrentTermsByProductId(
 		tx,
-		productIds,
+		items.map((item) => item.productId),
 		now,
 	);
-
-	const termsByProductId = new Map<number, CartProductClientTermsRecord>();
-	for (const terms of termsRecords) {
-		if (!termsByProductId.has(terms.product.id)) {
-			termsByProductId.set(terms.product.id, terms);
-		}
-	}
 
 	const existingItems = await listActiveCartItemsByTerms(
 		tx,
