@@ -3,9 +3,11 @@
  * `qa-ticket-triage.data.ts` and the tickets as they are now. No I/O of its own:
  * the script reads, and `--apply` injects the admin service as the writer.
  *
- * Each part of a transition is compared on its own (status, note, definition,
- * papelera), so a run cut halfway converges on the next one instead of adding
- * the note twice.
+ * The note is the mark that a transition already ran. Once it is on the ticket
+ * the status, the assignee and the definition belong to the testers again, so
+ * a second run only finishes a pending soft delete and never overwrites a
+ * result recorded after the triage. A ticket whose status left the expected
+ * origin before the note went in is reported and left alone.
  */
 
 import { qaTicketUpdateInputSchema } from "~/schemas/admin/qa-ticket.schemas";
@@ -23,13 +25,19 @@ export type TriageDefinition = Partial<{
 
 export type TriageTransition = {
 	code: number;
+	/** Statuses the ticket may be in for the transition to run; `["pending"]` by default. */
+	from?: QaTicketStatus[];
 	status?: QaTicketStatus;
 	/** Added above the current note, never replacing it. */
 	prependNote?: string;
 	definition?: TriageDefinition;
+	/** Frees the ticket so any tester can claim the re-run. */
+	clearAssignee?: true;
 	/** Soft delete, after the note is written: a deleted ticket cannot be edited. */
 	retire?: true;
 };
+
+export type TriageAssignee = { id: string; name: string } | null;
 
 export type TriageTicket = {
 	id: number;
@@ -37,6 +45,7 @@ export type TriageTicket = {
 	status: QaTicketStatus;
 	notes: string | null;
 	deleted: boolean;
+	assignee: TriageAssignee;
 	title: string;
 	steps: string;
 	expectedResult: string;
@@ -50,6 +59,8 @@ export type TriageChange = {
 	title: string;
 	fromStatus: QaTicketStatus;
 	toStatus: QaTicketStatus;
+	fromAssignee: TriageAssignee;
+	toAssignee: TriageAssignee;
 	/** Null when the note already carries the text. */
 	addedNote: string | null;
 	nextNotes: string | null;
@@ -61,14 +72,29 @@ export type TriageChange = {
 
 export type TriageStep =
 	| { kind: "change"; change: TriageChange }
-	| { kind: "skip"; code: number; title: string; status: QaTicketStatus }
-	| { kind: "conflict"; code: number; reason: string };
+	| {
+			kind: "skip";
+			code: number;
+			title: string;
+			status: QaTicketStatus;
+			assignee: TriageAssignee;
+			deleted: boolean;
+	  }
+	| {
+			kind: "conflict";
+			code: number;
+			reason: string;
+			status?: QaTicketStatus;
+			assignee?: TriageAssignee;
+	  };
 
 export type TriagePlan = {
 	steps: TriageStep[];
-	/** Non-empty means `--apply` must refuse. */
+	/** Skipped with a warning; they never stop the rest of `--apply`. */
 	conflicts: Array<{ code: number; reason: string }>;
 };
+
+const DEFAULT_FROM: QaTicketStatus[] = ["pending"];
 
 /** A blank line between triage notes and whatever the tester wrote before. */
 export function prependNote(existing: string | null, note: string) {
@@ -80,58 +106,102 @@ function noteAlreadyAdded(notes: string | null, note: string) {
 	return (notes ?? "").includes(note.trim());
 }
 
+function conflict(
+	ticket: TriageTicket,
+	reason: string,
+): Extract<TriageStep, { kind: "conflict" }> {
+	return {
+		kind: "conflict",
+		code: ticket.code,
+		reason,
+		status: ticket.status,
+		assignee: ticket.assignee,
+	};
+}
+
 export function planTransition(
 	transition: TriageTransition,
 	ticket: TriageTicket | undefined,
 ): TriageStep {
-	const { code } = transition;
 	if (!ticket) {
-		return { kind: "conflict", code, reason: "no existe en la base" };
+		return {
+			kind: "conflict",
+			code: transition.code,
+			reason: "no existe en la base",
+		};
 	}
 
+	const alreadyRan =
+		transition.prependNote !== undefined &&
+		noteAlreadyAdded(ticket.notes, transition.prependNote);
+	const toStatus = alreadyRan
+		? ticket.status
+		: (transition.status ?? ticket.status);
+	const toAssignee =
+		!alreadyRan && transition.clearAssignee ? null : ticket.assignee;
 	const addedNote =
-		transition.prependNote === undefined ||
-		noteAlreadyAdded(ticket.notes, transition.prependNote)
+		alreadyRan || transition.prependNote === undefined
 			? null
 			: transition.prependNote.trim();
-	const toStatus = transition.status ?? ticket.status;
-	const definition = transition.definition ?? {};
+	const definition = alreadyRan ? {} : (transition.definition ?? {});
+	// The admin schema trims every definition field when it stores it.
 	const changedDefinitionFields = (
 		Object.keys(definition) as DefinitionField[]
 	).filter((field) => definition[field]?.trim() !== ticket[field]);
 	const needsUpdate =
 		toStatus !== ticket.status ||
+		toAssignee?.id !== ticket.assignee?.id ||
 		addedNote !== null ||
 		changedDefinitionFields.length > 0;
 	const retire = transition.retire === true && !ticket.deleted;
 
 	if (!needsUpdate && !retire) {
-		return { kind: "skip", code, title: ticket.title, status: ticket.status };
+		return {
+			kind: "skip",
+			code: ticket.code,
+			title: ticket.title,
+			status: ticket.status,
+			assignee: ticket.assignee,
+			deleted: ticket.deleted,
+		};
 	}
 	if (ticket.deleted) {
-		return {
-			kind: "conflict",
-			code,
-			reason:
-				"está en la papelera y le faltan cambios; un ticket borrado no se puede editar",
-		};
+		return conflict(
+			ticket,
+			"está en la papelera y le faltan cambios; un ticket borrado no se puede editar",
+		);
 	}
-	if (ticket.status === "inProgress" && (toStatus !== "inProgress" || retire)) {
-		return {
-			kind: "conflict",
-			code,
-			reason: "está En curso: un tester lo tomó; esperar su resultado",
-		};
+	const allowed = transition.from ?? DEFAULT_FROM;
+	if (
+		ticket.status === "inProgress" &&
+		(alreadyRan || !allowed.includes("inProgress"))
+	) {
+		return conflict(
+			ticket,
+			"está En curso: un tester lo tomó; esperar su resultado",
+		);
+	}
+	if (
+		!alreadyRan &&
+		!allowed.includes(ticket.status) &&
+		ticket.status !== transition.status
+	) {
+		return conflict(
+			ticket,
+			`un tester ya cargó un resultado (${ticket.status}); se esperaba ${allowed.join(" o ")}`,
+		);
 	}
 
 	return {
 		kind: "change",
 		change: {
-			code,
+			code: ticket.code,
 			ticketId: ticket.id,
 			title: ticket.title,
 			fromStatus: ticket.status,
 			toStatus,
+			fromAssignee: ticket.assignee,
+			toAssignee,
 			addedNote,
 			nextNotes:
 				addedNote === null
@@ -145,14 +215,39 @@ export function planTransition(
 	};
 }
 
+/** The ticket as it reads once `change` is written. */
+function project(ticket: TriageTicket, change: TriageChange): TriageTicket {
+	return {
+		...ticket,
+		status: change.toStatus,
+		assignee: change.toAssignee,
+		notes: change.nextNotes,
+		title: change.definition.title?.trim() ?? ticket.title,
+		steps: change.definition.steps?.trim() ?? ticket.steps,
+		expectedResult:
+			change.definition.expectedResult?.trim() ?? ticket.expectedResult,
+		deleted: ticket.deleted || change.retire,
+	};
+}
+
+/**
+ * Plans in file order; a later entry for the same code is planned against the
+ * ticket as the earlier one leaves it.
+ */
 export function planTriage(
 	transitions: readonly TriageTransition[],
 	tickets: readonly TriageTicket[],
 ): TriagePlan {
 	const byCode = new Map(tickets.map((ticket) => [ticket.code, ticket]));
-	const steps = transitions.map((transition) =>
-		planTransition(transition, byCode.get(transition.code)),
-	);
+	const steps: TriageStep[] = [];
+	for (const transition of transitions) {
+		const ticket = byCode.get(transition.code);
+		const step = planTransition(transition, ticket);
+		if (ticket && step.kind === "change") {
+			byCode.set(ticket.code, project(ticket, step.change));
+		}
+		steps.push(step);
+	}
 	const conflicts = steps.flatMap((step) =>
 		step.kind === "conflict" ? [{ code: step.code, reason: step.reason }] : [],
 	);
@@ -161,7 +256,7 @@ export function planTriage(
 
 /**
  * The admin form's full update payload: everything the change does not touch
- * is copied from the ticket as it is now, assignee included.
+ * is copied from the ticket as it is now.
  */
 export function buildUpdateInput(
 	current: QaTicketDetail,
@@ -178,7 +273,7 @@ export function buildUpdateInput(
 		status: change.toStatus,
 		isRegressionPath: current.isRegressionPath,
 		notes: change.nextNotes,
-		assigneeId: current.assignee?.id,
+		assigneeId: change.toAssignee?.id,
 	});
 }
 
@@ -187,6 +282,11 @@ export type TriageWriter = {
 	update(input: QaTicketUpdateInput): Promise<unknown>;
 	softDelete(id: number): Promise<unknown>;
 };
+
+export type TriageOutcome =
+	| { kind: "applied" }
+	| { kind: "skipped" }
+	| { kind: "conflict"; reason: string };
 
 /**
  * Applies one transition against the ticket re-read just before writing: the
@@ -198,50 +298,65 @@ export async function applyTransition(
 	transition: TriageTransition,
 	ticketId: number,
 	writer: TriageWriter,
-): Promise<"applied" | "skipped"> {
+): Promise<TriageOutcome> {
 	const current = await writer.getById(ticketId);
 	const step = planTransition(transition, current);
-	if (step.kind === "skip") return "skipped";
-	if (step.kind === "conflict") {
-		throw new Error(`#${step.code}: ${step.reason}`);
-	}
+	if (step.kind === "skip") return { kind: "skipped" };
+	if (step.kind === "conflict")
+		return { kind: "conflict", reason: step.reason };
 	const { change } = step;
 	if (change.needsUpdate) {
 		await writer.update(buildUpdateInput(current, change));
 	}
 	if (change.retire) await writer.softDelete(current.id);
-	return "applied";
+	return { kind: "applied" };
 }
 
 export type TriageDestination = QaTicketStatus | "papelera";
 
-/** Where each ticket ends up once the plan is applied; skipped ones included. */
+/**
+ * Where each listed ticket ends up once the plan is applied, by its last
+ * planned entry; skipped ones included, conflicts left out.
+ */
 export function summarizeDestinations(
-	transitions: readonly TriageTransition[],
 	plan: TriagePlan,
 ): Map<TriageDestination, number[]> {
-	const byCode = new Map(transitions.map((t) => [t.code, t]));
-	const summary = new Map<TriageDestination, number[]>();
+	const finalByCode = new Map<number, TriageDestination>();
 	for (const step of plan.steps) {
 		if (step.kind === "conflict") continue;
-		const code = step.kind === "change" ? step.change.code : step.code;
-		const destination: TriageDestination = byCode.get(code)?.retire
-			? "papelera"
-			: step.kind === "change"
-				? step.change.toStatus
-				: step.status;
+		if (step.kind === "change") {
+			const { change } = step;
+			finalByCode.set(
+				change.code,
+				change.retire ? "papelera" : change.toStatus,
+			);
+		} else {
+			finalByCode.set(step.code, step.deleted ? "papelera" : step.status);
+		}
+	}
+	const summary = new Map<TriageDestination, number[]>();
+	for (const [code, destination] of finalByCode) {
 		summary.set(destination, [...(summary.get(destination) ?? []), code]);
 	}
 	return summary;
 }
 
-/** Codes listed twice would be applied twice with diverging notes. */
-export function findDuplicateCodes(transitions: readonly TriageTransition[]) {
-	const seen = new Set<number>();
+function entryKey(transition: TriageTransition) {
+	const from = [...(transition.from ?? DEFAULT_FROM)].sort().join(",");
+	return `${transition.code}|${from}|${transition.prependNote?.trim() ?? ""}`;
+}
+
+/**
+ * A code may come back in a later wave with a new dated note or another
+ * origin; two entries that agree on both would race over the same ticket.
+ */
+export function findDuplicateEntries(transitions: readonly TriageTransition[]) {
+	const seen = new Set<string>();
 	const duplicates = new Set<number>();
-	for (const { code } of transitions) {
-		if (seen.has(code)) duplicates.add(code);
-		seen.add(code);
+	for (const transition of transitions) {
+		const key = entryKey(transition);
+		if (seen.has(key)) duplicates.add(transition.code);
+		seen.add(key);
 	}
 	return [...duplicates];
 }

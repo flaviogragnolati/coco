@@ -26,10 +26,11 @@ import { qaTicketTriageTransitions } from "./qa-ticket-triage.data";
 import {
 	applyTransition,
 	assertApplyAllowed,
-	findDuplicateCodes,
+	findDuplicateEntries,
 	parseTriageArgs,
 	planTriage,
 	summarizeDestinations,
+	type TriageAssignee,
 	type TriageChange,
 	type TriagePlan,
 	type TriageTicket,
@@ -65,6 +66,7 @@ const triageTicketSelect = {
 	status: true,
 	notes: true,
 	deleted: true,
+	assignee: { select: { id: true, name: true } },
 	title: true,
 	steps: true,
 	expectedResult: true,
@@ -134,13 +136,23 @@ function oneLine(text: string) {
 	return text.replace(/\s*\n\s*/g, " ⏎ ");
 }
 
+function assigneeName(assignee: TriageAssignee) {
+	return assignee ? assignee.name : "libre";
+}
+
+function describeAssignee(from: TriageAssignee, to: TriageAssignee) {
+	return from?.id === to?.id
+		? `asignado: ${assigneeName(from)}`
+		: `asignado: ${assigneeName(from)} → ${assigneeName(to)}`;
+}
+
 function describeChange(change: TriageChange) {
 	const destination = change.retire
 		? change.toStatus === change.fromStatus
 			? "papelera"
 			: `${change.toStatus}, después papelera`
 		: change.toStatus;
-	return `#${change.code} [${change.fromStatus} → ${destination}] ${change.title}`;
+	return `#${change.code} [${change.fromStatus} → ${destination}] ${change.title} · ${describeAssignee(change.fromAssignee, change.toAssignee)}`;
 }
 
 function printPlan(snapshot: Snapshot) {
@@ -152,8 +164,6 @@ function printPlan(snapshot: Snapshot) {
 			console.info(describeChange(change));
 			if (change.addedNote) {
 				console.info(`    nota: ${oneLine(change.addedNote)}`);
-			} else if (change.needsUpdate) {
-				console.info("    nota: ya estaba; no se agrega de nuevo");
 			}
 			if (change.changedDefinitionFields.length > 0) {
 				console.info(
@@ -162,20 +172,33 @@ function printPlan(snapshot: Snapshot) {
 			}
 		} else if (step.kind === "skip") {
 			console.info(
-				`#${step.code} [${step.status}] ${step.title}: ya está aplicado, se saltea`,
+				`#${step.code} [${step.deleted ? "papelera" : step.status}] ${step.title} · ${describeAssignee(step.assignee, step.assignee)}: ya aplicado, se saltea`,
 			);
 		} else {
-			console.error(`#${step.code} CONFLICTO: ${step.reason}`);
+			const state =
+				step.status === undefined
+					? ""
+					: ` [${step.status}] · ${describeAssignee(step.assignee ?? null, step.assignee ?? null)}`;
+			console.warn(
+				`#${step.code}${state} CONFLICTO, se saltea: ${step.reason}`,
+			);
 		}
 	}
 
-	const changes = plan.steps.filter((step) => step.kind === "change").length;
+	const changes = plan.steps.filter((step) => step.kind === "change");
 	const skips = plan.steps.filter((step) => step.kind === "skip").length;
+	const assigned = changes.filter((step) => step.change.fromAssignee).length;
+	const freed = changes.filter(
+		(step) => step.change.fromAssignee && !step.change.toAssignee,
+	).length;
 	console.info(
-		`\nResumen: ${transitions.length} transiciones · ${changes} a aplicar · ${skips} ya aplicadas · ${plan.conflicts.length} conflictos`,
+		`\nResumen: ${transitions.length} transiciones · ${changes.length} a aplicar · ${skips} ya aplicadas · ${plan.conflicts.length} conflictos`,
+	);
+	console.info(
+		`Con asignado entre las que se aplican: ${assigned} (se liberan ${freed}).`,
 	);
 	console.info("Destino final por estado:");
-	for (const [destination, codes] of summarizeDestinations(transitions, plan)) {
+	for (const [destination, codes] of summarizeDestinations(plan)) {
 		console.info(
 			`  ${destination}: ${codes.length} (${codes.map((c) => `#${c}`).join(", ")})`,
 		);
@@ -186,9 +209,7 @@ function printPlan(snapshot: Snapshot) {
 }
 
 function preflightProblems(snapshot: Snapshot) {
-	const problems = snapshot.plan.conflicts.map(
-		({ code, reason }) => `#${code}: ${reason}`,
-	);
+	const problems: string[] = [];
 	const writesRetest = snapshot.plan.steps.some(
 		(step) => step.kind === "change" && step.change.toStatus === "retest",
 	);
@@ -208,10 +229,10 @@ async function main() {
 		`Triage de tickets de QA · base ${describeTarget(DATABASE_URL ?? "")} · APP_ENV=${appEnv} · ${args.apply ? "APLICAR" : "simulación"}`,
 	);
 
-	const duplicates = findDuplicateCodes(transitions);
+	const duplicates = findDuplicateEntries(transitions);
 	if (duplicates.length > 0) {
 		throw new Error(
-			`qa-ticket-triage.data.ts repite los códigos ${duplicates.join(", ")}.`,
+			`qa-ticket-triage.data.ts repite entradas idénticas para ${duplicates.map((c) => `#${c}`).join(", ")}.`,
 		);
 	}
 
@@ -227,9 +248,6 @@ async function main() {
 			console.warn("\n--apply se negaría a correr mientras siga así:");
 			for (const problem of problems) console.warn(`  - ${problem}`);
 		}
-		// Only a data conflict fails the dry run; a pending migration is the
-		// expected state before the deploy.
-		if (snapshot.plan.conflicts.length > 0) process.exitCode = 1;
 		console.info(
 			"\nSimulación: no se escribió nada. Para aplicar: pnpm qa:triage --apply --actor-email <superadmin>",
 		);
@@ -245,25 +263,29 @@ async function main() {
 
 	const actor = snapshot.actor;
 	console.info(`\nAplicando como ${actor.name} (${actor.id})…`);
-	let applied = 0;
-	let skipped = 0;
-	for (const step of snapshot.plan.steps) {
+	const counts = { applied: 0, skipped: 0, conflict: 0 };
+	for (const [index, step] of snapshot.plan.steps.entries()) {
 		if (step.kind !== "change") continue;
-		const transition = transitions.find((t) => t.code === step.change.code);
+		const transition = transitions[index];
 		if (!transition) continue;
 		const outcome = await applyTransition(transition, step.change.ticketId, {
 			getById: (id) => qaTicketService.getById(id, db),
 			update: (input) => qaTicketService.update(input, actor, db),
 			softDelete: (id) => qaTicketService.softDelete({ id }, actor, db),
 		});
-		if (outcome === "applied") applied += 1;
-		else skipped += 1;
-		console.info(
-			`  ${outcome === "applied" ? "✓" : "="} ${describeChange(step.change)}`,
-		);
+		counts[outcome.kind] += 1;
+		if (outcome.kind === "conflict") {
+			console.warn(
+				`  ! #${step.change.code} se saltea al releerlo: ${outcome.reason}`,
+			);
+		} else {
+			console.info(
+				`  ${outcome.kind === "applied" ? "✓" : "="} ${describeChange(step.change)}`,
+			);
+		}
 	}
 	console.info(
-		`\nAplicado: ${applied} tickets; ${skipped} ya estaban al día al releerlos.`,
+		`\nAplicado: ${counts.applied} tickets; ${counts.skipped} ya estaban al día y ${counts.conflict} cambiaron desde la lectura y se saltearon. Antes ya se saltearon ${snapshot.plan.conflicts.length} conflictos.`,
 	);
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { qaTicketTriageTransitions } from "./qa-ticket-triage.data";
-import { findDuplicateCodes } from "./qa-ticket-triage.plan";
+import { findDuplicateEntries } from "./qa-ticket-triage.plan";
 
 function codesWhere(
 	predicate: (
@@ -15,8 +15,8 @@ function codesWhere(
 }
 
 describe("qaTicketTriageTransitions", () => {
-	it("lists each ticket once", () => {
-		expect(findDuplicateCodes(qaTicketTriageTransitions)).toEqual([]);
+	it("never repeats an entry with the same note and origin", () => {
+		expect(findDuplicateEntries(qaTicketTriageTransitions)).toEqual([]);
 	});
 
 	it("dates every note and never leaves a transition without one", () => {
