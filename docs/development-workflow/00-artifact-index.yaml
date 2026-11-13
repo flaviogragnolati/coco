@@ -337,6 +337,6 @@ artifacts:
   semantic_authority: supporting
   authority_scope: deployment-execution-evidence
   lifecycle: Working
-  version: sha256:4cd9bd1eeda4db7212f5e2741bf0c3279185e6729f097058405a5b5b199e3e86
+  version: sha256:0c54098e4604504b8fb5c9f6d8e99f3b209a5b3641a433e1a23fe4a89edb2f06
   source_refs:
   - git:e8937e6

@@ -22,4 +22,3 @@ All actions below were executed by Codex unless explicitly labelled as a user de
 - QA triage applied 22 tickets without conflicts and freed 15 assignees. Read-only audit confirmed 22 new `qaTicket.update` events.
 - Final board: 57 Re-test, 40 passed, 3 blocked, 3 skipped, 9 trash and zero pending. Read-only repeat dry-run: 72 already applied, zero to apply, zero conflicts.
 - Human UAT remains pending. Blocked content belongs to Flavio/Quintal (#82, #91, #92); no human acceptance or financial end-to-end acceptance is inferred.
-
