@@ -299,8 +299,8 @@ export function QaTicketDetailDialog({
 									<div>
 										<h3 className="font-medium">Análisis de la pasada</h3>
 										<p className="text-muted-foreground text-sm">
-											Pendiente y En curso siguen disponibles desde el tracking
-											administrativo.
+											Pendiente, En curso y Re-test siguen disponibles desde el
+											tracking administrativo.
 										</p>
 									</div>
 									<ToggleGroup
