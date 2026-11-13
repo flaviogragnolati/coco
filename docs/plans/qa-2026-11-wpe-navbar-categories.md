@@ -1,6 +1,6 @@
 # WP-E: categorías en la barra (#102)
 
-> **Estado:** implementado en el checkout principal sobre `main` `911bd55`, validado y revisado por un agente independiente. Sin commit, push ni cambios en la base compartida.
+> **Estado:** implementado, revisado y mergeado en `main` (`38f85c5`); validación conjunta y cierre operativo en la orquestación §13.
 > **Origen:** `qa-open-tickets-2026-11-orchestration.md`, §6, WP-E. Trabajo directo, sin grill; alcance y comportamiento ya definidos.
 
 ## Resultado

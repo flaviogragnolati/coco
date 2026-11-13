@@ -1,6 +1,6 @@
 # Plan: WP-D, combos y destacados (#101)
 
-> **Estado:** implementado en `wpd-combos-featured`; revisiones inicial y de recuperación cerradas, pendiente de integración sobre `main` con WP-B y WP-H. Registro en §16. Feature grill del 13/11/2026. Flavio contestó las 6 preguntas por el orquestador. En la P1 y la P5 eligió distinto de lo recomendado; ver §2.
+> **Estado:** implementado, revisado y mergeado en `main` (`b68fa10`), con correcciones `7ee9e2a` y migración aplicada. Registro en §16; cierre operativo en la orquestación §13.
 > **Origen:**
 > - `docs/plans/qa-open-tickets-2026-11-orchestration.md`: §2, §6 WP-D, §7 y §8.
 > - La fila #101 de `docs/plans/qa-open-tickets-2026-11-report.md`.

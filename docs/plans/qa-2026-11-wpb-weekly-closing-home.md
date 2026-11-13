@@ -1,6 +1,6 @@
 # Plan reducido: WP-B, cierre semanal y textos del home (#98, #99, #100, #104 y la línea de cierre de #107)
 
-> **Estado:** implementado el 13/11/2026 en la rama `wpb-weekly-closing-home`, sobre `main` con WP-A, WP-C, WP-G y WP0 mergeados. Revisión hecha y hallazgos corregidos; e2e en verde contra la base local. Sin merge ni push. Registro de ejecución en §13.
+> **Estado:** implementado y mergeado en `main` (`c9ac7f9`); desplegado con `911bd55`. Evidencia de implementación en §13 y cierre operativo en la orquestación §13.
 > Simple grill del 13/11/2026; Flavio contestó las 5 preguntas por el orquestador (eligió la opción recomendada en todas).
 > **Origen:** `docs/plans/qa-open-tickets-2026-11-orchestration.md` (§2, §6 WP-B, §7, §8, §9) y `docs/plans/qa-open-tickets-2026-11-report.md` (filas #98, #99, #100, #104, #107).
 > **Base:** `main` con **WP-A ya mergeado** (rama `wpa-quick-fixes`, plan `docs/plans/qa-2026-11-wpa-quick-fixes.md`). WP-A deja:

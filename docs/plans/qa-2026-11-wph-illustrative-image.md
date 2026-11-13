@@ -1,6 +1,6 @@
 # Plan reducido: WP-H, leyenda "Imagen ilustrativa" en las fotos de producto (#90)
 
-> **Estado:** Implementado en la rama `wph-illustrative-image`, pendiente de merge (ver §11). Simple grill del 13/11/2026. Flavio contestó las 4 preguntas a través del orquestador y eligió la opción recomendada en todas.
+> **Estado:** implementado y mergeado en `main` (`4f3da0c`); migración aplicada durante la recuperación y deploy `911bd55` confirmado. Evidencia original en §11; mosaico integrado con WP-D.
 > **Origen:**
 > - `docs/plans/qa-open-tickets-2026-11-orchestration.md` (§6 WP-H, §7);
 > - `docs/plans/qa-open-tickets-2026-11-report.md` (fila #90).

@@ -1,0 +1,364 @@
+schema_version: '1.1'
+project_id: coco
+workflow: ai-coding
+status: working
+current_stage: q-delivery-release
+stack_profile: project-defined
+technical_foundation_ref: null
+design_system_ref: null
+stage_status:
+  q-code-implement: completed_with_warnings
+  recovered_records:
+    docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0:
+      skill_id: q-code-grill-design
+      recorded_outcome: completed
+      reconciled: true
+      source_sha256: d8d9348e25fe81ae5cbc67e4f0d643289754ed1a461242aee6030c38460ff1ed
+    docs/development-workflow/plans/quintal-launch-catalog-reset.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: a02bae79d2e272e36827d38295735bff59514d46c39d5a30533cb6f309cf19e4
+    docs/plans/customer-delivery-preference.md.stage-result.yaml#0:
+      skill_id: q-code-implementation-plan
+      recorded_outcome: completed
+      reconciled: true
+      source_sha256: 7d8773fb4a9b49ccfc8fab2a49f60fd0e923829cb9225489c69d21ab1a447f6f
+    docs/plans/customer-delivery-preference.md.stage-result.yaml#1:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 7d8773fb4a9b49ccfc8fab2a49f60fd0e923829cb9225489c69d21ab1a447f6f
+    docs/plans/customer-tutorial.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 4a8f2328bbbdeee840f72101df4deb734f9bd44a728d81bf1cccf1b6cd684ef7
+    docs/plans/customer-vocabulary-pedido.md.stage-result.yaml#0:
+      skill_id: q-code-grill-simple
+      recorded_outcome: completed
+      reconciled: true
+      source_sha256: e2c4f525c014c40b1fc80fe70abcad571356741d6cb0a1812ee1b13c448741b9
+    docs/plans/customer-vocabulary-pedido.md.stage-result.yaml#1:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: e2c4f525c014c40b1fc80fe70abcad571356741d6cb0a1812ee1b13c448741b9
+    docs/plans/home-community-redesign.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: blocked
+      reconciled: true
+      source_sha256: 4eceb513b8a1cad6085361fd55b1495ad02fcf03eb458c2defdc201d016cd4a0
+    docs/plans/product-card-price-hierarchy.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: dc5fc628de8413b823d1836711e94ebfb43ab5e28faf3a6f199807e50b8d55c9
+    docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 166f28ce1f6149b8e61860d6060bc72860f7311ee69759f54557350c8c97c7de
+    docs/plans/qa-2026-11-wpa-quick-fixes.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 84a6c753ca08452e331916a8a654a868fe6c6d5a588ab2da26a16f232703f591
+    docs/plans/qa-2026-11-wpb-weekly-closing-home.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 34d64a712e4a01a86f5b6ba33244ca721b1bfa41a973e1fedbfc25863989414d
+    docs/plans/qa-2026-11-wpc-product-card.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: b5802fc237bc086642452642c8267bfe56d9ff87676c22187000f0d50659fa2c
+    docs/plans/qa-mercadopago-pending.md.stage-result.yaml#0:
+      skill_id: q-code-implementation-plan
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: ce1cc7082a2f132baf08b5c01bbb54e48bdc25b8cbed4d2cde0bca1f142f0b85
+    docs/plans/qa-mercadopago-pending.md.stage-result.yaml#1:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: ce1cc7082a2f132baf08b5c01bbb54e48bdc25b8cbed4d2cde0bca1f142f0b85
+    docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 52db540d602eb80e796d501df329b2631d55acd31601655ea062a83051bcabc7
+    docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 9285967f85edbcd24692a87ed8ccbaad12a9740d9c470e1bf76699bce5c590fd
+    docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#1:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 9285967f85edbcd24692a87ed8ccbaad12a9740d9c470e1bf76699bce5c590fd
+    docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#0:
+      skill_id: q-code-grill-feature
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 261fb0080e4b3ea37455b605c0483e98983c24058128011bf84a1f2499ef3092
+    docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#1:
+      skill_id: q-code-implement
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: 261fb0080e4b3ea37455b605c0483e98983c24058128011bf84a1f2499ef3092
+  q-delivery-release: working
+decisions:
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Pickup orders ask no address
+  (user, 2026-10-08)'
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Override reason is admin text
+  shown verbatim to the customer (user, 2026-10-08)'
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: No customer change after payment;
+  contact + admin override (user, 2026-10-08)'
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Override lives on the order;
+  shipments must match the preference (user, 2026-10-08)'
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Deactivating a pickup point is
+  allowed with a warning (user, 2026-10-08)'
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Depot handover needs no override
+  (user, 2026-10-08)'
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: FAQ #78 and step 5 copy A (user,
+  2026-10-08)'
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Preference stored as UserOrder
+  columns + snapshot; destination snapshot derived server-side; retry keeps destination; reuse path refreshes delivery
+  snapshots; hours free text (grill)'
+- 'docs/development-workflow/plans/quintal-launch-catalog-reset.md.stage-result.yaml#0: User approved implementation
+  on 2026-10-16; preserve the previously aligned scope and source.'
+- 'docs/development-workflow/plans/quintal-launch-catalog-reset.md.stage-result.yaml#0: Use all-table exclusive
+  locks for the brief reset maintenance interval in observed empty operatoria; populated environments additionally
+  require admissions/jobs stopped.'
+- 'docs/development-workflow/plans/quintal-launch-catalog-reset.md.stage-result.yaml#0: Keep a private restored-and-verified
+  custom PostgreSQL dump; require backup and exact target flags for CLI apply.'
+- 'docs/development-workflow/plans/quintal-launch-catalog-reset.md.stage-result.yaml#0: Reject PostgreSQL routing
+  query overrides, missing database paths and ambiguous inherited ports before connecting.'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#0: A2: override and ''pending order'' mean UserOrder.status
+  = processing'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#0: A3: a pickup-point end-user shipment always names
+  its pickupPointId'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#0: A4: shipments may target inactive points; checkout
+  and override only active ones'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#0: A5: multi-order packages expose order: null +
+  orderCount; the server judges each order'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#1: Override row-locks the order (FOR UPDATE); shipment
+  assembly share-locks the live orders it reads'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#1: Pickup CHECK branch also requires a null shipping
+  address snapshot'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#1: Override mirrors billing from shipping, as checkout
+  does'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#1: Pickup point update no longer changes active;
+  setActive owns it'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#1: Admin-only additive query userOrder.deliveryOptions
+  feeds the Cambiar entrega dialog'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#1: Customer notices gain an optional detail line'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: URL sync via window.history.replaceState instead of router.replace
+  (no server render per step)'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: Fixture ids 990001+ (zod output schemas require positive
+  ids)'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: Mini-cart and cart scenes render as a guest to match the
+  sign-in copy'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: Real views take an optional data-* targets prop; markup
+  unchanged without it'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: product-purchase target tagged at runtime on the featured
+  card''s content slot'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: Popover side chosen by available room, docking to a viewport
+  edge when none fits'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: volver resolved against a probe origin to close a tab/newline
+  open redirect'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: Tutorial product images copied from output/product-covers;
+  Miel has none (placeholder)'
+- 'docs/plans/customer-vocabulary-pedido.md.stage-result.yaml#0: "Pedido" for the pre-payment cart in all customer
+  copy; "Mis pedidos" unchanged (user, 2026-10-09)'
+- 'docs/plans/customer-vocabulary-pedido.md.stage-result.yaml#0: Filter "Solo en mi pedido"; /cart title "Tu pedido",
+  subtitle "Lo que vas a pagar al confirmar" (user, 2026-10-09)'
+- 'docs/plans/customer-vocabulary-pedido.md.stage-result.yaml#1: Customer tracking labels come from customerTrackingEventLabelMap
+  (addedToCart -> "Producto agregado a tu pedido"); admin trackingEventLabelMap unchanged'
+- 'docs/plans/customer-vocabulary-pedido.md.stage-result.yaml#1: /cart header: h1 "Tu pedido", description "Lo que
+  vas a pagar al confirmar.", eyebrow dropped'
+- 'docs/plans/customer-vocabulary-pedido.md.stage-result.yaml#1: Cart code shown as "Código de armado {code}" in
+  the cart summary and the order detail'
+- 'docs/plans/home-community-redesign.md.stage-result.yaml#0: Conservar formatters consumidos por catálogo y separar
+  su tachado MOQ del titular unitario del home.'
+- 'docs/plans/home-community-redesign.md.stage-result.yaml#0: Activar fuentes por segmento incluyendo portales y
+  conservar mapping tipográfico global previo.'
+- 'docs/plans/home-community-redesign.md.stage-result.yaml#0: Usar elemento search semántico con formulario GET
+  conforme al linter.'
+- 'docs/plans/product-card-price-hierarchy.md.stage-result.yaml#0: Home offers grid minimum column 240 px (plan
+  fallback; 220 px overflowed the add button)'
+- 'docs/plans/product-card-price-hierarchy.md.stage-result.yaml#0: Comparison line reserved only on compact cards;
+  default (detail dialog) and hero omit the placeholder'
+- 'docs/plans/product-card-price-hierarchy.md.stage-result.yaml#0: Comparison spoken label: "por kg" / "por litro"'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: retest stays out of the tester''s result selector:
+  it is a queue position, like pending and inProgress'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: Dry run reads inside SET TRANSACTION READ ONLY
+  and checks SHOW transaction_read_only before reading'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: The triage note marks a transition as done: with
+  the note on the ticket only a pending soft delete is finished'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: Transitions run only from their `from` statuses
+  (pending by default); other statuses are conflicts skipped with a warning, never stopping --apply'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: A code may have several entries with different
+  dated notes or origins, planned in file order'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: Re-test transitions free the assignee (Flavio,
+  13/11) through the audited update'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: Tester notes say ''Tu pedido (el carrito)'' for
+  the cart and ''el pedido (en Mis pedidos)'' for the order'
+- 'docs/plans/qa-2026-11-wpa-quick-fixes.md.stage-result.yaml#0: #93: fragment hrefs render a native anchor (HashSafeLink);
+  cross-page section links now reload the page'
+- 'docs/plans/qa-2026-11-wpa-quick-fixes.md.stage-result.yaml#0: #107: name-word affinity (ignoring connectors)
+  orders each similar-products tier before price proximity'
+- 'docs/plans/qa-2026-11-wpb-weekly-closing-home.md.stage-result.yaml#0: The countdown clock measures the server
+  offset once per document'
+- 'docs/plans/qa-2026-11-wpb-weekly-closing-home.md.stage-result.yaml#0: A failed storefront read of the weekly
+  closing falls back to the defaults instead of failing the page'
+- 'docs/plans/qa-2026-11-wpb-weekly-closing-home.md.stage-result.yaml#0: The product closing line takes the context''s
+  next closing, not the current instant'
+- 'docs/plans/qa-2026-11-wpb-weekly-closing-home.md.stage-result.yaml#0: WeeklyClosingSettings is a kept model for
+  the demo purge and the catalog reset'
+- 'docs/plans/qa-2026-11-wpc-product-card.md.stage-result.yaml#0: The bare-number quantity field centres its value'
+- 'docs/plans/qa-2026-11-wpc-product-card.md.stage-result.yaml#0: QA case texts are mirrored into docs/qa/qa-ciclo-de-vida.md,
+  the origin of the seed wording'
+- 'docs/plans/qa-mercadopago-pending.md.stage-result.yaml#0: Disabled-reconcile reason shown as visible text, not
+  tooltip (disabled buttons emit no pointer events)'
+- 'docs/plans/qa-mercadopago-pending.md.stage-result.yaml#1: EventDetail renders lastError (ignored events as ''Motivo:
+  …'') so #25 and signature-mismatch diagnosis are visible'
+- 'docs/plans/qa-mercadopago-pending.md.stage-result.yaml#1: #21 locates the attempt by Cliente email; checkout
+  redirects before showing the order code'
+- 'docs/plans/qa-mercadopago-pending.md.stage-result.yaml#1: A2 confirmed against MP docs: APRO approved, OTHE rejected,
+  CONT pending, buyer test account, DNI 12345678'
+- 'docs/plans/qa-mercadopago-pending.md.stage-result.yaml#1: Admin-side ticket text uses raw attempt statuses (pending/completed/failed/inProcess)'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: product.categoryId nullable in the DB, required
+  by the app until a NOT NULL migration after backfill and purge'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: Catalog category param is ?categoria=<category
+  id>'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: Money rounds half up to cents on client
+  and server'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: Unit pricing script converts only Quintal
+  kg terms still at moq 1 / step 1'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: Price sheet apply: per-row conditional price
+  updates within a 180 s transaction; category moves batched'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: Checkout terms bumped to checkout-v3 to
+  drop the MOQ block sentence'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: Demo purge keeps unlinked payment provider
+  events and categories'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: #81 client price = Quintal list price, no margin/VAT
+  (user, 2026-10-08)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: #81 client MOQ 1 kg / 1 unit, step 1, no max
+  (user, 2026-10-08)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: #81 scope includes OTROS (user, 2026-10-08)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: #81 product identity by name, no migration
+  (user, 2026-10-08)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: Fase 0 DB writes (qa:seed, reopen) left to
+  the user (user, 2026-10-08)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: F1 + #78 deferred to a separate design grill
+  (user, 2026-10-08)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: Paid order for orderVolume = processing/completed
+  order with a completed transaction in 90 days and a submitted item; counted per product'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: Customer roll over reason is a fixed sentence
+  per cause; admin keeps full detail'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#1: Customer roll over title is "Reprogramado"
+  (user, 2026-10-09)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#1: Rate limit stored in the database by keyed
+  IP hash, 3 per hour (user, 2026-10-09)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#1: Unused uploaded product images are deleted
+  on save (user, 2026-10-09)'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#1: Tooling folders and files excluded from Biome;
+  six static-only classes keep a biome-ignore'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#0: Rerun of a completed operation forces includeRollOver=true
+  (user, 2026-09-18)'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#0: Add shipment.recover command delayed -> inTransit
+  (user, 2026-09-18)'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#0: Interim versioned checkout terms constant; ADR
+  0009 deferred (user, 2026-09-18)'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#0: Outbound PackageAllocation records sourcePackageId
+  (user, 2026-09-18)'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#1: Mercado Pago part (Task 4.1, tickets #22 #25 #36)
+  deferred by the user (2026-09-18)'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#1: Customer notice reason is an event-type allow-list,
+  narrower than the plan''s notice-kind rule, to keep operator notes private'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#1: shipment.recover target read from the latest shipment.markDelayed
+  audit before.status; default inTransit'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#1: Shipment exception/resolution event keys carry
+  the occurrence after the first'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#1: Promoted packages count as received evidence via
+  sourcePackageId = own id'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#1: #12 fixture replaced by a precondition (Google-only
+  login); #67 case A uses ORD-SEED-PICKUP'
+- '2026-11-13: resume Claude QA orchestration; runtime recovered under docs/development-workflow (no previous root
+  state/index existed).'
+- '2026-11-13: user explicitly authorized commits/merges WP-D/F/E, two additive migrations, production push/deploy
+  and QA seed/triage after joint checks.'
+- '2026-11-13: #105/#111 remain omitted, #108 deferred to H2; descriptions/compositions and combos are entered through
+  admin by Flavio.'
+risks:
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Package-to-order resolution in
+  the shipment picker is a multi-hop query'
+- 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Releasing checkout before the
+  admin side would create unenforced preferences; gated by creating pickup points after deploy'
+- 'docs/development-workflow/plans/quintal-launch-catalog-reset.md.stage-result.yaml#0: Prior 88 products and 176
+  terms were intentionally deleted; restore backup to recover their prior edits/images.'
+- 'docs/development-workflow/plans/quintal-launch-catalog-reset.md.stage-result.yaml#0: Source price formula caches
+  are imported; source financial assumptions are retained without independent commercial validation.'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#0: Rolling back code after pickup orders exist breaks
+  address-less orders; roll forward'
+- 'docs/plans/customer-delivery-preference.md.stage-result.yaml#1: No pickup-point shipment can be created until
+  at least one pickup point exists after the migration'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: Recomposed shells (navbar, catalog, checkout) can drift
+  from the real pages (ADR 0012)'
+- 'docs/plans/customer-tutorial.md.stage-result.yaml#0: Invitation may reappear after browser Back from /tutorial
+  until reload (unverified, needs signed-in user)'
+- 'docs/plans/customer-vocabulary-pedido.md.stage-result.yaml#0: Checkout copy overlaps with the in-flight F1 change;
+  implement after F1 merges'
+- 'docs/plans/home-community-redesign.md.stage-result.yaml#0: QA autenticada de carrito, checkout y admin pendiente;
+  mockup interno inaccesible (403).'
+- 'docs/plans/product-card-price-hierarchy.md.stage-result.yaml#0: md stepper truncates presentation suffixes in
+  ~229 px catalog columns at 2xl'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: Writing retest before the app with the new enum
+  is deployed breaks /admin/qa-tickets; the script only checks the migration'
+- 'docs/plans/qa-2026-11-wp0-retest-status.md.stage-result.yaml#0: #67 case A fixture probably gone from the shared
+  database after the 11/10 purge'
+- 'docs/plans/qa-2026-11-wpa-quick-fixes.md.stage-result.yaml#0: #93 workaround depends on Next 16.2 route-cache
+  behavior; revisit on Next upgrade'
+- 'docs/plans/qa-2026-11-wpb-weekly-closing-home.md.stage-result.yaml#0: The storefront client bundle now carries
+  dayjs with its timezone plugin'
+- 'docs/plans/qa-mercadopago-pending.md.stage-result.yaml#0: MP sandbox cardholder-name convention (APRO/OTHE/CONT)
+  not re-verified this session'
+- 'docs/plans/qa-mercadopago-pending.md.stage-result.yaml#1: #25 is blocked if ''Webhooks unsigned dev'' is on outside
+  production'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: 8 Quintal per-unit products have no inferable
+  presentation until set in the admin'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: quintal-catalog.data.ts was transformed
+  without the source xlsx; --check not run'
+- 'docs/plans/qa-open-tickets-2026-10-11-report.md.stage-result.yaml#0: Home market-saving ranking now compares
+  kg products at a 0,5 minimum'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: Quintal list dated 2026-07-02 sold at zero
+  margin'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: db:seed:test guard passes when a production
+  .env lacks APP_ENV'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: Renaming a Quintal product duplicates it on
+  the next db:seed:init'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#0: /proveedores has no rate limit'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#1: Rate limit trusts x-forwarded-for, valid only
+  behind Vercel'
+- 'docs/plans/qa-open-tickets-2026-10-report.md.stage-result.yaml#1: Concurrent saves sharing a copied image URL
+  could delete an image still in use (unlikely)'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#0: B4 root cause unconfirmed until reproducing test'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#0: B8 requires additive migration on package_allocation'
+- 'docs/plans/qa-open-tickets-remediation.md.stage-result.yaml#1: B8: merged-source outbound rows (null source)
+  keep the old over-offer display; conservation holds'
+- 'Legacy project: no versioned technical foundation or design-system references; existing code, CONTEXT, ADRs and
+  approved plans used.'
+- Historical sidecar blockers are not current acceptance evidence; current checks and human QA remain tracked in
+  orchestration §13.
+- Authenticated admin/customer flows still require human re-test; supplier composition/descriptions remain unavailable.
+blockers:
+- 'WP-I: #91/#92 need composition and specific descriptions supplied by Quintal/Flavio.'
+active_front:
+  item_ref: QA-OPEN-2026-11
+  record_ref: docs/plans/qa-open-tickets-2026-11-orchestration.md
+next_actor: agent
+next_action: Publish authorized main and verify the real production deployment before QA seed/triage.

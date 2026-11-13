@@ -1,6 +1,6 @@
 # Plan: WP-F, descuento por transferencia (#110)
 
-> **Estado:** implementado el 13/11/2026 en la rama `wpf-transfer-discount`, sobre `main` (`7b97050`). Revisión hecha y hallazgos corregidos; e2e en verde contra la base local. Sin merge ni push. Registro de ejecución en §17. Feature grill del 13/11/2026: Flavio contestó las 6 preguntas por el orquestador y eligió la opción recomendada en todas. También aceptó los 5 supuestos del grill.
+> **Estado:** implementado, revisado y mergeado en `main` (`ad74aae`); corrección de Pago/Resumen `5fbe06a` y migración aplicada. Registro en §17; cierre operativo en la orquestación §13.
 > **Origen:**
 > - `docs/plans/qa-open-tickets-2026-11-orchestration.md` (§2, §3, §6 WP-F, §7, §8 y §9);
 > - la fila #110 de `docs/plans/qa-open-tickets-2026-11-report.md`;
