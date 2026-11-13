@@ -6,6 +6,7 @@ import type {
 	CheckoutAddressCreateInput,
 	CheckoutAddressUpdateInput,
 } from "~/shared/common/checkout.types";
+import type { TransferDiscountBreakdown } from "~/shared/common/transfer-discount";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
 import { activePickupPointWhere } from "../admin/pickup-point.data";
 import { cartProductClientTermsSelect } from "../cart/cart.data";
@@ -76,6 +77,9 @@ export const checkoutPaymentMethodSelect = {
 const orderTransactionSelect = {
 	id: true,
 	amount: true,
+	subtotalAmount: true,
+	transferDiscountPercent: true,
+	transferDiscountAmount: true,
 	currency: true,
 	status: true,
 	completedAt: true,
@@ -438,11 +442,21 @@ export async function createPendingTransaction(
 		requestSnapshot: unknown;
 		provider?: string;
 		providerMode?: "sandbox" | "production" | null;
+		transferDiscount?: TransferDiscountBreakdown | null;
 	},
 ) {
+	const discount = input.transferDiscount;
+
 	return db.userTransaction.create({
 		data: {
 			amount: input.amount,
+			...(discount
+				? {
+						subtotalAmount: discount.subtotal,
+						transferDiscountPercent: discount.percent,
+						transferDiscountAmount: discount.discount,
+					}
+				: {}),
 			currency: input.currency as never,
 			status: "pending",
 			provider: input.provider ?? "mock",
@@ -670,6 +684,27 @@ export async function cancelTransaction(db: CheckoutDbClient, id: number) {
 		data: { status: "cancelled", cancelledAt: new Date() },
 		select: orderTransactionSelect,
 	});
+}
+
+/**
+ * Cancels the order's other pending attempts that have no declared receipt.
+ * One with a declared receipt is left for an admin to reject.
+ */
+export async function cancelOtherPendingAttempts(
+	db: CheckoutDbClient,
+	input: { userOrderId: number; keepTransactionId: number },
+) {
+	const { count } = await db.userTransaction.updateMany({
+		where: {
+			userOrderId: input.userOrderId,
+			id: { not: input.keepTransactionId },
+			status: "pending",
+			declaredReceiptReference: null,
+		},
+		data: { status: "cancelled", cancelledAt: new Date() },
+	});
+
+	return count;
 }
 
 export async function updateOrderStatus(

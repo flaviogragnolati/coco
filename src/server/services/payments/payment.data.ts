@@ -32,6 +32,9 @@ const userOrderBriefSelect = {
 export const paymentAttemptListSelect = {
 	id: true,
 	amount: true,
+	subtotalAmount: true,
+	transferDiscountPercent: true,
+	transferDiscountAmount: true,
 	currency: true,
 	status: true,
 	provider: true,

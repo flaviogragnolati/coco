@@ -681,6 +681,11 @@ model UserOrderItem {
 model UserTransaction {
   id                       Int                   @id @default(autoincrement())
   amount                   Decimal               @db.Decimal(18, 2)
+  // Transfer discount frozen at confirmation (ADR 0013). All three null on Mercado Pago
+  // attempts and on attempts without a discount; `amount` is what is charged either way.
+  subtotalAmount           Decimal?              @db.Decimal(18, 2)
+  transferDiscountPercent  Decimal?              @db.Decimal(5, 2)
+  transferDiscountAmount   Decimal?              @db.Decimal(18, 2)
   currency                 Currency              @default(ARS)
   status                   UserTransactionStatus @default(pending)
   provider                 String                @default("mock") @db.Text
