@@ -3,7 +3,11 @@ import "server-only";
 import type { Prisma } from "~/prisma/client";
 import type { db } from "~/server/db";
 import { currentTermsWhere } from "../_base/terms-validity";
-import type { HomeOfferCuration } from "./home-ranking";
+import type {
+	FeaturedTarget,
+	HomeComboRecord,
+	HomeFeaturedCuration,
+} from "./home-featured";
 
 type HomeDb = typeof db;
 
@@ -20,7 +24,6 @@ const homeOfferProductSelect = {
 	presentationSize: true,
 	cardImageUrl: true,
 	cartImageUrl: true,
-	homeOfferRank: true,
 	brand: {
 		select: homeProductBrandSelect,
 	},
@@ -122,22 +125,95 @@ export async function countPaidOrdersByProduct(
 	);
 }
 
+/** Active combos only: an inactive or deleted one never reaches the home. */
+export async function listHomeCombos(
+	database: HomeDb,
+): Promise<HomeComboRecord[]> {
+	const combos = await database.combo.findMany({
+		where: { active: true, deleted: false },
+		orderBy: { id: "asc" },
+		select: {
+			id: true,
+			name: true,
+			description: true,
+			people: true,
+			groupName: true,
+			items: {
+				orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+				select: {
+					productId: true,
+					quantity: true,
+					product: { select: { name: true } },
+				},
+			},
+		},
+	});
+
+	return combos.map((combo) => ({
+		...combo,
+		items: combo.items.map((item) => ({
+			productId: item.productId,
+			productName: item.product.name,
+			quantity: item.quantity.toString(),
+		})),
+	}));
+}
+
+export function toFeaturedTarget(entry: {
+	productId: number | null;
+	comboId: number | null;
+}): FeaturedTarget | null {
+	if (entry.productId !== null) {
+		return { kind: "product", productId: entry.productId };
+	}
+	if (entry.comboId !== null) return { kind: "combo", comboId: entry.comboId };
+	return null;
+}
+
+export async function listHomeFeaturedList(
+	database: HomeDb,
+): Promise<FeaturedTarget[]> {
+	const entries = await database.homeFeaturedItem.findMany({
+		orderBy: [{ position: "asc" }, { id: "asc" }],
+		select: { productId: true, comboId: true },
+	});
+	return entries.flatMap((entry) => toFeaturedTarget(entry) ?? []);
+}
+
+export type HomeCurationSettings = Omit<HomeFeaturedCuration, "list">;
+
 // The admin section owns the upsert on the singleton row. Reading the home must
 // not create it, so an absent row means "not curated yet" and answers with the
 // same defaults the schema would have written.
-const uncuratedHomeOffers: HomeOfferCuration = {
-	spotlightProductId: null,
+const uncuratedHomeOffers: HomeCurationSettings = {
+	spotlight: null,
 	criterion: "marketSaving",
-	offersLimit: 4,
+	featuredLimit: 4,
+	fillWithRanking: true,
 };
 
 export async function getHomeOfferCuration(
 	database: HomeDb,
-): Promise<HomeOfferCuration> {
+): Promise<HomeCurationSettings> {
 	const settings = await database.homeOfferSettings.findUnique({
 		where: { id: 1 },
-		select: { spotlightProductId: true, criterion: true, offersLimit: true },
+		select: {
+			spotlightProductId: true,
+			spotlightComboId: true,
+			criterion: true,
+			offersLimit: true,
+			fillWithRanking: true,
+		},
 	});
+	if (!settings) return uncuratedHomeOffers;
 
-	return settings ?? uncuratedHomeOffers;
+	return {
+		spotlight: toFeaturedTarget({
+			productId: settings.spotlightProductId,
+			comboId: settings.spotlightComboId,
+		}),
+		criterion: settings.criterion,
+		featuredLimit: settings.offersLimit,
+		fillWithRanking: settings.fillWithRanking,
+	};
 }

@@ -9,8 +9,14 @@ import {
 	countPaidOrdersByProduct,
 	getHomeOfferCuration,
 	listCurrentHomeOffers,
+	listHomeCombos,
+	listHomeFeaturedList,
 } from "./home.data";
-import { composeHomeContent, type RankableHomeOffer } from "./home-ranking";
+import {
+	type ComposedHomeFeatured,
+	composeHomeFeatured,
+} from "./home-featured";
+import type { RankableHomeOffer } from "./home-ranking";
 
 function mapHomeOffer(
 	record: CurrentHomeOfferRecord,
@@ -36,30 +42,37 @@ function mapHomeOffer(
 		marketPrice: record.marketPrice?.toString() ?? null,
 		discountPercent: record.discountPercent?.toString() ?? null,
 		currency: record.currency,
-		homeOfferRank: record.product.homeOfferRank,
 		paidOrderCount: paidOrderCounts.get(record.product.id) ?? 0,
 		fromDate: record.fromDate,
 	};
 }
 
-export async function getHomeContent(): Promise<HomeContent> {
+/**
+ * The home's band and featured section with where each entry came from. The
+ * admin preview reads this same result, so it cannot disagree with the home.
+ */
+export async function composeCurrentHomeFeatured(): Promise<ComposedHomeFeatured> {
 	const now = new Date();
-	const [records, curation] = await Promise.all([
+	const [records, combos, list, settings] = await Promise.all([
 		listCurrentHomeOffers(db, now),
+		listHomeCombos(db),
+		listHomeFeaturedList(db),
 		getHomeOfferCuration(db),
 	]);
+	// Only the ranking reads paid orders, and the ranking is off without the fill.
 	const paidOrderCounts =
-		curation.criterion === "orderVolume"
+		settings.fillWithRanking && settings.criterion === "orderVolume"
 			? await countPaidOrdersByProduct(db, now)
 			: new Map<number, number>();
 
-	// The admin pin and the order count never reach the public offer contract.
-	return homeContentOutputSchema.parse({
-		...composeHomeContent(
-			records.map((record) => mapHomeOffer(record, paidOrderCounts)),
-			curation,
-		),
-		offersLimit: curation.offersLimit,
-		offersCriterion: curation.criterion,
-	});
+	return composeHomeFeatured(
+		records.map((record) => mapHomeOffer(record, paidOrderCounts)),
+		combos,
+		{ ...settings, list },
+	);
+}
+
+export async function getHomeContent(): Promise<HomeContent> {
+	// The schema strips the order count and the source from the public contract.
+	return homeContentOutputSchema.parse(await composeCurrentHomeFeatured());
 }
