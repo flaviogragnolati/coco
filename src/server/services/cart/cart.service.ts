@@ -65,8 +65,8 @@ export type CartTransaction = Parameters<CartDb["$transaction"]>[0] extends (
 	: never;
 
 /**
- * A cart mutation that refuses live orders found one. Not a `TRPCError`: the
- * caller that asked for the refusal words it for its own flow.
+ * Thrown when a cart mutation that asked to refuse live orders finds one. Not
+ * a `TRPCError`: the caller words it for its own flow.
  */
 export class LiveOrderRefusedError extends Error {
 	constructor() {

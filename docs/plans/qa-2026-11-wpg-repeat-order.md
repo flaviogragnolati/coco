@@ -301,6 +301,9 @@ Los hashes son los de después del último rebase.
 | `0c064d5` | Este registro. |
 | `448fdd2` | Revisión independiente, del lado del servidor: M1, L1, C1, C2 y N1. |
 | `cbc6eb2` | Revisión independiente, del lado del diálogo: L1, N2 y N3. |
+| `ba4f264` | El registro de la revisión independiente. |
+| `32e16e9` | El registro del e2e y los hashes rebasados. |
+| (último) | El docstring de `LiveOrderRefusedError`, que pidió el revisor. |
 
 ### Validación
 
