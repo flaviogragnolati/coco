@@ -4,8 +4,6 @@ import { XIcon } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import type { CatalogProductUnit } from "~/shared/common/catalog.types";
-import { productUnitLabelMap } from "~/shared/common/commerce.helpers";
 import type {
 	CatalogBrandFacet,
 	CatalogCategoryChip,
@@ -18,7 +16,6 @@ type CatalogActiveFiltersProps = {
 	categories: CatalogCategoryChip[];
 	onRemoveCategory: () => void;
 	onRemoveBrand: (id: number) => void;
-	onRemoveUnit: (unit: CatalogProductUnit) => void;
 	onRemoveSearch: () => void;
 	onRemovePrice: () => void;
 	onRemoveInCart: () => void;
@@ -62,7 +59,6 @@ export function CatalogActiveFilters({
 	categories,
 	onRemoveCategory,
 	onRemoveBrand,
-	onRemoveUnit,
 	onRemoveSearch,
 	onRemovePrice,
 	onRemoveInCart,
@@ -72,7 +68,6 @@ export function CatalogActiveFilters({
 		filters.search.trim().length > 0 ||
 		filters.categoryId !== null ||
 		filters.brandIds.length > 0 ||
-		filters.units.length > 0 ||
 		filters.minPrice !== "" ||
 		filters.maxPrice !== "" ||
 		filters.inCartOnly;
@@ -100,13 +95,6 @@ export function CatalogActiveFilters({
 					key={`brand-${id}`}
 					label={brandLabel(id)}
 					onRemove={() => onRemoveBrand(id)}
-				/>
-			))}
-			{filters.units.map((unit) => (
-				<FilterChip
-					key={`unit-${unit}`}
-					label={productUnitLabelMap[unit]}
-					onRemove={() => onRemoveUnit(unit)}
 				/>
 			))}
 			{price ? <FilterChip label={price} onRemove={onRemovePrice} /> : null}

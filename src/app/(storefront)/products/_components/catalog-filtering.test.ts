@@ -8,7 +8,6 @@ import type {
 import {
 	computeBrandFacets,
 	computeCategoryChips,
-	computeUnitFacets,
 	emptyCatalogFilters,
 	filterCatalog,
 	matchScore,
@@ -111,7 +110,6 @@ test("filterCatalog narrows by accent-insensitive search", () => {
 	const result = filterCatalog(products, {
 		search: "cafe",
 		brandIds: [],
-		units: [],
 		minPrice: "",
 		maxPrice: "",
 		inCartOnly: false,
@@ -129,30 +127,12 @@ test("filterCatalog narrows by brand membership", () => {
 	const result = filterCatalog(products, {
 		search: "",
 		brandIds: [1, 2],
-		units: [],
 		minPrice: "",
 		maxPrice: "",
 		inCartOnly: false,
 		categoryId: null,
 	});
 	expect(result.map((product) => product.name)).toStrictEqual(["A", "B"]);
-});
-
-test("filterCatalog narrows by unit membership", () => {
-	const products = [
-		makeProduct({ name: "A", unit: "kg" }),
-		makeProduct({ name: "B", unit: "box" }),
-	];
-	const result = filterCatalog(products, {
-		search: "",
-		brandIds: [],
-		units: ["kg"],
-		minPrice: "",
-		maxPrice: "",
-		inCartOnly: false,
-		categoryId: null,
-	});
-	expect(result.map((product) => product.name)).toStrictEqual(["A"]);
 });
 
 test("filterCatalog narrows by price range", () => {
@@ -164,7 +144,6 @@ test("filterCatalog narrows by price range", () => {
 	const result = filterCatalog(products, {
 		search: "",
 		brandIds: [],
-		units: [],
 		minPrice: "100",
 		maxPrice: "200",
 		inCartOnly: false,
@@ -181,7 +160,6 @@ test("filterCatalog narrows by inCartOnly", () => {
 		{
 			search: "",
 			brandIds: [],
-			units: [],
 			minPrice: "",
 			maxPrice: "",
 			inCartOnly: true,
@@ -641,19 +619,4 @@ test("computeBrandFacets counts products per brand sorted by label", () => {
 		{ id: 1, label: "Alfa", count: 2 },
 		{ id: 2, label: "Zeta", count: 1 },
 	]);
-});
-
-test("computeUnitFacets counts products per unit with labels", () => {
-	const products = [
-		makeProduct({ unit: "kg" }),
-		makeProduct({ unit: "kg" }),
-		makeProduct({ unit: "box" }),
-	];
-	const facets = computeUnitFacets(products);
-	const kg = facets.find((facet) => facet.unit === "kg");
-	const box = facets.find((facet) => facet.unit === "box");
-	expect(kg?.count).toBe(2);
-	expect(kg?.label).toBe("kg");
-	expect(box?.count).toBe(1);
-	expect(box?.label).toBe("caja");
 });

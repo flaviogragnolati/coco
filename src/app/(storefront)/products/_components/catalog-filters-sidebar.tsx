@@ -9,23 +9,16 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { Switch } from "~/components/ui/switch";
 import { cn } from "~/lib/utils";
-import type { CatalogProductUnit } from "~/shared/common/catalog.types";
-import type {
-	CatalogBrandFacet,
-	CatalogFilters,
-	CatalogUnitFacet,
-} from "./catalog-filtering";
+import type { CatalogBrandFacet, CatalogFilters } from "./catalog-filtering";
 import { normalizeSearch } from "./catalog-filtering";
 
 const BRAND_SEARCH_THRESHOLD = 8;
 
 type CatalogFiltersSidebarProps = {
 	brands: CatalogBrandFacet[];
-	units: CatalogUnitFacet[];
 	filters: CatalogFilters;
 	idPrefix?: string;
 	onBrandIdsChange: (ids: number[]) => void;
-	onUnitsChange: (units: CatalogProductUnit[]) => void;
 	onMinPriceChange: (value: string) => void;
 	onMaxPriceChange: (value: string) => void;
 	onInCartOnlyChange: (value: boolean) => void;
@@ -81,11 +74,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export function CatalogFiltersSidebar({
 	brands,
-	units,
 	filters,
 	idPrefix = "catalog-filter",
 	onBrandIdsChange,
-	onUnitsChange,
 	onMinPriceChange,
 	onMaxPriceChange,
 	onInCartOnlyChange,
@@ -98,7 +89,6 @@ export function CatalogFiltersSidebar({
 
 	const hasActiveFilters =
 		filters.brandIds.length > 0 ||
-		filters.units.length > 0 ||
 		filters.minPrice !== "" ||
 		filters.maxPrice !== "" ||
 		filters.inCartOnly;
@@ -115,14 +105,6 @@ export function CatalogFiltersSidebar({
 			filters.brandIds.includes(id)
 				? filters.brandIds.filter((brandId) => brandId !== id)
 				: [...filters.brandIds, id],
-		);
-	};
-
-	const toggleUnit = (unit: CatalogProductUnit) => {
-		onUnitsChange(
-			filters.units.includes(unit)
-				? filters.units.filter((value) => value !== unit)
-				: [...filters.units, unit],
 		);
 	};
 
@@ -167,26 +149,6 @@ export function CatalogFiltersSidebar({
 						) : null}
 					</div>
 				</div>
-			) : null}
-
-			{units.length > 0 ? (
-				<>
-					<Separator />
-					<div className="flex flex-col gap-2">
-						<SectionTitle>Unidad</SectionTitle>
-						<div className="flex flex-col gap-0.5">
-							{units.map((unit) => (
-								<FacetOption
-									checked={filters.units.includes(unit.unit)}
-									count={unit.count}
-									key={unit.unit}
-									label={unit.label}
-									onToggle={() => toggleUnit(unit.unit)}
-								/>
-							))}
-						</div>
-					</div>
-				</>
 			) : null}
 
 			<Separator />

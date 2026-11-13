@@ -63,3 +63,14 @@ test("an unknown category in the URL shows the whole catalog", async ({
 		).toHaveAttribute("aria-checked", "true");
 	}
 });
+
+test("an old unit filter in the URL is ignored and the sidebar has no unit block", async ({
+	page,
+}) => {
+	await page.goto("/products");
+	const totalText = await (await loadedCounter(page)).textContent();
+
+	await page.goto("/products?unit=kg");
+	await expect(await loadedCounter(page)).toHaveText(totalText ?? "");
+	await expect(page.getByText("Unidad", { exact: true })).toHaveCount(0);
+});

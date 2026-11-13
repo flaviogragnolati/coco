@@ -6,7 +6,6 @@ import { CatalogCategoryChips } from "~/app/(storefront)/products/_components/ca
 import {
 	computeBrandFacets,
 	computeCategoryChips,
-	computeUnitFacets,
 	emptyCatalogFilters,
 	sortCatalog,
 } from "~/app/(storefront)/products/_components/catalog-filtering";
@@ -46,10 +45,8 @@ export function CatalogScene({
 	const filters = emptyCatalogFilters;
 	const sidebarProps = {
 		brands: computeBrandFacets(products),
-		units: computeUnitFacets(products),
 		filters,
 		onBrandIdsChange: noop,
-		onUnitsChange: noop,
 		onMinPriceChange: noop,
 		onMaxPriceChange: noop,
 		onInCartOnlyChange: noop,

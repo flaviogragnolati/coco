@@ -1,13 +1,8 @@
 import type {
 	CatalogCategorySummary,
 	CatalogProductListItem,
-	CatalogProductUnit,
 } from "~/shared/common/catalog.types";
-import {
-	getPerUnitPrice,
-	productUnitLabelMap,
-	toNumber,
-} from "~/shared/common/commerce.helpers";
+import { getPerUnitPrice, toNumber } from "~/shared/common/commerce.helpers";
 
 export type CatalogSort =
 	| "relevance"
@@ -20,7 +15,6 @@ export type CatalogSort =
 export type CatalogFilters = {
 	search: string;
 	brandIds: number[];
-	units: CatalogProductUnit[];
 	minPrice: string;
 	maxPrice: string;
 	inCartOnly: boolean;
@@ -30,7 +24,6 @@ export type CatalogFilters = {
 export const emptyCatalogFilters: CatalogFilters = {
 	search: "",
 	brandIds: [],
-	units: [],
 	minPrice: "",
 	maxPrice: "",
 	inCartOnly: false,
@@ -38,11 +31,6 @@ export const emptyCatalogFilters: CatalogFilters = {
 };
 
 export type CatalogBrandFacet = { id: number; label: string; count: number };
-export type CatalogUnitFacet = {
-	unit: CatalogProductUnit;
-	label: string;
-	count: number;
-};
 export type CatalogCategoryChip = { id: number; label: string };
 
 export function normalizeSearch(value: string) {
@@ -103,7 +91,6 @@ export function filterCatalog(
 	const minPrice = toNumber(filters.minPrice);
 	const maxPrice = toNumber(filters.maxPrice);
 	const brandIds = new Set(filters.brandIds);
-	const units = new Set(filters.units);
 	const inCartTermsIds = options.inCartTermsIds ?? new Set<number>();
 
 	return products.filter((product) => {
@@ -115,8 +102,6 @@ export function filterCatalog(
 		) {
 			return false;
 		}
-
-		if (units.size > 0 && !units.has(product.unit)) return false;
 
 		if (
 			filters.categoryId !== null &&
@@ -307,22 +292,4 @@ export function resolveCategoryId(
 	categoryId: number | null,
 ): number | null {
 	return chips.some((chip) => chip.id === categoryId) ? categoryId : null;
-}
-
-export function computeUnitFacets(
-	products: CatalogProductListItem[],
-): CatalogUnitFacet[] {
-	const unitMap = new Map<CatalogProductUnit, number>();
-
-	for (const product of products) {
-		unitMap.set(product.unit, (unitMap.get(product.unit) ?? 0) + 1);
-	}
-
-	return Array.from(unitMap.entries())
-		.map(([unit, count]) => ({
-			unit,
-			label: productUnitLabelMap[unit],
-			count,
-		}))
-		.sort((left, right) => left.label.localeCompare(right.label, "es"));
 }
