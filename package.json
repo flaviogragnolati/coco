@@ -24,6 +24,7 @@
 		"postinstall": "prisma generate",
 		"preview": "next build && next start",
 		"qa:seed": "tsx scripts/qa-seed.ts",
+		"qa:triage": "tsx scripts/qa-ticket-triage.ts",
 		"start": "next start",
 		"test": "vitest run",
 		"test:watch": "vitest",

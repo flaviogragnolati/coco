@@ -91,18 +91,21 @@ describe("getQaTicketStats", () => {
 			blocked: 0,
 			skipped: 0,
 			needsClarification: 0,
+			retest: 0,
 		});
 	});
 
-	it("counts the clarification rows once they exist", async () => {
+	it("counts the clarification and re-test rows once they exist", async () => {
 		const db = statsDb([
 			{ status: "passed", _count: 4 },
 			{ status: "needsClarification", _count: 3 },
+			{ status: "retest", _count: 2 },
 		]);
 
 		await expect(getQaTicketStats(db as never)).resolves.toMatchObject({
 			passed: 4,
 			needsClarification: 3,
+			retest: 2,
 		});
 	});
 

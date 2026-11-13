@@ -15,6 +15,7 @@ const emptyStats: QaTicketStats = {
 	blocked: 0,
 	skipped: 0,
 	needsClarification: 0,
+	retest: 0,
 	deleted: 0,
 };
 
@@ -77,6 +78,13 @@ describe("buildQaTicketKpis", () => {
 			Ejecutados: "8 / 20",
 			"Tasa OK": "75%",
 			"Por aclarar": 5,
+		});
+	});
+
+	it("does not count a re-test as executed", () => {
+		expect(kpis({ total: 10, passed: 3, failed: 1, retest: 6 })).toMatchObject({
+			Ejecutados: "4 / 10",
+			"Tasa OK": "75%",
 		});
 	});
 

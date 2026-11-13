@@ -5,6 +5,7 @@ import {
 	CircleHelpIcon,
 	ClockIcon,
 	type LucideIcon,
+	RotateCcwIcon,
 	SkipForwardIcon,
 	XCircleIcon,
 } from "lucide-react";
@@ -25,6 +26,7 @@ export const qaTicketStatusLabelMap: Record<QaTicketStatus, string> = {
 	blocked: "Bloqueado",
 	skipped: "Omitido",
 	needsClarification: "Requiere aclaración",
+	retest: "Re-test",
 };
 
 /** Every QA status carries an icon, which is what lets the result selector reuse it. */
@@ -35,6 +37,9 @@ type QaTicketStatusConfig = StatusConfig & { icon: LucideIcon };
 // `blocked` and `needsClarification` share the amber preset because both stop the
 // pass; there the label, the icon and the hint carry the distinction between a
 // missing environment and a missing definition, since the colour cannot.
+// `retest` takes the info preset rather than the inert one: unlike `pending`, a
+// fix landed and the case is waiting on a tester. It shares that colour with
+// `inProgress`, so its icon tells "hay que volver a correrlo" from "lo están corriendo".
 export const qaTicketStatusConfig: Record<
 	QaTicketStatus,
 	QaTicketStatusConfig
@@ -75,6 +80,12 @@ export const qaTicketStatusConfig: Record<
 		label: qaTicketStatusLabelMap.needsClarification,
 		hint: "La definición no alcanza para ejecutar o decidir el resultado.",
 	},
+	retest: {
+		...statusPresets.inProgress,
+		icon: RotateCcwIcon,
+		label: qaTicketStatusLabelMap.retest,
+		hint: "Se corrigió o implementó después de la última corrida: hay que volver a correrlo.",
+	},
 };
 
 export const qaTicketStatusOptions = Object.entries(qaTicketStatusLabelMap).map(
@@ -82,9 +93,10 @@ export const qaTicketStatusOptions = Object.entries(qaTicketStatusLabelMap).map(
 );
 
 /**
- * What a tester can record after running the case. `pending` and `inProgress`
- * describe where the ticket sits in the queue, not how it went, so they stay out
- * of the operational selector and remain reachable only from the admin form.
+ * What a tester can record after running the case. `pending`, `inProgress` and
+ * `retest` describe where the ticket sits in the queue, not how it went, so they
+ * stay out of the operational selector and remain reachable only from the admin
+ * form.
  */
 const qaTicketResultStatuses = [
 	"passed",

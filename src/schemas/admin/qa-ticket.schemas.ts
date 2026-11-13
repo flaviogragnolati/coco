@@ -26,6 +26,7 @@ export const qaTicketStatusSchema = z.enum([
 	"blocked",
 	"skipped",
 	"needsClarification",
+	"retest",
 ]);
 
 export const QA_TICKET_CLARIFICATION_REASON_MESSAGE =
@@ -181,6 +182,7 @@ export const qaTicketStatsSchema = z.object({
 	blocked: z.number().int().nonnegative(),
 	skipped: z.number().int().nonnegative(),
 	needsClarification: z.number().int().nonnegative(),
+	retest: z.number().int().nonnegative(),
 	deleted: z.number().int().nonnegative(),
 });
 

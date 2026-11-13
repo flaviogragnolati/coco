@@ -36,7 +36,7 @@ function reasonIssues(result: {
 }
 
 describe("qaTicketStatusSchema", () => {
-	it("keeps the six original slugs and appends the clarification state", () => {
+	it("keeps the original slugs and appends clarification, then re-test", () => {
 		expect(qaTicketStatusSchema.options).toEqual([
 			"pending",
 			"inProgress",
@@ -45,6 +45,7 @@ describe("qaTicketStatusSchema", () => {
 			"blocked",
 			"skipped",
 			"needsClarification",
+			"retest",
 		]);
 	});
 });
@@ -57,13 +58,16 @@ describe("qaTicketStatsSchema", () => {
 
 		expect(
 			qaTicketStatsSchema.parse({ ...counters, total: 0, deleted: 0 }),
-		).toMatchObject({ needsClarification: 0 });
+		).toMatchObject({ needsClarification: 0, retest: 0 });
 	});
 
-	it("rejects a payload that omits the new counter", () => {
+	it.each([
+		"needsClarification",
+		"retest",
+	] as const)("rejects a payload that omits the %s counter", (omitted) => {
 		const counters = Object.fromEntries(
 			qaTicketStatusSchema.options
-				.filter((status) => status !== "needsClarification")
+				.filter((status) => status !== omitted)
 				.map((status) => [status, 0]),
 		);
 

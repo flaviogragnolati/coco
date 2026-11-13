@@ -110,7 +110,7 @@ export const qaGlossaryEntries: GlossaryEntry[] = [
 		kind: "status",
 		section: "qa",
 		label: qaTicketStatusLabelMap.pending,
-		definition: "El ticket todavía no se corrió en esta pasada.",
+		definition: "El ticket todavía no se corrió contra su definición actual.",
 		occurrences: [{ code: "QaTicketStatus.pending", db: "qa_ticket.status" }],
 		href: "/admin/qa-tickets",
 	},
@@ -176,6 +176,18 @@ export const qaGlossaryEntries: GlossaryEntry[] = [
 		definition:
 			'El caso queda deliberadamente fuera de esta pasada. Distinto de pendiente, que es "todavía no se corrió".',
 		occurrences: [{ code: "QaTicketStatus.skipped", db: "qa_ticket.status" }],
+		href: "/admin/qa-tickets",
+	},
+	{
+		slug: "estado-qa-re-test",
+		kind: "status",
+		section: "qa",
+		label: qaTicketStatusLabelMap.retest,
+		term: "QA re-test",
+		definition:
+			"El defecto se corrigió, o el cambio pedido se implementó, después de la última corrida: el caso espera que un tester lo vuelva a correr. Distinto de Pendiente, que todavía no se corrió contra su definición actual, y de Completo OK, que todavía hay que ganarse.",
+		aliases: ["Reabierto", "Pendiente de nuevo", "Retest pendiente"],
+		occurrences: [{ code: "QaTicketStatus.retest", db: "qa_ticket.status" }],
 		href: "/admin/qa-tickets",
 	},
 ];
