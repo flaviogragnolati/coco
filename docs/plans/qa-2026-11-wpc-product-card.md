@@ -1,6 +1,7 @@
 # Plan reducido: WP-C, tarjeta y ficha de producto (#106 y el resto de #107)
 
-> **Estado:** Working. Simple grill del 13/11/2026; Flavio contestó las 4 preguntas por el orquestador.
+> **Estado:** implementado el 13/11/2026 en la rama `wpc-product-card`, sobre `main` (`6d53286`). Revisión hecha y hallazgos corregidos; e2e en verde contra la base local. Sin merge ni push. Registro de ejecución en §11.
+> Simple grill del 13/11/2026; Flavio contestó las 4 preguntas por el orquestador.
 > **Origen:** `docs/plans/qa-open-tickets-2026-11-orchestration.md` (§6 WP-C, §7) y `docs/plans/qa-open-tickets-2026-11-report.md` (filas #106 y #107).
 > **Base:** `main` con **WP-A ya mergeado**. WP-A deja así el diálogo y el resto:
 > - En `product-details-dialog.tsx` ya no están "Sin galería adicional" ni el botón "Cerrar".
@@ -243,3 +244,98 @@ Las transiciones se agregan a `scripts/qa-ticket-triage.data.ts` (WP0). Las nota
 - El merge `--no-ff` a `main`.
 - El registro de ejecución agregado a este plan y una fila en §13 de la orquestación.
 - Las transiciones de §9 cargadas en el script de triage.
+
+## 11. Registro de ejecución (13/11/2026)
+
+Rama `wpc-product-card`, rebaseada sobre `main` (`6d53286`, con WP-A mergeado en `86f4f26`). El plan coincidió con el código de `main`: WP-A ya había dejado el diálogo sin "Cerrar" ni "Sin galería", el subtítulo como `DialogDescription` sr-only y sin `computeUnitFacets`. El subtítulo de la ficha no se tocó (es de WP-B).
+
+### 11.1. Commits
+
+| Pasos | Commit | Qué se hizo |
+| --- | --- | --- |
+| 4.1 (1–6) | `e65c19f` | `getComparisonPrice` ya no corta en 1 kg / 1 L. `getOfferStepLabel` arma el rótulo con el envase sin tamaño ("por bidón", "por 6 frascos"); las ramas de peso no cambian y `formatUnitLabel` no se tocó. Helper `showsQuantityUnit` (= `isWeightUnit`). Tests actualizados y nuevos ("por bidón", 1 kg / 1 L con comparativo, `showsQuantityUnit` para kg, gr, lb, piece y box). |
+| 4.2 (7–9) | `56293d4` | `QuantityStepper` con `showUnit` (por defecto `true`: el carrito no cambia); sin unidad, el número va centrado y el `aria-label` sigue nombrando la unidad. `PurchaseActionButton` sin ícono, sin `total` y sin `addLabel`: dice siempre "Sumar al pedido" o "Ver en tu pedido". El panel pasa `showUnit={showsQuantityUnit(unit)}`; la live region sr-only "Total $ X" queda. Callers limpiados: catálogo, tarjeta, home y vista previa del admin. |
+| 4.3 (10–13) | `d66a708` | `ProductImage` con `bg-center bg-contain bg-no-repeat` y `placeholderClassName` para el tinte del ícono. Los 7 usos pasan a `aspect-square` (tarjeta, home grilla y destacado, mini-tarjeta, ficha principal y miniaturas, vista previa del admin principal y miniaturas). Skeletons del catálogo y de la ficha cuadrados. El destacado va en `mx-auto w-full max-w-100`. |
+| 4.4 (14) | `db79e33`, `e337209` | e2e: botón `{ name: "Sumar al pedido", exact: true }`; el cambio de cantidad se mide en la live region "Total"; la imagen de la tarjeta es cuadrada; el destacado mide ≤ 401 px a 1280; test nuevo: solo los productos por peso muestran la unidad dentro del campo. |
+| 4.4 (15–17) | `7d2a845` | Tutorial (`stepQuantity`: "Al sumar, ves el total en tu pedido."), glosario (*Precio por paso* y *Precio comparativo*), casos de QA #5, #6 y #8 en `scripts/qa-tickets.data.ts` y su test. |
+| Revisión | `4af5a21` | Los mismos textos de #5, #6 y #8 en `docs/qa/qa-ciclo-de-vida.md`, nombres de tests y comentarios (§11.4). |
+
+El paso 18 (`CONTEXT.md` y la nota en `product-card-price-hierarchy.md`) ya estaba aplicado; se verificó.
+
+### 11.2. Validación
+
+| Comando | Resultado |
+| --- | --- |
+| `pnpm typecheck` | Sin errores. |
+| `pnpm test` | 132 archivos pasan y 1 se saltea; 1938 tests pasan y 4 se saltean. |
+| `pnpm check` | 865 archivos, sin cambios ni errores. |
+| `grep -rn 'addLabel\|ShoppingCartIcon' src/features/catalog src/app/\(storefront\)/products` | Sin resultados. |
+
+**e2e contra la base local** (script con lock, base restaurada desde el dump sembrado y `.env` restaurado al salir):
+
+| Spec | 1.ª corrida | 2.ª corrida (con los arreglos de la revisión) |
+| --- | --- | --- |
+| `catalog-product-card` | 3/3 | 4/4 (incluye el test nuevo de la unidad en el campo) |
+| `home-offer-quantity` | 1/1 | 1/1 |
+| `smoke` | 15/15 | 15/15 |
+| `customer-tutorial` | 7/8: falló `:58` | 8/8 |
+| `catalog-category-filter` | 3/3 | 3/3 |
+
+`customer-tutorial.spec.ts:58` es el intermitente que ya pasa en `main` (hydration mismatch del sidebar de marcas en `/products`, ver WP-A §5). En la segunda corrida pasó.
+
+**Revisión visual** con un spec temporal de capturas (no commiteado), a 360, 768, 1280 y 1536 px, sobre la base sembrada:
+- foto cuadrada completa en `/products`, en la grilla del home y en el destacado; placeholder gris en el catálogo y verde en el home;
+- "Sumar al pedido" sin ícono ni monto;
+- "$ 137.400 por bidón" + "$ 27.480 / L"; "$ 30.400 por botella" + "$ 30.400 / L" (1 L); "$ 7.500 por bolsa" + "$ 7.500 / kg" (1 kg); "$ 5.150 por frasco" + "$ 13.919 / kg";
+- en kg, "20 kg" / "10 kg" en el campo; en envasados, solo "1";
+- "por unidad" y "por caja" (Pampa Pack, sin presentación) caen en el relleno y los botones de la fila quedan alineados;
+- el destacado mide 400 px y queda centrado en su columna.
+
+No se miró: la ficha cargada (la captura quedó en el skeleton, que ya es cuadrado), el modo oscuro y la vista previa del admin (necesita login). Los cubren el re-test y el código compartido (`PurchasePanel`, `ProductImage`).
+
+### 11.3. Desvíos y decisiones
+
+- **Relleno del precio por kilo o litro:** se mantiene, como dice §2. Además del tamaño ilegible, también cubre una unidad contable sin presentación ("por unidad", "por caja"); el comentario lo dice.
+- **Selector sin unidad:** el número va centrado (`text-center`) en lugar de alineado a la derecha, porque ya no hay sufijo al lado.
+- **Caso #6 de QA:** además del resultado esperado, se cambiaron los pasos 1 y 3, que nombraban el monto del botón y "Agregar".
+- **`docs/qa/qa-ciclo-de-vida.md`:** el plan solo nombraba `scripts/qa-tickets.data.ts`, pero el encabezado del script dice que el doc es el origen del texto. Se espejaron los mismos cambios de #5, #6 y #8.
+- **`docs/plans/customer-tutorial.md`:** la tabla del guion se actualizó con el texto nuevo de `stepQuantity`.
+- **`qa-tickets.data.test.ts`:** los `mustMention` de #5 y #6 pasaron de `"Agregar"` y `"Total"` a `"Sumar al pedido"`.
+- **Transiciones de QA:** `scripts/qa-ticket-triage.data.ts` (WP0) todavía no existe en `main`. Las transiciones de §11.5 quedan anotadas acá para cargarlas cuando entre WP0.
+- **§13 de la orquestación:** no se agregó la fila, porque necesita el commit del merge y WP-B toca el mismo documento en paralelo. La agrega el orquestador al mergear.
+
+### 11.4. Revisión
+
+Revisor independiente, con `q-review-code` (dos ejes) y `q-review-comments`, sobre `main...wpc-product-card`. Sin bloqueantes. Hallazgos corregidos en `4af5a21` y `e337209`:
+- Los textos de #5, #6 y #8 en `docs/qa/qa-ciclo-de-vida.md`, que seguían con "Agregar · $ X" y "el comparativo no aparece con paso de 1 kg".
+- Dos nombres de test de `home-formatters.test.ts` que decían que el botón lleva el total.
+- Comentarios: el relleno (tamaño "faltante o ilegible"), el ancho del campo ("la unidad, cuando se muestra") y el doc de `placeholderClassName` (tinte y color del ícono).
+- El e2e nuevo de la unidad en el campo (era opcional).
+
+### 11.5. Estado de QA al terminar (las notas van arriba, sin borrar las anteriores)
+
+Reemplazar `<commit>` por el merge de `wpc-product-card` en `main`.
+
+- **#106 → Re-test.**
+  > `[13/11/2026 · triage] Implementado en <commit>. Mirar: foto 1:1 completa; "Sumar al pedido" sin ícono ni monto en catálogo, home, destacado y ficha; "$ X por bidón" sin tamaño; precio por kg/L siempre (también botella 1 L); selector solo número en envasados, "0,5 kg" en productos por peso; el total se ve en Tu pedido. Precondiciones: ninguna (sin login).`
+- **#107 → sigue en Pendiente** (WP-B no está mergeado).
+  > `[13/11/2026 · triage] Imagen 1:1 y precio/selector/botón como la tarjeta implementados en <commit>; falta la línea de cierre (WP-B).`
+  - Si WP-B ya está mergeado cuando se cargan las transiciones, pasa a **Re-test**, con la nota de WP-B.
+- **#73 → Re-test.**
+  > `[13/11/2026 · triage] Re-testear después de #106 (<commit>). Mirar: selector − n + editable en la tarjeta y la ficha, arranca en el mínimo y no baja de ahí. Superado por #106: el total ya no se muestra en la ficha (queda para lectores de pantalla y en Tu pedido).`
+- **#84 → Re-test.**
+  > `[13/11/2026 · triage] Re-testear después de #106 (<commit>). Mirar: orden foto, nombre, precio con su unidad, selector, botón a ancho completo. Superado por #106: no hay línea de total, y la unidad va dentro del campo solo en productos por peso; en los envasados el campo muestra solo el número.`
+- **Casos #5, #6 y #8 → Re-test**, después de que Flavio corra `pnpm qa:seed`.
+  > `[13/11/2026 · triage] Texto actualizado por #106 en <commit>: botón sin monto, comparativo siempre. Re-testear.`
+  - Qué mirar:
+    - **#5:** la foto cuadrada, "$ 4.200 por frasco" sin tamaño, el comparativo también en la botella de 1 L, "kg" en el campo solo en los productos por peso, y la tarjeta sin total.
+    - **#6:** el botón dice "Sumar al pedido" y el total aparece en el mini-carrito.
+    - **#8:** la cantidad fija sigue diciendo "1 frasco 370 g" y el botón no tiene monto.
+
+**Verificado por código, sin cambio de estado:**
+- el comparativo con paso de 1 kg / 1 L (`commerce.helpers.test.ts`, `home-formatters.test.ts`, `purchase-panel.test.ts`);
+- "por bidón" (`home-formatters.test.ts`);
+- la foto cuadrada y el destacado ≤ 401 px (e2e);
+- la unidad en el campo solo por peso (e2e).
+
+Igual pasan a Re-test, porque son tickets nuevos o el pedido es visual (§2 y §5 de la orquestación).
