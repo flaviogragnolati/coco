@@ -1,0 +1,141 @@
+{
+	"verifiedAt": "2026-11-06T16:13:33.471Z",
+	"updated": 27,
+	"products": [
+		{
+			"id": 100,
+			"name": "Almendra Non Pareil 25/27",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/100-c86c75bcdb9c-38AiCUk8NgXpH7dX6eN2FOmoYrCo3D.webp"
+		},
+		{
+			"id": 101,
+			"name": "Nuez mariposa extra light",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/101-e82a9de3aa54-dEfnuNfv8W1evIlWU1KorxdQqIaVHp.webp"
+		},
+		{
+			"id": 102,
+			"name": "Nuez cuartos extra light",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/102-c7124bcd238c-qi5N2RIAnMra1rco5rp2kHlQtN4AkN.webp"
+		},
+		{
+			"id": 103,
+			"name": "Castaña de cajú tostada sin sal",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/103-dae4a96fdc08-LOwfOkiMKkj20JS8wVjY9Uvo9sV7Js.webp"
+		},
+		{
+			"id": 104,
+			"name": "Castaña de cajú tostada salada",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/104-bbb564ebdd37-zEYzS4AOwn7P3Iru6IgjHatAXOfywX.webp"
+		},
+		{
+			"id": 105,
+			"name": "Pistacho con cáscara Riojano",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/105-2dee99f9df6a-QGAgVRZ83g2F14asUiPFdS2Z4R8Nmo.webp"
+		},
+		{
+			"id": 106,
+			"name": "Avellana Chile 13-15",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/106-b4d43242430d-pxI7swHJwoFkZszkBt9lp2F1G37zS5.webp"
+		},
+		{
+			"id": 107,
+			"name": "Pecan premium",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/107-007a7b3fc9a8-0yeHE9ymASl47wK4NPUe0Tnf4CHMvz.webp"
+		},
+		{
+			"id": 108,
+			"name": "Maní tostado salado",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/108-2a2bb12efe3d-L2cl5O0bzU0LygBECdMUQWASsVFNhN.webp"
+		},
+		{
+			"id": 109,
+			"name": "Mix de frutos secos económico",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/109-ebe44b07497f-TnojY1pLE1y1prGOKqWE0giJrDGxvU.webp"
+		},
+		{
+			"id": 110,
+			"name": "Mix de frutos secos deportivo",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/110-1580475cbe07-iVf7wwnm9FsnbuL45NbyNw5ndRAwFX.webp"
+		},
+		{
+			"id": 111,
+			"name": "Mix de frutos secos antioxidante premium",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/111-8983c33c36d8-jRWXrmEaMwGbd5CTqIk6wHLl1eexuv.webp"
+		},
+		{
+			"id": 112,
+			"name": "Banana chips",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/112-ea37065f284c-2oKMsi8XBgyZo44VlZML13a6bap3xR.webp"
+		},
+		{
+			"id": 113,
+			"name": "Pasa de uva Flame sin semilla",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/113-b222e5116344-BhCKKnhvzG5mUufYbcs9yNOpErNoYx.webp"
+		},
+		{
+			"id": 114,
+			"name": "Pasa de uva rubia premium 2026",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/114-185172a6a7c4-ywcbB6RmepFnDikTkBw0qX6BYoW8PA.webp"
+		},
+		{
+			"id": 115,
+			"name": "Dátil Egipto",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/115-03a940c55c76-Bvzlq8xIVkQepV9R5fG8tr3yePs4Kb.webp"
+		},
+		{
+			"id": 116,
+			"name": "Dátil Medjool",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/116-1e85970f96ac-tu9hoD8ZOL8cAO4QTl8BEHg7Xl40Vw.webp"
+		},
+		{
+			"id": 117,
+			"name": "Ciruela sin carozo grande",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/117-950436495c99-yrvVsGQ99zMh7TJyUc8rfVD4onrXx3.webp"
+		},
+		{
+			"id": 118,
+			"name": "Empaque mixto sin carozo (frutas secas surtidas)",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/118-43553c0093be-UpjVS9zjxTvElQQ9vU6bULr9KBC0J8.webp"
+		},
+		{
+			"id": 119,
+			"name": "Mix de semillas premium (sésamo, girasol, lino, chía)",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/119-408835c7498b-OUuIeuPDW4KMS1krueXzksfXCrRwGO.webp"
+		},
+		{
+			"id": 120,
+			"name": "Granola Kuati tradicional",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/120-8193dee9a65e-09fqFChKKzn9YBVeCcpON6DLgL9MpE.webp"
+		},
+		{
+			"id": 121,
+			"name": "Coco rallado fino",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/121-3854c8893ba6-9HpUbEBZqSSnJPVgPqsEXUvEWfaIr9.webp"
+		},
+		{
+			"id": 122,
+			"name": "Aceite de oliva extra virgen 0,5 L",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/122-42d9768aa1c2-F2Aay5KpIN4DXGuxTl6gKpd2TNDhYJ.webp"
+		},
+		{
+			"id": 123,
+			"name": "Aceite de oliva extra virgen 1 L",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/123-d3b334ea5483-MOLSWu3K1NWTzJrF0WB0xEM3EqGCRH.webp"
+		},
+		{
+			"id": 124,
+			"name": "Aceite de oliva extra virgen 5 L",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/124-6293af6a4066-WtNzTsyW5gEgtUU8yi0BDRRBohhsLp.webp"
+		},
+		{
+			"id": 125,
+			"name": "Pasta de maní Entre Nuts 370 g",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/125-d5cec8a8528c-Xb6NjDn4nGTzPZo4TTL83sWnIqnf0h.webp"
+		},
+		{
+			"id": 126,
+			"name": "Sal rosada del Himalaya",
+			"cardImageUrl": "https://8f1ncmuhbj4z2rmi.public.blob.vercel-storage.com/products/generated/2026-11-06/126-13637f6504b3-g8pjitfZvDFVKPkOBjixWK7bSU4pmg.webp"
+		}
+	]
+}

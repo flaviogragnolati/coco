@@ -109,6 +109,11 @@ stage_status:
       recorded_outcome: completed_with_warnings
       reconciled: true
       source_sha256: 261fb0080e4b3ea37455b605c0483e98983c24058128011bf84a1f2499ef3092
+    docs/plans/mercadopago-validation-resumption.md.stage-result.yaml#0:
+      skill_id: q-code-grill-feature
+      recorded_outcome: completed_with_warnings
+      reconciled: true
+      source_sha256: cc0cf3a34f216db5bbac6c8bff1be894eb582838d08f793ec9d3f35528e11920
   q-delivery-release:
     execute-release: completed_with_warnings
     coordinate-uat: pending
@@ -118,6 +123,22 @@ stage_status:
     triage: completed
     human_qa: pending
     WP-I: blocked-content
+  mercadopago-validation-resumption:
+    artifact_ref: IP-MP-VALIDATION-20261113@0.2
+    status: draft-awaiting-scope-and-target-confirmation
+    active_front_changed: false
+  reconciliation_followups:
+    IP-MP-VALIDATION-20261113@0.2:
+    - path: docs/plans/qa-mercadopago-pending.md
+      proposed_change: Reconciliar el pendiente histórico de seed/reapertura con los tickets actuales en retest;
+        revisar definiciones antes de repetir escrituras.
+    - path: docs/plans/mercadopago-checkout-pro-sandbox-enablement.md
+      proposed_change: Reconciliar coco-murex y la falta histórica de rutas con los callbacks actuales de coco-kappa-ashy
+        y las rutas públicas presentes.
+    - path: scripts/qa-tickets.data.ts
+      proposed_change: Corregir
+    - path: docs/qa/qa-ciclo-de-vida.md
+      proposed_change: Reflejar las correcciones de definición de
 decisions:
 - 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Pickup orders ask no address
   (user, 2026-10-08)'
@@ -302,6 +323,10 @@ decisions:
   and QA seed/triage after joint checks.'
 - '2026-11-13: #105/#111 remain omitted, #108 deferred to H2; descriptions/compositions and combos are entered through
   admin by Flavio.'
+- '2026-11-13: commit/push all pending work authorized. Registered IP-MP-VALIDATION-20261113@0.2 as Working draft;
+  no payment validation, production enablement or QA-state changes authorized by this Git-only action.'
+- '2026-11-13: retained product-cover collection from 2026-11-06 with manifest/provenance; all 27 PNG/WebP pairs
+  passed local integrity and metadata checks; historical database evidence was not rerun.'
 risks:
 - 'docs/architecture/features/customer-delivery-preference.md.stage-result.yaml#0: Package-to-order resolution in
   the shipment picker is a multi-hop query'
@@ -363,6 +388,10 @@ risks:
 - Historical sidecar blockers are not current acceptance evidence; current checks and human QA remain tracked in
   orchestration §13.
 - Authenticated admin/customer flows still require human re-test; supplier composition/descriptions remain unavailable.
+- 'IP-MP-VALIDATION-20261113@0.2: {"id": "MP-PREFERENCE-RECOVERY", "status": "hypothesis", "detail": "Fallar al
+  crear o persistir la preferencia puede dejar pending sin redirect; requiere reproducción antes de escoger corrección."}'
+- 'IP-MP-VALIDATION-20261113@0.2: {"id": "MP-CURRENT-ACCEPTANCE-EVIDENCE", "detail": "No hay intentos ni eventos
+  MP en la base inspeccionada; no afirmar validación histórica o actual por esa ausencia."}'
 blockers:
 - '#82: contracted WhatsApp number missing.'
 - '#91/#92: confirmed mix composition and specific product descriptions missing; Flavio loads them through admin.'
