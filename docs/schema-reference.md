@@ -168,6 +168,7 @@ Operations no longer execute on creation. A draft is created with its parameters
 | `Destination` | Internal warehouse or operational destination | Referenced by `LotItem` and optionally by `Operation` | Not the same as the end-user address |
 | `PickupPoint` | Customer-facing *Pickup point*: where end-user shipments arrive and each customer collects | Referenced by `UserOrder.pickupPointId` and `Shipment.pickupPointId` (both `Restrict`) | Admin CRUD at `/admin/pickup-points`. Address, free-text `hours`, optional `instructions` and map URL; `active`/`deleted` flags. Checkout offers only active points; deactivating keeps serving the orders that chose it; hard delete refused while referenced (ADR 0011). Not a `Destination` and not an `Address` |
 | `HomeOfferSettings` | Home offers curation singleton | Optional `spotlightProduct` relation to `Product` (`onDelete: SetNull`) | One row, `id = 1`, always read and written through an upsert; holds the spotlight pick, the ranking `criterion`, and `offersLimit` (default `4`) |
+| `WeeklyClosingSettings` | *Weekly closing* singleton | None | One row, `id = 1`; the storefront reads it with code defaults when missing (Wednesday 12:00, 7 to 10 days) and the admin screen `/admin/weekly-closing` writes it through an upsert. Holds `closingWeekday` (0 = Sunday, `Date#getDay`), `closingHour`/`closingMinute` in Argentina time and the *Delivery lead time* range `deliveryDaysMin`/`deliveryDaysMax`, bounded by a CHECK. Informative only: nothing in ordering, payment or operations reads it |
 
 #### `ProductClientTerms` pricing columns
 
@@ -696,9 +697,11 @@ Documented in the architecture doc's closure (§21.10), owned by future work, no
 
 `ProductClientTerms.unitPrice` was renamed; `ProductSupplierTerms.refPrice` deliberately was not — the sell side needed the rename to stop an admin loading a competitor's price into it, and the buy side has no such surface. Renaming the supplier mirror is a recommended follow-up, not a pending obligation. Until it happens, `refPrice` in the codebase always means supplier terms.
 
-### 12. `HomeOfferSettings` is a singleton by convention, not by constraint
+### 12. `HomeOfferSettings` and `WeeklyClosingSettings` are singletons by convention, not by constraint
 
 The database allows more than one row; `id Int @id @default(1)` and an upsert on `id: 1` in the data layer are what keep there being exactly one. Anything reading the settings must go through that upsert so a fresh database returns the defaults instead of nothing. Curation is split on purpose: the spotlight, criterion and grid size live on this row, while a pinned position lives on the product it pins (`Product.homeOfferRank`).
+
+`WeeklyClosingSettings` follows the same convention with one difference: the storefront read (`findWeeklyClosingSettings`) never creates the row and falls back to the code defaults in `DEFAULT_WEEKLY_CLOSING`, because it runs on every public page; only the admin screen upserts it.
 
 ### 13. `Product.categoryId` is nullable until the backfill runs
 
