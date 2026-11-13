@@ -30,6 +30,7 @@ export const catalogCategorySummarySchema = z.object({
 	id: z.number().int().positive(),
 	name: z.string(),
 	sortOrder: z.number().int(),
+	photoBackgroundColor: z.string().nullable(),
 });
 
 export const catalogClientTermsSchema = z.object({

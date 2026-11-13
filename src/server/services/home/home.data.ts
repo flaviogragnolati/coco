@@ -24,6 +24,16 @@ const homeOfferProductSelect = {
 	brand: {
 		select: homeProductBrandSelect,
 	},
+	category: {
+		select: {
+			id: true,
+			name: true,
+			sortOrder: true,
+			active: true,
+			deleted: true,
+			photoBackgroundColor: true,
+		},
+	},
 } satisfies Prisma.ProductSelect;
 
 const currentTermsSelect = {

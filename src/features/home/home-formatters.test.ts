@@ -30,6 +30,7 @@ const offer: HomeOffer = {
 	presentationSize: null,
 	brandName: "Coco",
 	imageUrl: null,
+	photoBackgroundColor: null,
 	moq: "10",
 	moqPrice: "15000",
 	unitPrice: "1500",

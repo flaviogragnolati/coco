@@ -22,6 +22,7 @@ export const homeOfferSchema = z.object({
 	presentationSize: z.string().nullable(),
 	brandName: z.string().nullable(),
 	imageUrl: z.string().nullable(),
+	photoBackgroundColor: z.string().nullable(),
 	moq: decimalOutputSchema,
 	moqPrice: decimalOutputSchema,
 	step: decimalOutputSchema.nullable(),

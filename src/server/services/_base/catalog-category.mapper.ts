@@ -4,6 +4,7 @@ export type CatalogCategorySource = {
 	id: number;
 	name: string;
 	sortOrder: number;
+	photoBackgroundColor: string | null;
 	active: boolean;
 	deleted: boolean;
 };
@@ -18,5 +19,6 @@ export function toCatalogCategory(
 		id: category.id,
 		name: category.name,
 		sortOrder: category.sortOrder,
+		photoBackgroundColor: category.photoBackgroundColor,
 	};
 }

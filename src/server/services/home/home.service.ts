@@ -4,6 +4,7 @@ import { homeContentOutputSchema } from "~/schemas/home.schemas";
 import { db } from "~/server/db";
 import { selectProductImage } from "~/shared/common/commerce.helpers";
 import type { HomeContent } from "~/shared/common/home.types";
+import { toCatalogCategory } from "../_base/catalog-category.mapper";
 import {
 	type CurrentHomeOfferRecord,
 	countPaidOrdersByProduct,
@@ -30,6 +31,8 @@ function mapHomeOffer(
 		presentationSize: record.product.presentationSize,
 		brandName: record.product.brand?.name ?? null,
 		imageUrl: selectProductImage(record.product, "catalog"),
+		photoBackgroundColor:
+			toCatalogCategory(record.product.category)?.photoBackgroundColor ?? null,
 		moq: record.moq.toString(),
 		moqPrice: record.moqPrice.toString(),
 		unitPrice: record.unitPrice?.toString() ?? null,
