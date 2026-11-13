@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 // Smooth scrolling lets `toBeInViewport` pass mid-scroll and the next click
 // land on whatever is passing under the pointer.
-test.use({ reducedMotion: "reduce" });
+test.use({ contextOptions: { reducedMotion: "reduce" } });
 
 const heroCta = (page: Page) =>
 	page.getByRole("link", { name: "Ver qué se puede comprar" });
@@ -62,8 +62,13 @@ test("arriving from the mobile menu and clicking the hero CTA keeps a single #of
 	await skipWithoutOffers(page);
 
 	await page.goto("/products");
-	await page.getByRole("button", { name: "Abrir menú" }).click();
-	await page.getByRole("link", { name: "Ofertas" }).click();
+	const offersLink = page.getByRole("link", { name: "Ofertas" });
+	// Retried so a click that lands before hydration does not fail the test.
+	await expect(async () => {
+		await page.getByRole("button", { name: "Abrir menú" }).click();
+		await expect(offersLink).toBeVisible({ timeout: 1_000 });
+	}).toPass();
+	await offersLink.click();
 	await expect(page).toHaveURL(/\/#ofertas$/);
 	await expectSingleOffersFragment(page);
 
