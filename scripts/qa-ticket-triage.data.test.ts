@@ -19,6 +19,19 @@ describe("qaTicketTriageTransitions", () => {
 		expect(findDuplicateEntries(qaTicketTriageTransitions)).toEqual([]);
 	});
 
+	it("frees the assignee of every ticket sent to re-test", () => {
+		for (const transition of qaTicketTriageTransitions) {
+			if (transition.status !== "retest") continue;
+			expect(transition.clearAssignee).toBe(true);
+		}
+	});
+
+	it("keeps internal jargon out of the notes a tester reads", () => {
+		for (const { prependNote } of qaTicketTriageTransitions) {
+			expect(prependNote).not.toMatch(/\bADR\b|grill|\(B\d|MERCADOPAGO_/);
+		}
+	});
+
 	it("dates every note and never leaves a transition without one", () => {
 		for (const transition of qaTicketTriageTransitions) {
 			expect(transition.prependNote).toMatch(
