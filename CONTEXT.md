@@ -224,6 +224,14 @@ _Avoid_: Oferta protagonista, hero offer, featured offer
 The order in which non-pinned current products compete for the home grid: by money saved against the market price, by offer discount, or by order volume (paid orders per product over a recent window), whichever criterion the admin selected. Terms missing the criterion's input rank last.
 _Avoid_: Sort, top offers, query
 
+**Weekly closing**:
+The weekday and time, in Argentina time, at which customers are told the week's orders close, and the next instant it falls on. Anything paid before it is presented as joining that week's wholesale purchase. It is informative only: nothing in ordering, payment or operations reads it, and an admin still launches each operation by hand after the closing. An admin configures it in one place; the storefront countdown, the home copy and the product detail all derive from it. The exact closing instant already counts as closed. Spanish-facing UI labels it "Cierre semanal"; the customer countdown reads "Cierre del pedido".
+_Avoid_: Deadline, cutoff, operation, ventana de compra, fecha límite
+
+**Delivery lead time**:
+The range of days, counted from a weekly closing, that customers are told an order takes to arrive ("7 a 10 días"). It is a promise shown in copy, configured beside the weekly closing, not a computed date or a tracked commitment. Spanish-facing UI labels it "Plazo de entrega".
+_Avoid_: ETA, delivery date, SLA
+
 **Similar product**:
 Another current catalog product proposed alongside the one a customer is looking at, related by shared brand first and shared unit second. The relation is derived, not declared: nothing in the data marks two products as similar. Spanish-facing UI labels it "Productos similares".
 _Avoid_: Related product, category, recommendation
