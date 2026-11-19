@@ -76,8 +76,14 @@ describe("FAQ copy", () => {
 			"¿Cuándo pago mi pedido?",
 			"¿Dónde sigo mi pedido?",
 			"¿Cómo recibo mi pedido?",
-			"¿Por qué los precios son más bajos que en un comercio?",
+			"¿Cómo conseguimos estos precios?",
 		]);
+	});
+
+	it("answers the price question with the ticket's text", () => {
+		expect(faq[5]?.answer).toBe(
+			"Juntamos los pedidos de mucha gente y hacemos una sola compra grande, directo al proveedor. Así pagamos precio mayorista por productos de primera calidad. Si comparás, hacelo con productos de la misma calidad: un aceite de oliva extra virgen no es lo mismo que uno común, aunque los dos sean un litro.",
+		);
 	});
 
 	it("never says carrito", () => {

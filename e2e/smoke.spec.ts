@@ -38,6 +38,16 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 		.getByRole("button");
 	await expect(faqQuestions).toHaveCount(6);
 	await expect(faqQuestions.first()).toHaveText("¿Cuándo cierran los pedidos?");
+	const priceQuestion = faqQuestions.last();
+	await expect(priceQuestion).toHaveText("¿Cómo conseguimos estos precios?");
+	await priceQuestion.click();
+	await expect(
+		page
+			.locator("#preguntas-frecuentes")
+			.getByText(
+				/^Juntamos los pedidos de mucha gente .* aunque los dos sean un litro\.$/,
+			),
+	).toBeVisible();
 	await expect(
 		page.getByText(
 			"Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande.",
