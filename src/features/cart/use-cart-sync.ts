@@ -16,7 +16,10 @@ import {
 import type { HomeComboOption } from "~/shared/common/home.types";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
 import { api } from "~/trpc/react";
-import { decideCartBootstrap } from "./cart-bootstrap.decision";
+import {
+	canRestoreServerCart,
+	decideCartBootstrap,
+} from "./cart-bootstrap.decision";
 import {
 	describeLocalCartAdditions,
 	homeOfferToCartItem,
@@ -187,6 +190,8 @@ export function useCartActions({
 		[items, serverCartCode, serverCartId, serverCartStatus],
 	);
 
+	const utils = api.useUtils();
+
 	const applyOutput = useCallback(
 		(output: CartMutationOutput) => {
 			replaceCart(output.cart, userId ?? null);
@@ -195,9 +200,20 @@ export function useCartActions({
 		[replaceCart, userId],
 	);
 
+	// The store already shows the refused change, for instance while a payment
+	// holds the order; read the order back so the screen matches it again.
+	const restoreServerCart = useCallback(() => {
+		if (!canRestoreServerCart(useCartStore.getState().bootstrapState)) return;
+		void utils.client.cart.getCurrent
+			.query()
+			.then((snapshot) => replaceCart(snapshot, userId ?? null))
+			.catch(() => undefined);
+	}, [replaceCart, userId, utils]);
+
 	const setItemMutation = api.cart.setItemQuantity.useMutation({
 		onError(error) {
 			toast.error(error.message || "No se pudo actualizar tu pedido");
+			restoreServerCart();
 		},
 		onSuccess: applyOutput,
 	});
@@ -205,6 +221,7 @@ export function useCartActions({
 	const removeMutation = api.cart.removeItem.useMutation({
 		onError(error) {
 			toast.error(error.message || "No se pudo quitar el producto");
+			restoreServerCart();
 		},
 		onSuccess: applyOutput,
 	});

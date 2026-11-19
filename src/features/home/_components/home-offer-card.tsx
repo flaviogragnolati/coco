@@ -6,20 +6,18 @@ import { ProductImage } from "~/features/catalog/_components/product-image";
 import { cn } from "~/lib/utils";
 import type { HomeOffer } from "~/shared/common/home.types";
 import { getOfferDiscountLabel } from "../home-formatters";
-import {
-	HomeOfferPurchasePanel,
-	HomeOfferQuantityProvider,
-} from "./home-offer-quantity";
 
+/**
+ * A home product card around its purchase block: compact in the grid, `hero`
+ * in the spotlight band, where the brand and a larger title fit.
+ */
 export function HomeOfferCard({
 	offer,
-	action,
-	ignoreCart,
+	children,
 	size = "default",
 }: {
 	offer: HomeOffer;
-	action?: ReactNode;
-	ignoreCart?: boolean;
+	children: ReactNode;
 	size?: "default" | "hero";
 }) {
 	const discount = getOfferDiscountLabel(offer);
@@ -43,8 +41,8 @@ export function HomeOfferCard({
 				</Link>
 				<ProductCardBadges discount={discount} />
 			</div>
-			<CardHeader className={hero ? "gap-1 pt-5" : "gap-0.5 pt-4"}>
-				{offer.brandName ? (
+			<CardHeader className={hero ? "gap-1 pt-5" : "px-3 pt-3 sm:px-4"}>
+				{hero && offer.brandName ? (
 					<p className="font-semibold text-muted-foreground text-xs uppercase tracking-widest">
 						{offer.brandName}
 					</p>
@@ -53,7 +51,7 @@ export function HomeOfferCard({
 					<Heading
 						className={cn(
 							"font-heading",
-							hero ? "text-2xl" : "line-clamp-2 text-base",
+							hero ? "text-2xl" : "line-clamp-2 text-sm/snug sm:text-base",
 						)}
 					>
 						<Link href={href}>{offer.productName}</Link>
@@ -61,16 +59,12 @@ export function HomeOfferCard({
 				</CardTitle>
 			</CardHeader>
 			<CardContent
-				className={cn("flex flex-1 flex-col", hero ? "pt-4 pb-5" : "pt-3 pb-4")}
+				className={cn(
+					"flex flex-1 flex-col",
+					hero ? "pt-4 pb-5" : "px-3 pt-2 pb-3 sm:px-4 sm:pb-4",
+				)}
 			>
-				<HomeOfferQuantityProvider offer={offer}>
-					<HomeOfferPurchasePanel
-						action={action}
-						ignoreCart={ignoreCart}
-						offer={offer}
-						size={hero ? "hero" : "compact"}
-					/>
-				</HomeOfferQuantityProvider>
+				{children}
 			</CardContent>
 		</Card>
 	);

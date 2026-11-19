@@ -21,11 +21,11 @@ const regressionChain = [
 const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 	{
 		code: 5,
-		mustMention: ["`/products`", '"Sumar al pedido"', "`?product=`"],
+		mustMention: ["`/products`", '"Sumar"', "`?product=`"],
 	},
 	{
 		code: 6,
-		mustMention: ["`/products`", '"Sumar al pedido"', '"Ver en tu pedido"'],
+		mustMention: ["`/products`", '"Sumar"', "tachito"],
 	},
 	{
 		code: 7,

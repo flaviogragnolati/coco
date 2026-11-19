@@ -1,3 +1,5 @@
+import type { CartBootstrapState } from "./checkout-start-gate.decision";
+
 export type CartBootstrapDecision = "merge" | "adopt" | "discard";
 
 export type CartBootstrapInput = {
@@ -27,4 +29,13 @@ export function decideCartBootstrap(
 	}
 
 	return "adopt";
+}
+
+/**
+ * Whether a refused edit may replace the store with the server's order. Not
+ * while a blocked merge keeps guest products only in this browser: the server's
+ * order lacks them, and replacing the store would drop them unannounced.
+ */
+export function canRestoreServerCart(bootstrapState: CartBootstrapState) {
+	return bootstrapState !== "blocked";
 }

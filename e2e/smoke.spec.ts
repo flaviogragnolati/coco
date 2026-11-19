@@ -212,7 +212,9 @@ test("mobile navigation keeps purchase and public anchors accessible", async ({
 	).toHaveAttribute("href", "/#preguntas-frecuentes");
 });
 
-test("adding a home offer opens the mini-cart without duplicating its quantity", async ({
+// The spotlight's card keeps "Sumar al pedido" and "Ver en tu pedido"; the grid's
+// compact cards are covered by home-offer-quantity.spec.ts.
+test("adding the spotlight offer opens the mini-cart without duplicating its quantity", async ({
 	page,
 }) => {
 	await page.goto("/");

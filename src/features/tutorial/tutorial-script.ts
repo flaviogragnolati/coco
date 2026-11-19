@@ -138,7 +138,7 @@ const steps = {
 		scene: catalog,
 		target: "product-purchase",
 		title: "Cantidad de a pasos",
-		body: "Con − y + sumás o restás de a 500 g desde el mínimo. Al sumar, ves el total en tu pedido.",
+		body: "Con Sumar agregás el mínimo, 500 g. Después, con − y + cambiás la cantidad de a 500 g, y el tachito lo saca de tu pedido.",
 	},
 	miniCart: {
 		id: "mini-cart",

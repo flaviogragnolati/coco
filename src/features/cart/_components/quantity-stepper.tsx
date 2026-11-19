@@ -1,6 +1,6 @@
 "use client";
 
-import { MinusIcon, PlusIcon } from "lucide-react";
+import { MinusIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
@@ -26,16 +26,23 @@ type QuantityStepperProps = {
 	className?: string;
 	disabled?: boolean;
 	/**
-	 * `lg` keeps the mobile size on every screen: the purchase panel's. `md` is
-	 * the compact card's: full width like `lg`, shrinking to 40px from `sm` up.
+	 * `lg` keeps the mobile size on every screen: the purchase panel's.
+	 * `compact` fits half a phone screen: full width with 40px controls.
 	 */
-	size?: "default" | "md" | "lg";
+	size?: "default" | "compact" | "lg";
 	terms: CatalogClientTerms;
 	unit: CatalogProductUnit;
 	presentation?: ProductPresentation | null;
 	/** Off, the field shows the bare number; its accessible name keeps the unit. */
 	showUnit?: boolean;
 	value: string;
+	/** Accessible names for the buttons; generic ones by default. */
+	labels?: { decrement: string; increment: string };
+	/**
+	 * At the minimum, the decrement button turns into a trash can that takes the
+	 * product out instead of sitting disabled.
+	 */
+	remove?: { label: string; onRemove: () => void };
 	onCommit: (quantity: string) => void;
 	onDecrement: () => void;
 	onIncrement: () => void;
@@ -50,6 +57,8 @@ export function QuantityStepper({
 	presentation,
 	showUnit = true,
 	value,
+	labels,
+	remove,
 	onCommit,
 	onDecrement,
 	onIncrement,
@@ -57,11 +66,12 @@ export function QuantityStepper({
 	const [draft, setDraft] = useState(() => formatQuantityInput(value));
 	const canIncrement = canIncrementQuantity(value, terms);
 	const canDecrement = canDecrementQuantity(value, terms);
+	const removes = remove !== undefined && !canDecrement;
 	const fullWidth = size !== "default";
-	// 44px touch targets on mobile; smaller sizes shrink back from `sm` up.
+	// 44px touch targets on mobile, except where half a screen leaves no room.
 	const buttonClassName = {
 		default: "size-11 sm:size-8",
-		md: "size-11 sm:size-10",
+		compact: "size-10",
 		lg: "size-11",
 	}[size];
 
@@ -83,27 +93,30 @@ export function QuantityStepper({
 	return (
 		<div
 			className={cn(
-				"flex w-full min-w-0 items-center gap-1.5",
+				"flex w-full min-w-0 items-center",
+				size === "compact" ? "gap-1" : "gap-1.5",
 				!fullWidth && "sm:w-auto",
 				className,
 			)}
 		>
 			<Button
-				aria-label="Reducir cantidad"
+				aria-label={
+					removes ? remove.label : (labels?.decrement ?? "Reducir cantidad")
+				}
 				className={buttonClassName}
-				disabled={disabled || !canDecrement}
-				onClick={onDecrement}
+				disabled={disabled || (!canDecrement && !removes)}
+				onClick={removes ? remove.onRemove : onDecrement}
 				size="icon-sm"
 				type="button"
 				variant="outline"
 			>
-				<MinusIcon />
+				{removes ? <Trash2Icon /> : <MinusIcon />}
 			</Button>
 			<label
 				className={cn(
 					"flex h-11 min-w-0 flex-1 cursor-text items-center justify-center gap-1 rounded-3xl border border-transparent bg-input/50 px-3 text-base transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30 has-disabled:cursor-not-allowed has-disabled:opacity-50",
 					size === "default" && "sm:h-8 sm:w-36 sm:flex-none sm:text-sm",
-					size === "md" && "sm:h-10",
+					size === "compact" && "h-10 px-1 text-sm",
 				)}
 			>
 				<input
@@ -132,7 +145,7 @@ export function QuantityStepper({
 				) : null}
 			</label>
 			<Button
-				aria-label="Aumentar cantidad"
+				aria-label={labels?.increment ?? "Aumentar cantidad"}
 				className={buttonClassName}
 				disabled={disabled || !canIncrement}
 				onClick={onIncrement}

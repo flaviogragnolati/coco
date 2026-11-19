@@ -243,7 +243,7 @@ Regressions are avoided by keeping the real pages' containers as thin wrappers a
 | 2 / 2 | home | home-how-it-works | Comprás junto a otros vecinos | CoCo junta los pedidos de todos los vecinos y hace una sola compra al por mayor. Cerramos los miércoles y la mercadería llega en 7 a 10 días. |
 | — / 3 | catalog | catalog-categories | Encontrá lo que buscás | Usá el buscador o las categorías para recorrer el catálogo. |
 | 3 / 4 | catalog | product-card | Precio por paso | $ 11.300 es lo que pagás por 500 g, el paso en que se vende. El precio por kg de abajo te sirve para comparar productos. |
-| — / 5 | catalog | product-purchase | Cantidad de a pasos | Con − y + sumás o restás de a 500 g desde el mínimo. Al sumar, ves el total en tu pedido. |
+| — / 5 | catalog | product-purchase | Cantidad de a pasos | Con Sumar agregás el mínimo, 500 g. Después, con − y + cambiás la cantidad de a 500 g, y el tachito lo saca de tu pedido. |
 | 4 / 6 | catalog (added) | mini-cart | Tu pedido se arma acá | Al agregar, se abre Tu pedido. Podés cambiar cantidades, seguir comprando o ver el pedido completo. |
 | — / 7 | cart | cart-lines | Cambiá lo que quieras | Hasta que empezás a pagar, podés cambiar cantidades o sacar productos. Para el ejemplo sumamos dos productos más. |
 | 5 / 8 | cart | cart-summary | Listo para pagar | Acá ves el total estimado. Para pagar te pedimos ingresar con tu cuenta de Google. |

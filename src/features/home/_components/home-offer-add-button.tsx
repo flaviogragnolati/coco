@@ -15,12 +15,10 @@ export function HomeOfferAddButton({
 	offer,
 	isAuthenticated,
 	userId,
-	size,
 }: {
 	offer: HomeOffer;
 	isAuthenticated: boolean;
 	userId: string | null;
-	size?: "default" | "compact";
 }) {
 	const { setItem, isPending } = useCartActions({ isAuthenticated, userId });
 	const openMiniCart = useCartUiStore((state) => state.openMiniCart);
@@ -36,7 +34,6 @@ export function HomeOfferAddButton({
 				openMiniCart();
 			}}
 			onViewInCart={openMiniCart}
-			size={size}
 		/>
 	);
 }

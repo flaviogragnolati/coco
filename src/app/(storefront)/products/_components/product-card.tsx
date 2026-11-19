@@ -1,16 +1,20 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { CompactPurchase } from "~/features/catalog/_components/compact-purchase";
 import { ProductCardBadges } from "~/features/catalog/_components/product-card-badges";
 import { ProductImage } from "~/features/catalog/_components/product-image";
+import { getInitialPurchaseQuantity } from "~/features/catalog/purchase-panel";
 import { getOfferDiscountLabel } from "~/features/home/home-formatters";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
-import {
-	CatalogProductPurchase,
-	type CatalogPurchaseHandlers,
-} from "./catalog-product-purchase";
 
-type ProductCardProps = CatalogPurchaseHandlers & {
+export type ProductCardHandlers = {
+	onAdd: (product: CatalogProductListItem, quantity: string) => void;
+	onQuantityChange: (product: CatalogProductListItem, quantity: string) => void;
+	onRemove: (product: CatalogProductListItem) => void;
+};
+
+type ProductCardProps = ProductCardHandlers & {
 	disabled?: boolean;
 	/** The quantity already in the order, or `null` when it is not there. */
 	inCartQuantity: string | null;
@@ -24,7 +28,8 @@ export function ProductCard({
 	product,
 	onAdd,
 	onDetails,
-	onViewInCart,
+	onQuantityChange,
+	onRemove,
 }: ProductCardProps) {
 	const discount = getOfferDiscountLabel({
 		...product.terms,
@@ -51,14 +56,9 @@ export function ProductCard({
 				</button>
 				<ProductCardBadges discount={discount} />
 			</div>
-			<CardHeader className="gap-0.5 pt-4">
-				{product.brand ? (
-					<p className="font-semibold text-muted-foreground text-xs uppercase tracking-widest">
-						{product.brand.name}
-					</p>
-				) : null}
+			<CardHeader className="px-3 pt-3 sm:px-4">
 				<CardTitle>
-					<h2 className="line-clamp-2 font-heading text-base">
+					<h2 className="line-clamp-2 font-heading text-sm/snug sm:text-base">
 						<button
 							className="rounded-sm text-left hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
 							onClick={() => onDetails(product.id)}
@@ -69,15 +69,19 @@ export function ProductCard({
 					</h2>
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="flex flex-1 flex-col pt-3 pb-4">
-				<CatalogProductPurchase
+			<CardContent className="flex flex-1 flex-col px-3 pt-2 pb-3 sm:px-4 sm:pb-4">
+				<CompactPurchase
 					disabled={disabled}
 					inCartQuantity={inCartQuantity}
-					key={product.terms.id}
-					onAdd={onAdd}
-					onViewInCart={onViewInCart}
-					product={product}
-					size="compact"
+					name={product.name}
+					onAdd={() =>
+						onAdd(product, getInitialPurchaseQuantity(product.terms))
+					}
+					onQuantityChange={(quantity) => onQuantityChange(product, quantity)}
+					onRemove={() => onRemove(product)}
+					presentation={product}
+					terms={product.terms}
+					unit={product.unit}
 				/>
 			</CardContent>
 		</Card>
