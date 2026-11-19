@@ -494,6 +494,49 @@ const verifiedLegacy: TriageTransition[] = [
 	},
 ];
 
+/** Second November round (report of 18/11, WP-KL and WP-J). */
+const NOVEMBER_19 = "19/11/2026";
+
+/** A re-test whose note is written whole and dated on the round it belongs to. */
+function retestOn(code: number, date: string, text: string) {
+	return {
+		code,
+		status: "retest",
+		prependNote: triageNote(text, date),
+		clearAssignee: true,
+	} as const satisfies TriageTransition;
+}
+
+const secondRound: TriageTransition[] = [
+	retestOn(
+		119,
+		NOVEMBER_19,
+		'Implementado en 38bf6cd: la descripción del producto admite hasta 200 caracteres (Admin › Productos, con contador n/200) y se muestra en la ficha desplegada debajo del título y de la línea de cierre, antes de la foto en celular; la tarjeta y Tu pedido no la muestran; debajo de la bajada del catálogo dice "Seleccionamos productos de primera calidad.". Mirar: un producto con descripción propia la muestra debajo del nombre; uno sin descripción, o cuya descripción repite el nombre, no muestra el bloque; el admin no deja pasar de 200 caracteres. Precondiciones: hasta que se carguen las descripciones de #123, cargar una a mano para probar.',
+	),
+	retestOn(
+		120,
+		NOVEMBER_19,
+		'Implementado en 38bf6cd: sin "Catálogo mayorista"; bajada del catálogo "Elegí lo que necesitás y sumalo a tu pedido de la semana."; descripción para buscadores y WhatsApp "Explorá productos y armá tu pedido de la semana."; bajada del hero y descripción del home sin "mayorista"; checkout, Mis pedidos y tutorial reescritos. Mirar: home, catálogo, ficha, checkout (los cuatro pasos y el resumen), Mis pedidos sin pedidos y el tutorial completo; "mayorista" y "al por mayor" solo aparecen en Cómo funciona, las preguntas frecuentes y el paso "Comprás junto a otros vecinos" del tutorial; compartir /products por WhatsApp muestra la descripción nueva (puede tardar por caché). Precondiciones: ninguna.',
+	),
+	retestOn(
+		122,
+		NOVEMBER_19,
+		'Implementado en 38bf6cd: la pregunta 6 del FAQ es "¿Cómo conseguimos estos precios?" con la respuesta del ticket tal cual. Mirar: home › Preguntas frecuentes, última pregunta, texto completo. Precondiciones: ninguna.',
+	),
+	// D6: these re-tests keep their status; #118 changes the card's selector and
+	// button, so until WP-J ships they only check the rest.
+	...[106, 73, 84].map(
+		(code): TriageTransition => ({
+			code,
+			from: ["retest"],
+			prependNote: triageNote(
+				'El selector y el botón de la tarjeta van a cambiar con #118 (botón "Sumar" que se convierte en selector). En este re-test mirar el resto: imagen, precio, orden de la ficha y el selector de la ficha desplegada. Cuando entre #118 se vuelve a pedir el re-test completo.',
+				NOVEMBER_19,
+			),
+		}),
+	),
+];
+
 export const qaTicketTriageTransitions: TriageTransition[] = [
 	...superseded,
 	...outOfScope,
@@ -503,4 +546,5 @@ export const qaTicketTriageTransitions: TriageTransition[] = [
 	...remainingRetests,
 	...pendingContent,
 	...verifiedLegacy,
+	...secondRound,
 ];
