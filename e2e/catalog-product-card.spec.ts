@@ -9,38 +9,33 @@ async function cartQuantities(page: Page) {
 	);
 }
 
-test("a catalog card adds the quantity chosen on its stepper", async ({
+async function closeMiniCart(page: Page) {
+	await expect(page.getByRole("dialog", { name: "Tu pedido" })).toBeVisible();
+	await page
+		.getByRole("button", { name: "Cerrar", exact: true })
+		.last()
+		.click();
+	await expect(page.getByRole("dialog")).toHaveCount(0);
+}
+
+test("a catalog card adds its minimum and then edits the quantity in the order", async ({
 	page,
 }) => {
 	await page.goto("/products");
 	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
-	const anyAdd = page
-		.getByRole("button", { name: "Sumar al pedido", exact: true })
+	const add = page
+		.getByRole("button", { name: /^Sumar .+ a tu pedido$/ })
 		.first();
 	test.skip(
-		(await anyAdd.count()) === 0,
+		(await add.count()) === 0,
 		"The current fixture has no catalog products.",
 	);
-	// The steppers stay disabled until the cart store hydrates.
-	await expect(anyAdd).toBeEnabled();
-
-	const cards = page.locator("main [data-slot='card']");
-	const steppable = cards
-		.filter({
-			has: page.getByRole("button", {
-				name: "Aumentar cantidad",
-				disabled: false,
-			}),
-		})
-		.first();
-	test.skip(
-		(await steppable.count()) === 0,
-		"The current fixture has no catalog product with room above its minimum.",
-	);
-	// The stepper leaves the card once the product is in the order, so pin the
-	// card by its product name instead of by the stepper.
-	const name = (await steppable.getByRole("heading").textContent()) ?? "";
-	const card = cards.filter({
+	// The buttons stay disabled until the cart store hydrates.
+	await expect(add).toBeEnabled();
+	const name = ((await add.getAttribute("aria-label")) ?? "")
+		.replace(/^Sumar /, "")
+		.replace(/ a tu pedido$/, "");
+	const card = page.locator("main [data-slot='card']").filter({
 		has: page.getByRole("heading", { name, exact: true }),
 	});
 
@@ -60,44 +55,30 @@ test("a catalog card adds the quantity chosen on its stepper", async ({
 		expect(unitBox.x).toBeGreaterThan(amountBox.x);
 	}
 	await expect(card.getByText(/\bMOQ\b/)).toHaveCount(0);
+	// No stepper until the product is in the order.
+	await expect(card.getByRole("textbox")).toHaveCount(0);
 
-	// The total is for screen readers only; it shows in the order once added.
-	const total = card.getByText(/^Total /);
-	await expect(total).toHaveClass(/\bsr-only\b/);
-
+	await add.click();
+	await closeMiniCart(page);
 	const quantity = card.getByRole("textbox", { name: /^Cantidad \(.+\)$/ });
 	const minimum = await quantity.inputValue();
-	const minimumTotal = (await total.textContent()) ?? "";
-	const add = card.getByRole("button", {
-		name: "Sumar al pedido",
-		exact: true,
-	});
-
-	await card.getByRole("button", { name: "Aumentar cantidad" }).click();
-	await expect(quantity).not.toHaveValue(minimum);
-	await expect(total).not.toHaveText(minimumTotal);
-	const chosen = await quantity.inputValue();
-
-	await expect(add).toBeEnabled();
-	await add.click();
-	await expect(page.getByRole("dialog")).toBeVisible();
 	// The input shows es-AR decimals ("1,5"); the cart stores "1.5".
-	expect(await cartQuantities(page)).toEqual([chosen.replace(",", ".")]);
+	expect(await cartQuantities(page)).toEqual([minimum.replace(",", ".")]);
 
-	await page
-		.getByRole("button", { name: "Cerrar", exact: true })
-		.last()
-		.click();
-	await expect(card.getByText(/^Ya tenés .+ en tu pedido$/)).toBeVisible();
-	await expect(quantity).toHaveCount(0);
-	const view = card.getByRole("button", {
-		name: "Ver en tu pedido",
-		exact: true,
-	});
-	await expect(view).toBeVisible();
-	await view.click();
-	await expect(page.getByRole("dialog")).toBeVisible();
-	expect(await cartQuantities(page)).toEqual([chosen.replace(",", ".")]);
+	// The stepper reads the order, so it survives a reload.
+	await page.reload();
+	await expect(quantity).toHaveValue(minimum);
+
+	const more = card.getByRole("button", { name: /^Sumar .+ más de / });
+	await expect(more).toBeVisible();
+	if (await more.isEnabled()) {
+		await more.click();
+		await expect(quantity).not.toHaveValue(minimum);
+		const raised = await quantity.inputValue();
+		expect(await cartQuantities(page)).toEqual([raised.replace(",", ".")]);
+		// Adding was the button's job; editing does not reopen the order.
+		await expect(page.getByRole("dialog")).toHaveCount(0);
+	}
 });
 
 test("only a weighed product names its unit inside the quantity field", async ({
@@ -105,14 +86,22 @@ test("only a weighed product names its unit inside the quantity field", async ({
 }) => {
 	await page.goto("/products");
 	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
+	const adds = page.getByRole("button", { name: /^Sumar .+ a tu pedido$/ });
+	test.skip(
+		(await adds.count()) === 0,
+		"The current fixture has no catalog products.",
+	);
+	await expect(adds.first()).toBeEnabled();
+	// The field shows up once the product is in the order.
+	for (let added = 0; added < 6 && (await adds.count()) > 0; added += 1) {
+		await adds.first().click();
+		await closeMiniCart(page);
+	}
+
 	const fields = page
 		.locator("main [data-slot='card']")
 		.getByRole("textbox", { name: /^Cantidad \(.+\)$/ });
-	test.skip(
-		(await fields.count()) === 0,
-		"The current fixture has no catalog product with a stepper.",
-	);
-
+	await expect(fields.first()).toBeVisible();
 	for (const field of await fields.all()) {
 		const name = (await field.getAttribute("aria-label")) ?? "";
 		// The field sits in a <label>; its text is the visible unit, if any.
