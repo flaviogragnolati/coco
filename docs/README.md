@@ -89,8 +89,9 @@ wired with `--conditions=react-server`):
   `scripts/catalog-descriptions.data.ts`, by product id. The default dry run
   reads inside a read-only transaction and prints each description before and
   after. A product that is missing, deleted, renamed (the file keeps the
-  expected name as a guard) or that the admin product form would reject blocks
-  the whole run. `--apply` writes through the admin product service, so each
+  expected name as a guard), already carries a description other than its name,
+  or that the admin product form would not save exactly as is blocks the whole
+  run. `--apply` writes through the admin product service, so each
   change leaves a `product.update` row in `AuditLog`, and skips products already
   up to date; `APP_ENV=production` also needs `--confirm-production`.
 - `pnpm db:reset:catalog` — simulates replacing **all** products, terms and local

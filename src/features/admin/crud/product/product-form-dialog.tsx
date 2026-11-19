@@ -439,6 +439,7 @@ export function ProductFormDialog({
 								</span>
 								<span className="shrink-0 tabular-nums">
 									{descriptionLength}/{PRODUCT_DESCRIPTION_MAX_LENGTH}
+									<span className="sr-only"> caracteres</span>
 								</span>
 							</FieldDescription>
 							<FieldError errors={[errors.description]} />

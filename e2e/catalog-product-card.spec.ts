@@ -240,7 +240,11 @@ test("on a phone the product description sits under the title, above the photo, 
 	await dialog
 		.getByRole("button", { name: "Sumar al pedido", exact: true })
 		.click();
-	await expect(dialog).toHaveCount(0);
+	const miniCart = page.getByRole("dialog", { name: "Tu pedido" });
+	await expect(
+		miniCart.getByRole("button", { name: /^Quitar / }),
+	).not.toHaveCount(0);
+	await expect(miniCart).not.toContainText(description ?? "");
 	await page.goto("/cart");
 	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
 	await expect(page.getByRole("button", { name: /^Quitar / })).not.toHaveCount(

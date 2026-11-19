@@ -166,10 +166,9 @@ test("a deep link opens its step and an unsafe return path falls back home", asy
 test("the catalog scene copies the real catalog header", async ({ page }) => {
 	await page.goto("/tutorial?version=rapido&paso=3");
 	await expect(counter(page)).toHaveText("3 / 12");
+	// The scene is inert, so it is out of the accessibility tree: no role queries.
 	const main = page.locator("main");
-	await expect(
-		main.getByRole("heading", { level: 1, name: "Productos disponibles" }),
-	).toBeVisible();
+	await expect(main.locator("h1")).toHaveText("Productos disponibles");
 	await expect(
 		main.getByText("Elegí lo que necesitás y sumalo a tu pedido de la semana."),
 	).toBeVisible();

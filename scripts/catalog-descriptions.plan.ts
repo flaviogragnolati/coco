@@ -3,6 +3,7 @@ import type {
 	ProductDetail,
 	ProductUpdateInput,
 } from "~/shared/common/admin-crud/product.types";
+import { visibleProductDescription } from "~/shared/common/product-description";
 import type { CatalogDescription } from "./catalog-descriptions.data";
 
 export type DescriptionStep =
@@ -25,7 +26,8 @@ export type DescriptionArgs = {
 /**
  * Why `product` cannot take `entry`'s description, or null when it can. A
  * product whose name drifted from the data file may no longer be the product
- * the text was written for.
+ * the text was written for, and a description someone already wrote (anything
+ * but the name repeated) is theirs to replace from the admin.
  */
 function blockReason(
 	entry: CatalogDescription,
@@ -35,6 +37,12 @@ function blockReason(
 	if (product.deleted) return "está eliminado";
 	if (product.name !== entry.name) {
 		return `se llama "${product.name}" y el archivo de datos espera "${entry.name}"`;
+	}
+	if (
+		product.description !== entry.description &&
+		visibleProductDescription(product.description, product.name) !== null
+	) {
+		return `ya tiene otra descripción cargada: "${product.description}"`;
 	}
 	return null;
 }
@@ -196,8 +204,9 @@ export type DescriptionService = {
 };
 
 /**
- * Re-reads the product right before writing, so a change made in the admin
- * after the dry-run read is never overwritten blindly.
+ * Re-reads the product right before writing and rebuilds the input from that
+ * read, so an admin edit made since the dry run is kept, and a product renamed,
+ * deleted or given a description by hand in the meantime is skipped.
  */
 export async function applyDescription(
 	entry: CatalogDescription,

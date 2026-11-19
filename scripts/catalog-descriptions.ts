@@ -4,8 +4,8 @@
  *
  * Dry run by default: it reads inside a read-only transaction and prints, for
  * each product, the current description and the new one. Any product that is
- * missing, deleted, renamed or that the admin form would reject blocks the
- * whole run. `--apply --actor-email <superadmin>` writes through the admin
+ * missing, deleted, renamed, already carries a description of its own, or that
+ * the admin form would not save exactly as is blocks the whole run. `--apply --actor-email <superadmin>` writes through the admin
  * product service, one product at a time, so every change leaves its
  * `product.update` row in `AuditLog`; a product already up to date is skipped.
  */

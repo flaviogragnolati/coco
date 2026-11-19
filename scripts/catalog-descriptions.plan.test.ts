@@ -144,6 +144,11 @@ describe("planDescriptions", () => {
 			[product({ name: "Aceite de oliva 0,5 L" })],
 			'se llama "Aceite de oliva 0,5 L" y el archivo de datos espera "Aceite de oliva extra virgen 0,5 L"',
 		],
+		[
+			"hand-described",
+			[product({ description: "Botella de vidrio oscuro." })],
+			'ya tiene otra descripción cargada: "Botella de vidrio oscuro."',
+		],
 	])("blocks a %s product", (_case, products, reason) => {
 		expect(planDescriptions([entry], products)).toEqual([
 			{ kind: "blocked", productId: 122, name: entry.name, reason },
@@ -184,6 +189,25 @@ describe("applyDescription", () => {
 		});
 		expect(outcome).toMatchObject({ kind: "conflict" });
 		expect(update).not.toHaveBeenCalled();
+	});
+
+	it("does not overwrite a description written in the admin since the dry run", async () => {
+		const update = vi.fn();
+		const outcome = await applyDescription(entry, {
+			getById: async () => product({ description: "Botella de vidrio." }),
+			update,
+		});
+		expect(outcome).toMatchObject({ kind: "conflict" });
+		expect(update).not.toHaveBeenCalled();
+	});
+
+	it("replaces a blank description", async () => {
+		const update = vi.fn().mockResolvedValue(undefined);
+		const outcome = await applyDescription(entry, {
+			getById: async () => product({ description: null }),
+			update,
+		});
+		expect(outcome).toEqual({ kind: "applied" });
 	});
 });
 
