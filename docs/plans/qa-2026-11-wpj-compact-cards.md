@@ -1,6 +1,6 @@
 # Plan corto: WP-J, grillas centradas y tarjeta compacta (#117 y #118)
 
-> **Estado:** implementado el 19/11/2026 en la rama `wpj-compact-cards`, sobre `main` (`a1386fe`). Revisión independiente hecha y hallazgos corregidos. e2e en verde contra la base local. Sin merge ni push.
+> **Estado:** implementado el 19/11/2026 en la rama `wpj-compact-cards`, sobre `main` (`a1386fe`) y rebaseado sobre `d8571c6`, con WP-KL mergeado. Revisión independiente hecha y hallazgos corregidos. e2e en verde contra la base local. Sin merge ni push.
 > **Origen:** `docs/plans/qa-open-tickets-2026-11-18-report.md` (§2 filas #117 y #118, §4, §5 y las decisiones de Flavio en §7: D1, D2, D3 y D6). Sin grill: las decisiones ya estaban.
 > **Base anterior:** la tarjeta de WP-C (`docs/plans/qa-2026-11-wpc-product-card.md`) y los combos y Destacados de WP-D (`docs/plans/qa-2026-11-wpd-combos-featured.md`).
 > **En paralelo:** WP-KL (`wpkl-descriptions-copy`) cambia la cabecera del catálogo y la ficha. Esta rama no las toca. En `products-client.tsx` solo cambian el skeleton de la grilla y los handlers, lejos de la cabecera.
@@ -61,22 +61,22 @@ No muestran la marca. En la tarjeta compacta, el precio baja a `text-base` en el
 
 | Commit | Qué |
 | --- | --- |
-| `2f02930` | `ProductCardGrid` y similares centrados. |
-| `1bdb225` | `useCartActions` relee el pedido cuando el servidor rechaza un cambio. |
-| `4d11213` | Tarjeta compacta (catálogo, Destacados, vista previa del admin y escena del tutorial) y selector `compact` con tachito. |
-| `4f4f082` | Tutorial y casos de QA #5, #6 y #8. |
-| `402fd7c` | e2e: flujo de la tarjeta compacta, 4 tarjetas en el celular y filas centradas. |
-| `5606bc3` | Correcciones de la revisión (§4). |
+| `2cdcdb9` | `ProductCardGrid` y similares centrados. |
+| `60a0112` | `useCartActions` relee el pedido cuando el servidor rechaza un cambio. |
+| `9533e1e` | Tarjeta compacta (catálogo, Destacados, vista previa del admin y escena del tutorial) y selector `compact` con tachito. |
+| `b2aa80e` | Tutorial y casos de QA #5, #6 y #8. |
+| `44f04f1` | e2e: flujo de la tarjeta compacta, 4 tarjetas en el celular y filas centradas. |
+| `5a4bce0` | Correcciones de la revisión (§4). |
 
 ## 3. Validación
 
 | Comando | Resultado |
 | --- | --- |
 | `pnpm typecheck` | Sin errores. |
-| `pnpm test` | 164 archivos pasan y 1 se saltea. 2263 tests pasan y 6 se saltean. |
+| `pnpm test` | Después del rebase sobre `d8571c6`: 167 archivos pasan y 1 se saltea. 2323 tests pasan y 6 se saltean. |
 | `pnpm exec biome check src scripts e2e prisma docs` | Sin errores en lo que toca esta rama. Los 5 errores de formato de `docs/development-workflow/release/MP-VALIDATION-20261113/07-*.json` ya estaban en `main`. |
 
-**e2e contra la base local** (`run-e2e-local.sh`), última corrida: **47/47**.
+**e2e contra la base local** (`run-e2e-local.sh`), última corrida antes del rebase: **47/47**. Después del rebase sobre `d8571c6` no se pudieron correr: el daemon de Docker no respondía (`/var/run/docker.sock` no existe) y el runner no pudo levantar `coco-e2e-postgres`. Hay que volver a correrlos antes del merge.
 
 | Spec | Resultado |
 | --- | --- |
@@ -100,7 +100,7 @@ Los intermitentes de referencia (`smoke.spec.ts:119` y `:212`, `customer-tutoria
 
 ## 4. Revisión
 
-Un revisor independiente corrió `q-review-code` (los dos ejes) y `q-review-comments` sobre `main...HEAD`. Resultado: aprobado con hallazgos. Todo lo corregido entró en `5606bc3`.
+Un revisor independiente corrió `q-review-code` (los dos ejes) y `q-review-comments` sobre `main...HEAD`. Resultado: aprobado con hallazgos. Todo lo corregido entró en `5a4bce0`.
 
 | Hallazgo | Severidad | Qué se hizo |
 | --- | --- | --- |
@@ -111,13 +111,13 @@ Un revisor independiente corrió `q-review-code` (los dos ejes) y `q-review-comm
 | Con 14 rem a 1024 px y una barra de scroll clásica, el catálogo bajaba a 2 columnas. | Menor | Pistas de 13,5 rem. |
 | e2e: aserción débil de "Sumar", test de smoke mal nombrado, centrado solo en el catálogo. | Nit / menor | Corregido, y se agregó el centrado en Destacados. |
 | Comentarios: el docstring de la grilla, el comentario del empaquetado denso y uno repetido en un test. | Sugerencia | Reescrito, quitado y quitado. |
-| La última fila incompleta de una grilla de varias filas no se centra. | Menor (spec) | Queda como desvío (§5) para que decida Flavio. |
+| La última fila incompleta de una grilla de varias filas no se centra. | Menor (spec) | Sin cambios: Flavio decidió el 19/11 que quede alineada a la izquierda (§5). |
 
 ## 5. Desvíos y decisiones
 
-- **Última fila incompleta:**
-  - **Qué hace:** `auto-fit` + `justify-content: center` centra la grilla y una fila única con menos tarjetas que columnas, que es lo que pide #117. En una grilla de varias filas, la última fila corta queda alineada con las de arriba, no centrada. Se ve en Destacados a 768 px: 3 columnas, 4 ítems.
-  - **Alternativa:** si Flavio quiere centrar también esa fila, hay que pasar a `flex-wrap` con base fija desde `sm`, y las tarjetas tienen que dejar `h-full` para alinear los botones de cada fila.
+- **Última fila incompleta (decisión de Flavio, 19/11/2026):** queda alineada a la izquierda, como está implementado; solo se centra una fila única.
+  - **Qué hace:** `auto-fit` + `justify-content: center` centra la grilla y una fila única con menos tarjetas que columnas, que es lo que pide #117. En una grilla de varias filas, la última fila corta queda alineada con las de arriba. Se ve en Destacados a 768 px: 3 columnas, 4 ítems.
+  - **Alternativa descartada:** centrarla habría pedido `flex-wrap` con base fija desde `sm`, y que las tarjetas dejaran `h-full` para alinear los botones de cada fila.
 - **Ancho de columna:** 13,5 rem en lugar de los ~17 rem del reporte. Con 17 rem el catálogo quedaba en 2 columnas a 1024 px y en 3 desde 1280, con 100 a 200 px vacíos a los costados.
 - **Combos desde `sm`:** ocupan una columna, como antes. A dos columnas, el mosaico cuadrado del combo mediría 450 px de alto. El ancho completo de D2 vale para el celular.
 - **Lista del combo a 216 px:** se lee apretada, con el nombre del producto partido en varias líneas. Ya pasaba con las columnas de ~236 px de antes. No se tocó.
@@ -131,7 +131,7 @@ Un revisor independiente corrió `q-review-code` (los dos ejes) y `q-review-comm
 Reemplazar `<commit>` por el merge de `wpj-compact-cards` en `main`.
 
 - **#117 → Re-test.**
-  > `[19/11/2026 · triage] Implementado en <commit>. Mirar: en la home (Destacados) y en el catálogo, a 1366, 1920 y 2560 px, las tarjetas tienen ancho fijo y la grilla queda centrada; con menos productos que columnas la fila se centra (en el catálogo, activar "Solo en mi pedido" con 1 o 2 productos, o buscar un nombre). En la ficha, uno o dos similares quedan centrados. Una última fila corta debajo de filas completas queda alineada a la izquierda de la grilla, no centrada: avisar si se quiere centrada también. Precondiciones: ninguna (sin ingresar).`
+  > `[19/11/2026 · triage] Implementado en <commit>. Mirar: en la home (Destacados) y en el catálogo, a 1366, 1920 y 2560 px, las tarjetas tienen ancho fijo y la grilla queda centrada; con menos productos que columnas la fila se centra (en el catálogo, activar "Solo en mi pedido" con 1 o 2 productos, o buscar un nombre). En la ficha, uno o dos similares quedan centrados. Una última fila corta debajo de filas completas queda alineada a la izquierda de la grilla, por decisión del 19/11. Precondiciones: ninguna (sin ingresar).`
 - **#118 → Re-test.**
   > `[19/11/2026 · triage] Implementado en <commit>. Mirar: en el celular (360 a 390 px), catálogo y Destacados en 2 columnas; al hacer scroll hasta que la grilla llega arriba, entran 4 tarjetas completas. La tarjeta muestra foto 1:1, nombre en hasta 2 líneas, precio y precio por kg o L, sin marca, y el botón "Sumar". "Sumar" agrega el mínimo y abre Tu pedido; al cerrarlo, la tarjeta muestra el selector con la cantidad del pedido ("0,5 kg" en productos por peso, solo el número en envasados). "+" y "−" cambian la cantidad del pedido; en el mínimo el "−" es un tachito que lo saca y vuelve "Sumar". Los combos ocupan el ancho completo; la banda "Destacado" y la ficha no cambian. Probar también con sesión. Precondiciones: ninguna; con sesión, cualquier cliente.`
 - **Casos #5, #6 y #8 → Re-test**, después de que Flavio corra `pnpm qa:seed`.
@@ -157,6 +157,5 @@ Reemplazar `<commit>` por el merge de `wpj-compact-cards` en `main`.
 
 ## 7. Pendiente
 
-- Merge `--no-ff` a `main` después de WP-KL, con rebase. Puede chocar en `products-client.tsx`, por la cabecera contra el skeleton y los handlers, y en `tutorial-script.ts`, en otra línea.
+- Merge `--no-ff` a `main`. El rebase sobre `d8571c6` (WP-KL mergeado) entró sin conflictos: la cabecera del catálogo es la de WP-KL, y la grilla y los handlers son los de esta rama.
 - Cargar las notas de §6 con `qa:triage`. Para los casos #5, #6 y #8, Flavio corre `pnpm qa:seed`.
-- Que Flavio decida sobre la última fila incompleta (§5).
