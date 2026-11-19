@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 const gridCards = "main [data-slot='product-card-grid'] > [data-slot='card']";
 
@@ -136,11 +136,33 @@ test("on a phone, Sumar adds the minimum and the card edits it down to the trash
 	await trash.click();
 	await expect(quantity).toHaveCount(0);
 	await expect(add).toBeFocused();
+	await expect(
+		card.getByText(`Quitaste ${name} de tu pedido`, { exact: true }),
+	).toHaveClass(/\bsr-only\b/);
 	expect(await storedQuantities(page)).toEqual([]);
 });
 
+/** Where the cards of a single-row grid sit inside it, and how many columns fit. */
+function rowLayout(grid: Locator) {
+	return grid.evaluate((element) => {
+		const box = element.getBoundingClientRect();
+		const cards = Array.from(element.children).map((card) =>
+			card.getBoundingClientRect(),
+		);
+		return {
+			// Collapsed auto-fit tracks still count here, as "0px".
+			columns: getComputedStyle(element)
+				.gridTemplateColumns.split(" ")
+				.filter(Boolean).length,
+			rows: new Set(cards.map((card) => Math.round(card.top))).size,
+			leftGap: Math.min(...cards.map((card) => card.left)) - box.left,
+			rightGap: box.right - Math.max(...cards.map((card) => card.right)),
+		};
+	});
+}
+
 for (const width of [1366, 1920, 2560]) {
-	test(`at ${width}px a row with fewer cards than columns sits centered`, async ({
+	test(`at ${width}px a catalog row with fewer cards than columns sits centered`, async ({
 		page,
 	}) => {
 		await page.setViewportSize({ width, height: 1000 });
@@ -159,22 +181,30 @@ for (const width of [1366, 1920, 2560]) {
 		// "Solo en mi pedido" leaves the two products just added.
 		await openCatalog(page, "/products?inCart=1");
 		await expect(page.locator(gridCards)).toHaveCount(2);
-		const layout = await page
-			.locator("main [data-slot='product-card-grid']")
-			.evaluate((grid) => {
-				const box = grid.getBoundingClientRect();
-				const cards = Array.from(grid.children).map((card) =>
-					card.getBoundingClientRect(),
-				);
-				return {
-					columns: getComputedStyle(grid)
-						.gridTemplateColumns.split(" ")
-						.filter(Boolean).length,
-					leftGap: Math.min(...cards.map((card) => card.left)) - box.left,
-					rightGap: box.right - Math.max(...cards.map((card) => card.right)),
-				};
-			});
+		const layout = await rowLayout(
+			page.locator("main [data-slot='product-card-grid']"),
+		);
 		expect(layout.columns).toBeGreaterThan(2);
+		expect(layout.leftGap).toBeGreaterThan(1);
+		expect(Math.abs(layout.leftGap - layout.rightGap)).toBeLessThan(1);
+	});
+
+	test(`at ${width}px the featured row sits centered when it does not fill the columns`, async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width, height: 1000 });
+		await page.goto("/");
+		const grid = page.locator("#ofertas [data-slot='product-card-grid']");
+		test.skip(
+			(await grid.count()) === 0,
+			"The current fixture has no featured items.",
+		);
+		const layout = await rowLayout(grid);
+		const items = await grid.locator(":scope > *").count();
+		test.skip(
+			layout.rows > 1 || items >= layout.columns,
+			"The featured items fill the row.",
+		);
 		expect(layout.leftGap).toBeGreaterThan(1);
 		expect(Math.abs(layout.leftGap - layout.rightGap)).toBeLessThan(1);
 	});

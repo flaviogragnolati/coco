@@ -9,8 +9,9 @@ import {
 } from "~/shared/common/commerce.helpers";
 
 /**
- * Accessible names for the compact card's controls. Each one names the product,
- * because a screen reader moving through the grid hears the button alone.
+ * Accessible names for the compact card's controls, and its announcement once
+ * the product leaves the order. Each one names the product, because a screen
+ * reader moving through the grid hears the button alone.
  */
 export function getCompactPurchaseLabels(
 	name: string,
@@ -27,6 +28,7 @@ export function getCompactPurchaseLabels(
 		increment: `Sumar ${step} más de ${name}`,
 		decrement: `Restar ${step} de ${name}`,
 		remove: `Quitar ${name} de tu pedido`,
+		removed: `Quitaste ${name} de tu pedido`,
 	};
 }
 

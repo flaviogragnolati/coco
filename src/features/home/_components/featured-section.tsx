@@ -50,9 +50,7 @@ export function FeaturedSection({
 					title="Destacados de la semana"
 				/>
 				{featured.length > 0 ? (
-					// Dense packing lets a product fill the half row a combo would
-					// otherwise leave empty on a phone.
-					<ProductCardGrid className="grid-flow-row-dense">
+					<ProductCardGrid>
 						{featured.map((feature) =>
 							feature.kind === "combo" ? (
 								<div

@@ -23,6 +23,7 @@ test("the compact card's controls name the product and the step they move", () =
 		increment: "Sumar 0,5 kg más de Almendra",
 		decrement: "Restar 0,5 kg de Almendra",
 		remove: "Quitar Almendra de tu pedido",
+		removed: "Quitaste Almendra de tu pedido",
 	});
 	// The container goes without its size, which the product name carries.
 	expect(

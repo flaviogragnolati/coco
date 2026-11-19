@@ -2,8 +2,15 @@ import { expect, test } from "vitest";
 
 import {
 	type CartBootstrapInput,
+	canRestoreServerCart,
 	decideCartBootstrap,
 } from "./cart-bootstrap.decision";
+
+test("a refused edit reads the order back unless a blocked merge holds browser-only products", () => {
+	expect(canRestoreServerCart("done")).toBe(true);
+	expect(canRestoreServerCart("idle")).toBe(true);
+	expect(canRestoreServerCart("blocked")).toBe(false);
+});
 
 function makeInput(
 	overrides: Partial<CartBootstrapInput> = {},

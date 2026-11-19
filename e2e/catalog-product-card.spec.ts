@@ -55,7 +55,6 @@ test("a catalog card adds its minimum and then edits the quantity in the order",
 		expect(unitBox.x).toBeGreaterThan(amountBox.x);
 	}
 	await expect(card.getByText(/\bMOQ\b/)).toHaveCount(0);
-	// No stepper until the product is in the order.
 	await expect(card.getByRole("textbox")).toHaveCount(0);
 
 	await add.click();

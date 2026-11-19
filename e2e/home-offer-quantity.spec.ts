@@ -58,6 +58,11 @@ test("a home offer card adds its minimum and edits it from the card", async ({
 		.getByRole("button", { name: `Quitar ${name} de tu pedido`, exact: true })
 		.click();
 	await expect(quantity).toHaveCount(0);
-	await expect(add).toBeVisible();
+	await expect(
+		card.getByRole("button", {
+			name: `Sumar ${name} a tu pedido`,
+			exact: true,
+		}),
+	).toBeVisible();
 	expect(await storedQuantities(page)).toEqual([]);
 });

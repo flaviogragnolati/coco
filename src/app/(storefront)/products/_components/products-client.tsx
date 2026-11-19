@@ -92,9 +92,12 @@ export function ProductsClient({
 	const cartQuantities = useMemo(
 		() =>
 			new Map(
-				cartItems.map((item) => [item.productClientTermsId, item.quantity]),
+				Array.from(cartItemsByTerms, ([termsId, item]) => [
+					termsId,
+					item.quantity,
+				]),
 			),
-		[cartItems],
+		[cartItemsByTerms],
 	);
 	const inCartTermsIds = useMemo(
 		() => new Set(cartItems.map((item) => item.productClientTermsId)),

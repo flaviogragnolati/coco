@@ -16,7 +16,10 @@ import {
 import type { HomeComboOption } from "~/shared/common/home.types";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
 import { api } from "~/trpc/react";
-import { decideCartBootstrap } from "./cart-bootstrap.decision";
+import {
+	canRestoreServerCart,
+	decideCartBootstrap,
+} from "./cart-bootstrap.decision";
 import {
 	describeLocalCartAdditions,
 	homeOfferToCartItem,
@@ -200,6 +203,7 @@ export function useCartActions({
 	// The store already shows the refused change, for instance while a payment
 	// holds the order; read the order back so the screen matches it again.
 	const restoreServerCart = useCallback(() => {
+		if (!canRestoreServerCart(useCartStore.getState().bootstrapState)) return;
 		void utils.client.cart.getCurrent
 			.query()
 			.then((snapshot) => replaceCart(snapshot, userId ?? null))

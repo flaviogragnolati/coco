@@ -210,7 +210,7 @@ export function ProductPreviewDialog({
 							</TabsList>
 							<TabsContent value="card">
 								{preview.catalogProduct ? (
-									<div className="max-w-56">
+									<div className="max-w-54">
 										<ProductCard
 											disabled
 											inCartQuantity={null}
@@ -248,7 +248,7 @@ export function ProductPreviewDialog({
 							</TabsContent>
 							<TabsContent value="home">
 								{preview.homeOffer ? (
-									<div className="max-w-56">
+									<div className="max-w-54">
 										<HomeOfferCard offer={preview.homeOffer}>
 											<CompactPurchase
 												disabled
