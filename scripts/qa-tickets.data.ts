@@ -257,13 +257,13 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 	{
 		code: 21,
 		section: SECTION_D,
-		title: "Redirección a Checkout Pro",
-		actor: "Cliente",
-		feature: "Preferencia MP + redirect",
+		title: "Redirección a Checkout Pro sandbox",
+		actor: "Cliente + Admin",
+		feature: "Checkout y preferencia visibles en pantalla",
 		steps:
-			'Precondiciones: entorno QA ya configurado (Mercado Pago en "Sandbox", URLs en `https://coco-kappa-ashy.vercel.app`) y un Cliente con carrito y dirección listos. Tener a mano el usuario comprador de prueba de MP, que el responsable de QA pasa por privado. Sandbox es el entorno de Mercado Pago para cuentas, compradores y medios de prueba; no mueve dinero real.\n1) En "Pago", elegir "Mercado Pago" y avanzar a "Confirmar".\n2) Aceptar los términos y hacer click en "Confirmar y pagar".\n3) Sin completar todavía el pago en Checkout Pro, abrir `/admin/payments` → "Intentos" en la sesión Admin y buscar el intento por el email del Cliente (el más reciente).',
+			'Precondiciones: sitio https://coco-kappa-ashy.vercel.app; sesiones Cliente y Admin en perfiles distintos. En `/admin/payments` → Config, Mercado Pago está en "Sandbox" y habilitado. El Cliente tiene un producto activo y una opción de entrega disponible. Comprador MP de prueba entregado por privado; no usar la cuenta vendedora.\n1) Cliente: abrir `/cart`, anotar producto, cantidad y total; elegir "Ir a pagar" y completar "Pedido" y "Entrega".\n2) En "Pago", elegir "Mercado Pago"; en "Confirmar", comprobar el total y aceptar términos. Pulsar "Confirmar y pagar".\n3) Comprobar que se abre Checkout Pro. Dejarlo sin pagar para continuar #27 y luego #23.\n4) Admin: abrir `/admin/payments` → "Intentos", buscar por email del Cliente y abrir el intento más reciente. Anotar pedido, número de intento, preferencia y monto visibles. Anotar también la hora en que se abrió Checkout Pro y los minutos de expiración configurados en Config.',
 		expectedResult:
-			'La app muestra "Redirigiendo a Mercado Pago" y navega al Checkout Pro de prueba.\nEl intento aparece "pending", con proveedor `mercadopago · sandbox` y en "Refs" solo "Preferencia: …"; la orden queda "Pendiente" y el carrito "En checkout".\nLa pantalla externa usa únicamente credenciales de comprador y medios de pago de prueba.',
+			'La app muestra "Redirigiendo a Mercado Pago" y abre Checkout Pro. El monto coincide con el confirmado en CoCo y no tiene descuento por transferencia.\nEl intento muestra pending, proveedor mercadopago · sandbox y "Preferencia" con un identificador. "Pago (id de Mercado Pago)" puede mostrar "Sin dato" antes de pagar.\nEl pedido sigue pendiente. No aparece todavía "Pedido confirmado" en el seguimiento. Registrar capturas de checkout y detalle, sin credenciales.',
 		isRegressionPath: true,
 	},
 	{
@@ -271,71 +271,71 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 		section: SECTION_D,
 		title: "Pantallas de retorno informativas",
 		actor: "Cliente",
-		feature: "Back URLs success/failure/pending",
+		feature: "Retornos success/failure/pending por navegación",
 		steps:
-			"Precondiciones: ninguna; no hace falta pagar ni pasar por Mercado Pago. Las tres rutas se abren directo sobre `https://coco-kappa-ashy.vercel.app`.\n1) Abrir `/checkout/mercadopago/success` (https://coco-kappa-ashy.vercel.app/checkout/mercadopago/success) y registrar título, badge y alerta.\n2) Abrir `/checkout/mercadopago/failure` (https://coco-kappa-ashy.vercel.app/checkout/mercadopago/failure) y repetir la revisión.\n3) Abrir `/checkout/mercadopago/pending` (https://coco-kappa-ashy.vercel.app/checkout/mercadopago/pending) y repetir la revisión.\n4) Confirmar que ninguna de las tres páginas ofrece o ejecuta una mutación de estado.",
+			'Precondiciones: sitio https://coco-kappa-ashy.vercel.app; no hace falta pagar ni tener un pedido.\n1) Abrir `/checkout/mercadopago/success` y anotar título, badge y aviso.\n2) Abrir `/checkout/mercadopago/failure` y repetir.\n3) Abrir `/checkout/mercadopago/pending` y repetir.\n4) En cada página, comprobar los enlaces "Volver al inicio" y "Ver mis pedidos". Si había un pedido de prueba abierto, volver a su detalle y comprobar que abrir estos retornos no lo acreditó.',
 		expectedResult:
-			'Success muestra "Pago enviado a confirmación"; failure, "Pago no confirmado"; pending, "Pago pendiente".\nLas tres muestran "Estado sujeto a reconciliación" y explican que esa pantalla no actualiza el pago.\nLas tres permiten ir al inicio o a "Ver mis pedidos"; la verdad del pago sigue dependiendo del webhook firmado y la consulta al proveedor.',
+			'Success: "Pago enviado a confirmación" y "Retorno exitoso". Failure: "Pago no confirmado" y "No confirmado". Pending: "Pago pendiente" y "Pendiente".\nLas tres muestran "Estado sujeto a reconciliación" y aclaran que esa pantalla no actualiza el pago. Los enlaces llevan al inicio y a los pedidos; sin sesión puede pedirse iniciar sesión.\nAbrir una URL de retorno no alcanza para ver un pedido como pagado. Guardar captura de cada retorno.',
 		isRegressionPath: false,
 	},
 	{
 		code: 23,
 		section: SECTION_D,
-		title: "Webhook aprobado acredita el pedido",
-		actor: "Cliente + Sistema",
-		feature: "Reconciliación por webhook firmado",
+		title: "Pago sandbox aprobado confirma el pedido en la UI",
+		actor: "Cliente + Admin",
+		feature: "Compra APRO y resultado visible en Cliente/Admin",
 		steps:
-			'Precondiciones: continuar desde el intento de #21 (Checkout Pro abierto, sin pagar). En Checkout Pro iniciar sesión con el usuario comprador de prueba, nunca con el vendedor. Pagar con la tarjeta de prueba que pasa el responsable de QA, nombre del titular `APRO` y DNI 12345678 (tabla pública de tarjetas de prueba de MP; si MP lo rechaza, usar el documento del perfil del comprador de prueba).\n1) Completar el pago en Checkout Pro y volver por la URL de éxito.\n2) En `/admin/payments` → "Intentos", abrir el intento de #21 y copiar el id del campo "Pago (id de Mercado Pago)". En "Eventos", buscar ese id: debe aparecer un evento de tipo `payment` con Firma "válida".\n3) En la sesión Cliente, abrir `/my-orders/[id]` del pedido y refrescar hasta que termine la reconciliación.',
+			'Precondiciones: sitio https://coco-kappa-ashy.vercel.app; continuar con la preferencia sin pagar de #21/#27; perfiles Cliente y Admin separados y navegador de incógnito para el comprador MP de prueba. Visa de prueba 4509 9535 6623 3704, vencimiento 11/30, código 123; titular APRO para aprobado, OTHE para rechazado y CONT para pendiente; DNI 12345678 cuando se solicite. Credenciales y código de acceso del comprador MP: Flavio los entrega por privado.\n1) En Checkout Pro, ingresar con el comprador de prueba y pagar usando el titular `APRO`. Capturar el resultado sin incluir credenciales.\n2) Volver a CoCo. Admin: en `/admin/payments` → "Intentos", buscar por email o código de pedido, abrir el intento y actualizar la pantalla hasta observar el resultado.\n3) Copiar el identificador visible en "Pago (id de Mercado Pago)". En "Eventos", buscar ese identificador y abrir la fila de tipo payment.\n4) Cliente: abrir `/my-orders/[id]`, actualizar si hace falta y desplegar el seguimiento de cada producto. Admin: abrir `/admin/carts`, filtrar por el Cliente y abrir el carrito cuyo detalle referencia este pedido para leer su Estado. Registrar pedido, intento, pago, evento, monto y capturas.\n5) Si el resultado no se actualiza, registrar qué muestra cada pantalla y el tiempo observado; informar el problema al responsable. Si falta una cuenta o no se puede entrar al comprador de prueba, registrar la precondición faltante.',
 		expectedResult:
-			'El evento queda vinculado, processed y con firma válida; Payment.get informa approved con el monto y moneda del intento. El intento pasa a "completed" y el cliente ve el pago "Aprobado".\nEl campo "Pago (id de Mercado Pago)" del intento muestra el id del pago.\nLa orden pasa a "En procesamiento", el carrito a "Enviado" y sus items a submitted, con un solo hecho de confirmación por item.\nEl detalle del cliente muestra "Pedido confirmado". Antes de ejecutar, fijar el plazo de observación del tracking asíncrono y revisar el outbox si demora.\nSi el evento no llega o la firma se rechaza, contrastar entrega y HTTP del proveedor, URL de la preferencia, firma, logs y recurso consultado. Clasificar como Bloqueado solo si falta una precondición; un defecto de implementación es Fallido. No atribuirlo automáticamente a configuración.',
+			'El intento se ve completed, con id de pago y el mismo monto/moneda confirmado en CoCo. El Cliente ve el pago "Aprobado".\nEn "Eventos" se ve payment, firma válida, estado processed y el intento vinculado. Esta comprobación se hace leyendo las columnas del admin.\nEl pedido se ve "En procesamiento" y el carrito "Enviado". Cada producto muestra un solo "Pedido confirmado"; el seguimiento puede aparecer después de actualizar.\nEl retorno de éxito solo es informativo: el caso se aprueba por los estados y el seguimiento visibles. Ningún paso requiere inspeccionar datos internos.',
 		isRegressionPath: true,
 	},
 	{
 		code: 24,
 		section: SECTION_D,
-		title: "Webhook rechazado / pendiente no rompe el carrito",
-		actor: "Cliente + Sistema",
-		feature: "Mapeo de estados MP",
+		title: "Pago sandbox rechazado o pendiente en la UI",
+		actor: "Cliente + Admin",
+		feature: "Escenarios OTHE/CONT visibles en Cliente/Admin",
 		steps:
-			"Precondiciones: mismo comprador de prueba, tarjeta y DNI que #23; binary mode apagado. Usar pedidos separados para OTHE y CONT (otra cuenta cliente o carrito nuevo, sin cancelar un pago en proceso). Cada caso comienza con los pasos 1 y 2 de #21; no reintentar en Checkout Pro.\n1) Pagar con nombre del titular `OTHE` (rechazado).\n2) En el otro pedido, pagar con nombre del titular `CONT` (pendiente).\n3) Para cada pago, registrar el payment.status consultado en Payment.get y contrastarlo con el intento en `/admin/payments`, el pedido en `/my-orders` y el carrito en `/cart`.",
+			"Precondiciones: sitio https://coco-kappa-ashy.vercel.app; cuentas de Cliente separadas o carritos independientes para cada escenario; no cancelar un pago en proceso para reutilizarlo. Mercado Pago habilitado en Sandbox y Binary mode apagado. Visa de prueba 4509 9535 6623 3704, vencimiento 11/30, código 123; titular APRO para aprobado, OTHE para rechazado y CONT para pendiente; DNI 12345678 cuando se solicite. Credenciales y código de acceso del comprador MP: Flavio los entrega por privado.\n1) Preparar un checkout nuevo como en #21 y pagar en Checkout Pro con titular `OTHE`. No reintentar dentro de esa preferencia.\n2) En el otro Cliente/carrito, preparar otro checkout y pagar con titular `CONT`.\n3) Para cada escenario, Admin: abrir el intento en `/admin/payments` y anotar el estado y monto visibles. Cliente: revisar `/my-orders/[id]` y el seguimiento.\n4) En el rechazado, volver a `/cart` e intentar editar. En el pendiente/en proceso, registrar lo que permite la pantalla sin forzar su cancelación.",
 		expectedResult:
-			'El estado real del recurso determina el mapeo: rejected → failed ("Rechazado"); pending → pending ("Pendiente"); in_process → inProcess ("En proceso"). No exigir inProcess solo por usar CONT.\nNinguno acredita el pedido ni crea tracking de compra confirmada. La orden sigue "Pendiente". El rechazado permite volver a editar; un pago en proceso no se puede abandonar.',
+			'OTHE debe mostrar un pago rechazado: intento failed y pago "Rechazado". El pedido no queda aprobado; permite volver a editar.\nCONT puede verse pending ("Pendiente") o inProcess ("En proceso"). Registrar el estado mostrado; no exigir inProcess solo por haber escrito CONT.\nEn ninguno aparece compra aprobada ni "Pedido confirmado". Si se muestra "En proceso", no se permite abandonar ese pago para cambiarlo por otro medio.\nGuardar capturas de Checkout Pro, intento y pedido de cada escenario.',
 		isRegressionPath: false,
 	},
 	{
 		code: 25,
 		section: SECTION_D,
-		title: "Webhook con firma inválida se rechaza",
+		title: "Revisar en la UI un evento de firma inválida",
 		actor: "Admin",
-		feature: "Validación de firma",
+		feature: "Evento rechazado existente y pedido sin acreditar",
 		steps:
-			'Precondiciones: una terminal con `curl` y la sesión Admin en `/admin/payments`. El comando usa a propósito una firma inválida; no hace falta ninguna credencial. En `/admin/payments` → Config, el switch "Webhooks unsigned dev" debe estar apagado; si está prendido, el caso queda "Bloqueado".\n1) Ejecutar: `curl -i -X POST \'https://coco-kappa-ashy.vercel.app/api/mercadopago/webhook?type=payment&data.id=123\' -H \'Content-Type: application/json\' -H \'x-request-id: qa-firma-invalida\' -H \'x-signature: ts=1,v1=invalida\' -d \'{"type":"payment","action":"payment.updated","data":{"id":"123"}}\'`\n2) En `/admin/payments` → "Eventos", buscar `qa-firma-invalida` y abrir el evento.',
+			'Precondiciones: sesión Admin en https://coco-kappa-ashy.vercel.app; evento de prueba ya disponible con request id `qa-mp-invalid-7fa1a045-2c1c-4a64-882d-98ec509f74c7`. Es un evento preparado por el responsable; QA no necesita generarlo. Si ya no está disponible, pedir otro evento rechazado y registrar la precondición faltante.\n1) Abrir `/admin/payments` → "Eventos" y pegar el request id en "Buscar".\n2) Abrir la fila encontrada. Anotar número del evento y lo que muestran Estado, Firma, Intento y el mensaje visible.\n3) Capturar la fila y el detalle. Dejar este evento sin ignorar para conservar la referencia; para #37 se indica otro evento distinto.',
 		expectedResult:
-			'Paso 1: HTTP 401 con cuerpo `{"error":"invalid signature"}`.\nPaso 2: el evento aparece con estado "rejected", Firma "no válida", Intento "Sin vincular" y, en su detalle, un error que empieza con "Firma inválida".\nNo cambia ningún pago ni pedido.',
+			'La fila muestra rejected, firma "no válida" e intento "Sin vincular". El detalle muestra un mensaje que empieza con "Firma inválida".\nLa pantalla no presenta este evento como una compra aprobada ni como un pago acreditado. Se registra únicamente la observación de la UI; no es una nueva prueba de validación criptográfica.',
 		isRegressionPath: false,
 	},
 	{
 		code: 26,
 		section: SECTION_D,
-		title: "Replay del webhook es idempotente",
-		actor: "Admin",
-		feature: "Idempotencia de reconciliación",
+		title: "Reprocesar un pago sin duplicar el seguimiento",
+		actor: "Cliente + Admin",
+		feature: "Repetición secuencial desde el botón Reprocesar",
 		steps:
-			'Precondiciones: el pedido acreditado en #23.\n1) En `/admin/payments` → "Eventos", abrir el evento `payment` de #23 (buscar por el id del campo "Pago (id de Mercado Pago)") y hacer click en "Reprocesar" dos veces.\n2) Revisar el intento en "Intentos" y el seguimiento del pedido en `/my-orders/[id]`.',
+			'Precondiciones: Admin y Cliente en https://coco-kappa-ashy.vercel.app; pedido aprobado en #23 e identificador del pago anotado. Ningún otro tester está operando ese pedido.\n1) Cliente: abrir `/my-orders/[id]`, desplegar el seguimiento y capturar cuántas veces aparece "Pedido confirmado" por producto.\n2) Admin: `/admin/payments` → "Eventos", buscar por el id de pago y abrir el evento válido de #23.\n3) Pulsar "Reprocesar", esperar a que termine y comprobar el aviso. Repetir una segunda vez cuando el botón vuelva a estar disponible.\n4) Actualizar "Intentos" y el detalle del Cliente; comparar estado, monto y seguimiento con las capturas iniciales.',
 		expectedResult:
-			'No se duplican submissions ni eventos de tracking (el timeline del item sigue con un solo "Pedido confirmado").\nLa transacción no retrocede de estado.',
+			'Cada acción termina con "Evento reprocesado". El intento sigue completed y el pedido aprobado/en procesamiento.\nMonto y moneda no cambian. El seguimiento conserva una sola entrada "Pedido confirmado" por producto; no aparece otro pedido por estas acciones.\nGuardar capturas antes/después. El resultado cubre dos acciones consecutivas del usuario, no acciones simultáneas.',
 		isRegressionPath: false,
 	},
 	{
 		code: 27,
 		section: SECTION_D,
-		title: "Abandono del redirect y reintento",
-		actor: "Cliente",
-		feature: "Orden pendiente + reintento de checkout",
+		title: "Abandonar Checkout Pro y confirmar otra vez",
+		actor: "Cliente + Admin",
+		feature: "Reuso visible de orden, intento y preferencia",
 		steps:
-			"Precondiciones: Mercado Pago en Sandbox, sesiones Cliente y Admin disponibles y carrito listo para confirmar; no completar ningún pago.\n1) Confirmar con Mercado Pago, anotar pedido, intento, preferencia, vencimiento y monto en `/admin/payments`, y cerrar Checkout Pro sin pagar.\n2) Antes del vencimiento, volver a `/checkout` y confirmar de nuevo. Comparar los identificadores y el monto en `/my-orders` y `/admin/payments`.\n3) Como variante, esperar el vencimiento o usar un intento fallido y volver a confirmar.\n4) Si se cambia a Pago externo antes de pagar, aplicar ADR 0013: comparar el total descontado y comprobar que un intento en proceso o con comprobante declarado no se reemplaza.",
+			"Precondiciones: sitio https://coco-kappa-ashy.vercel.app; continuar desde #21 con una preferencia válida sin pagar. Cliente/Admin en perfiles distintos. Anotar orden, intento, preferencia, monto y la hora en que se abrió el Checkout Pro recién creado. Leer Expiración minutos en Config antes de la prueba; actualmente son 60 minutos.\n1) Cerrar Checkout Pro sin pagar. Volver a `/checkout` y confirmar de nuevo antes del vencimiento, sin editar productos ni cambiar de medio.\n2) Admin: buscar el pedido en `/admin/payments`; Cliente: revisar `/my-orders`. Comparar los identificadores y el monto anotados.\n3) Variante: con una preferencia de prueba sin pagar, esperar el plazo completo de Expiración minutos contado desde que se abrió Checkout Pro (actualmente 60 minutos), recargar `/checkout` y confirmar de nuevo. No cambiar la configuración para acortar el plazo.\n4) Variante de cambio de medio: desde otro intento pending sin pagar ni comprobante, elegir Pago externo y confirmar. Comparar orden y total. Aplicar la regla de descuento del caso #110; no pagar luego la preferencia anterior.\n5) Si una pantalla informa que no pudo recuperar el enlace y el intento sigue pendiente, registrar el mensaje y reintentar después de su vencimiento. No simular fallos ni modificar intentos.",
 		expectedResult:
-			"Antes del vencimiento se conserva la misma orden, el mismo intento vigente y su preferencia; se vuelve a Checkout Pro sin crear otra orden ni acreditar el pedido.\nCon intento vencido o fallido se crea un nuevo intento sobre la misma orden, validando el total vigente.\nEl cambio de medio permitido reemplaza el intento conservando la orden y el monto correspondiente al medio; un pago que ya no se puede abandonar se conserva.",
+			"Antes del vencimiento se ve la misma orden, el mismo intento y la misma preferencia, con el mismo monto; vuelve a abrirse Checkout Pro. No aparece compra confirmada.\nCon intento vencido o fallido, al recargar y confirmar se ve un nuevo intento sobre la misma orden, siempre que no se haya editado/cancelado el carrito.\nEl cambio de medio permitido mantiene la orden y muestra el total correspondiente a ese medio. Un pago en proceso o con comprobante declarado no se reemplaza.\nLa espera por recuperación incierta no acredita ni declara fallido el pago por sí sola. La recuperación se observa en las pantallas; su reproducción forzada queda fuera de este caso manual.",
 		isRegressionPath: false,
 	},
 	{
@@ -424,49 +424,49 @@ export const qaTicketSeedEntries: QaTicketSeedEntry[] = [
 	{
 		code: 35,
 		section: SECTION_F,
-		title: "Listado de intentos y detalle",
+		title: "Listado de pagos y detalle desde el admin",
 		actor: "Admin",
-		feature: "`/admin/payments` tab Intentos",
+		feature: "Búsqueda, filtros e indicadores globales de pagos",
 		steps:
-			"1) Abrir `/admin/payments`.\n2) Buscar por código de pedido o email.\n3) Click en una fila.",
+			'Precondiciones: sesión Admin en https://coco-kappa-ashy.vercel.app; al menos el pedido MP de #21 y un pedido externo de prueba identificado por el responsable o preparado en #16 sin acreditarlo. Si falta el externo, se puede revisar la búsqueda de MP pero la variante que compara ambos proveedores se registra Bloqueada por falta de ese pedido.\n1) Abrir `/admin/payments` → "Intentos". Capturar los indicadores Intentos, Pendientes, Completados y Eventos fallidos.\n2) Buscar por código de pedido y después por email del Cliente. Abrir la fila y comprobar estado, monto, proveedor, Preferencia y "Pago (id de Mercado Pago)".\n3) Probar el selector "Proveedor" con Mercado Pago, Pago externo y Todos; limpiar la búsqueda al cambiar de escenario. Probar el orden Más recientes/Más antiguos.\n4) Comparar los pedidos de prueba visibles en el listado con su detalle. No es necesario interpretar los bloques de datos que también ofrece la pantalla.',
 		expectedResult:
-			"Stats (Intentos/Pendientes/Completados/Eventos fallidos); el detalle muestra idempotencia, preferencia, pago, snapshots JSON y los eventos relacionados con validez de firma.",
+			'La búsqueda y el filtro muestran los pedidos del proveedor seleccionado; al limpiar vuelven los demás. El orden de fechas cambia como indica el selector.\nLos indicadores son globales: incluyen Mercado Pago y transferencias y no se limitan al texto o proveedor filtrado. Un intento sin id de pago muestra "Sin dato"; uno pagado muestra su identificador.\nMonto, moneda y estado son consistentes entre la fila y el detalle. Cuando corresponde, se ve el descuento por transferencia; no se aplica a Mercado Pago.',
 		isRegressionPath: false,
 	},
 	{
 		code: 36,
 		section: SECTION_F,
-		title: "Reconciliar un intento manualmente",
+		title: "Conciliar un intento desde el admin",
 		actor: "Admin",
-		feature: "`reconcileAttempt`",
+		feature: "Botón Reconciliar ahora y estados visibles",
 		steps:
-			'Precondiciones: al menos un intento MP pagado (#23) y uno sin pagar (un checkout de #21 que quedó sin pagar). `providerPaymentId` = campo "Pago (id de Mercado Pago)".\n1) En `/admin/payments` → "Intentos", abrir un intento MP cuya columna "Refs" muestra "Pago: …" (por ejemplo el de #23) y hacer click en "Reconciliar ahora".\n2) Abrir un intento MP cuya columna "Refs" muestra solo "Preferencia: …" y mirar el botón "Reconciliar ahora".',
+			'Precondiciones: sesión Admin en https://coco-kappa-ashy.vercel.app; un intento MP aprobado de #23 y otro sin pagar de #21, con códigos anotados.\n1) Abrir `/admin/payments` → "Intentos", buscar el pedido aprobado y abrirlo. Comprobar "Pago (id de Mercado Pago)" y pulsar "Reconciliar ahora".\n2) Esperar el aviso y comprobar el estado, el monto y el id de pago en el detalle.\n3) Buscar el pedido sin pagar, abrirlo y revisar "Reconciliar ahora" y el texto que aparece debajo.',
 		expectedResult:
-			'Paso 1: toast "Intento reconciliado" y el estado coincide con el pago real en MP.\nPaso 2: el botón está deshabilitado y debajo dice "Sin id de pago de Mercado Pago: el comprador todavía no pagó esta preferencia. El id llega con el webhook del pago."',
+			'En el aprobado se ve "Intento reconciliado"; mantiene el estado aprobado/completed y el monto registrado.\nSin id de pago, el botón está deshabilitado y explica: "Sin id de pago de Mercado Pago: el comprador todavía no pagó esta preferencia. El id llega con el webhook del pago." La prueba no requiere conseguir ni ingresar ese id manualmente.',
 		isRegressionPath: false,
 	},
 	{
 		code: 37,
 		section: SECTION_F,
-		title: "Reprocesar e ignorar eventos",
+		title: "Reprocesar e ignorar eventos desde la UI",
 		actor: "Admin",
-		feature: "Gestión de eventos de proveedor",
+		feature: "Acciones visibles sobre eventos de prueba identificados",
 		steps:
-			'Precondiciones: al menos un evento `payment` (después de #23) y el evento rechazado de #25.\n1) En `/admin/payments` → "Eventos", abrir el evento `payment` de #23 (buscar por el id del campo "Pago (id de Mercado Pago)") y hacer click en "Reprocesar".\n2) Abrir el evento de #25 (buscar `qa-firma-invalida`), escribir un motivo de 3 caracteres y mirar el botón "Ignorar".\n3) Escribir un motivo de 5 caracteres o más y hacer click en "Ignorar".',
+			'Precondiciones: sesión Admin en https://coco-kappa-ashy.vercel.app; evento válido del pedido aprobado de #23 y otro evento rechazado de prueba con request id `qa-mp-invalid-df40bb92-0fb9-4efe-afb7-0c54d33f80ea`. Este segundo evento está reservado para ignorarlo; no usar el evento de referencia de #25.\n1) Abrir `/admin/payments` → "Eventos", buscar el id del pago aprobado de #23, abrir el evento y pulsar "Reprocesar". Esperar el resultado.\n2) Limpiar la búsqueda y buscar el request id del evento rechazado indicado arriba. Abrir la fila y escribir un motivo de 3 caracteres en "Motivo para ignorar".\n3) Comprobar "Ignorar". Reemplazar el motivo por "Evento de prueba de QA" (o un motivo suficiente de al menos 5 caracteres) y pulsar "Ignorar".\n4) Volver a buscar el mismo evento y capturar su estado y el motivo visible. Si otro tester ya lo ignoró, pedir al responsable otro evento preparado.',
 		expectedResult:
-			'Paso 1: toast "Evento reprocesado".\nPaso 2: con menos de 5 caracteres "Ignorar" está deshabilitado.\nPaso 3: toast "Evento ignorado" y el evento queda "ignored".',
+			'La acción sobre el evento válido muestra "Evento reprocesado" y no cambia el pedido aprobado por uno distinto.\nCon 3 caracteres "Ignorar" está deshabilitado; con un motivo suficiente se ve "Evento ignorado" y el estado ignored.\nEl detalle del evento ignorado conserva el motivo escrito. No hace falta producir nuevas notificaciones para ejecutar el caso.',
 		isRegressionPath: false,
 	},
 	{
 		code: 38,
 		section: SECTION_F,
-		title: "Config de MP protegida por superadmin",
+		title: "Configuración MP protegida por rol y confirmación",
 		actor: "Admin + Superadmin",
-		feature: "`updateProviderConfig`",
+		feature: "Config desde Admin y Superadmin",
 		steps:
-			'Precondiciones: dos cuentas. Una con rol "Administrador" que NO sea superadmin (la cuenta del tester ya es "Superadministrador", así que el responsable de QA le pasa otra o le asigna ese rol a una cuenta de prueba en `/admin/users`) y la cuenta superadmin del tester. Solo se toca "Expiración minutos" en `/admin/payments` → Config, y al final se deja como estaba.\n1) Con la cuenta "Administrador", en `/admin/payments` → Config, anotar el valor de "Expiración minutos", sumarle 1, escribir `CONFIRMAR` en "Confirmación" y hacer click en "Guardar configuración".\n2) Con la cuenta superadmin, abrir la misma pantalla y comprobar que "Expiración minutos" sigue con el valor anotado. Sumarle 1, dejar "Confirmación" vacío y hacer click en "Guardar configuración".\n3) Escribir `CONFIRMAR` en "Confirmación" y volver a guardar.\n4) Devolver "Expiración minutos" al valor anotado, escribir `CONFIRMAR` y guardar.',
+			'Precondiciones: sitio https://coco-kappa-ashy.vercel.app; una cuenta con rol "Administrador" que no sea superadmin y otra Superadmin, entregadas por Flavio y abiertas en perfiles separados. No cambiar roles ni credenciales para preparar el caso. Mantener modo Sandbox, Binary mode y Webhooks unsigned dev como están.\n1) Admin: abrir `/admin/payments` → "Config", anotar "Expiración minutos", sumarle 1, escribir `CONFIRMAR` y pulsar "Guardar configuración".\n2) Superadmin: abrir la misma pantalla y comprobar que sigue el valor original. Sumarle 1, dejar "Confirmación" vacía y pulsar "Guardar configuración".\n3) Escribir `CONFIRMAR` y guardar. Actualizar la pantalla y comprobar el valor nuevo.\n4) Restaurar inmediatamente el valor anotado, escribir `CONFIRMAR`, guardar y actualizar para verificar la restauración. Capturar los resultados sin mostrar credenciales.',
 		expectedResult:
-			'Paso 1: toast de error "FORBIDDEN" y el valor no cambia.\nPaso 2: toast \'Escribí "CONFIRMAR" para aplicar cambios de configuración.\' y el valor no cambia.\nPaso 3: toast "Configuración actualizada" con el valor nuevo.\nPaso 4: "Expiración minutos" vuelve al valor anotado.\nEn ningún paso se ven los secretos: "Access token" y "Webhook secret" solo dicen "Configurado" o "Falta".',
+			'Admin recibe "FORBIDDEN" y no guarda. Superadmin sin confirmación ve: \'Escribí "CONFIRMAR" para aplicar cambios de configuración.\' y no guarda.\nSuperadmin con CONFIRMAR ve "Configuración actualizada" y el valor persiste. Al terminar vuelve al valor original; no se cambian el modo ni los switches.\nAccess token y Webhook secret se ven solo como "Configurado" o "Falta". Si falta una cuenta o un requisito de acceso, registrar Bloqueado con el dato que falta.',
 		isRegressionPath: false,
 	},
 	{

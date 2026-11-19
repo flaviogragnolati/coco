@@ -15,6 +15,13 @@ stage_result:
     states preserved'
   - 'qa_ticket:#35,#38,#39,#40,#42: isolated admin/operations evidence appended with
     original history preserved'
+  - 'qa_ticket:#21-#27,#35-#38,#110: published UI-only numbered steps and expected
+    results; existing statuses, assignments, historical notes and evidence preserved'
+  - 'qa_ticket:#124,#125: created pending transfer/operations UI case and sandbox
+    campaign guide; all 14 definitions read back successfully'
+  - scripts/qa-tickets.data.ts
+  - scripts/qa-tickets.data.test.ts
+  - docs/qa/qa-ciclo-de-vida.md
   references_added:
   - https://www.mercadopago.com.ar/developers/en/reference/online-payments/checkout-pro-preferences/search-preferences/get
   traceability_delta:
@@ -29,6 +36,10 @@ stage_result:
     named coco-kappa-ashy environment; no Git operation was inferred.
   - User requested verification of admin payments/transfers/operations; two reproduced
     defects were corrected without changing payment rules or server authorization.
+  - Flavio subsequently authorized commit and push to main; completed as
+    247e38dcc2232d300cfd8e7de2de68d1df867cad before the UI-ticket update.
+  - Flavio requested QA tickets executable only through UI; backend/log checks are
+    excluded from current manual definitions, with prior evidence retained as history.
   risks_added_or_updated:
   - A legacy attempt without a persisted expiry or a recoverable preference requires
     administrative investigation; no deadline backfill or synthetic payment state.
@@ -56,13 +67,21 @@ stage_result:
     to shared data.
   - No versioned technical foundation was available; existing ADRs, repository conventions
     and SDK3.1.0 source were used. No delivery acceptance verdict is claimed.
+  - UI-ticket update passed 125 definition tests, Biome and diff checks. Independent
+    code review passed after minor UI-observability/precondition findings were applied;
+    comment review passed with no added or affected comments. No fresh UAT claimed.
+  - Transfer/operations ticket requires a prepared authorized scenario. The 10-percent
+    transfer-discount variant requires responsible preparation; the shared percentage
+    was unset. Ticket publication needs no application deployment; local definition
+    and documentation changes remain uncommitted.
   required_user_actions:
   - Provide controlled CoCo customer/admin and Mercado Pago test-buyer sessions or
     tester execution evidence for the remaining authenticated sandbox UAT; do not
     share credential values.
-  next_recommended_action: Complete authenticated target UAT and actual sandbox provider
-    payment sequence; reconcile implementation and release sidecars through the owning
-    orchestrator.
+  next_recommended_action: 'QA starts with published guide #125, follows the UI-only
+    sequence including transfer/operations #124 when prepared, and records per-case
+    evidence or missing preconditions. Reconcile implementation and release sidecars
+    through the owning orchestrator; integral sandbox acceptance remains pending.'
 orchestration:
   mode: standalone
   global_state_updated: false

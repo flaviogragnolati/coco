@@ -71,12 +71,12 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 	{ code: 24, mustMention: ["OTHE", "CONT"] },
 	{
 		code: 25,
-		mustMention: ["curl", "x-signature", "qa-firma-invalida", "401"],
+		mustMention: ['"Eventos"', "rejected", "Sin vincular"],
 	},
 	{ code: 26, mustMention: ['"Reprocesar"'] },
 	{
 		code: 27,
-		mustMention: ["misma orden", "mismo intento", "vencido", "ADR 0013"],
+		mustMention: ["misma orden", "mismo intento", "vencido", "cambio de medio"],
 	},
 	{
 		code: 30,
@@ -102,7 +102,6 @@ const rewrittenDefinitions: Array<{ code: number; mustMention: string[] }> = [
 		code: 38,
 		mustMention: [
 			'"Administrador"',
-			"`/admin/users`",
 			"`/admin/payments`",
 			'"Expiración minutos"',
 			"`CONFIRMAR`",
@@ -305,27 +304,32 @@ describe("qa-seed.ts", () => {
 });
 
 describe("Mercado Pago validation definitions", () => {
-	it("bases pending scenarios on the fetched payment status", () => {
+	it("describes pending and in-process outcomes visible in the UI", () => {
 		const definition = byCode.get(24)?.expectedResult ?? "";
-		for (const mapping of [
-			"rejected → failed",
-			"pending → pending",
-			"in_process → inProcess",
+		for (const state of [
+			"CONT",
+			"pending",
+			"inProcess",
+			"Pendiente",
+			"En proceso",
 		])
-			expect(definition).toContain(mapping);
+			expect(definition).toContain(state);
 	});
-	it("diagnoses notification failures before classifying the case", () => {
-		const definition = byCode.get(23)?.expectedResult ?? "";
-		for (const boundary of [
-			"HTTP",
-			"firma",
-			"logs",
-			"recurso consultado",
-			"precondición",
-			"defecto de implementación",
-		])
-			expect(definition).toContain(boundary);
+	it.each([
+		21, 22, 23, 24, 25, 26, 27, 35, 36, 37, 38,
+	])("keeps #%i executable without technical tools", (code) => {
+		const entry = byCode.get(code);
+		const definition = `${entry?.steps ?? ""}\n${entry?.expectedResult ?? ""}`;
+		expect(definition).not.toMatch(
+			/curl|Payment\.get|\bHTTP\b|\boutbox\b|\blogs\b|x-signature|\bSQL\b|DevTools|\bPOST\b|\bHMAC\b/i,
+		);
+		expect(entry?.steps).toMatch(/^Precondiciones:/);
 	});
+	it("gives a prepared rejected event rather than asking QA to generate one", () => {
+		expect(byCode.get(25)?.steps).toContain("evento de prueba ya disponible");
+		expect(byCode.get(25)?.steps).toContain("QA no necesita generarlo");
+	});
+
 	it.each([
 		23, 24, 27,
 	])("keeps #%i consistent with the lifecycle table", (code) => {
