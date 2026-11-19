@@ -28,7 +28,7 @@ describe("qaTicketTriageTransitions", () => {
 
 	it("keeps internal jargon out of the notes a tester reads", () => {
 		for (const { prependNote } of qaTicketTriageTransitions) {
-			expect(prependNote).not.toMatch(/\bADR\b|grill|\(B\d|MERCADOPAGO_/);
+			expect(prependNote).not.toMatch(/\bADR\b|\bgrill\b|\(B\d|MERCADOPAGO_/);
 		}
 	});
 

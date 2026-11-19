@@ -549,6 +549,52 @@ const secondRound: TriageTransition[] = [
 			),
 		}),
 	),
+	retestOn(
+		117,
+		NOVEMBER_19,
+		"Implementado en 462c6a3. Mirar: en la home (Destacados) y en el catálogo, a 1366, 1920 y 2560 px, las tarjetas tienen ancho fijo y la grilla queda centrada; con menos productos que columnas la fila se centra (en el catálogo, buscar un nombre que dé 1 o 2 productos). En la ficha, uno o dos similares quedan centrados. Una última fila corta debajo de filas completas queda alineada a la izquierda de la grilla, por decisión del 19/11. Precondiciones: ninguna (sin ingresar).",
+	),
+	retestOn(
+		118,
+		NOVEMBER_19,
+		'Implementado en 462c6a3. Mirar: en el celular (360 a 390 px), catálogo y Destacados en 2 columnas; al hacer scroll hasta que la grilla llega arriba, entran 4 tarjetas completas. La tarjeta muestra foto 1:1, nombre en hasta 2 líneas, precio y precio por kg o L, sin marca, y el botón "Sumar". "Sumar" agrega el mínimo y abre Tu pedido; al cerrarlo, la tarjeta muestra el selector con la cantidad del pedido ("0,5 kg" en productos por peso, solo el número en envasados). "+" y "−" cambian la cantidad del pedido; en el mínimo el "−" es un tachito que lo saca y vuelve "Sumar". Los combos ocupan el ancho completo; la banda "Destacado" y la ficha no cambian. Probar también con sesión. Precondiciones: ninguna; con sesión, cualquier cliente.',
+	),
+	// Lifecycle cases whose text #118 rewrote; they run after qa:seed.
+	...[5, 6, 8].map(
+		(code): TriageTransition => ({
+			...retestOn(
+				code,
+				NOVEMBER_19,
+				'Texto actualizado por #118 en 462c6a3. Mirar: la tarjeta compacta con "Sumar", el selector con tachito cuando el producto está en el pedido y, en la cantidad fija, el "+" deshabilitado, según los pasos nuevos del caso. Precondiciones: las del caso.',
+			),
+			from: ["retest", "passed"],
+		}),
+	),
+	// D6, second half: #118 shipped, so the card re-tests ask for a full run.
+	{
+		code: 106,
+		from: ["retest"],
+		prependNote: triageNote(
+			'#118 entró en 462c6a3. Re-testear completo con la tarjeta compacta: foto 1:1 completa, "$ X por bidón", precio por kg o L siempre, botón "Sumar" sin ícono ni monto, y el selector (solo el número en envasados, "0,5 kg" en productos por peso) cuando el producto está en el pedido. En la ficha y la banda "Destacado" sigue "Sumar al pedido". Precondiciones: ninguna (sin ingresar).',
+			NOVEMBER_19,
+		),
+	},
+	{
+		code: 73,
+		from: ["retest"],
+		prependNote: triageNote(
+			'#118 entró en 462c6a3. Re-testear completo: en la ficha, el selector arranca en el mínimo y no baja de ahí; en la tarjeta, el selector aparece después de "Sumar", edita la cantidad del pedido y en el mínimo el "−" es un tachito. Precondiciones: ninguna.',
+			NOVEMBER_19,
+		),
+	},
+	{
+		code: 84,
+		from: ["retest"],
+		prependNote: triageNote(
+			'#118 entró en 462c6a3. Re-testear completo: el orden de la ficha (foto, nombre, precio con su unidad, selector, botón a ancho completo) no cambió; la tarjeta compacta es foto, nombre, precio y "Sumar". Precondiciones: ninguna.',
+			NOVEMBER_19,
+		),
+	},
 ];
 
 export const qaTicketTriageTransitions: TriageTransition[] = [
