@@ -1354,7 +1354,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Almendra Non Pareil 25/27",
 			name: "Almendra Non Pareil 25/27",
-			description: "Almendra Non Pareil 25/27.",
+			description:
+				"Variedad Non Pareil, calibre 25/27: entre 25 y 27 almendras por onza (28 g), de tamaño parejo. Para comer al natural, tostar, laminar o hacer leche de almendras.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1387,7 +1388,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Nuez mariposa extra light",
 			name: "Nuez mariposa extra light",
-			description: "Nuez mariposa extra light.",
+			description:
+				"Mitades enteras de nuez, de color extra light, el tono más claro de la clasificación. Para comer sola, decorar tortas y ensaladas, o sumar al desayuno.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1420,7 +1422,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Nuez cuartos extra light",
 			name: "Nuez cuartos extra light",
-			description: "Nuez cuartos extra light.",
+			description:
+				"Nuez en cuartos, del mismo color extra light que la mariposa. Rinde más en budines, panes, granolas y rellenos.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1453,7 +1456,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Castaña de cajú tostada (sin sal o salada)",
 			name: "Castaña de cajú tostada sin sal",
-			description: "Castaña de cajú tostada sin sal.",
+			description:
+				"Castaña de cajú tostada, en versión sin sal o salada. Para picar, sumar a salteados o, la sin sal, hacer cremas y salsas.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1486,7 +1490,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Castaña de cajú tostada (sin sal o salada)",
 			name: "Castaña de cajú tostada salada",
-			description: "Castaña de cajú tostada salada.",
+			description:
+				"Castaña de cajú tostada, en versión sin sal o salada. Para picar, sumar a salteados o, la sin sal, hacer cremas y salsas.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1519,7 +1524,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Pistacho con cáscara Riojano",
 			name: "Pistacho con cáscara Riojano",
-			description: "Pistacho con cáscara Riojano.",
+			description:
+				"Pistacho de La Rioja, con cáscara. Para picar, o pelado y picado en ensaladas, helados y repostería.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1552,7 +1558,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Avellana Chile 13-15",
 			name: "Avellana Chile 13-15",
-			description: "Avellana Chile 13-15.",
+			description:
+				"Avellana de Chile, calibre 13-15 mm. Para tostar y picar, hacer crema de avellanas casera, repostería y granolas.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1585,7 +1592,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Pecan premium",
 			name: "Pecan premium",
-			description: "Pecan premium.",
+			description:
+				"Nuez pecán de calidad premium, de sabor más dulce y suave que la nuez común. Para pies, budines, ensaladas o para comer al natural.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1618,7 +1626,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Maní tostado salado",
 			name: "Maní tostado salado",
-			description: "Maní tostado salado.",
+			description:
+				"Maní tostado y salado, listo para comer. Para picar, armar la picada o sumar a salteados.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1651,7 +1660,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Mix de frutos secos económico",
 			name: "Mix de frutos secos económico",
-			description: "Mix de frutos secos económico.",
+			description:
+				"Mezcla de frutos secos a un precio accesible, para tener variedad sin gastar de más. Para picar entre comidas o sumar al desayuno.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1684,7 +1694,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Mix de frutos secos deportivo",
 			name: "Mix de frutos secos deportivo",
-			description: "Mix de frutos secos deportivo.",
+			description:
+				"Mezcla de frutos secos pensada para llevar: a una caminata, a la montaña o al gimnasio.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1717,7 +1728,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Mix de frutos secos antioxidante premium",
 			name: "Mix de frutos secos antioxidante premium",
-			description: "Mix de frutos secos antioxidante premium.",
+			description:
+				"Mezcla premium de frutos secos. Para picar, sumar al yogur o al desayuno.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1750,7 +1762,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Banana chips",
 			name: "Banana chips",
-			description: "Banana chips.",
+			description:
+				"Rodajas de banana crocantes. Para picar o sumar a granolas, yogur y mezclas de frutos secos.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1783,7 +1796,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Pasa de uva Flame sin semilla",
 			name: "Pasa de uva Flame sin semilla",
-			description: "Pasa de uva Flame sin semilla.",
+			description:
+				"Pasas de uva variedad Flame, sin semilla, de color oscuro y sabor dulce. Para budines, rellenos, ensaladas, arroces o para picar.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1816,7 +1830,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Pasa de uva rubia premium 2026",
 			name: "Pasa de uva rubia premium 2026",
-			description: "Pasa de uva rubia premium 2026.",
+			description:
+				"Pasas rubias de cosecha 2026, de color dorado. Para pan dulce, budines, ensaladas y cuscús.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1849,7 +1864,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Dátil Egipto",
 			name: "Dátil Egipto",
-			description: "Dátil Egipto.",
+			description:
+				"Dátiles de Egipto, de sabor dulce. Para comer solos, rellenar, endulzar licuados o sumar a postres.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1882,7 +1898,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Dátil Medjool",
 			name: "Dátil Medjool",
-			description: "Dátil Medjool.",
+			description:
+				"Medjool, una de las variedades de dátil más grandes y carnosas, con sabor parecido al caramelo. Para comer solo, relleno con frutos secos o en postres.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1915,7 +1932,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Ciruela sin carozo grande",
 			name: "Ciruela sin carozo grande",
-			description: "Ciruela sin carozo grande.",
+			description:
+				"Ciruelas secas sin carozo, de calibre grande. Para comer solas, hacer compotas o sumar a guisos y rellenos de carne.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1948,7 +1966,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Empaque mixto sin carozo (frutas secas surtidas)",
 			name: "Empaque mixto sin carozo (frutas secas surtidas)",
-			description: "Empaque mixto sin carozo (frutas secas surtidas).",
+			description:
+				"Surtido de frutas secas sin carozo. Para la picada dulce, la mesa de las fiestas o para picar.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -1981,7 +2000,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Mix de semillas premium (sésamo, girasol, lino, chía)",
 			name: "Mix de semillas premium (sésamo, girasol, lino, chía)",
-			description: "Mix de semillas premium (sésamo, girasol, lino, chía).",
+			description:
+				"Mezcla de sésamo, girasol, lino y chía. Para sumar a panes, ensaladas, yogur, licuados o rebozados.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -2014,7 +2034,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Granola Kuati tradicional",
 			name: "Granola Kuati tradicional",
-			description: "Granola Kuati tradicional.",
+			description:
+				"Granola Kuati en su versión tradicional. Para el desayuno con leche o yogur, o para picar sola.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -2047,7 +2068,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Coco rallado fino",
 			name: "Coco rallado fino",
-			description: "Coco rallado fino.",
+			description:
+				"Coco rallado de corte fino. Para tortas, alfajores de maicena, cocadas y rebozados.",
 			unit: "kg",
 			presentation: null,
 			supplierTerms: {
@@ -2080,7 +2102,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Aceite de oliva extra virgen 0,5 L",
 			name: "Aceite de oliva extra virgen 0,5 L",
-			description: "Aceite de oliva extra virgen 0,5 L.",
+			description:
+				"Extra virgen es la categoría más alta del aceite de oliva. Para usar en crudo, en ensaladas y tostadas, o para cocinar.",
 			unit: "piece",
 			presentation: {
 				presentationContainer: "botella",
@@ -2116,7 +2139,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Aceite de oliva extra virgen 1 L",
 			name: "Aceite de oliva extra virgen 1 L",
-			description: "Aceite de oliva extra virgen 1 L.",
+			description:
+				"Extra virgen es la categoría más alta del aceite de oliva. Para usar en crudo, en ensaladas y tostadas, o para cocinar.",
 			unit: "piece",
 			presentation: {
 				presentationContainer: "botella",
@@ -2152,7 +2176,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Aceite de oliva extra virgen 5 L",
 			name: "Aceite de oliva extra virgen 5 L",
-			description: "Aceite de oliva extra virgen 5 L.",
+			description:
+				"Extra virgen es la categoría más alta del aceite de oliva. Para usar en crudo o para cocinar. El bidón es la presentación que menos cuesta por litro.",
 			unit: "piece",
 			presentation: {
 				presentationContainer: "bidon",
@@ -2188,7 +2213,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Pasta de maní Entre Nuts 370 g",
 			name: "Pasta de maní Entre Nuts 370 g",
-			description: "Pasta de maní Entre Nuts 370 g.",
+			description:
+				"Pasta de maní Entre Nuts, en frasco de 370 g. Para untar en tostadas o sumar a licuados, avena y salsas.",
 			unit: "piece",
 			presentation: {
 				presentationContainer: "frasco",
@@ -2224,7 +2250,8 @@ export const quintalCatalog: QuintalCatalog = {
 			subcategory: null,
 			sourceLabel: "Sal rosada del Himalaya",
 			name: "Sal rosada del Himalaya",
-			description: "Sal rosada del Himalaya.",
+			description:
+				"Sal de roca sin refinar, con su color rosado natural. Para condimentar carnes, verduras y ensaladas.",
 			unit: "piece",
 			presentation: {
 				presentationContainer: "bolsa",

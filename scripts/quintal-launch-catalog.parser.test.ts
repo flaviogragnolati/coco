@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { XlsxSheet } from "~/server/lib/xlsx/xlsx-reader";
 import { launchExpected } from "./fixtures/quintal-launch.expected";
+import { quintalOverrides } from "./quintal-catalog.overrides";
 import { quintalLaunchSource } from "./quintal-launch-catalog.config";
 import { parseQuintalLaunchSheet } from "./quintal-launch-catalog.parser";
 
@@ -35,6 +36,25 @@ describe("launch import", () => {
 		).toEqual(launchExpected);
 		expect(result.catalog?.importReference?.criteriaRows).toEqual(
 			criteriaSheet.rows.map(({ row, cells }) => ({ row, cells })),
+		);
+	});
+	it("takes each description from the overrides, by published name", () => {
+		const { sheet, criteriaSheet } = fixture();
+		const result = parseQuintalLaunchSheet(
+			sheet,
+			criteriaSheet,
+			quintalLaunchSource,
+		);
+		const descriptions = new Map(
+			result.catalog?.products.map((p) => [p.name, p.description]),
+		);
+		for (const [name, description] of Object.entries(
+			quintalOverrides.descriptionOverrides,
+		)) {
+			expect(descriptions.get(name)).toBe(description);
+		}
+		expect(descriptions.size).toBe(
+			Object.keys(quintalOverrides.descriptionOverrides).length,
 		);
 	});
 	it.each([

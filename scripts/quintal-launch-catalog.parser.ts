@@ -117,7 +117,7 @@ function productFromRow(row: XlsxRow): QuintalProduct[] {
 		subcategory: null,
 		sourceLabel,
 		name,
-		description: `${name}.`,
+		description: quintalOverrides.descriptionOverrides[name] ?? `${name}.`,
 		unit,
 		presentation: presentation ?? null,
 		supplierTerms: {

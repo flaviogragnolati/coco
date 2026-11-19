@@ -45,6 +45,7 @@ const baseOverrides: QuintalOverrides = {
 	subcategoryLabels: {},
 	wordSpelling: {},
 	nameOverrides: {},
+	descriptionOverrides: {},
 	keyAliases: {},
 	splitVariants: {},
 	sideTableTargets: {},
