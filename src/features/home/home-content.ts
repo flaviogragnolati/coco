@@ -20,7 +20,7 @@ export const announcementMessage = "Compras comunitarias en Ushuaia";
 
 export const heroCopy = {
 	title: "Comprar en grupo sale menos.",
-	lead: "Juntamos pedidos de toda Ushuaia y compramos al por mayor. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.",
+	lead: "Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.",
 	cta: "Ver el catálogo",
 	ctaNote: "No hace falta registrarte para mirar",
 };

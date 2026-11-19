@@ -104,7 +104,7 @@ export function CheckoutSummary({
 					<CardTitle>Resumen</CardTitle>
 					{cart.code ? <Badge variant="secondary">{cart.code}</Badge> : null}
 				</div>
-				<CardDescription>Tu pedido mayorista compartido</CardDescription>
+				<CardDescription>Tu pedido de la semana</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-4">
 				{peekItems.length > 0 ? (

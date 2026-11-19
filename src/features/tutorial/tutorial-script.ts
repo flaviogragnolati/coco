@@ -226,7 +226,7 @@ const journeySteps: TutorialStep[] = [
 		scene: { id: "orderDetail", journey: "preparation" },
 		target: "order-journey",
 		title: "Preparación",
-		body: "CoCo agrupa los pedidos de todos para armar una sola compra mayorista.",
+		body: "CoCo agrupa los pedidos de todos para armar una sola compra grande.",
 	},
 	{
 		id: "journey-supplier",

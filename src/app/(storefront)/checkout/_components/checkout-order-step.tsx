@@ -72,7 +72,7 @@ export function CheckoutOrderStep({
 					<div className="flex flex-col gap-1">
 						<CardTitle>Tu pedido</CardTitle>
 						<CardDescription>
-							Estos productos se enviarán a la agregación mayorista.
+							Estos productos entran en la compra de la semana.
 						</CardDescription>
 					</div>
 					<Button onClick={onEditCart} type="button" variant="outline">

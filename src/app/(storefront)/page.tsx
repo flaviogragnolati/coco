@@ -17,7 +17,7 @@ import { getWeeklyClosingSchedule } from "~/server/services/weekly-closing/weekl
 export const metadata: Metadata = {
 	title: "CoCo | Compras comunitarias en Ushuaia",
 	description:
-		"Compras comunitarias en Ushuaia. Sumate al pedido de otros vecinos, accedé a precios mayoristas y seguí tu compra hasta la entrega.",
+		"Compras comunitarias en Ushuaia. Sumate al pedido de otros vecinos y seguí tu compra hasta la entrega.",
 };
 
 export default async function Home() {

@@ -38,6 +38,45 @@ test("home communicates the purchase flow and exposes its public sections", asyn
 		.getByRole("button");
 	await expect(faqQuestions).toHaveCount(6);
 	await expect(faqQuestions.first()).toHaveText("¿Cuándo cierran los pedidos?");
+	await expect(
+		page.getByText(
+			"Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande.",
+			{ exact: false },
+		),
+	).toBeVisible();
+	await expect(page.locator("meta[name='description']")).toHaveAttribute(
+		"content",
+		"Compras comunitarias en Ushuaia. Sumate al pedido de otros vecinos y seguí tu compra hasta la entrega.",
+	);
+});
+
+test("the catalog header speaks of your weekly order, never of wholesale", async ({
+	page,
+}) => {
+	await page.goto("/products");
+
+	const header = page
+		.locator("main section")
+		.filter({
+			has: page.getByRole("heading", {
+				level: 1,
+				name: "Productos disponibles",
+			}),
+		})
+		.first();
+	await expect(
+		header.getByText(
+			"Elegí lo que necesitás y sumalo a tu pedido de la semana.",
+		),
+	).toBeVisible();
+	await expect(
+		header.getByText("Seleccionamos productos de primera calidad."),
+	).toBeVisible();
+	await expect(header).not.toContainText(/mayorist|al por mayor/i);
+	await expect(page.locator("meta[name='description']")).toHaveAttribute(
+		"content",
+		"Explorá productos y armá tu pedido de la semana.",
+	);
 });
 
 test("the hero is text only, the illustration explains how it works and the spotlight has its own band", async ({

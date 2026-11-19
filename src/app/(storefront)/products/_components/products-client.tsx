@@ -211,16 +211,12 @@ export function ProductsClient({
 	return (
 		<main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 md:px-6">
 			<section className="flex flex-col gap-2">
-				<span className="text-muted-foreground text-xs uppercase tracking-wide">
-					Catálogo mayorista
-				</span>
 				<div className="flex max-w-3xl flex-col gap-2">
 					<h1 className="font-heading font-semibold text-3xl tracking-normal">
 						Productos disponibles
 					</h1>
 					<p className="text-muted-foreground text-sm/relaxed">
-						Elegí productos y cantidades, y sumate a compras mayoristas
-						compartidas.
+						Elegí lo que necesitás y sumalo a tu pedido de la semana.
 					</p>
 					<p className="text-muted-foreground text-sm/relaxed">
 						Seleccionamos productos de primera calidad.

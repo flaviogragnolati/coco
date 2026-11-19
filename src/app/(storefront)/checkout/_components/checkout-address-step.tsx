@@ -46,9 +46,7 @@ export function CheckoutAddressStep({
 				<div className="flex items-start justify-between gap-3">
 					<div className="flex flex-col gap-1">
 						<CardTitle>Dirección de envío</CardTitle>
-						<CardDescription>
-							Elegí dónde recibir tu parte del pedido mayorista.
-						</CardDescription>
+						<CardDescription>Elegí dónde recibir tu pedido.</CardDescription>
 					</div>
 					<Button onClick={onAdd} type="button" variant="outline">
 						<PlusIcon data-icon="inline-start" />

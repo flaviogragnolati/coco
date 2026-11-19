@@ -7,7 +7,7 @@ import { getSession } from "~/server/better-auth/server";
 
 export const metadata: Metadata = {
 	title: "Checkout | CoCo",
-	description: "Confirmá dirección, pago y resumen de tu pedido mayorista.",
+	description: "Confirmá dirección, pago y resumen de tu pedido.",
 };
 
 export default async function CheckoutPage() {

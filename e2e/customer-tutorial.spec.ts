@@ -163,6 +163,22 @@ test("a deep link opens its step and an unsafe return path falls back home", asy
 	await expect(page).toHaveURL(/localhost:\d+\/$/);
 });
 
+test("the catalog scene copies the real catalog header", async ({ page }) => {
+	await page.goto("/tutorial?version=rapido&paso=3");
+	await expect(counter(page)).toHaveText("3 / 12");
+	const main = page.locator("main");
+	await expect(
+		main.getByRole("heading", { level: 1, name: "Productos disponibles" }),
+	).toBeVisible();
+	await expect(
+		main.getByText("Elegí lo que necesitás y sumalo a tu pedido de la semana."),
+	).toBeVisible();
+	await expect(
+		main.getByText("Seleccionamos productos de primera calidad."),
+	).toBeVisible();
+	await expect(main).not.toContainText(/mayorist|al por mayor/i);
+});
+
 test("the order and the payment step show what paying by transfer would cost", async ({
 	page,
 }) => {

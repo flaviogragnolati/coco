@@ -100,8 +100,7 @@ export function ProductDetailsDialog({
 						</DialogDescription>
 					) : (
 						<DialogDescription className="sr-only">
-							Información comercial vigente para sumarte a una compra mayorista
-							compartida.
+							Precio y cantidades para sumar este producto a tu pedido.
 						</DialogDescription>
 					)}
 					{description ? (

@@ -8,6 +8,7 @@ import {
 	getFaqItems,
 	getHowItWorksSteps,
 	getWhatsappContactItem,
+	heroCopy,
 	WHATSAPP_NUMBER,
 } from "./home-content";
 
@@ -49,6 +50,14 @@ const saturdayEvening = {
 	closingHour: 18,
 	closingMinute: 30,
 };
+
+describe("hero", () => {
+	it("explains the single big purchase without saying wholesale", () => {
+		expect(heroCopy.lead).toBe(
+			"Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.",
+		);
+	});
+});
 
 describe("announcement", () => {
 	it("no longer repeats the sign-up note the hero carries", () => {
