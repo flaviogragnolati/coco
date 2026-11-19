@@ -50,7 +50,8 @@ export function SimilarProductsSection({
 			<h3 className="font-heading font-semibold text-sm">
 				Productos similares
 			</h3>
-			<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+			{/* A third of the row each, so one or two similars sit centered. */}
+			<div className="grid grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fit,calc((100%-1rem)/3))] sm:justify-center">
 				{similar.map((candidate) => (
 					<ProductMiniCard
 						inCart={cartQuantities.has(candidate.terms.id)}
