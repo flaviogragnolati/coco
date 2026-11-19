@@ -523,6 +523,20 @@ const secondRound: TriageTransition[] = [
 		NOVEMBER_19,
 		'Implementado en 38bf6cd: la pregunta 6 del FAQ es "¿Cómo conseguimos estos precios?" con la respuesta del ticket tal cual. Mirar: home › Preguntas frecuentes, última pregunta, texto completo. Precondiciones: ninguna.',
 	),
+	retestOn(
+		123,
+		NOVEMBER_19,
+		'Cargadas las 27 descripciones con pnpm catalog:descriptions sobre d8571c6 (cada una con su product.update en la auditoría); las castañas de cajú sin sal y salada comparten texto, y "Pecan premium" (#107) usa el de "Nuez pecán premium". Mirar: abrir cada producto del catálogo y comparar la descripción bajo el título con el ticket; Admin › Productos muestra el mismo texto. Precondiciones: ninguna.',
+	),
+	{
+		code: 92,
+		from: ["blocked"],
+		prependNote: triageNote(
+			"Superado por #123: con #119, la ficha muestra la descripción específica de cada producto debajo del título, y las 27 ya están cargadas. No re-testear.",
+			NOVEMBER_19,
+		),
+		retire: true,
+	},
 	// D6: these re-tests keep their status; #118 changes the card's selector and
 	// button, so until WP-J ships they only check the rest.
 	...[106, 73, 84].map(
