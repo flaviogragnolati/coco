@@ -20,7 +20,7 @@ export const announcementMessage = "Compras comunitarias en Ushuaia";
 
 export const heroCopy = {
 	title: "Comprar en grupo sale menos.",
-	lead: "Juntamos pedidos de toda Ushuaia y compramos al por mayor. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.",
+	lead: "Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.",
 	cta: "Ver el catálogo",
 	ctaNote: "No hace falta registrarte para mirar",
 };
@@ -102,9 +102,9 @@ export function getFaqItems(
 			answer: `Lo elegís al confirmar el pedido: te lo llevamos a la dirección que cargues o lo retirás en el punto de retiro, en su horario. Las dos opciones cuestan lo mismo.${describePickupPoints(pickupPoints)}`,
 		},
 		{
-			question: "¿Por qué los precios son más bajos que en un comercio?",
+			question: "¿Cómo conseguimos estos precios?",
 			answer:
-				"Porque juntamos los pedidos de muchos vecinos y hacemos una sola compra grande, directo al proveedor. Así conseguimos el precio mayorista, que comprando de a uno no se consigue, y esa diferencia se nota en lo que pagás.",
+				"Juntamos los pedidos de mucha gente y hacemos una sola compra grande, directo al proveedor. Así pagamos precio mayorista por productos de primera calidad. Si comparás, hacelo con productos de la misma calidad: un aceite de oliva extra virgen no es lo mismo que uno común, aunque los dos sean un litro.",
 		},
 	];
 }

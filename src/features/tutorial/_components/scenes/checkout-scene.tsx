@@ -57,7 +57,7 @@ export function CheckoutScene({
 						Volver a tu pedido
 					</Button>
 				}
-				description="Cuatro pasos para dejar tu pedido listo para la agregación mayorista."
+				description="Cuatro pasos para dejar listo tu pedido de la semana."
 				eyebrow="Checkout"
 				title="Confirmá tu pedido compartido"
 			/>

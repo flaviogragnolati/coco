@@ -257,6 +257,11 @@ export type QuintalOverrides = {
 	wordSpelling: Record<string, string>;
 	/** Product key → final display name. */
 	nameOverrides: Record<string, string>;
+	/**
+	 * Published product name → its customer description. Read by the
+	 * coco-launch profile only; a product left out keeps `${name}.`.
+	 */
+	descriptionOverrides: Record<string, string>;
 	/** Generated key → stable key, for a supplier relabel that is the same product. */
 	keyAliases: Record<string, string>;
 	/** Source row → the products one listed row expands to. */

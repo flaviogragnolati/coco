@@ -81,7 +81,19 @@ wired with `--conditions=react-server`):
   0.5 kg exception for Dátil Egipto. Supplier quantities/prices come from AE/AF
   and supplier presentation from AD. The legacy `Lista WEB` parser remains
   available with `--format quintal-list` (also the default), using
-  `scripts/quintal-catalog.overrides.ts`.
+  `scripts/quintal-catalog.overrides.ts`. The launch profile takes each
+  product's customer description from `descriptionOverrides` there, which reads
+  `scripts/catalog-descriptions.data.ts`.
+- `pnpm catalog:descriptions [--apply --actor-email <superadmin>
+  [--confirm-production]]` — loads the product descriptions in
+  `scripts/catalog-descriptions.data.ts`, by product id. The default dry run
+  reads inside a read-only transaction and prints each description before and
+  after. A product that is missing, deleted, renamed (the file keeps the
+  expected name as a guard), already carries a description other than its name,
+  or that the admin product form would not save exactly as is blocks the whole
+  run. `--apply` writes through the admin product service, so each
+  change leaves a `product.update` row in `AuditLog`, and skips products already
+  up to date; `APP_ENV=production` also needs `--confirm-production`.
 - `pnpm db:reset:catalog` — simulates replacing **all** products, terms and local
   constraints and deleting **all** orders, carts, payment attempts and fulfillment
   records. Users, sessions/accounts, configuration, QA, audit, outbox and payment

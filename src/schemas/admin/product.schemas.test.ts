@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { productCreateInputSchema } from "./product.schemas";
+import {
+	PRODUCT_DESCRIPTION_MAX_LENGTH,
+	productCreateInputSchema,
+	productUpdateInputSchema,
+} from "./product.schemas";
 
 const base = {
 	name: "Pasta de maní",
@@ -65,4 +69,44 @@ test("an unknown container is rejected", () => {
 			presentationContainer: "caja",
 		}).success,
 	).toBe(false);
+});
+
+test("the description takes up to 200 characters after trimming", () => {
+	const parsed = productCreateInputSchema.parse({
+		...base,
+		unit: "kg",
+		description: ` ${"a".repeat(PRODUCT_DESCRIPTION_MAX_LENGTH)} `,
+	});
+	expect(parsed.description).toHaveLength(200);
+
+	const result = productCreateInputSchema.safeParse({
+		...base,
+		unit: "kg",
+		description: "a".repeat(PRODUCT_DESCRIPTION_MAX_LENGTH + 1),
+	});
+	expect(result.success).toBe(false);
+	expect(result.error?.issues[0]).toMatchObject({
+		path: ["description"],
+		message: "La descripción no puede superar los 200 caracteres",
+	});
+});
+
+test("editing a product applies the same description limit", () => {
+	const result = productUpdateInputSchema.safeParse({
+		...base,
+		id: 1,
+		unit: "kg",
+		description: "a".repeat(PRODUCT_DESCRIPTION_MAX_LENGTH + 1),
+	});
+	expect(result.success).toBe(false);
+	expect(result.error?.issues[0]?.path).toEqual(["description"]);
+});
+
+test("a blank description is no description", () => {
+	const parsed = productCreateInputSchema.parse({
+		...base,
+		unit: "kg",
+		description: "   ",
+	});
+	expect(parsed.description).toBeUndefined();
 });

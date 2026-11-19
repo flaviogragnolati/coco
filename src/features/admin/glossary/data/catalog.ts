@@ -229,7 +229,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		section: "catalog",
 		label: "Producto",
 		definition:
-			"El registro interno de un producto: nombre, categoría, marca, unidad, presentación, imágenes y proveedor por defecto. Lo que el cliente ve es el catálogo, que lo combina con sus términos vigentes.",
+			"El registro interno de un producto: nombre, descripción, categoría, marca, unidad, presentación, imágenes y proveedor por defecto. La descripción es una frase breve de calidad y usos, de hasta 200 caracteres, que el cliente ve en la ficha debajo del nombre; si falta o solo repite el nombre, no se muestra. Lo que el cliente ve es el catálogo, que lo combina con sus términos vigentes.",
 		occurrences: [{ code: "Product", db: "product" }],
 		href: "/admin/products",
 	},

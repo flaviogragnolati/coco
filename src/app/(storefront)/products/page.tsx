@@ -6,8 +6,7 @@ import { api, HydrateClient } from "~/trpc/server";
 
 export const metadata: Metadata = {
 	title: "Productos | CoCo",
-	description:
-		"Explorá productos mayoristas disponibles y sumá cantidades a tu pedido.",
+	description: "Explorá productos y armá tu pedido de la semana.",
 };
 
 export default async function ProductsPage() {

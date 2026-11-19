@@ -1,3 +1,4 @@
+import { catalogDescriptions } from "./catalog-descriptions.data";
 import type {
 	QuintalCategoryOverrides,
 	QuintalOverrides,
@@ -125,6 +126,11 @@ export const quintalOverrides: QuintalOverrides = {
 			"Mix de semillas premium (sésamo, girasol, lino y chía)",
 		"otros--aceite-cannabis-10ml-15": "Aceite de cannabis 10 ml 15%",
 	},
+	// The same texts `pnpm catalog:descriptions` loads into a running database,
+	// so resetting the initial catalog keeps them.
+	descriptionOverrides: Object.fromEntries(
+		catalogDescriptions.map(({ name, description }) => [name, description]),
+	),
 	keyAliases: {},
 
 	// One sheet row listing several flavours: each is its own product sharing the

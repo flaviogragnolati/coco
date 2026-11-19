@@ -94,16 +94,28 @@ export function ProductDetailsDialog({
 					<DialogTitle className="font-semibold text-xl leading-snug">
 						{product?.name ?? "Detalle de producto"}
 					</DialogTitle>
-					{closing ? (
-						<DialogDescription className="text-muted-foreground text-sm">
-							{productClosingLine(closing.nextClosing, closing.schedule)}
-						</DialogDescription>
-					) : (
-						<DialogDescription className="sr-only">
-							Información comercial vigente para sumarte a una compra mayorista
-							compartida.
-						</DialogDescription>
-					)}
+					{/* One element so screen readers announce both lines on open. */}
+					<DialogDescription asChild>
+						<div className="flex flex-col gap-1.5">
+							{closing ? (
+								<p>
+									{productClosingLine(closing.nextClosing, closing.schedule)}
+								</p>
+							) : (
+								<span className="sr-only">
+									Precio y cantidades para sumar este producto a tu pedido.
+								</span>
+							)}
+							{description ? (
+								<p
+									className="text-foreground/80 text-sm/relaxed"
+									data-testid="product-detail-description"
+								>
+									{description}
+								</p>
+							) : null}
+						</div>
+					</DialogDescription>
 				</DialogHeader>
 
 				<div
@@ -177,11 +189,6 @@ export function ProductDetailsDialog({
 									) : null}
 								</div>
 								<div className="flex flex-col gap-4">
-									{description ? (
-										<p className="text-muted-foreground text-sm/relaxed">
-											{description}
-										</p>
-									) : null}
 									<CatalogProductPurchase
 										disabled={disabled}
 										inCartQuantity={

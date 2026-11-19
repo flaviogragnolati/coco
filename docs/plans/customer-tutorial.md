@@ -255,7 +255,7 @@ Regressions are avoided by keeping the real pages' containers as thin wrappers a
 | 10 / 14 | myOrders | my-orders-list | Mis pedidos | Acá están todos tus pedidos con su estado. |
 | 11 / — | orderDetail (shipping) | order-journey | Seguís cada etapa | Tu pedido pasa por seis etapas, de la confirmación a la entrega, y te avisamos cada cambio. Suele tardar entre 7 y 10 días desde la preparación. |
 | — / 15 | orderDetail (submitted) | order-journey | Pedido confirmado | Tu pedido quedó registrado junto al de otros vecinos. |
-| — / 16 | orderDetail (preparation) | order-journey | Preparación | Coco agrupa los pedidos de todos para armar una sola compra mayorista. |
+| — / 16 | orderDetail (preparation) | order-journey | Preparación | CoCo agrupa los pedidos de todos para armar una sola compra grande. |
 | — / 17 | orderDetail (supplier) | order-journey | Proveedor | Le compramos al proveedor la cantidad total. El pedido sale desde origen, muchas veces desde otra provincia. |
 | — / 18 | orderDetail (packaging) | order-journey | Empaque | Se arma el paquete con tus productos, listo para viajar. |
 | — / 19 | orderDetail (shipping) | order-journey | Envío | El camión cruza a Chile, atraviesa el Estrecho de Magallanes en balsa, vuelve a la Argentina y cruza la cordillera hasta Ushuaia. |
