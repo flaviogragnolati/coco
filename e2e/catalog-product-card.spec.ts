@@ -190,6 +190,65 @@ test("the product detail has a single close control and no filler texts", async 
 	await expect(page).not.toHaveURL(/[?&]product=/);
 });
 
+test("on a phone the product description sits under the title, above the photo, and stays out of the order", async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto("/products");
+	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
+	const titles = page.locator("main [data-slot='card'] h2");
+	const names = await titles.allTextContents();
+	test.skip(names.length === 0, "The current fixture has no products.");
+
+	const dialog = page.getByRole("dialog");
+	let description: string | null = null;
+	for (const name of names) {
+		await titles.getByRole("button", { name, exact: true }).click();
+		await expect(
+			dialog.getByRole("heading", { name, exact: true }),
+		).toBeVisible({ timeout: 15_000 });
+		await expect(dialog.locator("[data-slot='skeleton']")).toHaveCount(0);
+		const shown = dialog.getByTestId("product-detail-description");
+		if ((await shown.count()) > 0) {
+			description = await shown.textContent();
+			break;
+		}
+		await dialog.getByRole("button", { name: "Cerrar" }).click();
+		await expect(dialog).toHaveCount(0);
+	}
+	test.skip(
+		!description,
+		"No product in the fixture has a description other than its name.",
+	);
+
+	const header = dialog.locator("[data-slot='dialog-header']");
+	const shown = header.getByTestId("product-detail-description");
+	await expect(shown).toBeVisible();
+	const titleBox = await header.getByRole("heading").boundingBox();
+	const descriptionBox = await shown.boundingBox();
+	const bodyBox = await dialog
+		.locator("[data-slot='dialog-header'] + div")
+		.boundingBox();
+	expect(titleBox && descriptionBox && bodyBox).toBeTruthy();
+	if (titleBox && descriptionBox && bodyBox) {
+		expect(descriptionBox.y).toBeGreaterThan(titleBox.y);
+		expect(descriptionBox.y + descriptionBox.height).toBeLessThanOrEqual(
+			bodyBox.y + 1,
+		);
+	}
+
+	await dialog
+		.getByRole("button", { name: "Sumar al pedido", exact: true })
+		.click();
+	await expect(dialog).toHaveCount(0);
+	await page.goto("/cart");
+	await expect(page.locator("main [data-slot='skeleton']")).toHaveCount(0);
+	await expect(page.getByRole("button", { name: /^Quitar / })).not.toHaveCount(
+		0,
+	);
+	await expect(page.locator("main")).not.toContainText(description ?? "");
+});
+
 test("large product photos carry the illustrative legend, placeholders and thumbnails do not", async ({
 	page,
 }) => {

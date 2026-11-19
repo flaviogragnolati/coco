@@ -17,6 +17,19 @@ import { nullishText, optionalUrl, requiredText } from "./_crud-schema-helpers";
 
 const imageUrlSchema = z.string().trim().url("Ingresá una URL válida");
 
+/** The short quality-and-uses blurb the product detail shows under the title. */
+export const PRODUCT_DESCRIPTION_MAX_LENGTH = 200;
+
+const productDescriptionSchema = nullishText.pipe(
+	z
+		.string()
+		.max(
+			PRODUCT_DESCRIPTION_MAX_LENGTH,
+			`La descripción no puede superar los ${PRODUCT_DESCRIPTION_MAX_LENGTH} caracteres`,
+		)
+		.optional(),
+);
+
 const productReferenceBrandSchema = z.object({
 	id: brandIdSchema,
 	name: z.string(),
@@ -99,7 +112,7 @@ function validatePresentation(
 
 const productInputFieldsSchema = z.object({
 	name: requiredText("El nombre es obligatorio"),
-	description: nullishText,
+	description: productDescriptionSchema,
 	cartImageUrl: optionalUrl,
 	cardImageUrl: optionalUrl,
 	images: z.array(imageUrlSchema).default([]),

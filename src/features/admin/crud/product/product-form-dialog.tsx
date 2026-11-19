@@ -24,7 +24,10 @@ import { Textarea } from "~/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { CrudFormDialogShell } from "~/features/admin/crud/_components/crud-form-dialog-shell";
 import { CrudStatusBadge } from "~/features/admin/crud/_components/crud-status-badge";
-import { productCreateInputSchema } from "~/schemas/admin/product.schemas";
+import {
+	PRODUCT_DESCRIPTION_MAX_LENGTH,
+	productCreateInputSchema,
+} from "~/schemas/admin/product.schemas";
 import type { BrandListItem } from "~/shared/common/admin-crud/brand.types";
 import type { CategoryListItem } from "~/shared/common/admin-crud/category.types";
 import type { CrudModalMode } from "~/shared/common/admin-crud/crud.types";
@@ -145,6 +148,7 @@ export function ProductFormDialog({
 			: defaultInlineBrand;
 	const title = mode === "create" ? "Agregar producto" : "Editar producto";
 	const soldByWeight = isWeightUnit(form.watch("unit"));
+	const descriptionLength = (form.watch("description") ?? "").length;
 
 	useEffect(() => {
 		if (!open) return;
@@ -418,11 +422,25 @@ export function ProductFormDialog({
 						<Field data-invalid={Boolean(errors.description)}>
 							<FieldLabel htmlFor="product-description">Descripción</FieldLabel>
 							<Textarea
+								aria-describedby="product-description-help"
 								aria-invalid={Boolean(errors.description)}
 								disabled={isSubmitting}
 								id="product-description"
+								maxLength={PRODUCT_DESCRIPTION_MAX_LENGTH}
 								{...form.register("description")}
 							/>
+							<FieldDescription
+								className="flex justify-between gap-3"
+								id="product-description-help"
+							>
+								<span>
+									Calidad y usos, en una o dos frases. El cliente la ve en la
+									ficha, debajo del nombre.
+								</span>
+								<span className="shrink-0 tabular-nums">
+									{descriptionLength}/{PRODUCT_DESCRIPTION_MAX_LENGTH}
+								</span>
+							</FieldDescription>
 							<FieldError errors={[errors.description]} />
 						</Field>
 					</FieldGroup>

@@ -222,6 +222,9 @@ export function ProductsClient({
 						Elegí productos y cantidades, y sumate a compras mayoristas
 						compartidas.
 					</p>
+					<p className="text-muted-foreground text-sm/relaxed">
+						Seleccionamos productos de primera calidad.
+					</p>
 				</div>
 			</section>
 

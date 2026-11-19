@@ -11,7 +11,6 @@ import {
 	formatCurrency,
 	formatQuantity,
 } from "~/shared/common/commerce.helpers";
-import { visibleProductDescription } from "~/shared/common/product-description";
 
 type CartLineRowProps = {
 	item: CartItem;
@@ -129,11 +128,6 @@ export function CartLineRow({
 		);
 	}
 
-	const description = visibleProductDescription(
-		item.product.description,
-		item.product.name,
-	);
-
 	return (
 		<div className="grid gap-3 rounded-3xl bg-card p-3 shadow-sm ring-1 ring-foreground/5 sm:grid-cols-[auto_1fr_auto] dark:ring-foreground/10">
 			<div className="flex gap-3">
@@ -156,11 +150,6 @@ export function CartLineRow({
 						</span>
 					) : null}
 				</div>
-				{description ? (
-					<p className="line-clamp-2 text-muted-foreground text-xs/relaxed">
-						{description}
-					</p>
-				) : null}
 				{readOnly ? (
 					<span className="text-muted-foreground text-sm">
 						{formatQuantity(item.quantity, item.product.unit, item.product)}

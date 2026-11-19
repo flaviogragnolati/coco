@@ -212,6 +212,10 @@ _Avoid_: Store, product list
 The catalog group a product belongs to, such as "Frutos secos" or "Suplementos", with the position it is listed in. Every product has exactly one; an admin maintains them, and an inactive or deleted category is hidden from customers while its products stay purchasable. The storefront navigation lists active categories with a currently purchasable product, in their configured order, and opens the catalog filtered by that category. It may record the background color of its product photos, which only tints the illustrative legend. Not the heading of a supplier's price list, which only feeds the mapping. Spanish-facing UI labels it "Categoría".
 _Avoid_: Rubro, family, heading
 
+**Product description**:
+A short note on a product's quality and uses, at most 200 characters, written by CoCo and kept on the product by an admin. Customers read it only in the product detail, right under the name; catalog cards and the order lines never show it. One that is missing or only repeats the product name is not shown. Spanish-facing UI labels it "Descripción".
+_Avoid_: Ficha técnica, product copy
+
 **Illustrative legend**:
 The "Imagen ilustrativa" caption the storefront draws over large product photos — catalog and home cards, the home spotlight, the product detail's main photo and the admin preview — never over thumbnails or a missing photo. It is drawn on screen, not stamped into the stored file, so a downloaded photo lacks it. Its tone is a dark shade of the product's category photo background color, or neutral gray when the category has none or is hidden from customers. Spanish-facing UI labels it "Imagen ilustrativa".
 _Avoid_: Watermark, marca de agua, stamped image

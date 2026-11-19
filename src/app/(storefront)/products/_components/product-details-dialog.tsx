@@ -104,6 +104,14 @@ export function ProductDetailsDialog({
 							compartida.
 						</DialogDescription>
 					)}
+					{description ? (
+						<p
+							className="text-foreground/80 text-sm/relaxed"
+							data-testid="product-detail-description"
+						>
+							{description}
+						</p>
+					) : null}
 				</DialogHeader>
 
 				<div
@@ -177,11 +185,6 @@ export function ProductDetailsDialog({
 									) : null}
 								</div>
 								<div className="flex flex-col gap-4">
-									{description ? (
-										<p className="text-muted-foreground text-sm/relaxed">
-											{description}
-										</p>
-									) : null}
 									<CatalogProductPurchase
 										disabled={disabled}
 										inCartQuantity={
