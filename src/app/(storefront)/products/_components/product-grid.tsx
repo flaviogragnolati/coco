@@ -1,10 +1,10 @@
 "use client";
 
+import { ProductCardGrid } from "~/features/catalog/_components/product-card-grid";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
-import type { CatalogPurchaseHandlers } from "./catalog-product-purchase";
-import { ProductCard } from "./product-card";
+import { ProductCard, type ProductCardHandlers } from "./product-card";
 
-type ProductGridProps = CatalogPurchaseHandlers & {
+type ProductGridProps = ProductCardHandlers & {
 	/** Quantities already in the order, by terms id. */
 	cartQuantities: Map<number, string>;
 	disabled?: boolean;
@@ -18,10 +18,11 @@ export function ProductGrid({
 	products,
 	onAdd,
 	onDetails,
-	onViewInCart,
+	onQuantityChange,
+	onRemove,
 }: ProductGridProps) {
 	return (
-		<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+		<ProductCardGrid>
 			{products.map((product) => (
 				<ProductCard
 					disabled={disabled}
@@ -29,10 +30,11 @@ export function ProductGrid({
 					key={product.id}
 					onAdd={onAdd}
 					onDetails={onDetails}
-					onViewInCart={onViewInCart}
+					onQuantityChange={onQuantityChange}
+					onRemove={onRemove}
 					product={product}
 				/>
 			))}
-		</div>
+		</ProductCardGrid>
 	);
 }

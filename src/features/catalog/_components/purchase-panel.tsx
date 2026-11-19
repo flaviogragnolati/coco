@@ -40,7 +40,7 @@ export function usePurchaseQuantity(terms: CatalogClientTerms) {
 type PurchasePanelSize = "compact" | "default" | "hero";
 
 const headlineSizeClassName: Record<PurchasePanelSize, string> = {
-	compact: "text-2xl",
+	compact: "text-base sm:text-lg",
 	default: "text-3xl",
 	hero: "text-4xl",
 };
@@ -67,7 +67,13 @@ export function PurchasePrice({
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="flex flex-col gap-0.5">
-				<p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+				{/* Compact, the price and its step share a line at half a phone's width. */}
+				<p
+					className={cn(
+						"flex flex-wrap items-baseline gap-y-1",
+						size === "compact" ? "gap-x-1" : "gap-x-2",
+					)}
+				>
 					<span
 						className={cn(
 							"font-bold font-heading tracking-tight",
@@ -76,7 +82,12 @@ export function PurchasePrice({
 					>
 						{price.amount}
 					</span>{" "}
-					<span className="text-muted-foreground text-sm">
+					<span
+						className={cn(
+							"text-muted-foreground",
+							size === "compact" ? "text-xs sm:text-sm" : "text-sm",
+						)}
+					>
 						{price.unitLabel}
 					</span>{" "}
 					{price.previousAmount ? (
@@ -124,20 +135,15 @@ export function PurchaseActionButton({
 	inCart,
 	onAdd,
 	onViewInCart,
-	size = "default",
 }: {
 	disabled?: boolean;
 	inCart: boolean;
 	onAdd: () => void;
 	onViewInCart: () => void;
-	size?: "default" | "compact";
 }) {
 	return (
 		<Button
-			className={cn(
-				"w-full rounded-full",
-				size === "compact" ? "h-11 sm:h-10" : "h-11",
-			)}
+			className="h-11 w-full rounded-full"
 			disabled={disabled}
 			onClick={inCart ? onViewInCart : onAdd}
 			size="lg"
@@ -161,15 +167,15 @@ type PurchasePanelProps = {
 	/** The full-width button, usually a `PurchaseActionButton`. */
 	action?: ReactNode;
 	disabled?: boolean;
-	size?: PurchasePanelSize;
+	size?: "default" | "hero";
 	showDiscount?: boolean;
 	transferDiscountPercent?: number | null;
 };
 
 /**
- * Price, quantity and action, top to bottom. The total is only announced to
- * screen readers; the order shows it once added. The panel takes the free space
- * above itself so the buttons of a row of cards line up.
+ * Price, quantity and action, top to bottom: the product dialog's and the home
+ * spotlight's, where there is room to pick a quantity before adding. The total
+ * is only announced to screen readers; the order shows it once added.
  */
 export function PurchasePanel({
 	terms,
@@ -186,12 +192,7 @@ export function PurchasePanel({
 }: PurchasePanelProps) {
 	const mode = getPurchasePanelMode(terms, inCartQuantity);
 	return (
-		<div
-			className={cn(
-				"mt-auto flex flex-col",
-				size === "compact" ? "gap-2" : "gap-3",
-			)}
-		>
+		<div className="mt-auto flex flex-col gap-3">
 			<PurchasePrice
 				pricing={toOfferPricing(terms, unit, presentation)}
 				showDiscount={showDiscount}
@@ -220,7 +221,7 @@ export function PurchasePanel({
 						}
 						presentation={presentation}
 						showUnit={showsQuantityUnit(unit)}
-						size={size === "compact" ? "md" : "lg"}
+						size="lg"
 						terms={terms}
 						unit={unit}
 						value={quantity}

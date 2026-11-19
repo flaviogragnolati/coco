@@ -2,6 +2,11 @@ import type { HomeFeature } from "~/shared/common/home.types";
 import { HomeComboCard } from "./home-combo-card";
 import { HomeOfferAddButton } from "./home-offer-add-button";
 import { HomeOfferCard } from "./home-offer-card";
+import { HomeOfferCompactPurchase } from "./home-offer-compact-purchase";
+import {
+	HomeOfferPurchasePanel,
+	HomeOfferQuantityProvider,
+} from "./home-offer-quantity";
 
 export function HomeFeatureCard({
 	feature,
@@ -25,18 +30,30 @@ export function HomeFeatureCard({
 		);
 	}
 
+	const { offer } = feature;
 	return (
-		<HomeOfferCard
-			action={
-				<HomeOfferAddButton
+		<HomeOfferCard offer={offer} size={size}>
+			{size === "hero" ? (
+				<HomeOfferQuantityProvider offer={offer}>
+					<HomeOfferPurchasePanel
+						action={
+							<HomeOfferAddButton
+								isAuthenticated={isAuthenticated}
+								offer={offer}
+								userId={userId}
+							/>
+						}
+						offer={offer}
+						size="hero"
+					/>
+				</HomeOfferQuantityProvider>
+			) : (
+				<HomeOfferCompactPurchase
 					isAuthenticated={isAuthenticated}
-					offer={feature.offer}
-					size={size === "hero" ? "default" : "compact"}
+					offer={offer}
 					userId={userId}
 				/>
-			}
-			offer={feature.offer}
-			size={size}
-		/>
+			)}
+		</HomeOfferCard>
 	);
 }

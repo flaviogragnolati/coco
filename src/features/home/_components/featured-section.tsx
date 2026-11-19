@@ -11,6 +11,10 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
+import {
+	ProductCardGrid,
+	productCardGridWideItem,
+} from "~/features/catalog/_components/product-card-grid";
 import type { HomeFeature } from "~/shared/common/home.types";
 import { HomeFeatureCard } from "./home-feature-card";
 import { SectionHeading } from "./section-heading";
@@ -46,16 +50,31 @@ export function FeaturedSection({
 					title="Destacados de la semana"
 				/>
 				{featured.length > 0 ? (
-					<div className="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-5">
-						{featured.map((feature) => (
-							<HomeFeatureCard
-								feature={feature}
-								isAuthenticated={isAuthenticated}
-								key={featureKey(feature)}
-								userId={userId}
-							/>
-						))}
-					</div>
+					// Dense packing lets a product fill the half row a combo would
+					// otherwise leave empty on a phone.
+					<ProductCardGrid className="grid-flow-row-dense">
+						{featured.map((feature) =>
+							feature.kind === "combo" ? (
+								<div
+									className={productCardGridWideItem}
+									key={featureKey(feature)}
+								>
+									<HomeFeatureCard
+										feature={feature}
+										isAuthenticated={isAuthenticated}
+										userId={userId}
+									/>
+								</div>
+							) : (
+								<HomeFeatureCard
+									feature={feature}
+									isAuthenticated={isAuthenticated}
+									key={featureKey(feature)}
+									userId={userId}
+								/>
+							),
+						)}
+					</ProductCardGrid>
 				) : (
 					<Empty className="border bg-brand-warm text-brand-warm-foreground">
 						<EmptyHeader>

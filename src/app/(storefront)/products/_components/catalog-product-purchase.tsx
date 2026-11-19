@@ -18,7 +18,6 @@ export function CatalogProductPurchase({
 	inCartQuantity,
 	product,
 	showDiscount,
-	size,
 	transferDiscountPercent,
 	onAdd,
 	onViewInCart,
@@ -27,7 +26,6 @@ export function CatalogProductPurchase({
 	inCartQuantity: string | null;
 	product: CatalogProductListItem;
 	showDiscount?: boolean;
-	size?: "compact" | "default";
 	transferDiscountPercent?: number | null;
 }) {
 	const [quantity, setQuantity] = usePurchaseQuantity(product.terms);
@@ -39,7 +37,6 @@ export function CatalogProductPurchase({
 					inCart={inCartQuantity !== null}
 					onAdd={() => onAdd(product, quantity)}
 					onViewInCart={onViewInCart}
-					size={size}
 				/>
 			}
 			disabled={disabled}
@@ -48,7 +45,6 @@ export function CatalogProductPurchase({
 			presentation={product}
 			quantity={quantity}
 			showDiscount={showDiscount}
-			size={size}
 			terms={product.terms}
 			transferDiscountPercent={transferDiscountPercent}
 			unit={product.unit}

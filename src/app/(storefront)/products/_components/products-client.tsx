@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "~/components/ui/skeleton";
 import { catalogProductToCartItem } from "~/features/cart/cart-mappers";
 import { useCartActions } from "~/features/cart/use-cart-sync";
+import { ProductCardGrid } from "~/features/catalog/_components/product-card-grid";
 import type { CatalogProductListItem } from "~/shared/common/catalog.types";
 import { useCartStore } from "~/store/cart-store";
 import { useCartUiStore } from "~/store/cart-ui-store";
@@ -46,20 +47,19 @@ const cardSkeletonKeys = ["a", "b", "c", "d", "e", "f"];
 
 function ProductGridSkeleton() {
 	return (
-		<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+		<ProductCardGrid>
 			{cardSkeletonKeys.map((key) => (
 				<div
-					className="flex flex-col gap-3 rounded-4xl bg-card p-4 shadow-md ring-1 ring-foreground/5"
+					className="flex flex-col gap-3 rounded-4xl bg-card p-3 shadow-md ring-1 ring-foreground/5 sm:p-4"
 					key={key}
 				>
 					<Skeleton className="aspect-square w-full rounded-2xl" />
 					<Skeleton className="h-5 w-2/3" />
-					<Skeleton className="h-12 w-1/2 rounded-2xl" />
-					<Skeleton className="h-10 w-full rounded-3xl" />
+					<Skeleton className="h-10 w-1/2 rounded-2xl" />
 					<Skeleton className="h-10 w-full rounded-3xl" />
 				</div>
 			))}
-		</div>
+		</ProductCardGrid>
 	);
 }
 
@@ -85,6 +85,10 @@ export function ProductsClient({
 	);
 
 	const cartItems = cartActions.cart.items;
+	const cartItemsByTerms = useMemo(
+		() => new Map(cartItems.map((item) => [item.productClientTermsId, item])),
+		[cartItems],
+	);
 	const cartQuantities = useMemo(
 		() =>
 			new Map(
@@ -140,6 +144,14 @@ export function ProductsClient({
 		openMiniCart();
 	};
 
+	const handleQuantityChange = (
+		product: CatalogProductListItem,
+		quantity: string,
+	) => {
+		const item = cartItemsByTerms.get(product.terms.id);
+		if (item) cartActions.updateQuantity(item, quantity);
+	};
+
 	const sidebarProps = {
 		brands: brandFacets,
 		filters,
@@ -155,7 +167,9 @@ export function ProductsClient({
 		disabled: cartActions.isPending || !hasHydrated,
 		onAdd: handleAdd,
 		onDetails: params.setProductId,
-		onViewInCart: openMiniCart,
+		onQuantityChange: handleQuantityChange,
+		onRemove: (product: CatalogProductListItem) =>
+			cartActions.removeItem(product.terms.id),
 	};
 
 	let content: React.ReactNode;

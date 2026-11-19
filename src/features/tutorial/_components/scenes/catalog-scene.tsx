@@ -13,6 +13,7 @@ import { CatalogFiltersSidebar } from "~/app/(storefront)/products/_components/c
 import { CatalogToolbar } from "~/app/(storefront)/products/_components/catalog-toolbar";
 import { ProductCard } from "~/app/(storefront)/products/_components/product-card";
 import { CartSheetView } from "~/features/cart/_components/cart-sheet-view";
+import { ProductCardGrid } from "~/features/catalog/_components/product-card-grid";
 import {
 	TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
 	type TutorialFixtures,
@@ -100,7 +101,7 @@ export function CatalogScene({
 							value={null}
 						/>
 					</div>
-					<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+					<ProductCardGrid>
 						{products.map((product) => {
 							const card = (
 								<ProductCard
@@ -110,7 +111,8 @@ export function CatalogScene({
 									key={product.id}
 									onAdd={noop}
 									onDetails={noop}
-									onViewInCart={noop}
+									onQuantityChange={noop}
+									onRemove={noop}
 									product={product}
 								/>
 							);
@@ -127,7 +129,7 @@ export function CatalogScene({
 								card
 							);
 						})}
-					</div>
+					</ProductCardGrid>
 				</div>
 			</div>
 

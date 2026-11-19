@@ -19,11 +19,10 @@ import {
 } from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
+import { homeOfferTerms } from "~/features/cart/cart-mappers";
+import { CompactPurchase } from "~/features/catalog/_components/compact-purchase";
 import { ProductImage } from "~/features/catalog/_components/product-image";
-import {
-	PurchaseActionButton,
-	PurchasePrice,
-} from "~/features/catalog/_components/purchase-panel";
+import { PurchasePrice } from "~/features/catalog/_components/purchase-panel";
 import { toOfferPricing } from "~/features/catalog/purchase-panel";
 import { HomeOfferCard } from "~/features/home/_components/home-offer-card";
 import type { ProductPreview } from "~/shared/common/admin-crud/product.types";
@@ -211,13 +210,14 @@ export function ProductPreviewDialog({
 							</TabsList>
 							<TabsContent value="card">
 								{preview.catalogProduct ? (
-									<div className="max-w-sm">
+									<div className="max-w-56">
 										<ProductCard
 											disabled
 											inCartQuantity={null}
 											onAdd={ignore}
 											onDetails={ignore}
-											onViewInCart={ignore}
+											onQuantityChange={ignore}
+											onRemove={ignore}
 											product={preview.catalogProduct}
 										/>
 									</div>
@@ -248,20 +248,20 @@ export function ProductPreviewDialog({
 							</TabsContent>
 							<TabsContent value="home">
 								{preview.homeOffer ? (
-									<div className="max-w-md">
-										<HomeOfferCard
-											action={
-												<PurchaseActionButton
-													disabled
-													inCart={false}
-													onAdd={ignore}
-													onViewInCart={ignore}
-													size="compact"
-												/>
-											}
-											ignoreCart
-											offer={preview.homeOffer}
-										/>
+									<div className="max-w-56">
+										<HomeOfferCard offer={preview.homeOffer}>
+											<CompactPurchase
+												disabled
+												inCartQuantity={null}
+												name={preview.homeOffer.productName}
+												onAdd={ignore}
+												onQuantityChange={ignore}
+												onRemove={ignore}
+												presentation={preview.homeOffer}
+												terms={homeOfferTerms(preview.homeOffer)}
+												unit={preview.homeOffer.unit}
+											/>
+										</HomeOfferCard>
 									</div>
 								) : (
 									<PreviewUnavailable
