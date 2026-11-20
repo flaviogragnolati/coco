@@ -12,9 +12,13 @@ import { Skeleton } from "~/components/ui/skeleton";
 
 export function CrudLoadingState({ rows = 6 }: { rows?: number }) {
 	return (
-		<div className="flex flex-col gap-2 rounded-2xl border p-3">
+		<div
+			aria-busy="true"
+			className="flex flex-col gap-2 rounded-2xl border bg-card p-3"
+		>
+			<span className="sr-only">Cargando</span>
 			{Array.from({ length: rows }).map((_, index) => (
-				<Skeleton className="h-8 w-full" key={index.toString()} />
+				<Skeleton className="h-9 w-full rounded-lg" key={index.toString()} />
 			))}
 		</div>
 	);

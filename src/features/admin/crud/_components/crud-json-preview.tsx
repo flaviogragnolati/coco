@@ -15,7 +15,7 @@ export function JsonPreview({
 	}
 
 	return (
-		<pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-2 font-mono text-[11px]">
+		<pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-xl border bg-muted/30 p-3 font-mono text-[11px]">
 			{JSON.stringify(value, null, 2)}
 		</pre>
 	);

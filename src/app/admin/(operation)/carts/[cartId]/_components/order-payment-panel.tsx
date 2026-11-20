@@ -3,6 +3,12 @@
 import { useState } from "react";
 
 import { Button } from "~/components/ui/button";
+import {
+	DetailEmpty,
+	DetailItem,
+	DetailSection,
+	DetailSectionTitle,
+} from "~/features/admin/crud/_components/crud-detail";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import {
 	orderStatusConfig,
@@ -22,22 +28,25 @@ import { api } from "~/trpc/react";
 
 function PaymentRow({ payment }: { payment: CartTraceabilityPayment }) {
 	return (
-		<li className="grid gap-2 rounded-lg border p-2 md:grid-cols-[1fr_auto]">
-			<div className="flex flex-col gap-1">
-				<span className="font-medium">
-					{payment.amount} {payment.currency}
-				</span>
-				<span className="text-muted-foreground text-xs">
-					{payment.provider} / {payment.paymentMethodType}
-				</span>
-				<span className="font-mono text-[11px] text-muted-foreground">
-					Pago #{payment.id} /{" "}
-					{formatDateTimeShort(new Date(payment.createdAt))}
-				</span>
-			</div>
-			<div className="flex items-start">
+		<li>
+			<DetailItem className="flex flex-wrap items-start justify-between gap-2">
+				<div className="flex flex-col gap-1">
+					<span className="font-semibold text-sm tabular-nums">
+						{payment.amount}{" "}
+						<span className="font-normal text-muted-foreground">
+							{payment.currency}
+						</span>
+					</span>
+					<span className="text-muted-foreground text-xs">
+						{payment.provider} / {payment.paymentMethodType}
+					</span>
+					<span className="text-muted-foreground text-xs">
+						Pago <span className="font-mono">#{payment.id}</span> ·{" "}
+						{formatDateTimeShort(new Date(payment.createdAt))}
+					</span>
+				</div>
 				<StatusChip config={transactionStatusConfig[payment.status]} />
-			</div>
+			</DetailItem>
 		</li>
 	);
 }
@@ -48,9 +57,9 @@ function OrderDeliveryBlock({ order }: { order: CartTraceabilityOrder }) {
 	const delivery = describeOrderDelivery(order);
 
 	return (
-		<div className="flex flex-col gap-1">
+		<div className="flex flex-col gap-1.5">
 			<div className="flex items-center justify-between gap-2">
-				<span className="text-muted-foreground text-xs">Entrega</span>
+				<DetailSectionTitle>Entrega</DetailSectionTitle>
 				{order.status === "processing" ? (
 					<Button
 						onClick={() => setDialogOpen(true)}
@@ -62,7 +71,7 @@ function OrderDeliveryBlock({ order }: { order: CartTraceabilityOrder }) {
 					</Button>
 				) : null}
 			</div>
-			<span className="text-xs">
+			<span className="text-sm">
 				{delivery
 					? formatOrderDelivery(delivery)
 					: "Sin elección (pedido anterior al checkout con entrega)"}
@@ -91,12 +100,13 @@ function OrderDeliveryBlock({ order }: { order: CartTraceabilityOrder }) {
 
 function OrderCard({ order }: { order: CartTraceabilityOrder }) {
 	return (
-		<article className="flex flex-col gap-2 rounded-2xl border p-3">
-			<div className="flex flex-wrap items-center justify-between gap-2">
+		<DetailSection>
+			<div className="flex flex-wrap items-start justify-between gap-2">
 				<div className="flex flex-col gap-1">
-					<span className="font-mono">{order.code}</span>
+					<span className="font-medium font-mono">{order.code}</span>
 					<span className="text-muted-foreground text-xs">
-						#{order.id} / {formatDateTimeShort(new Date(order.createdAt))}
+						<span className="font-mono">#{order.id}</span> ·{" "}
+						{formatDateTimeShort(new Date(order.createdAt))}
 					</span>
 				</div>
 				<StatusChip config={orderStatusConfig[order.status]} />
@@ -105,7 +115,7 @@ function OrderCard({ order }: { order: CartTraceabilityOrder }) {
 			<OrderDeliveryBlock order={order} />
 
 			<div className="flex flex-col gap-2">
-				<span className="text-muted-foreground text-xs">Intentos de pago</span>
+				<DetailSectionTitle>Intentos de pago</DetailSectionTitle>
 				{order.payments.length > 0 ? (
 					<ul className="flex flex-col gap-2">
 						{order.payments.map((payment) => (
@@ -113,10 +123,10 @@ function OrderCard({ order }: { order: CartTraceabilityOrder }) {
 						))}
 					</ul>
 				) : (
-					<span className="text-muted-foreground text-xs">Sin pagos</span>
+					<DetailEmpty>Sin pagos</DetailEmpty>
 				)}
 			</div>
-		</article>
+		</DetailSection>
 	);
 }
 
@@ -135,9 +145,9 @@ export function OrderPaymentPanel({
 					))}
 				</div>
 			) : (
-				<div className="rounded-2xl border p-3 text-muted-foreground text-sm">
-					Este carrito todavia no genero ordenes ni pagos.
-				</div>
+				<DetailEmpty>
+					Este carrito todavía no generó órdenes ni pagos.
+				</DetailEmpty>
 			)}
 		</section>
 	);

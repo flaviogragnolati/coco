@@ -271,7 +271,7 @@ export function UserFormDialog({
 
 									return (
 										<div
-											className="flex flex-col gap-4 rounded-lg border p-4"
+											className="flex flex-col gap-4 rounded-xl border p-4"
 											key={field.id}
 										>
 											<div className="flex items-center justify-between gap-3">

@@ -190,7 +190,7 @@ function Totals({
 		<div className="grid grid-cols-2 gap-2 md:grid-cols-5">
 			{cells.map((cell) => (
 				<div
-					className="rounded-md border bg-muted/40 px-3 py-2"
+					className="rounded-xl border bg-muted/40 px-3 py-2"
 					key={cell.label}
 				>
 					<p className="text-muted-foreground text-xs">{cell.label}</p>
@@ -382,7 +382,7 @@ export function OperationReviewDialog({
 		return (
 			<div className="flex flex-col gap-4">
 				{conflict ? (
-					<div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
+					<div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2">
 						<AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-warning" />
 						<p className="text-sm">
 							{conflict} La lista de abajo ya es la demanda actual.
@@ -390,7 +390,7 @@ export function OperationReviewDialog({
 					</div>
 				) : null}
 
-				<div className="grid gap-3 rounded-md border p-3 md:grid-cols-4">
+				<div className="grid gap-3 rounded-xl border p-3 md:grid-cols-4">
 					<Field>
 						<FieldLabel htmlFor="review-from">Desde</FieldLabel>
 						<Input
@@ -480,7 +480,7 @@ export function OperationReviewDialog({
 					})}
 				/>
 
-				<div className="rounded-md border p-3">
+				<div className="rounded-xl border p-3">
 					<p className="mb-2 font-medium text-sm">
 						Lotes y órdenes que se crearían
 					</p>
@@ -506,7 +506,7 @@ export function OperationReviewDialog({
 					)}
 				</div>
 
-				<div className="max-h-[45vh] overflow-auto rounded-md border">
+				<div className="max-h-[45vh] overflow-auto rounded-xl border">
 					<Table>
 						<TableHeader>
 							<TableRow>

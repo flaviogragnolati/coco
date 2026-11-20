@@ -46,8 +46,8 @@ export function CartTraceabilitySearchCard() {
 					Trazabilidad de carrito
 				</CardTitle>
 				<CardDescription>
-					Busca un carrito por codigo, usuario o producto y abri su lineage de
-					fulfillment completo.
+					Buscá un carrito por código, usuario o producto y abrí su recorrido
+					completo, desde el pedido hasta la entrega.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-3">
@@ -67,7 +67,7 @@ export function CartTraceabilitySearchCard() {
 
 				{submitted.length > 0 ? (
 					resultsQuery.isLoading ? (
-						<p className="text-muted-foreground text-xs">Buscando...</p>
+						<p className="text-muted-foreground text-xs">Buscando…</p>
 					) : results.length > 0 ? (
 						<ul className="flex flex-col gap-1">
 							{results.map((cart) => (

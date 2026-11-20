@@ -4,23 +4,22 @@ import Link from "next/link";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { CrudAvailableAction } from "~/features/admin/crud/_components/crud-available-action";
-import { JsonPreview } from "~/features/admin/crud/_components/crud-json-preview";
 import {
-	CrudErrorState,
-	CrudLoadingState,
-} from "~/features/admin/crud/_components/crud-state";
+	DetailDatesField,
+	DetailDiagnosticList,
+	DetailDisclosure,
+	DetailEmpty,
+	DetailField,
+	DetailGrid,
+	DetailItem,
+	DetailMetrics,
+	DetailSection,
+} from "~/features/admin/crud/_components/crud-detail";
+import { CrudDetailDialogShell } from "~/features/admin/crud/_components/crud-detail-dialog-shell";
+import { JsonPreview } from "~/features/admin/crud/_components/crud-json-preview";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
-import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
 import {
 	deliveryModeLabelMap,
 	shipmentStatusConfig,
@@ -43,78 +42,70 @@ const destructiveActions: ReadonlySet<CarrierOrderCommandKey> = new Set([
 	"hardDelete",
 ]);
 
-function optionalDate(value: Date | null, label: string) {
+function Hito({ value, label }: { value: Date | null; label: string }) {
 	return (
-		<p className="text-muted-foreground text-xs">
-			{value
-				? `${label} ${formatDateTimeShort(new Date(value))}`
-				: `Sin ${label.toLowerCase()}`}
-		</p>
+		<DetailField label={label}>
+			{value ? (
+				<span className="font-normal">
+					{formatDateTimeShort(new Date(value))}
+				</span>
+			) : (
+				<span className="font-normal text-muted-foreground">Sin fecha</span>
+			)}
+		</DetailField>
 	);
 }
 
 function Resumen({ carrierOrder }: { carrierOrder: CarrierOrderDetail }) {
 	return (
 		<div className="flex flex-col gap-3">
-			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
-				<div className="flex flex-col items-start gap-1">
-					<p className="text-muted-foreground text-xs">Estado</p>
-					<StatusChip config={carrierOrderStatusConfig[carrierOrder.status]} />
-					{carrierOrder.deleted ? (
-						<Badge variant="outline">Dada de baja</Badge>
-					) : null}
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Transportista</p>
-					<p className="font-medium">{carrierOrder.carrier.name}</p>
-					<p className="text-muted-foreground text-xs">
-						Carrier #{carrierOrder.carrier.id}
-					</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Referencia externa</p>
-					<p className="font-medium">
-						{carrierOrder.externalReference ?? "Sin referencia"}
-					</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Envíos</p>
-					<p className="font-medium">
-						{carrierOrder.liveShipmentCount} / {carrierOrder.shipmentCount}
-					</p>
-					<p className="text-muted-foreground text-xs">Activos / totales</p>
-				</div>
-			</section>
+			<DetailMetrics
+				columns={2}
+				items={[
+					{ label: "Envíos activos", value: carrierOrder.liveShipmentCount },
+					{ label: "Envíos totales", value: carrierOrder.shipmentCount },
+				]}
+			/>
 
-			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-2">
-				<div>
-					<p className="text-muted-foreground text-xs">Hitos</p>
-					{optionalDate(carrierOrder.requestedAt, "Solicitada")}
-					{optionalDate(carrierOrder.confirmedAt, "Confirmada")}
-					{optionalDate(carrierOrder.cancelledAt, "Cancelada")}
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Fechas</p>
-					<p className="text-xs">
-						Creada {formatDateTimeShort(new Date(carrierOrder.createdAt))}
-					</p>
-					<p className="text-muted-foreground text-xs">
-						Actualizada {formatDateTimeShort(new Date(carrierOrder.updatedAt))}
-					</p>
-				</div>
-			</section>
-
-			<details className="rounded-2xl border p-3">
-				<summary className="cursor-pointer font-medium text-sm">
-					Metadata
-				</summary>
-				<div className="mt-3">
-					<JsonPreview
-						emptyLabel="Sin metadata"
-						value={carrierOrder.metadata}
+			<DetailSection title="Datos de la orden">
+				<DetailGrid columns={3}>
+					<DetailField
+						hint={
+							<>
+								Transportista{" "}
+								<span className="font-mono">#{carrierOrder.carrier.id}</span>
+							</>
+						}
+						label="Transportista"
+					>
+						{carrierOrder.carrier.name}
+					</DetailField>
+					<DetailField label="Referencia externa">
+						{carrierOrder.externalReference ?? (
+							<span className="font-normal text-muted-foreground">
+								Sin referencia
+							</span>
+						)}
+					</DetailField>
+					<DetailDatesField
+						createdAt={carrierOrder.createdAt}
+						feminine
+						updatedAt={carrierOrder.updatedAt}
 					/>
-				</div>
-			</details>
+				</DetailGrid>
+			</DetailSection>
+
+			<DetailSection title="Hitos">
+				<DetailGrid columns={3}>
+					<Hito label="Solicitada" value={carrierOrder.requestedAt} />
+					<Hito label="Confirmada" value={carrierOrder.confirmedAt} />
+					<Hito label="Cancelada" value={carrierOrder.cancelledAt} />
+				</DetailGrid>
+			</DetailSection>
+
+			<DetailDisclosure title="Datos técnicos: metadatos">
+				<JsonPreview emptyLabel="Sin metadatos" value={carrierOrder.metadata} />
+			</DetailDisclosure>
 		</div>
 	);
 }
@@ -131,23 +122,22 @@ function Envios({
 	onRemoveShipment: (shipmentId: number) => void;
 }) {
 	if (carrierOrder.shipments.length === 0) {
-		return (
-			<p className="text-muted-foreground text-xs">
-				La orden no tiene envíos asociados.
-			</p>
-		);
+		return <DetailEmpty>La orden no tiene envíos asociados.</DetailEmpty>;
 	}
 
 	return (
 		<section className="flex flex-col gap-2">
 			{carrierOrder.shipments.map((shipment) => (
-				<div
-					className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+				<DetailItem
+					className="flex flex-wrap items-center justify-between gap-2"
 					key={shipment.id}
 				>
 					<div className="flex flex-col gap-1">
 						<span className="font-medium">
-							{shipment.internalCode} · {shipment.name}
+							<span className="font-mono text-muted-foreground text-xs">
+								{shipment.internalCode}
+							</span>{" "}
+							{shipment.name}
 						</span>
 						<span className="text-muted-foreground text-xs">
 							{shipmentTypeLabelMap[shipment.type]}
@@ -172,30 +162,14 @@ function Envios({
 							reason={removeReason}
 						/>
 					</div>
-				</div>
+				</DetailItem>
 			))}
 		</section>
 	);
 }
 
 function Diagnosticos({ carrierOrder }: { carrierOrder: CarrierOrderDetail }) {
-	if (carrierOrder.diagnostics.length === 0) {
-		return <p className="text-muted-foreground text-xs">Sin diagnósticos</p>;
-	}
-
-	return (
-		<section className="flex flex-col gap-2">
-			{carrierOrder.diagnostics.map((diagnostic) => (
-				<div className="text-xs" key={diagnostic.code}>
-					<DiagnosticDetailChip
-						code={diagnostic.code}
-						severity={diagnostic.severity}
-					/>
-					<p className="mt-1">{diagnostic.message}</p>
-				</div>
-			))}
-		</section>
-	);
+	return <DetailDiagnosticList diagnostics={carrierOrder.diagnostics} />;
 }
 
 export function CarrierOrderDetailDialog({
@@ -220,66 +194,72 @@ export function CarrierOrderDetailDialog({
 	);
 
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
-				<DialogHeader>
-					<DialogTitle>
-						{carrierOrder
-							? carrierOrder.code
-							: "Detalle de orden de transporte"}
-					</DialogTitle>
-					<DialogDescription>
-						Contratación del transporte: envíos asociados, hitos y diagnósticos.
-					</DialogDescription>
-				</DialogHeader>
-
-				{isLoading ? <CrudLoadingState rows={4} /> : null}
-				{!isLoading && errorMessage ? (
-					<CrudErrorState message={errorMessage} />
-				) : null}
-				{!isLoading && carrierOrder ? (
-					<Tabs className="w-full" defaultValue="resumen">
-						<TabsList className="flex-wrap" variant="line">
-							<TabsTrigger value="resumen">Resumen</TabsTrigger>
-							<TabsTrigger value="envios">
-								Envíos ({carrierOrder.shipments.length})
-							</TabsTrigger>
-							<TabsTrigger value="diagnosticos">Diagnósticos</TabsTrigger>
-						</TabsList>
-						<TabsContent value="resumen">
-							<Resumen carrierOrder={carrierOrder} />
-						</TabsContent>
-						<TabsContent value="envios">
-							<Envios
-								canRemove={removeState?.enabled ?? false}
-								carrierOrder={carrierOrder}
-								onRemoveShipment={onRemoveShipment}
-								removeReason={removeState?.reason}
-							/>
-						</TabsContent>
-						<TabsContent value="diagnosticos">
-							<Diagnosticos carrierOrder={carrierOrder} />
-						</TabsContent>
-					</Tabs>
-				) : null}
-
-				<DialogFooter className="flex-wrap">
-					{carrierOrder?.availableActions
-						// `removeShipment` needs a target row, so it lives on the Envíos tab
-						// rather than in the footer; the two read the same server entry.
-						.filter((entry) => entry.action !== "removeShipment")
-						.map((entry) => (
-							<CrudAvailableAction
-								destructive={destructiveActions.has(entry.action)}
-								enabled={entry.enabled}
-								key={entry.action}
-								label={carrierOrderActionLabelMap[entry.action]}
-								onClick={() => onCommand(entry.action)}
-								reason={entry.reason}
-							/>
-						))}
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+		<CrudDetailDialogShell
+			description="Contratación del transporte: envíos asociados, hitos y diagnósticos."
+			errorMessage={errorMessage}
+			eyebrow="Orden de transporte"
+			footer={
+				carrierOrder
+					? carrierOrder.availableActions
+							// `removeShipment` needs a target row, so it lives on the Envíos
+							// tab rather than in the footer; the two read the same server entry.
+							.filter((entry) => entry.action !== "removeShipment")
+							.map((entry) => (
+								<CrudAvailableAction
+									destructive={destructiveActions.has(entry.action)}
+									enabled={entry.enabled}
+									key={entry.action}
+									label={carrierOrderActionLabelMap[entry.action]}
+									onClick={() => onCommand(entry.action)}
+									reason={entry.reason}
+								/>
+							))
+					: null
+			}
+			isLoading={isLoading}
+			onOpenChange={onOpenChange}
+			open={open}
+			status={
+				carrierOrder ? (
+					<>
+						<StatusChip
+							config={carrierOrderStatusConfig[carrierOrder.status]}
+						/>
+						{carrierOrder.deleted ? (
+							<Badge variant="outline">Dada de baja</Badge>
+						) : null}
+					</>
+				) : null
+			}
+			title={
+				carrierOrder ? carrierOrder.code : "Detalle de orden de transporte"
+			}
+		>
+			{carrierOrder ? (
+				<Tabs className="w-full" defaultValue="resumen">
+					<TabsList className="flex-wrap" variant="line">
+						<TabsTrigger value="resumen">Resumen</TabsTrigger>
+						<TabsTrigger value="envios">
+							Envíos ({carrierOrder.shipments.length})
+						</TabsTrigger>
+						<TabsTrigger value="diagnosticos">Diagnósticos</TabsTrigger>
+					</TabsList>
+					<TabsContent value="resumen">
+						<Resumen carrierOrder={carrierOrder} />
+					</TabsContent>
+					<TabsContent value="envios">
+						<Envios
+							canRemove={removeState?.enabled ?? false}
+							carrierOrder={carrierOrder}
+							onRemoveShipment={onRemoveShipment}
+							removeReason={removeState?.reason}
+						/>
+					</TabsContent>
+					<TabsContent value="diagnosticos">
+						<Diagnosticos carrierOrder={carrierOrder} />
+					</TabsContent>
+				</Tabs>
+			) : null}
+		</CrudDetailDialogShell>
 	);
 }

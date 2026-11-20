@@ -205,7 +205,7 @@ export function ProductClientTermsFormDialog({
 							<Input
 								disabled
 								id="product-client-terms-id"
-								value={terms?.id ? String(terms.id) : "Automatico"}
+								value={terms?.id ? String(terms.id) : "Automático"}
 							/>
 						</Field>
 						<Field orientation="horizontal">

@@ -31,7 +31,7 @@ export function TrackingTimelineItemCard({
 	const refs = formatTrackingRefs(item.refs);
 
 	return (
-		<li className="grid gap-3 rounded-lg border p-3 lg:grid-cols-[12rem_1fr]">
+		<li className="grid gap-3 rounded-xl border p-3 lg:grid-cols-[12rem_1fr]">
 			<div className="flex flex-col gap-1">
 				<span className="font-medium text-sm">
 					{formatDateTimeShort(new Date(item.createdAt))}
@@ -66,7 +66,7 @@ export function TrackingTimelineItemCard({
 
 				{extra}
 
-				<details className="rounded-lg border bg-background p-2">
+				<details className="rounded-xl border bg-background p-2">
 					<summary className="cursor-pointer font-medium text-xs">
 						Metadata
 					</summary>

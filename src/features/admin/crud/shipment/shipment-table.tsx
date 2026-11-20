@@ -62,7 +62,7 @@ const shipmentColumns: CrudColumn<ShipmentListItem>[] = [
 		cell: (shipment) => (
 			<div className="flex flex-col gap-1 text-xs">
 				<span>Paquetes: {shipment.packageCount}</span>
-				<span>Lineas: {shipment.transportedQuantity}</span>
+				<span>Líneas: {shipment.transportedQuantity}</span>
 				<span>Asignado: {shipment.packagedAllocationQuantity}</span>
 			</div>
 		),

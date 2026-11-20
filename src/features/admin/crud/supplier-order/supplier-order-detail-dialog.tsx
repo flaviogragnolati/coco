@@ -9,25 +9,23 @@ import {
 } from "~/components/ui/accordion";
 import { Button } from "~/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "~/components/ui/dialog";
-import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { IdTooltip } from "~/features/admin/crud/_components/crud-cell-tooltips";
 import {
-	CrudErrorState,
-	CrudLoadingState,
-} from "~/features/admin/crud/_components/crud-state";
+	DetailDiagnosticList,
+	DetailEmpty,
+	DetailField,
+	DetailGrid,
+	DetailItem,
+	DetailMetrics,
+	DetailSection,
+	DetailSectionTitle,
+} from "~/features/admin/crud/_components/crud-detail";
+import { CrudDetailDialogShell } from "~/features/admin/crud/_components/crud-detail-dialog-shell";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
-import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
 import {
 	lotItemStatusConfig,
 	lotStatusConfig,
@@ -45,95 +43,89 @@ import {
 type SupplierOrderLotItem =
 	SupplierOrderDetail["lots"][number]["lotItems"][number];
 
+function Fechas({ order }: { order: SupplierOrderDetail }) {
+	const hasMilestones = Boolean(
+		order.requestedAt || order.confirmedAt || order.cancelledAt,
+	);
+
+	return (
+		<DetailField
+			hint={
+				hasMilestones ? (
+					<span className="flex flex-col gap-0.5">
+						{order.requestedAt ? (
+							<span>
+								Solicitada {formatDateTimeShort(new Date(order.requestedAt))}
+							</span>
+						) : null}
+						{order.confirmedAt ? (
+							<span>
+								Confirmada {formatDateTimeShort(new Date(order.confirmedAt))}
+							</span>
+						) : null}
+						{order.cancelledAt ? (
+							<span>
+								Cancelada {formatDateTimeShort(new Date(order.cancelledAt))}
+							</span>
+						) : null}
+					</span>
+				) : undefined
+			}
+			label="Fechas"
+		>
+			<span className="font-normal">
+				Creada {formatDateTimeShort(new Date(order.createdAt))}
+			</span>
+		</DetailField>
+	);
+}
+
 function Resumen({ order }: { order: SupplierOrderDetail }) {
 	return (
 		<div className="flex flex-col gap-3">
-			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
-				<div className="flex flex-col gap-1">
-					<p className="text-muted-foreground text-xs">Estado</p>
-					<StatusChip config={supplierOrderStatusConfig[order.status]} />
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Proveedor</p>
-					<p className="font-medium">{order.supplier.name}</p>
-					<IdTooltip id={order.supplier.id} label="Proveedor" />
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Referencia externa</p>
-					<p className="font-medium">{order.externalReference ?? "—"}</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Operación</p>
-					{order.operations.length === 0 ? (
-						<p className="text-xs">Sin operación</p>
-					) : (
-						order.operations.map((operation) => (
-							<p className="text-xs" key={operation.id}>
-								{operation.code}
-							</p>
-						))
-					)}
-				</div>
-			</section>
+			<DetailMetrics
+				columns={3}
+				items={[
+					{
+						label: "Líneas activas",
+						value: `${order.liveLotItemCount} / ${order.lotItemCount}`,
+					},
+					{ label: "Cantidad activa", value: order.liveLotItemQuantity },
+					{ label: "Cantidad total", value: order.lotItemQuantity },
+				]}
+			/>
 
-			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
-				<div>
-					<p className="text-muted-foreground text-xs">Líneas activas</p>
-					<p className="font-medium">
-						{order.liveLotItemCount} / {order.lotItemCount}
-					</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Cantidad activa</p>
-					<p className="font-medium">{order.liveLotItemQuantity}</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Cantidad total</p>
-					<p className="font-medium">{order.lotItemQuantity}</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Fechas</p>
-					<p className="text-xs">
-						Creada {formatDateTimeShort(new Date(order.createdAt))}
-					</p>
-					{order.requestedAt ? (
-						<p className="text-muted-foreground text-xs">
-							Solicitada {formatDateTimeShort(new Date(order.requestedAt))}
-						</p>
-					) : null}
-					{order.confirmedAt ? (
-						<p className="text-muted-foreground text-xs">
-							Confirmada {formatDateTimeShort(new Date(order.confirmedAt))}
-						</p>
-					) : null}
-					{order.cancelledAt ? (
-						<p className="text-muted-foreground text-xs">
-							Cancelada {formatDateTimeShort(new Date(order.cancelledAt))}
-						</p>
-					) : null}
-				</div>
-			</section>
+			<DetailSection title="Datos de la orden">
+				<DetailGrid columns={4}>
+					<DetailField
+						hint={<IdTooltip id={order.supplier.id} label="Proveedor" />}
+						label="Proveedor"
+					>
+						{order.supplier.name}
+					</DetailField>
+					<DetailField label="Referencia externa">
+						{order.externalReference ?? "—"}
+					</DetailField>
+					<DetailField label="Operación">
+						{order.operations.length === 0 ? (
+							<span className="font-normal text-muted-foreground">
+								Sin operación
+							</span>
+						) : (
+							<span className="flex flex-col gap-0.5">
+								{order.operations.map((operation) => (
+									<span key={operation.id}>{operation.code}</span>
+								))}
+							</span>
+						)}
+					</DetailField>
+					<Fechas order={order} />
+				</DetailGrid>
+			</DetailSection>
 
-			<section className="rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Diagnósticos
-				</h3>
-				<div className="mt-2 flex flex-col gap-2">
-					{order.diagnostics.length > 0 ? (
-						order.diagnostics.map((diagnostic) => (
-							<div className="text-xs" key={diagnostic.code}>
-								<DiagnosticDetailChip
-									code={diagnostic.code}
-									severity={diagnostic.severity}
-								/>
-								<p className="mt-1">{diagnostic.message}</p>
-							</div>
-						))
-					) : (
-						<p className="text-muted-foreground text-xs">Sin diagnósticos</p>
-					)}
-				</div>
-			</section>
+			<DetailSection title="Diagnósticos">
+				<DetailDiagnosticList diagnostics={order.diagnostics} />
+			</DetailSection>
 		</div>
 	);
 }
@@ -146,11 +138,14 @@ function LineaDemanda({
 	onCancelLine?: (lotItem: SupplierOrderLotItem) => void;
 }) {
 	return (
-		<div className="rounded-lg border p-3" key={lotItem.id}>
+		<DetailItem>
 			<div className="flex flex-wrap items-start justify-between gap-2">
-				<div className="flex flex-col gap-1">
+				<div className="flex flex-col gap-1.5">
 					<p className="font-medium">
-						{lotItem.code} - {lotItem.product.name}
+						<span className="font-mono text-muted-foreground text-xs">
+							{lotItem.code}
+						</span>{" "}
+						{lotItem.product.name}
 					</p>
 					<div className="flex flex-wrap items-center gap-2">
 						<StatusChip config={lotItemStatusConfig[lotItem.status]} />
@@ -159,12 +154,15 @@ function LineaDemanda({
 						</span>
 					</div>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-3">
 					<div className="text-right">
-						<p className="text-sm">
-							{lotItem.quantity} {lotItem.product.unit}
+						<p className="font-semibold text-sm tabular-nums">
+							{lotItem.quantity}{" "}
+							<span className="font-normal text-muted-foreground">
+								{lotItem.product.unit}
+							</span>
 						</p>
-						<p className="text-muted-foreground text-xs">
+						<p className="text-muted-foreground text-xs tabular-nums">
 							Despachado {lotItem.dispatchedQuantity} · pendiente{" "}
 							{lotItem.remainingQuantity}
 						</p>
@@ -182,36 +180,38 @@ function LineaDemanda({
 				</div>
 			</div>
 
-			<div className="mt-3 grid gap-2">
-				{lotItem.demandAllocations.length === 0 ? (
-					<p className="text-muted-foreground text-xs">Sin demanda asignada</p>
-				) : (
-					lotItem.demandAllocations.map((allocation) => (
-						<div
-							className="grid gap-2 border-t pt-2 text-xs md:grid-cols-[2rem_1fr_6rem_10rem]"
+			{lotItem.demandAllocations.length === 0 ? (
+				<DetailEmpty className="mt-3">Sin demanda asignada</DetailEmpty>
+			) : (
+				<ul className="mt-3 flex flex-col divide-y border-t text-xs">
+					{lotItem.demandAllocations.map((allocation) => (
+						<li
+							className="grid items-center gap-x-3 gap-y-1 py-2 last:pb-0 md:grid-cols-[2rem_1fr_5rem_14rem]"
 							key={allocation.id}
 						>
 							{/* Absorption order: who a cut takes from first (LIFO by payment). */}
-							<span className="text-muted-foreground">
+							<span className="text-muted-foreground tabular-nums">
 								#{allocation.absorptionOrder + 1}
 							</span>
 							<Link
-								className="font-medium underline-offset-4 hover:underline"
+								className="font-medium font-mono underline-offset-4 hover:underline"
 								href={`/admin/tracking?cartItemId=${allocation.cartItem.id}`}
 							>
 								{allocation.cartItem.cart.code} / {allocation.cartItem.code}
 							</Link>
-							<span>{allocation.quantity}</span>
+							<span className="tabular-nums md:text-right">
+								{allocation.quantity}
+							</span>
 							<span className="text-muted-foreground">
 								{allocation.paidAt
 									? `Pagado ${formatDateTimeShort(new Date(allocation.paidAt))}`
 									: "Sin pago resuelto"}
 							</span>
-						</div>
-					))
-				)}
-			</div>
-		</div>
+						</li>
+					))}
+				</ul>
+			)}
+		</DetailItem>
 	);
 }
 
@@ -223,7 +223,7 @@ function Lineas({
 	onCancelLine?: (lotItem: SupplierOrderLotItem) => void;
 }) {
 	if (order.lots.length === 0) {
-		return <p className="text-muted-foreground text-xs">Sin lotes asociados</p>;
+		return <DetailEmpty>Sin lotes asociados</DetailEmpty>;
 	}
 
 	return (
@@ -236,9 +236,9 @@ function Lineas({
 				<AccordionItem key={lot.id} value={`lot-${lot.id}`}>
 					<AccordionTrigger>
 						<span className="flex flex-wrap items-center gap-2">
-							{lot.code}
+							<span className="font-mono">{lot.code}</span>
 							<StatusChip config={lotStatusConfig[lot.status]} />
-							<span className="text-muted-foreground text-xs">
+							<span className="text-muted-foreground text-xs tabular-nums">
 								{lot.operation.code} · {lot.lotItems.length} línea(s)
 							</span>
 						</span>
@@ -344,40 +344,12 @@ export function SupplierOrderDetailDialog({
 	};
 
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
-				<DialogHeader>
-					<DialogTitle>
-						{supplierOrder
-							? supplierOrder.code
-							: "Detalle de orden de proveedor"}
-					</DialogTitle>
-					<DialogDescription>
-						Líneas, demanda asignada y acciones sobre la orden.
-					</DialogDescription>
-				</DialogHeader>
-
-				{isLoading ? <CrudLoadingState rows={4} /> : null}
-				{!isLoading && errorMessage ? (
-					<CrudErrorState message={errorMessage} />
-				) : null}
-				{!isLoading && supplierOrder ? (
-					<div className="flex flex-col gap-4">
-						<Resumen order={supplierOrder} />
-						<Lineas
-							onCancelLine={
-								supplierOrder.availableActions.find(
-									(entry) => entry.action === "cancelLine",
-								)?.enabled
-									? onCancelLine
-									: undefined
-							}
-							order={supplierOrder}
-						/>
-					</div>
-				) : null}
-
-				<DialogFooter>
+		<CrudDetailDialogShell
+			description="Líneas, demanda asignada y acciones sobre la orden."
+			errorMessage={errorMessage}
+			eyebrow="Orden de proveedor"
+			footer={
+				<>
 					{supplierOrder
 						? supplierOrder.availableActions
 								.filter((entry) => entry.action !== "cancelLine")
@@ -395,8 +367,40 @@ export function SupplierOrderDetailDialog({
 					<Button onClick={() => onOpenChange(false)} type="button">
 						Cerrar
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</>
+			}
+			isLoading={isLoading}
+			onOpenChange={onOpenChange}
+			open={open}
+			status={
+				supplierOrder ? (
+					<StatusChip
+						config={supplierOrderStatusConfig[supplierOrder.status]}
+					/>
+				) : null
+			}
+			title={
+				supplierOrder ? supplierOrder.code : "Detalle de orden de proveedor"
+			}
+		>
+			{supplierOrder ? (
+				<div className="flex flex-col gap-4">
+					<Resumen order={supplierOrder} />
+					<section className="flex flex-col gap-1">
+						<DetailSectionTitle>Líneas por lote</DetailSectionTitle>
+						<Lineas
+							onCancelLine={
+								supplierOrder.availableActions.find(
+									(entry) => entry.action === "cancelLine",
+								)?.enabled
+									? onCancelLine
+									: undefined
+							}
+							order={supplierOrder}
+						/>
+					</section>
+				</div>
+			) : null}
+		</CrudDetailDialogShell>
 	);
 }

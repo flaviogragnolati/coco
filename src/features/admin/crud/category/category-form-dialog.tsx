@@ -220,7 +220,7 @@ export function CategoryFormDialog({
 							</Button>
 							<div
 								aria-hidden="true"
-								className="relative h-16 w-40 rounded-md border"
+								className="relative h-16 w-40 rounded-xl border"
 								style={{ backgroundColor: photoBackgroundColor ?? "#ffffff" }}
 							>
 								<span

@@ -338,16 +338,16 @@ export function PackagesClient({
 	};
 
 	const idFilters = [
-		["packageId", "Package ID", packageId, setPackageId],
-		["shipmentId", "Shipment ID", shipmentId, setShipmentId],
-		["lotId", "Lot ID", lotId, setLotId],
-		["lotItemId", "Lot item ID", lotItemId, setLotItemId],
-		["productId", "Product ID", productId, setProductId],
+		["packageId", "ID de paquete", packageId, setPackageId],
+		["shipmentId", "ID de envío", shipmentId, setShipmentId],
+		["lotId", "ID de lote", lotId, setLotId],
+		["lotItemId", "ID de línea de lote", lotItemId, setLotItemId],
+		["productId", "ID de producto", productId, setProductId],
 	] as const;
 
 	return (
 		<CrudPageShell
-			description="Revisión read-only de paquetes, líneas, asignaciones empaquetadas y diagnósticos operativos."
+			description="Consulta de paquetes, líneas, asignaciones empaquetadas y diagnósticos operativos."
 			title="Paquetes"
 		>
 			{statsQuery.isLoading ? (
@@ -386,7 +386,7 @@ export function PackagesClient({
 							icon: AlertTriangleIcon,
 							accent: "warning",
 							description: statsQuery.data.truncated
-								? "Primeros 1000 mas recientes"
+								? "Primeros 1000 más recientes"
 								: undefined,
 						},
 					]}

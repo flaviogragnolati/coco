@@ -56,7 +56,7 @@ export function CrudEffectsPanel({
 	const hasDetail = disclosure.detail.length > 0;
 
 	return (
-		<section className="flex flex-col gap-2 rounded-2xl border p-3 text-xs">
+		<section className="flex flex-col gap-2 rounded-2xl border bg-muted/30 p-4 text-xs">
 			<h3 className="font-semibold text-muted-foreground uppercase tracking-wide">
 				Qué va a pasar
 			</h3>

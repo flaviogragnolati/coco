@@ -139,8 +139,8 @@ export function RollOversClient({
 	};
 
 	const idFilters = [
-		["operationId", "Operation ID", operationId, setOperationId],
-		["cartItemId", "Cart item ID", cartItemId, setCartItemId],
+		["operationId", "ID de operación", operationId, setOperationId],
+		["cartItemId", "ID de ítem de carrito", cartItemId, setCartItemId],
 	] as const;
 
 	return (

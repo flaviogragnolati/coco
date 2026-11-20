@@ -145,7 +145,7 @@ export function ProductSupplierTermsFormDialog({
 							<Input
 								disabled
 								id="product-supplier-terms-id"
-								value={terms?.id ? String(terms.id) : "Automatico"}
+								value={terms?.id ? String(terms.id) : "Automático"}
 							/>
 						</Field>
 						<Field orientation="horizontal">

@@ -324,7 +324,7 @@ export function ShipmentsClient({
 	const detail = detailQuery.data;
 
 	const idFilters = [
-		["shipmentId", "Shipment ID", shipmentId, setShipmentId],
+		["shipmentId", "ID de envío", shipmentId, setShipmentId],
 		[
 			"carrierOrderId",
 			"ID de orden de transporte",
@@ -343,7 +343,7 @@ export function ShipmentsClient({
 					Nuevo envío al cliente
 				</Button>
 			}
-			description="Revisión read-only de envíos, paquetes transportados, tracking y diagnósticos operativos."
+			description="Consulta de envíos, paquetes transportados, tracking y diagnósticos operativos."
 			title="Envíos"
 		>
 			{statsQuery.isLoading ? (
@@ -375,7 +375,7 @@ export function ShipmentsClient({
 							icon: AlertTriangleIcon,
 							accent: "warning",
 							description: statsQuery.data.truncated
-								? "Primeros 1000 mas recientes"
+								? "Primeros 1000 más recientes"
 								: undefined,
 						},
 					]}

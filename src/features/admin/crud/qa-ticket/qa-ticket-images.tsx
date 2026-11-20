@@ -180,7 +180,9 @@ export function QaTicketImages({
 		<div className="flex flex-col gap-3">
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<div>
-					<h3 className="font-medium">Imágenes</h3>
+					<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+						Imágenes
+					</h3>
 					<p className="text-muted-foreground text-sm">
 						{images.length} de {QA_TICKET_IMAGE_MAX_COUNT} guardadas · JPEG, PNG
 						o WebP · 2 MiB cada una

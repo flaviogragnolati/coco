@@ -61,7 +61,7 @@ const lotColumns: CrudColumn<LotListItem>[] = [
 		className: "min-w-52",
 		cell: (lot) => (
 			<div className="flex flex-col gap-1 text-xs">
-				<span>Lineas: {lot.lotItemQuantity}</span>
+				<span>Líneas: {lot.lotItemQuantity}</span>
 				<span>Demanda: {lot.demandAllocationQuantity}</span>
 				<span>Pendiente empaque: {lot.pendingQuantity}</span>
 			</div>

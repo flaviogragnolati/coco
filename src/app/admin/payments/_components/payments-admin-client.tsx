@@ -31,10 +31,18 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
-import { Separator } from "~/components/ui/separator";
 import { Switch } from "~/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Textarea } from "~/components/ui/textarea";
+import {
+	DetailEmpty,
+	DetailField,
+	DetailGrid,
+	DetailItem,
+	DetailMetrics,
+	DetailSection,
+	DetailSectionTitle,
+} from "~/features/admin/crud/_components/crud-detail";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
 import { CrudSortToggle } from "~/features/admin/crud/_components/crud-sort-toggle";
 import {
@@ -92,7 +100,7 @@ function formatDate(value: Date | null) {
 
 function JsonBlock({ value }: { value: unknown }) {
 	return (
-		<pre className="max-h-72 overflow-auto border bg-muted/30 p-3 text-xs">
+		<pre className="max-h-72 overflow-auto rounded-xl border bg-muted/30 p-3 font-mono text-xs">
 			{JSON.stringify(value, null, 2)}
 		</pre>
 	);
@@ -129,12 +137,10 @@ function ExternalAttemptActions({
 
 	return (
 		<div className="grid gap-3 md:grid-cols-2">
-			<div className="flex flex-col gap-2 border p-3">
-				<h3 className="font-medium text-sm">Marcar cobrado</h3>
-				<p className="text-muted-foreground text-xs">
-					Verificá la transferencia en el banco antes de liquidar: el pedido
-					pasa a preparación y no se deshace solo.
-				</p>
+			<DetailSection
+				description="Verificá la transferencia en el banco antes de liquidar: el pedido pasa a preparación y no se deshace solo."
+				title="Marcar cobrado"
+			>
 				<Input
 					onChange={(event) => setReceiptReference(event.target.value)}
 					placeholder="Referencia del comprobante"
@@ -159,12 +165,11 @@ function ExternalAttemptActions({
 					<CheckCircle2Icon data-icon="inline-start" />
 					Marcar cobrado
 				</Button>
-			</div>
-			<div className="flex flex-col gap-2 border p-3">
-				<h3 className="font-medium text-sm">Rechazar</h3>
-				<p className="text-muted-foreground text-xs">
-					El pedido queda como fallido y el usuario ve el motivo.
-				</p>
+			</DetailSection>
+			<DetailSection
+				description="El pedido queda como fallido y el usuario ve el motivo."
+				title="Rechazar"
+			>
 				<Input
 					onChange={(event) => setReason(event.target.value)}
 					placeholder="Motivo del rechazo"
@@ -180,7 +185,7 @@ function ExternalAttemptActions({
 					<XCircleIcon data-icon="inline-start" />
 					Rechazar
 				</Button>
-			</div>
+			</DetailSection>
 		</div>
 	);
 }
@@ -219,7 +224,7 @@ function AttemptDetail({
 				{attempt.subtotalAmount &&
 				attempt.transferDiscountPercent &&
 				attempt.transferDiscountAmount ? (
-					<div className="border p-3">
+					<DetailSection title="Monto">
 						<TransferDiscountBreakdownRows
 							breakdown={{
 								percent: attempt.transferDiscountPercent,
@@ -230,75 +235,75 @@ function AttemptDetail({
 							currency={attempt.currency}
 							totalLabel="A cobrar en el banco"
 						/>
-					</div>
+					</DetailSection>
 				) : (
-					<div className="flex items-center justify-between gap-3 border p-3">
-						<span className="text-muted-foreground text-sm">
-							{isExternal ? "A cobrar en el banco" : "Monto"}
-						</span>
-						<span className="font-heading font-semibold text-base">
-							{formatCurrency(attempt.amount, attempt.currency)}
-						</span>
-					</div>
+					<DetailMetrics
+						columns={2}
+						items={[
+							{
+								label: isExternal ? "A cobrar en el banco" : "Monto",
+								value: formatCurrency(attempt.amount, attempt.currency),
+							},
+						]}
+					/>
 				)}
-				<div className="grid gap-3 md:grid-cols-3">
-					<div className="border p-3 text-xs">
-						<span className="text-muted-foreground">Idempotencia</span>
-						<p className="break-all font-medium">{attempt.idempotencyKey}</p>
-					</div>
-					{isExternal ? (
-						<>
-							<div className="border p-3 text-xs">
-								<span className="text-muted-foreground">
-									Comprobante declarado
-								</span>
-								<p className="break-all font-medium">
-									{attempt.declaredReceiptReference ?? "Sin declarar"}
-								</p>
-								<span className="text-muted-foreground">
-									{attempt.declaredReceiptAt
-										? formatDate(attempt.declaredReceiptAt)
-										: "El usuario todavía no informó la transferencia"}
-								</span>
-							</div>
-							<div className="border p-3 text-xs">
-								<span className="text-muted-foreground">
-									Referencia liquidada
-								</span>
-								<p className="break-all font-medium">
-									{attempt.externalTransactionId ?? "Sin dato"}
-								</p>
-							</div>
-						</>
-					) : (
-						<>
-							<div className="border p-3 text-xs">
-								<span className="text-muted-foreground">Preferencia</span>
-								<p className="break-all font-medium">
-									{attempt.providerPreferenceId ?? "Sin dato"}
-								</p>
-							</div>
-							<div className="border p-3 text-xs">
-								<span className="text-muted-foreground">
-									Pago (id de Mercado Pago)
-								</span>
-								<p className="break-all font-medium">
-									{attempt.providerPaymentId ?? "Sin dato"}
-								</p>
-							</div>
-						</>
-					)}
-				</div>
+				<DetailSection title="Referencias">
+					<DetailGrid columns={3}>
+						<DetailField label="Clave de idempotencia">
+							<span className="break-all font-mono">
+								{attempt.idempotencyKey}
+							</span>
+						</DetailField>
+						{isExternal ? (
+							<>
+								<DetailField
+									hint={
+										attempt.declaredReceiptAt
+											? formatDate(attempt.declaredReceiptAt)
+											: "El usuario todavía no informó la transferencia"
+									}
+									label="Comprobante declarado"
+								>
+									<span className="break-all font-mono">
+										{attempt.declaredReceiptReference ?? "Sin declarar"}
+									</span>
+								</DetailField>
+								<DetailField label="Referencia liquidada">
+									<span className="break-all font-mono">
+										{attempt.externalTransactionId ?? "Sin dato"}
+									</span>
+								</DetailField>
+							</>
+						) : (
+							<>
+								<DetailField label="Preferencia">
+									<span className="break-all font-mono">
+										{attempt.providerPreferenceId ?? "Sin dato"}
+									</span>
+								</DetailField>
+								<DetailField label="Pago (id de Mercado Pago)">
+									<span className="break-all font-mono">
+										{attempt.providerPaymentId ?? "Sin dato"}
+									</span>
+								</DetailField>
+							</>
+						)}
+					</DetailGrid>
+				</DetailSection>
 				{attempt.failureCode ? (
-					<div className="border border-destructive/40 p-3 text-xs">
-						<span className="text-muted-foreground">Falla / discrepancia</span>
-						<p className="font-medium text-destructive">
+					<DetailSection
+						className="border-destructive/40"
+						title="Falla / discrepancia"
+					>
+						<p className="font-medium font-mono text-destructive text-sm">
 							{attempt.failureCode}
 						</p>
 						{attempt.failureMessage ? (
-							<p className="text-destructive">{attempt.failureMessage}</p>
+							<p className="text-destructive text-xs/relaxed">
+								{attempt.failureMessage}
+							</p>
 						) : null}
-					</div>
+					</DetailSection>
 				) : null}
 				{isExternal ? (
 					attempt.status === "pending" ? (
@@ -348,27 +353,28 @@ function AttemptDetail({
 				)}
 				<div className="grid gap-3 md:grid-cols-2">
 					<div className="flex flex-col gap-2">
-						<h3 className="font-medium text-sm">Request snapshot</h3>
+						<DetailSectionTitle>Snapshot de la solicitud</DetailSectionTitle>
 						<JsonBlock value={attempt.requestSnapshot} />
 					</div>
 					<div className="flex flex-col gap-2">
-						<h3 className="font-medium text-sm">Response snapshot</h3>
+						<DetailSectionTitle>Snapshot de la respuesta</DetailSectionTitle>
 						<JsonBlock value={attempt.responseSnapshot} />
 					</div>
 				</div>
-				<Separator />
-				<div className="flex flex-col gap-2">
-					<h3 className="font-medium text-sm">Eventos relacionados</h3>
+				<DetailSection title="Eventos relacionados">
 					{attempt.events.length === 0 ? (
-						<p className="text-muted-foreground text-xs">Sin eventos.</p>
+						<DetailEmpty>Sin eventos</DetailEmpty>
 					) : (
 						<div className="grid gap-2">
 							{attempt.events.map((event) => (
-								<div className="grid gap-2 border p-3 text-xs" key={event.id}>
-									<div className="flex items-center justify-between gap-3">
-										<span>
-											#{event.id} · {event.eventType ?? "sin tipo"} ·{" "}
-											{event.providerResourceId ?? "sin recurso"}
+								<DetailItem className="grid gap-1.5 text-xs" key={event.id}>
+									<div className="flex flex-wrap items-center justify-between gap-3">
+										<span className="font-medium">
+											<span className="font-mono">#{event.id}</span> ·{" "}
+											{event.eventType ?? "sin tipo"} ·{" "}
+											<span className="font-mono">
+												{event.providerResourceId ?? "sin recurso"}
+											</span>
 										</span>
 										<PaymentStatusBadge status={event.status} />
 									</div>
@@ -379,11 +385,11 @@ function AttemptDetail({
 									{event.lastError ? (
 										<span className="text-destructive">{event.lastError}</span>
 									) : null}
-								</div>
+								</DetailItem>
 							))}
 						</div>
 					)}
-				</div>
+				</DetailSection>
 			</CardContent>
 		</Card>
 	);
@@ -457,9 +463,18 @@ function EventDetail({
 					)
 				) : null}
 				<div className="grid gap-3 md:grid-cols-3">
-					<JsonBlock value={event.query} />
-					<JsonBlock value={event.headers} />
-					<JsonBlock value={event.payload} />
+					<div className="flex min-w-0 flex-col gap-2">
+						<DetailSectionTitle>Parámetros (query)</DetailSectionTitle>
+						<JsonBlock value={event.query} />
+					</div>
+					<div className="flex min-w-0 flex-col gap-2">
+						<DetailSectionTitle>Encabezados (headers)</DetailSectionTitle>
+						<JsonBlock value={event.headers} />
+					</div>
+					<div className="flex min-w-0 flex-col gap-2">
+						<DetailSectionTitle>Cuerpo (payload)</DetailSectionTitle>
+						<JsonBlock value={event.payload} />
+					</div>
 				</div>
 			</CardContent>
 		</Card>
@@ -514,28 +529,23 @@ function ConfigEditor({
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-5">
-				<div className="grid gap-3 md:grid-cols-3">
-					<div className="border p-3 text-xs">
-						<span className="text-muted-foreground">Access token</span>
-						<p>
+				<DetailSection title="Diagnóstico de secretos">
+					<DetailGrid columns={3}>
+						<DetailField label="Access token">
 							{config.diagnostics.accessTokenConfigured
 								? "Configurado"
 								: "Falta"}
-						</p>
-					</div>
-					<div className="border p-3 text-xs">
-						<span className="text-muted-foreground">Webhook secret</span>
-						<p>
+						</DetailField>
+						<DetailField label="Webhook secret">
 							{config.diagnostics.webhookSecretConfigured
 								? "Configurado"
 								: "Falta"}
-						</p>
-					</div>
-					<div className="border p-3 text-xs">
-						<span className="text-muted-foreground">APP_ENV</span>
-						<p>{config.diagnostics.appEnv}</p>
-					</div>
-				</div>
+						</DetailField>
+						<DetailField label="APP_ENV">
+							<span className="font-mono">{config.diagnostics.appEnv}</span>
+						</DetailField>
+					</DetailGrid>
+				</DetailSection>
 				<FieldGroup className="grid gap-3 md:grid-cols-2">
 					<Field orientation="horizontal">
 						<FieldContent>

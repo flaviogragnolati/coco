@@ -36,13 +36,19 @@ import {
 	DateTooltip,
 	IdTooltip,
 } from "~/features/admin/crud/_components/crud-cell-tooltips";
+import {
+	DetailDiagnosticList,
+	DetailEmpty,
+	DetailItem,
+	DetailMetrics,
+	DetailSection,
+} from "~/features/admin/crud/_components/crud-detail";
 import { JsonPreview } from "~/features/admin/crud/_components/crud-json-preview";
 import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
-import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
 import {
 	lotItemStatusConfig,
 	lotStatusConfig,
@@ -63,9 +69,6 @@ import {
 import { RollOverResolveDialog } from "./roll-over-resolve-dialog";
 
 type OperationRollOver = OperationDetail["rollOvers"][number];
-
-const sectionTitleClass =
-	"font-semibold text-muted-foreground text-xs uppercase tracking-wide";
 
 type OperationLot = OperationDetail["lots"][number];
 
@@ -110,48 +113,31 @@ function Header({ operation }: { operation: OperationDetail }) {
 }
 
 function Metrics({ operation }: { operation: OperationDetail }) {
-	const tiles = [
-		{
-			label: "Elegible",
-			value: operation.eligibleQuantity,
-			description: `${operation.eligibleItemCount} items`,
-		},
-		{
-			label: "Asignada",
-			value: operation.assignedQuantity,
-			description: `${operation.assignedItemCount} items`,
-		},
-		{
-			label: "Rollover",
-			value: operation.rollOverQuantity,
-			description: `${operation.rollOverItemCount} items`,
-		},
-		{
-			label: "Salidas",
-			value: String(operation.lotCount),
-			description: `${operation.supplierOrderCount} órdenes`,
-		},
-	];
-
 	return (
-		<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
-			{tiles.map((tile) => (
-				<div className="flex items-start gap-3" key={tile.label}>
-					<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
-						<BoxesIcon className="size-4" />
-					</span>
-					<div className="flex flex-col gap-0.5">
-						<span className="text-muted-foreground text-xs">{tile.label}</span>
-						<span className="font-heading font-semibold text-lg">
-							{tile.value}
-						</span>
-						<span className="text-muted-foreground text-xs">
-							{tile.description}
-						</span>
-					</div>
-				</div>
-			))}
-		</section>
+		<DetailMetrics
+			items={[
+				{
+					label: "Elegible",
+					value: operation.eligibleQuantity,
+					hint: `${operation.eligibleItemCount} items`,
+				},
+				{
+					label: "Asignada",
+					value: operation.assignedQuantity,
+					hint: `${operation.assignedItemCount} items`,
+				},
+				{
+					label: "Rollover",
+					value: operation.rollOverQuantity,
+					hint: `${operation.rollOverItemCount} items`,
+				},
+				{
+					label: "Salidas",
+					value: String(operation.lotCount),
+					hint: `${operation.supplierOrderCount} órdenes`,
+				},
+			]}
+		/>
 	);
 }
 
@@ -159,18 +145,9 @@ function Diagnostics({ operation }: { operation: OperationDetail }) {
 	if (operation.diagnostics.length === 0) return null;
 
 	return (
-		<section className="flex flex-col gap-2 rounded-2xl border p-3">
-			<h3 className={sectionTitleClass}>Diagnósticos</h3>
-			{operation.diagnostics.map((diagnostic) => (
-				<div className="flex flex-col gap-1" key={diagnostic.code}>
-					<DiagnosticDetailChip
-						code={diagnostic.code}
-						severity={diagnostic.severity}
-					/>
-					<p className="text-xs">{diagnostic.message}</p>
-				</div>
-			))}
-		</section>
+		<DetailSection title="Diagnósticos">
+			<DetailDiagnosticList diagnostics={operation.diagnostics} />
+		</DetailSection>
 	);
 }
 
@@ -213,21 +190,22 @@ function RelatedLinks({ operation }: { operation: OperationDetail }) {
 	];
 
 	return (
-		<section className="flex flex-wrap items-center gap-2 rounded-2xl border p-3">
-			<span className="text-muted-foreground text-xs">Relacionados</span>
-			{links.map((link) => {
-				const Icon = link.icon;
+		<DetailSection title="Relacionados">
+			<div className="flex flex-wrap items-center gap-2">
+				{links.map((link) => {
+					const Icon = link.icon;
 
-				return (
-					<Badge asChild key={link.key} variant="outline">
-						<Link href={link.href}>
-							<Icon data-icon="inline-start" />
-							{link.label}
-						</Link>
-					</Badge>
-				);
-			})}
-		</section>
+					return (
+						<Badge asChild key={link.key} variant="outline">
+							<Link href={link.href}>
+								<Icon data-icon="inline-start" />
+								{link.label}
+							</Link>
+						</Badge>
+					);
+				})}
+			</div>
+		</DetailSection>
 	);
 }
 
@@ -239,11 +217,11 @@ function LotSection({
 	operationId: number;
 }) {
 	return (
-		<div className="flex flex-col gap-3 rounded-lg border p-3">
+		<DetailItem className="flex flex-col gap-3">
 			<div className="flex flex-wrap items-start justify-between gap-2">
 				<div className="flex flex-col gap-1">
 					<Link
-						className="font-medium underline-offset-4 hover:underline"
+						className="font-medium font-mono underline-offset-4 hover:underline"
 						href={operationEntityHref("/admin/lots", lot.id, operationId)}
 					>
 						{lot.code}
@@ -272,26 +250,28 @@ function LotSection({
 								{lotItem.productSupplierTerms.product.name}
 							</span>
 							<span className="text-muted-foreground text-xs">
-								{lotItem.code} · destino {lotItem.destination.name}
+								<span className="font-mono">{lotItem.code}</span> · destino{" "}
+								{lotItem.destination.name}
 							</span>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-sm">
-								{lotItem.quantity} {lotItem.productSupplierTerms.product.unit}
+							<span className="font-semibold text-sm tabular-nums">
+								{lotItem.quantity}{" "}
+								<span className="font-normal text-muted-foreground">
+									{lotItem.productSupplierTerms.product.unit}
+								</span>
 							</span>
 							<StatusChip config={lotItemStatusConfig[lotItem.status]} />
 						</div>
 					</div>
 
 					{lotItem.cartItemLotItems.length === 0 ? (
-						<p className="text-muted-foreground text-xs">
-							Sin demanda asignada.
-						</p>
+						<DetailEmpty>Sin demanda asignada</DetailEmpty>
 					) : (
 						<ul className="flex flex-col gap-1">
 							{lotItem.cartItemLotItems.map((allocation) => (
 								<li
-									className="grid gap-1 rounded-lg bg-muted/30 px-2 py-1 text-xs md:grid-cols-[1fr_auto_6rem] md:items-center"
+									className="grid gap-1 rounded-lg bg-muted/40 px-2 py-1 text-xs md:grid-cols-[1fr_auto_6rem] md:items-center"
 									key={allocation.id}
 								>
 									<span className="font-medium">
@@ -303,7 +283,7 @@ function LotSection({
 									>
 										{allocation.cartItem.cart.code} / {allocation.cartItem.code}
 									</Link>
-									<span className="md:text-right">
+									<span className="tabular-nums md:text-right">
 										{allocation.quantity}{" "}
 										{lotItem.productSupplierTerms.product.unit}
 									</span>
@@ -313,7 +293,7 @@ function LotSection({
 					)}
 				</div>
 			))}
-		</div>
+		</DetailItem>
 	);
 }
 
@@ -398,9 +378,7 @@ function DetailBody({
 					<AccordionTrigger>Lotes ({operation.lots.length})</AccordionTrigger>
 					<AccordionContent className="flex flex-col gap-2">
 						{operation.lots.length === 0 ? (
-							<p className="text-muted-foreground text-xs">
-								La operación no generó lotes.
-							</p>
+							<DetailEmpty>La operación no generó lotes</DetailEmpty>
 						) : (
 							operation.lots.map((lot) => (
 								<LotSection key={lot.id} lot={lot} operationId={operation.id} />
@@ -415,15 +393,15 @@ function DetailBody({
 					</AccordionTrigger>
 					<AccordionContent className="grid gap-2 md:grid-cols-2">
 						{operation.supplierOrders.length === 0 ? (
-							<p className="text-muted-foreground text-xs">
-								Sin órdenes de proveedor.
-							</p>
+							<DetailEmpty className="md:col-span-2">
+								Sin órdenes de proveedor
+							</DetailEmpty>
 						) : (
 							operation.supplierOrders.map((order) => (
-								<div className="rounded-lg border p-2" key={order.id}>
+								<DetailItem className="flex flex-col gap-1" key={order.id}>
 									<div className="flex flex-wrap items-center justify-between gap-2">
 										<Link
-											className="font-medium underline-offset-4 hover:underline"
+											className="font-medium font-mono underline-offset-4 hover:underline"
 											href={operationEntityHref(
 												"/admin/supplier-orders",
 												order.id,
@@ -440,7 +418,7 @@ function DetailBody({
 										{order.supplier.name}
 										<IdTooltip id={order.id} label="Orden de proveedor" />
 									</p>
-								</div>
+								</DetailItem>
 							))
 						)}
 					</AccordionContent>
@@ -452,13 +430,13 @@ function DetailBody({
 					</AccordionTrigger>
 					<AccordionContent className="grid gap-2 md:grid-cols-2">
 						{operation.rollOvers.length === 0 ? (
-							<p className="text-muted-foreground text-xs">Sin rollovers.</p>
+							<DetailEmpty className="md:col-span-2">Sin rollovers</DetailEmpty>
 						) : (
 							operation.rollOvers.map((rollOver) => (
-								<div className="rounded-lg border p-2" key={rollOver.id}>
+								<DetailItem className="flex flex-col gap-1" key={rollOver.id}>
 									<div className="flex flex-wrap items-center justify-between gap-2">
 										<Link
-											className="font-medium underline-offset-4 hover:underline"
+											className="font-medium font-mono underline-offset-4 hover:underline"
 											href={`/admin/carts/${rollOver.cartItem.cart.id}`}
 										>
 											{rollOver.cartItem.cart.code} / {rollOver.cartItem.code}
@@ -467,7 +445,7 @@ function DetailBody({
 											config={rollOverStatusConfig[rollOver.status]}
 										/>
 									</div>
-									<p className="text-muted-foreground text-xs">
+									<p className="text-muted-foreground text-xs tabular-nums">
 										{rollOver.quantity}{" "}
 										{rollOver.cartItem.productClientTerms.product.unit} ·{" "}
 										{rollOverStageLabelMap[rollOver.stage]}
@@ -475,7 +453,7 @@ function DetailBody({
 									<p className="text-xs">{rollOver.reason}</p>
 									{rollOver.status === "open" ? (
 										<Button
-											className="mt-2"
+											className="mt-1 self-start"
 											onClick={() => onResolveRollOver(rollOver)}
 											size="sm"
 											type="button"
@@ -484,7 +462,7 @@ function DetailBody({
 											Resolver
 										</Button>
 									) : null}
-								</div>
+								</DetailItem>
 							))
 						)}
 					</AccordionContent>
@@ -549,7 +527,7 @@ export function OperationDetailDialog({
 					/>
 				) : null}
 
-				<DialogFooter>
+				<DialogFooter className="flex-wrap border-t pt-4">
 					{operation
 						? operation.availableActions.map((entry) => (
 								<ActionButton

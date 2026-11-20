@@ -295,7 +295,7 @@ export function SupplierOrdersClient({
 							icon: AlertTriangleIcon,
 							accent: "warning",
 							description: statsQuery.data.truncated
-								? "Primeros 1000 mas recientes"
+								? "Primeros 1000 más recientes"
 								: undefined,
 						},
 					]}
