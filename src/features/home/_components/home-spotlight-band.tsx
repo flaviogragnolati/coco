@@ -21,23 +21,23 @@ export function HomeSpotlightBand({
 	return (
 		<section
 			aria-label="Destacado"
-			className="bg-brand-soft px-4 py-12 text-brand-soft-foreground md:px-6 md:py-16"
+			className="bg-brand-soft px-4 py-12 text-brand-soft-foreground [--muted-foreground:color-mix(in_oklch,var(--brand-soft-foreground)_70%,transparent)] md:px-6 md:py-16"
 		>
-			<div className="mx-auto grid w-full max-w-5xl gap-8 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:items-center md:gap-12">
-				<div className="flex flex-col items-start gap-3">
-					<Badge variant="highlight">Destacado</Badge>
-					<p className="text-base/relaxed sm:text-lg/relaxed">
-						{bandTextByKind[feature.kind]}
-					</p>
-				</div>
-				<div className="mx-auto w-full max-w-100">
-					<HomeFeatureCard
-						feature={feature}
-						isAuthenticated={isAuthenticated}
-						size="hero"
-						userId={userId}
-					/>
-				</div>
+			<div className="mx-auto w-full max-w-5xl">
+				<HomeFeatureCard
+					feature={feature}
+					intro={
+						<div className="flex flex-col items-start gap-3">
+							<Badge variant="highlight">Destacado</Badge>
+							<p className="text-base/relaxed sm:text-lg/relaxed">
+								{bandTextByKind[feature.kind]}
+							</p>
+						</div>
+					}
+					isAuthenticated={isAuthenticated}
+					size="hero"
+					userId={userId}
+				/>
 			</div>
 		</section>
 	);

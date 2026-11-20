@@ -19,14 +19,21 @@ export function FaqSection({ items }: { items: FaqItem[] }) {
 					eyebrow="Ayuda rápida"
 					title="Preguntas frecuentes"
 				/>
+				{/* Without a card behind them, the answers take the band's ink for contrast. */}
 				<Accordion
-					className="rounded-3xl bg-card px-6 text-card-foreground"
+					className="[--muted-foreground:color-mix(in_oklch,var(--brand-warm-foreground)_75%,transparent)]"
 					collapsible
 					type="single"
 				>
 					{items.map((item, index) => (
-						<AccordionItem key={item.question} value={`faq-${index + 1}`}>
-							<AccordionTrigger>{item.question}</AccordionTrigger>
+						<AccordionItem
+							className="border-brand-warm-foreground/15"
+							key={item.question}
+							value={`faq-${index + 1}`}
+						>
+							<AccordionTrigger className="font-semibold">
+								{item.question}
+							</AccordionTrigger>
 							<AccordionContent>{item.answer}</AccordionContent>
 						</AccordionItem>
 					))}
