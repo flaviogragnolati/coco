@@ -1,6 +1,6 @@
 # Plan: home "variante D", página "Cómo funciona" y base visual compartida
 
-> **Estado:** `Working`. Implementado el 20/11/2026 en la rama `home-variante-d` (desde `dev` en `346854f`, que trae `Eyebrow`), un commit por fase (`e2d93c2`…`00af1c3`). Falta: revisión manual con sesión y decidir P1/P2. Resultado en §16.
+> **Estado:** `Working`. Implementado el 20/11/2026 en la rama `home-variante-d` (desde `dev` en `346854f`, que trae `Eyebrow`), un commit por fase (`e2d93c2`…`00af1c3`). Falta: decidir P1/P2. Resultado en §16.
 > **Tipo:** `implementation-plan` (escrito por `q-code-grill-feature`, modo standalone).
 > **Origen:** pedido de Flavio del 20/11/2026 (`REQ-HOME-VARIANTE-D-20261120`) y el prototipo aprobado en `docs/prototypes/home-modernizacion/` (`variante-d.html`, `como-funciona.html`, `variante-d.css`, `shared.css`, `shared.js`).
 > **Base:** `main` en `f3bf376`.
@@ -408,10 +408,10 @@ Revisión manual, a 390 px y 1280 px: home, `/como-funciona`, `/my-orders`, `/ca
 - [x] `/como-funciona` existe, con idea, calendario calculado del cierre configurado, detalle y cierre.
 - [x] Menú móvil y footer siguen bajando a `/#como-funciona`.
 - [x] Con otro día de cierre o plazo en el admin, cambian la home, el calendario y los textos de la página (cubierto por tests unitarios; no probado cambiando el admin).
-- [ ] El admin se ve igual que antes. Ver §16, "Bloqueos".
+- [x] El admin conserva su escala de título; el rótulo con punto en el admin es intencional (`346854f`, enmienda a T2).
 - [x] `pnpm test`, `pnpm typecheck`, `pnpm check` y `pnpm build` en verde para el código de la app (ver §16 sobre `docs/prototypes/`).
 - [x] Los seis specs de §12 en verde: 35 de 35 sobre la base local con el seed de e2e (ver §16).
-- [ ] Revisión manual de §12 hecha en los dos anchos: hecha sin sesión (home, `/como-funciona`, `/proveedores`, `/cart`, `/tutorial`); faltan `/my-orders` y `/admin/products`.
+- [x] Revisión manual de §12 hecha en los dos anchos, incluidas `/my-orders` y `/admin/products` con sesión sobre la base local (ver §16).
 - [x] Enmiendas escritas en los dos planes anteriores.
 - [x] Revisión con `q-review-code` y `q-review-comments`.
 
@@ -452,4 +452,6 @@ Revisión manual, a 390 px y 1280 px: home, `/como-funciona`, `/my-orders`, `/ca
 - ~~El tono `default` de `PageHeader` usa `Eyebrow` en el admin~~: es intencional, viene de `346854f` (Flavio). Enmienda a T2 y al criterio 0.4.
 - `.env` apunta a una base remota de Neon con `APP_ENV=production`. La primera corrida de e2e y las capturas usaron esa base (solo flujos de invitado; el carrito vive en `localStorage`). Los e2e tienen que correr con `DATABASE_URL` apuntando al contenedor local y `APP_ENV=development`.
 
-**Pendientes:** P1 y P2 de §11 (siguen abiertas). Revisión manual con sesión de `/my-orders` y `/admin/products`.
+**Revisión con sesión (base local, usuarios del seed):** `/my-orders` muestra el rótulo con punto y el título de storefront, sin scroll horizontal a 390 ni a 1280 px. `/admin/products` muestra el rótulo y el título del admin. A 1280 px desborda 146 px, pero lo causa la tabla del CRUD y no `PageHeader` (ocultando la tabla el desborde desaparece); `crud-table.tsx` cambió por última vez en `346854f`, fuera de este plan. Las sesiones de prueba se borraron.
+
+**Pendientes:** P1 y P2 de §11 (siguen abiertas). Fuera de alcance: el desborde de la tabla en `/admin/products` a 1280 px.
