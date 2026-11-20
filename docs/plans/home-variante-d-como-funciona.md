@@ -1,6 +1,6 @@
 # Plan: home "variante D", página "Cómo funciona" y base visual compartida
 
-> **Estado:** `Working`. Implementado el 20/11/2026 en el árbol de trabajo sobre `f3bf376`, sin rama ni commits (no autorizados). Falta: seed de e2e para `home-combo.spec.ts`, revisión manual con sesión y decidir P1/P2. Resultado en §16.
+> **Estado:** `Working`. Implementado el 20/11/2026 en la rama `home-variante-d` (desde `dev` en `346854f`, que trae `Eyebrow`), un commit por fase (`e2d93c2`…`00af1c3`). Falta: seed de e2e para `home-combo.spec.ts`, revisión manual con sesión y decidir P1/P2. Resultado en §16.
 > **Tipo:** `implementation-plan` (escrito por `q-code-grill-feature`, modo standalone).
 > **Origen:** pedido de Flavio del 20/11/2026 (`REQ-HOME-VARIANTE-D-20261120`) y el prototipo aprobado en `docs/prototypes/home-modernizacion/` (`variante-d.html`, `como-funciona.html`, `variante-d.css`, `shared.css`, `shared.js`).
 > **Base:** `main` en `f3bf376`.
@@ -428,7 +428,7 @@ Revisión manual, a 390 px y 1280 px: home, `/como-funciona`, `/my-orders`, `/ca
 
 ## 16. Resultado de la ejecución (20/11/2026)
 
-**Alcance entregado:** fases 0 a 6 completas en el árbol de trabajo sobre `f3bf376`. No se creó rama ni commit.
+**Alcance entregado:** fases 0 a 6 en la rama `home-variante-d`, desde `dev` (`346854f`), con un commit por fase: `e2d93c2` (0), `e8bf886` (1), `a09de85` (2), `ffe5163` (3), `cacbf70` (4), `7a89e68` (5), `00af1c3` (6). Aparte: `f1245d6` excluye `docs/prototypes` de `tsconfig` y Biome, y `f2016c8` formatea los JSON de la validación de Mercado Pago.
 
 **Desvíos y decisiones tomadas al ejecutar:**
 
@@ -448,8 +448,8 @@ Revisión manual, a 390 px y 1280 px: home, `/como-funciona`, `/my-orders`, `/ca
 
 **Bloqueos:**
 
-- `docs/prototypes/home-modernizacion/*` (sin versionar) rompe `pnpm typecheck`, `pnpm check` y `pnpm build`, porque `tsconfig.json` tiene `checkJs` y Biome revisa HTML y CSS. Antes de commitear el prototipo hay que excluir `docs/prototypes` en `tsconfig.json` y en `biome.jsonc`, o sacarlo del repo.
-- Mientras se ejecutaba este plan, un cambio ajeno modificó `eyebrow.tsx` y `page-header.tsx`: el tono `default` también usa `Eyebrow`. Eso cambia el admin, en contra de T2 y del criterio 0.4. Hay que confirmar si es intencional.
+- ~~El prototipo rompía `typecheck`, `check` y `build`~~: resuelto en `f1245d6`.
+- ~~El tono `default` de `PageHeader` usa `Eyebrow` en el admin~~: es intencional, viene de `346854f` (Flavio). Enmienda a T2 y al criterio 0.4.
 - `home-combo.spec.ts` está pendiente de `pnpm db:seed:test`, que reescribe la base local.
 
 **Pendientes:** P1 y P2 de §11 (siguen abiertas). Revisión manual con sesión de `/my-orders` y `/admin/products`.
