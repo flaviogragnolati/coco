@@ -93,6 +93,7 @@ export function CartPageView({
 				}
 				description="Lo que vas a pagar al confirmar."
 				title="Tu pedido"
+				tone="storefront"
 			/>
 
 			{mergeBlocked ? (

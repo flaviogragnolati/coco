@@ -11,6 +11,7 @@ export function MyOrdersScene({ fixtures }: { fixtures: TutorialFixtures }) {
 				description="Seguí el estado de cada pedido y su recorrido hasta la entrega."
 				eyebrow="Mi cuenta"
 				title="Mis pedidos"
+				tone="storefront"
 			/>
 			<TutorialTargetSlot id="my-orders-list">
 				<MyOrdersClient orders={fixtures.orderList} />

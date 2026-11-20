@@ -445,6 +445,7 @@ export function CheckoutClient() {
 				description="Cuatro pasos para dejar listo tu pedido de la semana."
 				eyebrow="Checkout"
 				title="Confirmá tu pedido compartido"
+				tone="storefront"
 			/>
 
 			<CheckoutStepper

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Badge } from "~/components/ui/badge";
+import { Eyebrow } from "~/components/eyebrow";
 
 export function SectionHeading({
 	eyebrow,
@@ -16,11 +16,9 @@ export function SectionHeading({
 	return (
 		<div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
 			<div className="flex max-w-3xl flex-col gap-3">
-				<Badge className="w-fit" variant="secondary">
-					{eyebrow}
-				</Badge>
+				<Eyebrow>{eyebrow}</Eyebrow>
 				<div className="flex flex-col gap-2">
-					<h2 className="font-heading font-semibold text-3xl tracking-tight">
+					<h2 className="text-balance font-bold font-heading text-[clamp(28px,4vw,44px)] leading-[1.08] tracking-tight">
 						{title}
 					</h2>
 					{description ? (

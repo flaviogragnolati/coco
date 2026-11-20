@@ -60,6 +60,7 @@ export function CheckoutScene({
 				description="Cuatro pasos para dejar listo tu pedido de la semana."
 				eyebrow="Checkout"
 				title="Confirmá tu pedido compartido"
+				tone="storefront"
 			/>
 
 			<TutorialTargetSlot id="checkout-stepper">
