@@ -5,6 +5,7 @@ import { DEFAULT_WEEKLY_CLOSING } from "~/shared/common/weekly-closing";
 import {
 	announcementMessage,
 	contactItems,
+	footerColumns,
 	getFaqItems,
 	getHowItWorksSteps,
 	getWhatsappContactItem,
@@ -52,6 +53,11 @@ const saturdayEvening = {
 };
 
 describe("hero", () => {
+	it("colours the end of the title without changing its text", () => {
+		expect(heroCopy.titleAccent).toBe("sale menos.");
+		expect(heroCopy.title.endsWith(heroCopy.titleAccent)).toBe(true);
+	});
+
 	it("explains the single big purchase without saying wholesale", () => {
 		expect(heroCopy.lead).toBe(
 			"Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.",
@@ -164,5 +170,49 @@ describe("Cómo funciona", () => {
 		expect(moved[0]?.body).toContain("hasta el sábado a las 18:30");
 		expect(moved[1]?.title).toBe("Cerramos el sábado.");
 		expect(moved[2]?.body).toContain("tarda 7 días en llegar");
+	});
+
+	it("says when each step happens", () => {
+		expect(steps.map((step) => step.when)).toEqual([
+			"Hasta el miércoles a las 12",
+			"Miércoles",
+			"7 a 10 días",
+			"Cuando llega",
+		]);
+
+		const moved = getHowItWorksSteps({
+			...saturdayEvening,
+			deliveryDaysMin: 5,
+			deliveryDaysMax: 5,
+		});
+		expect(moved.map((step) => step.when)).toEqual([
+			"Hasta el sábado a las 18:30",
+			"Sábado",
+			"5 días",
+			"Cuando llega",
+		]);
+	});
+});
+
+describe("footer", () => {
+	const links = footerColumns.flatMap((column) => column.links);
+
+	it("links the step-by-step page from Información", () => {
+		const information = footerColumns.find(
+			(column) => column.title === "Información",
+		);
+		expect(information?.links).toContainEqual({
+			label: "Paso a paso de un pedido",
+			href: "/como-funciona",
+		});
+	});
+
+	// e2e/home-section-links.spec.ts finds the section link by a substring of
+	// its name; a second footer link containing it breaks strict mode.
+	it("keeps Cómo funciona as the only link that names it", () => {
+		const naming = links.filter((link) => /cómo funciona/i.test(link.label));
+		expect(naming).toEqual([
+			{ label: "Cómo funciona", href: "/#como-funciona" },
+		]);
 	});
 });

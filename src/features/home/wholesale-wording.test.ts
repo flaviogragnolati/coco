@@ -15,10 +15,18 @@ import {
 	heroCopy,
 	homeNavLinks,
 } from "./home-content";
+import {
+	getHowItWorksDetail,
+	getOrderCalendarLegend,
+	howItWorksIdea,
+	howItWorksPage,
+	orderCalendarLabel,
+} from "./how-it-works-detail";
 
 /**
  * "Mayorista" and "al por mayor" explain the buying model, so customers read
- * them only in Cómo funciona, the FAQ and the tutorial's "Cómo funciona" step.
+ * them only in Cómo funciona (the home section and its page), the FAQ and the
+ * tutorial's "Cómo funciona" step.
  */
 const WHOLESALE = /mayorist|por mayor/i;
 
@@ -37,6 +45,7 @@ const ALLOWED_MATCHES: Record<string, number> = {
 	// "Sé proveedor" speaks to suppliers, who do sell wholesale.
 	"src/app/(storefront)/proveedores/page.tsx": 1,
 	"src/features/home/home-content.ts": 3,
+	"src/features/home/how-it-works-detail.ts": 4,
 	"src/features/tutorial/tutorial-script.ts": 1,
 };
 
@@ -83,6 +92,24 @@ describe("wholesale wording in customer copy", () => {
 			announcementMessage,
 			homeNavLinks,
 			footerColumns,
+		]);
+		expect(elsewhere).not.toMatch(WHOLESALE);
+	});
+
+	it("is limited to the explanation on the Cómo funciona page", () => {
+		const explanation = JSON.stringify([
+			howItWorksPage.lead,
+			howItWorksIdea,
+			getHowItWorksDetail(DEFAULT_WEEKLY_CLOSING),
+		]);
+		expect(wholesaleMatches(explanation)).toBe(
+			ALLOWED_MATCHES["src/features/home/how-it-works-detail.ts"],
+		);
+
+		const elsewhere = JSON.stringify([
+			howItWorksPage.title,
+			orderCalendarLabel(DEFAULT_WEEKLY_CLOSING),
+			getOrderCalendarLegend(DEFAULT_WEEKLY_CLOSING),
 		]);
 		expect(elsewhere).not.toMatch(WHOLESALE);
 	});
