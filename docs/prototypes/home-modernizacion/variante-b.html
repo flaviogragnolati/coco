@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoCo · Variante B · La semana</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400..800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* Variante B: el ritmo semanal ordena la página. Hero claro con el contador
+   del cierre; "Cómo funciona" es un calendario dibujado a escala (1 columna = 1 día). */
+body { --r-card: 12px; --r-btn: 10px; --card-border: 0; --card-bg: transparent; }
+.eyebrow { color: var(--primary); }
+.pcard .pimg { overflow: hidden; border-radius: var(--r-card); }
+.pcard .pbody { padding: 12px 2px 4px; }
+.pcard.combo { border: 1px solid var(--border); background: var(--card); }
+.pcard.combo .pimg, .pcard.combo .mosaic { border-radius: 0; }
+.pcard.combo .pbody { padding: 16px; }
+.pcard .btn-ink { background: none; border-color: var(--ink); color: var(--ink); }
+.pcard .btn-ink:hover { background: var(--ink); color: var(--ink-fg); }
+
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); align-items: center; gap: clamp(32px, 5vw, 72px); padding-block: clamp(40px, 6vw, 80px); }
+.hero-text { display: grid; gap: 22px; justify-items: start; }
+.hero h1 { font: 800 clamp(42px, 7vw, 88px) / 0.96 var(--font-h); letter-spacing: -0.04em; color: var(--ink); text-wrap: balance; }
+.hero .lead { font-size: clamp(17px, 1.6vw, 20px); max-width: 52ch; }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.cta small { color: var(--muted-fg); font-size: 13px; }
+
+/* Panel del cierre */
+.close { display: grid; gap: 18px; padding: clamp(20px, 3vw, 32px); border-radius: 18px; background: var(--ink); color: var(--ink-fg); }
+.close .eyebrow { color: var(--soft); }
+.close-date { font: 600 20px/1.2 var(--font-h); }
+.close-date::first-letter { text-transform: uppercase; }
+.digits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.digits div { padding: 14px 8px 10px; border-radius: 10px; background: var(--ink-2); text-align: center; }
+.digits b { display: block; font: 700 clamp(34px, 4.4vw, 52px) / 1 var(--font-h); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.digits span { color: var(--soft); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font: 600 12px/1 var(--font-b); text-align: center; }
+.week span { padding: 9px 0; border-radius: 6px; color: var(--soft); background: color-mix(in oklch, var(--ink-2) 55%, transparent); }
+.week .today { outline: 1.5px solid var(--soft); }
+.week .closing { background: var(--highlight); color: var(--highlight-fg); }
+.close small { color: var(--soft); font-size: 13px; }
+@media (max-width: 860px) { .hero .wrap { grid-template-columns: 1fr; } }
+
+/* Calendario de un pedido */
+.how { background: var(--warm); color: var(--warm-fg); }
+.gantt { --cols: 17; display: grid; gap: 0; }
+.g-row { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 8px 32px; align-items: center; padding-block: 16px; border-top: 1px solid color-mix(in oklch, var(--warm-fg) 15%, transparent); }
+.g-label b { font: 600 17px/1.3 var(--font-h); }
+.g-label p { font-size: 15px; }
+.g-track { display: grid; grid-template-columns: repeat(var(--cols), 1fr); align-items: center; min-height: 34px; background: linear-gradient(90deg, color-mix(in oklch, var(--warm-fg) 10%, transparent) 1px, transparent 1px) 0 0 / calc(100% / var(--cols)) 100%; }
+.bar { height: 26px; border-radius: 6px; }
+.bar.order { background: var(--soft); border: 1.5px solid var(--soft-fg); }
+.bar.shut { background: var(--highlight); }
+.bar.trip { background: var(--ink); }
+.bar.window { background: repeating-linear-gradient(135deg, var(--ink) 0 5px, transparent 5px 10px); border: 1.5px solid var(--ink); border-radius: 0 6px 6px 0; margin-left: -1px; }
+.bar.arrive { background: var(--card); border: 1.5px dashed var(--highlight-fg); }
+.g-head { border-top: 0; padding-block: 0 8px; align-items: end; }
+.g-head .g-track { background: none; min-height: 0; font: 700 11px/1 var(--font-b); text-align: center; color: color-mix(in oklch, var(--warm-fg) 65%, transparent); }
+.g-head .mi { color: var(--highlight-fg); }
+.g-head .mi::after { content: ""; display: block; width: 6px; height: 6px; margin: 5px auto 0; border-radius: 50%; background: var(--highlight); }
+.g-head .g-label { font-size: 13px; color: color-mix(in oklch, var(--warm-fg) 70%, transparent); }
+@media (max-width: 860px) { .g-row { grid-template-columns: 1fr; } .g-head .g-label { display: none; } }
+
+.spot-band { background: var(--bg); border-block: 1px solid var(--border); }
+.spot-band .wrap { max-width: 1040px; }
+.spot-band .tag-spot { background: none; padding: 0; color: var(--primary); font-size: 12px; letter-spacing: 0.12em; }
+.faq-sec { background: var(--soft); color: var(--soft-fg); }
+.faq-sec .eyebrow { color: var(--soft-fg); }
+.faq-sec .sh p { color: inherit; opacity: 0.8; }
+</style>
+</head>
+<body data-variant="b">
+<main>
+	<section class="hero">
+		<div class="wrap">
+			<div class="hero-text">
+				<span class="eyebrow">Ushuaia · Tierra del Fuego</span>
+				<h1>Comprar en grupo sale menos.</h1>
+				<p class="lead">Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.</p>
+				<div class="cta">
+					<a class="btn btn-highlight btn-lg" href="#ofertas" data-arrow>Ver el catálogo</a>
+					<small>No hace falta registrarte para mirar</small>
+				</div>
+			</div>
+			<aside class="close" aria-label="Próximo cierre">
+				<span class="eyebrow">Próximo cierre</span>
+				<p class="close-date"><span data-cd="date"></span> · 12:00</p>
+				<div class="digits">
+					<div><b data-cd="d">0</b><span>días</span></div>
+					<div><b data-cd="h">00</b><span>horas</span></div>
+					<div><b data-cd="m">00</b><span>min</span></div>
+				</div>
+				<div class="week" id="week" aria-hidden="true"></div>
+				<small>Lo que confirmes hasta el cierre llega en 7 a 10 días.</small>
+			</aside>
+		</div>
+	</section>
+
+	<section class="sec how" id="como-funciona">
+		<div class="wrap">
+			<div class="sh"><div><span class="eyebrow">Cómo funciona</span><h2>Comprar entre muchos, sin el esfuerzo de coordinar.</h2></div></div>
+			<div class="gantt" role="img" aria-label="Calendario de un pedido: se arma hasta el miércoles al mediodía, ese día se cierra y se compra, viaja siete días y llega entre el día siete y el diez.">
+				<div class="g-row g-head"><div class="g-label">Un pedido, día por día</div><div class="g-track" id="days"></div></div>
+				<div class="g-row"><div class="g-label"><b>1 · Armás tu pedido.</b><p>Elegís del catálogo y sumás lo que necesitás. Tenés tiempo hasta el miércoles a las 12.</p></div><div class="g-track"><span class="bar order" style="grid-column:1/8"></span></div></div>
+				<div class="g-row"><div class="g-label"><b>2 · Cerramos el miércoles.</b><p>Juntamos todos los pedidos y hacemos una sola compra al por mayor en Buenos Aires.</p></div><div class="g-track"><span class="bar shut" style="grid-column:7/8"></span></div></div>
+				<div class="g-row"><div class="g-label"><b>3 · Viaja a Ushuaia.</b><p>La mercadería tarda entre 7 y 10 días en llegar. En Mis pedidos ves en qué etapa está.</p></div><div class="g-track"><span class="bar trip" style="grid-column:8/15"></span><span class="bar window" style="grid-column:15/18"></span></div></div>
+				<div class="g-row"><div class="g-label"><b>4 · Retirás o te lo enviamos.</b><p>Al confirmar el pedido elegís retirarlo en el punto de retiro o recibirlo en tu casa.</p></div><div class="g-track"><span class="bar arrive" style="grid-column:14/18"></span></div></div>
+			</div>
+		</div>
+	</section>
+
+	<section class="sec spot-band" aria-label="Destacado"><div class="wrap" id="spot"></div></section>
+
+	<section class="sec" id="ofertas">
+		<div class="wrap">
+			<div class="sh"><div><span class="eyebrow">Destacados</span><h2>Destacados de la semana</h2></div><a class="btn btn-outline" href="#" data-arrow>Ver todo el catálogo</a></div>
+			<div class="grid" id="grid"></div>
+		</div>
+	</section>
+
+	<section class="sec faq-sec" id="preguntas-frecuentes">
+		<div class="wrap faq-grid">
+			<div class="sh"><div><span class="eyebrow">Ayuda rápida</span><h2>Preguntas frecuentes</h2><p>Lo esencial sobre el cierre, el pago y la entrega de tu pedido.</p></div></div>
+			<div class="faq" id="faq"></div>
+		</div>
+	</section>
+</main>
+<script src="shared.js"></script>
+<script>
+COCO.renderSpotlight("#spot");
+COCO.renderGrid("#grid");
+COCO.renderFaq("#faq");
+// Semana del panel: hoy con borde, miércoles en naranja.
+const names = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
+const today = new Date().getDay();
+document.querySelector("#week").innerHTML = [1, 2, 3, 4, 5, 6, 0]
+	.map((d) => `<span class="${d === 3 ? "closing" : ""} ${d === today ? "today" : ""}">${names[d]}</span>`)
+	.join("");
+// Eje del calendario: de jueves a sábado de la semana siguiente (17 días).
+document.querySelector("#days").innerHTML = Array.from({ length: 17 }, (_, i) => {
+	const d = (4 + i) % 7;
+	return `<span class="${d === 3 ? "mi" : ""}">${names[d]}</span>`;
+}).join("");
+COCO.chrome();
+</script>
+</body>
+</html>
