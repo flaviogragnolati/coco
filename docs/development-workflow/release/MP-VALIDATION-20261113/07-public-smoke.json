@@ -1,65 +1,65 @@
 {
-  "base": "https://coco-kappa-ashy.vercel.app",
-  "observedAt": "2026-11-13T18:29:24.932Z",
-  "commit": null,
-  "sourceBaseCommit": "6e151350a04f95c6d9711f1bad7f83294679e67d",
-  "sourceSha256": "92e93cbd505e0bdf6d812a112a0cbac1ffd2a2ee6f0fc036896ae922af7fdf89",
-  "deploymentId": "dpl_3sQWEGdwXwDYHkf3dwHskEY5esET",
-  "observationWindowSeconds": 15,
-  "authorization": [
-    {
-      "path": "/admin/payments",
-      "status": 307,
-      "location": "/login"
-    },
-    {
-      "path": "/admin/operations",
-      "status": 307,
-      "location": "/login"
-    }
-  ],
-  "returns": [
-    {
-      "path": "success",
-      "httpStatus": 200,
-      "titlePresent": true,
-      "informationalNotice": true
-    },
-    {
-      "path": "failure",
-      "httpStatus": 200,
-      "titlePresent": true,
-      "informationalNotice": true
-    },
-    {
-      "path": "pending",
-      "httpStatus": 200,
-      "titlePresent": true,
-      "informationalNotice": true
-    }
-  ],
-  "providerConfiguration": [
-    {
-      "enabled": true,
-      "mode": "sandbox",
-      "binary": "false",
-      "unsigned": "false"
-    }
-  ],
-  "invalidSignature": {
-    "httpStatus": 401,
-    "body": {
-      "error": "invalid signature"
-    },
-    "events": [
-      {
-        "status": "rejected",
-        "signatureValid": false,
-        "userTransactionId": null,
-        "lastError": "Firma inválida: SignatureMismatch"
-      }
-    ],
-    "attemptCountBefore": 0,
-    "attemptCountAfter": 0
-  }
+	"base": "https://coco-kappa-ashy.vercel.app",
+	"observedAt": "2026-11-13T18:29:24.932Z",
+	"commit": null,
+	"sourceBaseCommit": "6e151350a04f95c6d9711f1bad7f83294679e67d",
+	"sourceSha256": "92e93cbd505e0bdf6d812a112a0cbac1ffd2a2ee6f0fc036896ae922af7fdf89",
+	"deploymentId": "dpl_3sQWEGdwXwDYHkf3dwHskEY5esET",
+	"observationWindowSeconds": 15,
+	"authorization": [
+		{
+			"path": "/admin/payments",
+			"status": 307,
+			"location": "/login"
+		},
+		{
+			"path": "/admin/operations",
+			"status": 307,
+			"location": "/login"
+		}
+	],
+	"returns": [
+		{
+			"path": "success",
+			"httpStatus": 200,
+			"titlePresent": true,
+			"informationalNotice": true
+		},
+		{
+			"path": "failure",
+			"httpStatus": 200,
+			"titlePresent": true,
+			"informationalNotice": true
+		},
+		{
+			"path": "pending",
+			"httpStatus": 200,
+			"titlePresent": true,
+			"informationalNotice": true
+		}
+	],
+	"providerConfiguration": [
+		{
+			"enabled": true,
+			"mode": "sandbox",
+			"binary": "false",
+			"unsigned": "false"
+		}
+	],
+	"invalidSignature": {
+		"httpStatus": 401,
+		"body": {
+			"error": "invalid signature"
+		},
+		"events": [
+			{
+				"status": "rejected",
+				"signatureValid": false,
+				"userTransactionId": null,
+				"lastError": "Firma inválida: SignatureMismatch"
+			}
+		],
+		"attemptCountBefore": 0,
+		"attemptCountAfter": 0
+	}
 }

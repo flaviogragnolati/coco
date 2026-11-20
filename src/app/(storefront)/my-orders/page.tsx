@@ -25,6 +25,7 @@ export default async function MyOrdersPage() {
 				description="Seguí el estado de cada pedido y su recorrido hasta la entrega."
 				eyebrow="Mi cuenta"
 				title="Mis pedidos"
+				tone="storefront"
 			/>
 
 			{orders.length === 0 ? (

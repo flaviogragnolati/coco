@@ -15,6 +15,7 @@ import {
 	CollapsibleTrigger,
 } from "~/components/ui/collapsible";
 import { FieldGroup } from "~/components/ui/field";
+import { cn } from "~/lib/utils";
 
 /**
  * Filter shell for the operational admin lists: the handful of controls people
@@ -49,7 +50,7 @@ export function CrudFilterPanel({
 
 	return (
 		<Collapsible
-			className="flex flex-col gap-3 rounded-2xl border p-3"
+			className="flex flex-col gap-3 rounded-2xl border bg-card p-4"
 			onOpenChange={setOpen}
 			open={open}
 		>
@@ -68,14 +69,14 @@ export function CrudFilterPanel({
 									<Badge variant="highlight">{activeAdvancedCount}</Badge>
 								) : null}
 								<ChevronDownIcon
-									className={`transition-transform ${open ? "rotate-180" : ""}`}
+									className={cn("transition-transform", open && "rotate-180")}
 									data-icon="inline-end"
 								/>
 							</Button>
 						</CollapsibleTrigger>
 					) : null}
 					{onReset ? (
-						<Button onClick={onReset} type="button" variant="outline">
+						<Button onClick={onReset} type="button" variant="ghost">
 							<RotateCcwIcon data-icon="inline-start" />
 							Limpiar
 						</Button>

@@ -34,6 +34,9 @@ function originatedFromInteractiveElement(target: EventTarget | null) {
 	);
 }
 
+const tableHeadClassName =
+	"h-10 font-semibold text-muted-foreground text-xs uppercase tracking-wide";
+
 export function CrudTable<TItem>({
 	columns,
 	items,
@@ -54,17 +57,22 @@ export function CrudTable<TItem>({
 	getRowAriaLabel?: (item: TItem) => string;
 }) {
 	return (
-		<div className="overflow-hidden rounded-2xl border">
+		<div className="overflow-hidden rounded-2xl border bg-card">
 			<Table>
 				<TableHeader>
-					<TableRow>
+					<TableRow className="bg-muted/60 hover:bg-muted/60">
 						{columns.map((column) => (
-							<TableHead className={column.className} key={column.key}>
+							<TableHead
+								className={cn(tableHeadClassName, column.className)}
+								key={column.key}
+							>
 								{column.header}
 							</TableHead>
 						))}
 						{actions ? (
-							<TableHead className="w-10 text-right">Acciones</TableHead>
+							<TableHead className={cn(tableHeadClassName, "w-10")}>
+								<span className="sr-only">Acciones</span>
+							</TableHead>
 						) : null}
 					</TableRow>
 				</TableHeader>

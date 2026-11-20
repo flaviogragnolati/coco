@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useId } from "react";
 
 import { Button } from "~/components/ui/button";
@@ -48,9 +49,16 @@ export function CrudPaginationBar({
 		<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 			<div className="flex flex-col gap-1">
 				<span className="text-muted-foreground text-sm">
-					{isLoading
-						? `Cargando ${totalLabel.plural}`
-						: `${total} ${total === 1 ? totalLabel.singular : totalLabel.plural}`}
+					{isLoading ? (
+						`Cargando ${totalLabel.plural}…`
+					) : (
+						<>
+							<span className="font-semibold text-foreground tabular-nums">
+								{total}
+							</span>{" "}
+							{total === 1 ? totalLabel.singular : totalLabel.plural}
+						</>
+					)}
 				</span>
 				{truncated ? (
 					<span className="text-muted-foreground text-xs">
@@ -82,21 +90,26 @@ export function CrudPaginationBar({
 				<Button
 					disabled={page <= 1 || isLoading}
 					onClick={() => onPageChange(Math.max(1, page - 1))}
+					size="sm"
 					type="button"
 					variant="outline"
 				>
+					<ChevronLeftIcon data-icon="inline-start" />
 					Anterior
 				</Button>
-				<span className="text-sm">
-					Página {page} de {resolvedPageCount}
+				<span className="text-muted-foreground text-sm tabular-nums">
+					Página <span className="font-medium text-foreground">{page}</span> de{" "}
+					{resolvedPageCount}
 				</span>
 				<Button
 					disabled={pageCount === 0 || page >= pageCount || isLoading}
 					onClick={() => onPageChange(page + 1)}
+					size="sm"
 					type="button"
 					variant="outline"
 				>
 					Siguiente
+					<ChevronRightIcon data-icon="inline-end" />
 				</Button>
 			</div>
 		</div>

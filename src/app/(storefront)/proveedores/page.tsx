@@ -37,6 +37,7 @@ export default function SupplierApplicationPage() {
 				description="CoCo reúne los pedidos de la comunidad de Ushuaia para comprar por volumen. Si vendés por mayor, contanos qué ofrecés y te contactamos."
 				eyebrow="Proveedores"
 				title="Sé proveedor de CoCo"
+				tone="storefront"
 			/>
 
 			<ul className="grid gap-4 md:grid-cols-3">

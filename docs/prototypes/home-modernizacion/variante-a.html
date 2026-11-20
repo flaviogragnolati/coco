@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoCo · Variante A · La ruta</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400..800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* Variante A: la geografía ordena la página. El hero oscuro actual se queda,
+   pero gana el recorrido Buenos Aires → Ushuaia; los pasos son una línea. */
+body { --r-card: 22px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--highlight); box-shadow: 0 0 0 4px color-mix(in oklch, var(--highlight) 25%, transparent); }
+
+.hero { background: var(--ink); color: var(--ink-fg); }
+.hero .wrap { padding-block: clamp(48px, 7vw, 88px) clamp(36px, 5vw, 56px); display: grid; gap: clamp(40px, 6vw, 72px); }
+.hero-text { display: grid; gap: 22px; justify-items: start; max-width: 46rem; }
+.hero .eyebrow { color: var(--soft); }
+.hero h1 { font: 800 clamp(42px, 7.4vw, 84px) / 0.98 var(--font-h); letter-spacing: -0.035em; text-wrap: balance; }
+.hero h1 em { font-style: normal; color: var(--highlight); }
+.hero .lead { color: var(--soft); font-size: clamp(17px, 1.6vw, 20px); max-width: 56ch; }
+.hero .closing { font-weight: 600; }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.cta small { color: color-mix(in oklch, var(--ink-fg) 75%, transparent); font-size: 13px; }
+
+/* Diagrama de ruta */
+.route-fig { padding-top: 28px; border-top: 1px solid var(--ink-2); }
+.route-fig figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 28px; color: var(--soft); font-size: 14px; }
+.route-fig figcaption b { font: 600 15px var(--font-h); color: var(--ink-fg); }
+.route { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); }
+.st { position: relative; padding: 68px 8px 0; text-align: center; }
+.st-ico { position: absolute; z-index: 2; top: 0; left: 50%; translate: -50%; display: grid; place-items: center; width: 52px; height: 52px; border: 1.5px solid color-mix(in oklch, var(--soft) 45%, transparent); border-radius: 50%; background: var(--ink); color: var(--soft); }
+.st-ico svg { width: 24px; height: 24px; }
+.st b { display: block; font: 600 16px/1.2 var(--font-h); }
+.st small { display: block; margin-top: 4px; color: var(--soft); font-size: 13px; line-height: 1.35; }
+.st:not(:last-child)::after { content: ""; position: absolute; z-index: 0; top: 25px; left: 50%; width: 100%; height: 2px; background: repeating-linear-gradient(90deg, color-mix(in oklch, var(--soft) 55%, transparent) 0 10px, transparent 10px 18px); }
+.st.water::after { top: 22px; height: 8px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 4c3-4 9-4 12 0s9 4 12 0' fill='none' stroke='%2394cfc1' stroke-width='2'/%3E%3C/svg%3E") repeat-x; }
+.st:last-child .st-ico { border-color: var(--highlight); background: var(--highlight); color: var(--highlight-fg); }
+.route::before { content: ""; position: absolute; z-index: 1; top: 20px; left: 10%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--highlight); animation: travel 10s linear infinite; }
+@keyframes travel { to { left: 90%; } }
+@media (max-width: 760px) {
+	.route { grid-template-columns: 1fr; }
+	.route::before { display: none; }
+	.st { min-height: 84px; padding: 4px 0 20px 72px; text-align: left; }
+	.st-ico { left: 0; translate: none; }
+	.st:not(:last-child)::after, .st.water::after { top: 26px; left: 25px; width: 2px; height: 100%; background: repeating-linear-gradient(180deg, color-mix(in oklch, var(--soft) 55%, transparent) 0 10px, transparent 10px 18px); }
+}
+
+/* Cómo funciona: una sola línea de tiempo en lugar de diagrama + tarjetas */
+.how { background: var(--warm); color: var(--warm-fg); }
+.rail { display: grid; grid-template-columns: repeat(4, 1fr); }
+.rail li { position: relative; display: grid; align-content: start; gap: 10px; padding: 0 24px 0 0; }
+.rail .when { font: 700 12px/1 var(--font-b); letter-spacing: 0.1em; text-transform: uppercase; color: color-mix(in oklch, var(--warm-fg) 70%, transparent); }
+.rail .n { position: relative; z-index: 1; display: grid; place-items: center; width: 44px; height: 44px; margin-block: 6px 8px; border-radius: 50%; background: var(--ink); color: var(--ink-fg); font: 700 18px var(--font-h); }
+.rail li::before { content: ""; position: absolute; top: 50px; left: 0; width: 100%; height: 2px; background: color-mix(in oklch, var(--warm-fg) 22%, transparent); }
+.rail li:last-child::before { width: 44px; }
+.rail li:last-child .n { background: var(--highlight); color: var(--highlight-fg); }
+.rail p { max-width: 30ch; }
+@media (max-width: 860px) {
+	.rail { grid-template-columns: 1fr; gap: 28px; }
+	.rail li { padding: 0 0 0 64px; }
+	.rail .n { position: absolute; top: 0; left: 0; margin: 0; }
+	.rail li::before { top: 0; left: 21px; width: 2px; height: calc(100% + 28px); }
+	.rail li:last-child::before { display: none; }
+}
+
+.spot-band { background: var(--soft); color: var(--soft-fg); }
+.spot-band .wrap { max-width: 1040px; }
+.spot-band .tag-spot { background: var(--highlight); color: var(--highlight-fg); }
+.spot-band .price span, .spot-band .min, .spot-band .price s { color: color-mix(in oklch, var(--soft-fg) 70%, transparent); }
+.faq-sec { background: var(--warm); color: var(--warm-fg); }
+</style>
+</head>
+<body data-variant="a">
+<main>
+	<section class="hero">
+		<div class="wrap">
+			<div class="hero-text">
+				<span class="eyebrow">Ushuaia · Tierra del Fuego</span>
+				<h1>Comprar en grupo <em>sale menos.</em></h1>
+				<p class="lead">Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.</p>
+				<p class="closing">Los pedidos cierran los miércoles al mediodía y llegan en 7 a 10 días.</p>
+				<div class="cta">
+					<a class="btn btn-highlight btn-lg" href="#ofertas" data-arrow>Ver el catálogo</a>
+					<small>No hace falta registrarte para mirar</small>
+				</div>
+			</div>
+			<figure class="route-fig">
+				<figcaption><b>El viaje de tu pedido</b><span>7 a 10 días desde el cierre</span></figcaption>
+				<ol class="route">
+					<li class="st"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-5 9 5v12"/><path d="M8 21v-7h8v7M8 17.5h8"/></svg></span><b>Buenos Aires</b><small>Una sola compra al por mayor</small></li>
+					<li class="st"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V7M3 21h4"/><path d="M5 10l15-4M10 8.7v2.4M15 7.3v2.4"/></svg></span><b>Cruce a Chile</b><small>El camión sale de la Argentina</small></li>
+					<li class="st water"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h16l-2 4H6z"/><path d="M8 13V9h8v4"/><path d="M3 21c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1"/></svg></span><b>Estrecho de Magallanes</b><small>Cruza en balsa</small></li>
+					<li class="st"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20l7-12 4 7 2-3 7 8z"/><path d="M7.4 10.8l1.6 1.4 1.5-1.2"/></svg></span><b>Cordillera</b><small>Vuelve a entrar y la cruza</small></li>
+					<li class="st"><span class="st-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg></span><b>Ushuaia</b><small>Retirás o te lo llevamos</small></li>
+				</ol>
+			</figure>
+		</div>
+	</section>
+
+	<section class="sec how" id="como-funciona">
+		<div class="wrap">
+			<div class="sh"><div><span class="eyebrow">Cómo funciona</span><h2>Comprar entre muchos, sin el esfuerzo de coordinar.</h2></div></div>
+			<ol class="rail">
+				<li><span class="when">Hasta el miércoles 12:00</span><span class="n">1</span><h3>Armás tu pedido.</h3><p>Elegís del catálogo y sumás lo que necesitás.</p></li>
+				<li><span class="when">Miércoles</span><span class="n">2</span><h3>Cerramos el miércoles.</h3><p>Juntamos todos los pedidos y hacemos una sola compra al por mayor en Buenos Aires.</p></li>
+				<li><span class="when">7 a 10 días</span><span class="n">3</span><h3>Viaja a Ushuaia.</h3><p>En Mis pedidos ves en qué etapa está.</p></li>
+				<li><span class="when">Cuando llega</span><span class="n">4</span><h3>Retirás o te lo enviamos.</h3><p>Al confirmar el pedido elegís el punto de retiro o tu casa.</p></li>
+			</ol>
+		</div>
+	</section>
+
+	<section class="sec spot-band" aria-label="Destacado"><div class="wrap" id="spot"></div></section>
+
+	<section class="sec" id="ofertas">
+		<div class="wrap">
+			<div class="sh"><div><span class="eyebrow">Destacados</span><h2>Destacados de la semana</h2></div><a class="btn btn-outline" href="#" data-arrow>Ver todo el catálogo</a></div>
+			<div class="grid" id="grid"></div>
+		</div>
+	</section>
+
+	<section class="sec faq-sec" id="preguntas-frecuentes">
+		<div class="wrap faq-grid">
+			<div class="sh"><div><span class="eyebrow">Ayuda rápida</span><h2>Preguntas frecuentes</h2><p>Lo esencial sobre el cierre, el pago y la entrega de tu pedido.</p></div></div>
+			<div class="faq" id="faq"></div>
+		</div>
+	</section>
+</main>
+<script src="shared.js"></script>
+<script>
+COCO.renderSpotlight("#spot");
+COCO.renderGrid("#grid");
+COCO.renderFaq("#faq");
+COCO.chrome();
+</script>
+</body>
+</html>

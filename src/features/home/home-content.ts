@@ -3,6 +3,7 @@ import type { FaqPickupPoint } from "~/shared/common/home.types";
 import {
 	formatClosingSlot,
 	formatClosingTime,
+	formatDeliveryLeadTime,
 	formatDeliveryLeadTimeBetween,
 	type WeeklyClosingSchedule,
 	weekdayName,
@@ -20,12 +21,18 @@ export const announcementMessage = "Compras comunitarias en Ushuaia";
 
 export const heroCopy = {
 	title: "Comprar en grupo sale menos.",
+	/** The end of `title` the hero paints in the highlight colour. */
+	titleAccent: "sale menos.",
 	lead: "Juntamos pedidos de toda Ushuaia y hacemos una sola compra grande. Elegís lo que necesitás; de comprarlo y traerlo nos encargamos nosotros.",
 	cta: "Ver el catálogo",
 	ctaNote: "No hace falta registrarte para mirar",
 };
 
-export type HomeStep = { title: string; body: string };
+function capitalize(text: string) {
+	return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export type HomeStep = { when: string; title: string; body: string };
 
 export function getHowItWorksSteps(
 	schedule: WeeklyClosingSchedule,
@@ -33,18 +40,22 @@ export function getHowItWorksSteps(
 	const weekday = weekdayName(schedule.closingWeekday);
 	return [
 		{
+			when: `Hasta el ${formatClosingSlot(schedule)}`,
 			title: "Armás tu pedido.",
 			body: `Elegís del catálogo y sumás lo que necesitás. Tenés tiempo hasta el ${formatClosingSlot(schedule)}.`,
 		},
 		{
+			when: capitalize(weekday),
 			title: `Cerramos el ${weekday}.`,
 			body: "Juntamos todos los pedidos y hacemos una sola compra al por mayor en Buenos Aires.",
 		},
 		{
+			when: formatDeliveryLeadTime(schedule),
 			title: "Viaja a Ushuaia.",
 			body: `La mercadería tarda ${formatDeliveryLeadTimeBetween(schedule)} en llegar. En Mis pedidos ves en qué etapa está.`,
 		},
 		{
+			when: "Cuando llega",
 			title: "Retirás o te lo enviamos.",
 			body: "Al confirmar el pedido elegís retirarlo en el punto de retiro o recibirlo en tu casa.",
 		},
@@ -67,10 +78,6 @@ function describePickupPoints(points: FaqPickupPoint[]) {
 		)
 		.join("; ");
 	return ` Los puntos de retiro son: ${list}.`;
-}
-
-function capitalize(text: string) {
-	return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 export function getFaqItems(
@@ -122,6 +129,7 @@ export const footerColumns = [
 		links: [
 			{ label: "Preguntas frecuentes", href: "/#preguntas-frecuentes" },
 			{ label: "Catálogo", href: "/products" },
+			{ label: "Paso a paso de un pedido", href: "/como-funciona" },
 		],
 	},
 	{

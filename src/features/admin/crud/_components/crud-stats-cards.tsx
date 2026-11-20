@@ -62,12 +62,14 @@ export function CrudStatsCards({ stats }: { stats: CrudStatItem[] }) {
 							) : (
 								<CardDescription>{stat.label}</CardDescription>
 							)}
-							<CardTitle className="text-xl">{stat.value}</CardTitle>
+							<CardTitle className="font-semibold text-2xl tabular-nums leading-tight">
+								{stat.value}
+							</CardTitle>
 							{Icon ? (
 								<CardAction>
 									<span
 										className={cn(
-											"flex size-8 shrink-0 items-center justify-center rounded-full",
+											"flex size-9 shrink-0 items-center justify-center rounded-full",
 											medallionClass,
 										)}
 									>

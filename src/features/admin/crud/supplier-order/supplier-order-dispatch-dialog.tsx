@@ -117,7 +117,7 @@ function LineRow({
 	const excessive = requested !== null && requested > remaining;
 
 	return (
-		<div className="flex flex-wrap items-end justify-between gap-2 rounded-lg border p-3">
+		<div className="flex flex-wrap items-end justify-between gap-2 rounded-xl border p-3">
 			<div className="flex flex-col gap-1">
 				<p className="font-medium text-sm">
 					{lotItem.code} · {lotItem.product.name}

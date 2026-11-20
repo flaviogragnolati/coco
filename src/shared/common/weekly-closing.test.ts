@@ -10,6 +10,7 @@ import {
 	formatTimeUntilClosing,
 	heroClosingLine,
 	productClosingLine,
+	splitTimeUntilClosing,
 	weekdayName,
 	weekdayPlural,
 } from "./weekly-closing";
@@ -50,6 +51,26 @@ describe("formatTimeUntilClosing", () => {
 
 	it.each(cases)("%i ms before → %s", (remaining, text) => {
 		expect(formatTimeUntilClosing(before(remaining), closing)).toBe(text);
+	});
+});
+
+describe("splitTimeUntilClosing", () => {
+	const split = (remaining: number) =>
+		splitTimeUntilClosing(before(remaining), closing);
+
+	it("splits the whole minutes left, rounded down", () => {
+		expect(split(4 * DAY + 21 * HOUR + 11 * MINUTE + 59_000)).toEqual({
+			days: 4,
+			hours: 21,
+			minutes: 11,
+		});
+		expect(split(HOUR + 5 * MINUTE)).toEqual({ days: 0, hours: 1, minutes: 5 });
+	});
+
+	it("stops at zero once the closing has passed", () => {
+		const zero = { days: 0, hours: 0, minutes: 0 };
+		expect(split(30_000)).toEqual(zero);
+		expect(split(-MINUTE)).toEqual(zero);
 	});
 });
 

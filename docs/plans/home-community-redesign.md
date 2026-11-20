@@ -57,6 +57,15 @@
 > 1024 px; el hero, "Cómo funciona", el FAQ y la ficha citan el cierre y el plazo de
 > `WeeklyClosingSettings`. El barrido de copy de T18 sigue vigente: los textos nuevos ("cierran los",
 > "Cerramos el", "Entra en el cierre del") no lo violan. Ver `docs/plans/qa-2026-11-wpb-weekly-closing-home.md`.
+>
+> **Enmienda 2026-11 (variante D):** el hero vuelve a llevar un diagrama: el recorrido Buenos Aires →
+> Ushuaia en cinco paradas y un contador chico del próximo cierre. "Cómo funciona" pasa a ser una
+> línea de tiempo de cuatro pasos con una escena del diagrama "muchos pedidos, una compra" sobre cada
+> paso; la ilustración del sistema se retiró. La banda del destacado compone foto y compra en
+> horizontal, sin tarjeta. Hay una página nueva, `/como-funciona` (idea, calendario calculado del
+> cierre, detalle y cierre), enlazada desde la sección y desde el footer ("Paso a paso de un pedido").
+> El menú y el enlace "Cómo funciona" del footer siguen bajando a `/#como-funciona`. Ver
+> `docs/plans/home-variante-d-como-funciona.md`.
 
 ## 3. Scope
 

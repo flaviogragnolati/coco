@@ -168,22 +168,22 @@ export function LotsClient({
 	};
 
 	const idFilters = [
-		["operationId", "Operation ID", operationId, setOperationId],
-		["lotId", "Lot ID", lotId, setLotId],
-		["lotItemId", "Lot item ID", lotItemId, setLotItemId],
-		["supplierId", "Supplier ID", supplierId, setSupplierId],
+		["operationId", "ID de operación", operationId, setOperationId],
+		["lotId", "ID de lote", lotId, setLotId],
+		["lotItemId", "ID de línea de lote", lotItemId, setLotItemId],
+		["supplierId", "ID de proveedor", supplierId, setSupplierId],
 		[
 			"supplierOrderId",
-			"Supplier order ID",
+			"ID de orden de proveedor",
 			supplierOrderId,
 			setSupplierOrderId,
 		],
-		["destinationId", "Destination ID", destinationId, setDestinationId],
+		["destinationId", "ID de destino", destinationId, setDestinationId],
 	] as const;
 
 	return (
 		<CrudPageShell
-			description="Revisión read-only de lotes, líneas de lote, demanda asignada y diagnósticos operativos."
+			description="Consulta de lotes, líneas de lote, demanda asignada y diagnósticos operativos."
 			title="Lotes"
 		>
 			{statsQuery.isLoading ? (
@@ -216,7 +216,7 @@ export function LotsClient({
 							icon: AlertTriangleIcon,
 							accent: "warning",
 							description: statsQuery.data.truncated
-								? "Primeros 1000 mas recientes"
+								? "Primeros 1000 más recientes"
 								: undefined,
 						},
 					]}

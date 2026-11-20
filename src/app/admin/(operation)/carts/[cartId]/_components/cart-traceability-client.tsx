@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
+import { DetailEmpty } from "~/features/admin/crud/_components/crud-detail";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
 import {
 	CrudErrorState,
@@ -57,7 +58,7 @@ export function CartTraceabilityClient({ cartId }: { cartId: number }) {
 
 				<section className="flex flex-col gap-2">
 					<h2 className="font-heading font-semibold text-lg">
-						Items y lineage de fulfillment
+						Ítems y linaje de fulfillment
 					</h2>
 					{detail.items.length > 0 ? (
 						<div className="grid gap-3">
@@ -66,28 +67,26 @@ export function CartTraceabilityClient({ cartId }: { cartId: number }) {
 							))}
 						</div>
 					) : (
-						<div className="rounded-2xl border p-3 text-muted-foreground text-sm">
-							El carrito no tiene items.
-						</div>
+						<DetailEmpty>El carrito no tiene ítems.</DetailEmpty>
 					)}
 				</section>
 
 				<section className="flex flex-col gap-2">
 					<h2 className="font-heading font-semibold text-lg">
-						Diagnosticos del carrito
+						Diagnósticos del carrito
 					</h2>
 					<DiagnosticList
 						diagnostics={detail.diagnostics}
-						emptyLabel="Sin diagnósticos operativos en el lineage del carrito."
+						emptyLabel="Sin diagnósticos operativos en el linaje del carrito."
 					/>
 				</section>
 
 				<section className="flex flex-col gap-2">
 					<h2 className="font-heading font-semibold text-lg">
-						Timeline del carrito
+						Historial del carrito
 					</h2>
 					<TrackingTimeline
-						emptyLabel="El carrito todavia no tiene eventos de tracking."
+						emptyLabel="El carrito todavía no tiene eventos de tracking."
 						items={detail.cartTimeline}
 					/>
 				</section>
@@ -102,7 +101,7 @@ export function CartTraceabilityClient({ cartId }: { cartId: number }) {
 					<Link href="/admin/carts">Volver a carritos</Link>
 				</Button>
 			}
-			description="Lineage de fulfillment, órdenes, pagos, diagnósticos y timelines de un carrito, en una sola pantalla de solo lectura."
+			description="Linaje de fulfillment, órdenes, pagos, diagnósticos e historial de un carrito, en una sola pantalla de solo lectura."
 			title="Trazabilidad de carrito"
 		>
 			{renderContent()}

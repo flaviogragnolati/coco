@@ -73,7 +73,7 @@ export function DestinationFormDialog({
 
 	return (
 		<CrudFormDialogShell
-			description="El ID es informativo y se genera automaticamente."
+			description="El ID es informativo y se genera automáticamente."
 			footer={
 				<>
 					<Button
@@ -116,7 +116,7 @@ export function DestinationFormDialog({
 							<Input
 								disabled
 								id="destination-id"
-								value={destination?.id ? String(destination.id) : "Automatico"}
+								value={destination?.id ? String(destination.id) : "Automático"}
 							/>
 						</Field>
 						<Field orientation="horizontal">

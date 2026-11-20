@@ -146,7 +146,7 @@ export function ProductLocalConstraintsFormDialog({
 							<Input
 								disabled
 								id="product-local-constraints-id"
-								value={constraint?.id ? String(constraint.id) : "Automatico"}
+								value={constraint?.id ? String(constraint.id) : "Automático"}
 							/>
 						</Field>
 						<Field orientation="horizontal">

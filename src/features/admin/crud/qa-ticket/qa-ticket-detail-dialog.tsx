@@ -24,6 +24,11 @@ import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import {
+	DetailField,
+	DetailGrid,
+	DetailSection,
+} from "~/features/admin/crud/_components/crud-detail";
+import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
@@ -274,20 +279,13 @@ export function QaTicketDetailDialog({
 								</Alert>
 							) : null}
 
-							<section className="grid gap-3 rounded-2xl border p-3 sm:grid-cols-3">
-								<div>
-									<p className="text-muted-foreground text-xs">Sección</p>
-									<p className="font-medium text-sm">{ticket.section}</p>
-								</div>
-								<div>
-									<p className="text-muted-foreground text-xs">Quién</p>
-									<p className="font-medium text-sm">{ticket.actor}</p>
-								</div>
-								<div>
-									<p className="text-muted-foreground text-xs">Feature</p>
-									<p className="font-medium text-sm">{ticket.feature}</p>
-								</div>
-							</section>
+							<DetailSection>
+								<DetailGrid className="sm:grid-cols-3" columns={3}>
+									<DetailField label="Sección">{ticket.section}</DetailField>
+									<DetailField label="Quién">{ticket.actor}</DetailField>
+									<DetailField label="Feature">{ticket.feature}</DetailField>
+								</DetailGrid>
+							</DetailSection>
 
 							<div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">
 								<QaTicketDefinition
@@ -295,14 +293,11 @@ export function QaTicketDetailDialog({
 									steps={ticket.steps}
 								/>
 
-								<section className="flex min-w-0 flex-col gap-4 rounded-2xl border p-4">
-									<div>
-										<h3 className="font-medium">Análisis de la pasada</h3>
-										<p className="text-muted-foreground text-sm">
-											Pendiente, En curso y Re-test siguen disponibles desde el
-											tracking administrativo.
-										</p>
-									</div>
+								<DetailSection
+									className="min-w-0 gap-4"
+									description="Pendiente, En curso y Re-test siguen disponibles desde el tracking administrativo."
+									title="Análisis de la pasada"
+								>
 									<ToggleGroup
 										aria-label="Resultado de la pasada"
 										className="flex w-full flex-wrap justify-start"
@@ -358,17 +353,13 @@ export function QaTicketDetailDialog({
 											</FieldDescription>
 										) : null}
 									</Field>
-								</section>
+								</DetailSection>
 							</div>
 
-							<section className="flex flex-col gap-3 rounded-2xl border p-4">
-								<div>
-									<h3 className="font-medium">Evidencia técnica</h3>
-									<p className="text-muted-foreground text-sm">
-										Los logs se guardan junto con el resultado. Máximo 1 MiB
-										UTF-8 por campo.
-									</p>
-								</div>
+							<DetailSection
+								description="Los logs se guardan junto con el resultado. Máximo 1 MiB UTF-8 por campo."
+								title="Evidencia técnica"
+							>
 								<QaTicketLogFields
 									consoleLog={consoleLog}
 									disabled={!canEdit || isSaving}
@@ -376,10 +367,10 @@ export function QaTicketDetailDialog({
 									onConsoleLogChange={setConsoleLog}
 									onNetworkLogChange={setNetworkLog}
 								/>
-							</section>
+							</DetailSection>
 
-							<section className="flex flex-col gap-3 rounded-2xl border p-4">
-								<p className="text-muted-foreground text-sm">
+							<DetailSection>
+								<p className="text-muted-foreground text-xs/relaxed">
 									Cada imagen queda guardada inmediatamente al terminar su
 									carga; Guardar resultado no vuelve a enviarla.
 								</p>
@@ -389,7 +380,7 @@ export function QaTicketDetailDialog({
 									onEvidenceChanged={onEvidenceChanged}
 									ticketId={ticket.id}
 								/>
-							</section>
+							</DetailSection>
 						</div>
 					) : null}
 				</div>

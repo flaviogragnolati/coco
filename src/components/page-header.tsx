@@ -1,31 +1,41 @@
 import type { ReactNode } from "react";
 
+import { Eyebrow } from "~/components/eyebrow";
+import { cn } from "~/lib/utils";
+
 /**
- * Storefront page header: eyebrow + `h1` + description with an optional action
- * slot on the right. One per page — section-level headings use
- * `SectionHeading` (an `h2` with a Badge eyebrow) instead.
+ * Page header: eyebrow + `h1` + description with an optional action slot on
+ * the right. One per page — section-level headings use `SectionHeading`.
+ * Both tones share the eyebrow; `tone="storefront"` adds the home's heading
+ * scale, the default keeps the denser admin one.
  */
 export function PageHeader({
 	eyebrow,
 	title,
 	description,
 	actions,
+	tone = "default",
 }: {
 	eyebrow?: string;
 	title: string;
 	description?: string;
 	actions?: ReactNode;
+	tone?: "default" | "storefront";
 }) {
+	const storefront = tone === "storefront";
 	return (
 		<section className="flex flex-col gap-2">
-			{eyebrow ? (
-				<span className="font-semibold text-highlight text-xs uppercase tracking-wide">
-					{eyebrow}
-				</span>
-			) : null}
+			{eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
 			<div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
 				<div className="flex max-w-3xl flex-col gap-2">
-					<h1 className="font-heading font-semibold text-3xl tracking-normal">
+					<h1
+						className={cn(
+							"font-heading",
+							storefront
+								? "font-bold text-[clamp(28px,4vw,40px)] leading-tight tracking-tight"
+								: "font-semibold text-3xl tracking-normal",
+						)}
+					>
 						{title}
 					</h1>
 					{description ? (

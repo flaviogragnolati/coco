@@ -2,27 +2,25 @@
 
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "~/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { CrudAvailableAction } from "~/features/admin/crud/_components/crud-available-action";
 import {
-	CrudErrorState,
-	CrudLoadingState,
-} from "~/features/admin/crud/_components/crud-state";
+	DetailDatesField,
+	DetailDiagnosticList,
+	DetailEmpty,
+	DetailEventList,
+	DetailField,
+	DetailGrid,
+	DetailItem,
+	DetailMetrics,
+	DetailSection,
+} from "~/features/admin/crud/_components/crud-detail";
+import { CrudDetailDialogShell } from "~/features/admin/crud/_components/crud-detail-dialog-shell";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
-import { DiagnosticDetailChip } from "~/features/admin/crud/_components/diagnostic-detail-chip";
 import type {
 	PackageCommandKey,
 	PackageDetail,
 } from "~/shared/common/admin-crud/package.types";
-import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import {
 	packageActionLabelMap,
 	packageLegConfig,
@@ -40,80 +38,65 @@ const destructiveActions: ReadonlySet<PackageCommandKey> = new Set([
 function Resumen({ pkg }: { pkg: PackageDetail }) {
 	return (
 		<div className="flex flex-col gap-3">
-			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
-				<div className="flex flex-col gap-1">
-					<p className="text-muted-foreground text-xs">Estado</p>
-					<StatusChip config={packageStatusConfig[pkg.status]} />
-				</div>
-				<div className="flex flex-col gap-1">
-					<p className="text-muted-foreground text-xs">Pata</p>
-					<StatusChip config={packageLegConfig[pkg.leg]} />
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Tracking</p>
-					<p className="font-medium">{pkg.trackingCode ?? "Sin código"}</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Envío</p>
-					<p className="font-medium">
-						{pkg.shipment?.internalCode ?? "Sin envío"}
-					</p>
-					<p className="text-muted-foreground text-xs">
-						{pkg.shipment?.name ?? ""}
-					</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Fechas</p>
-					<p className="text-xs">
-						Creado {formatDateTimeShort(new Date(pkg.createdAt))}
-					</p>
-					<p className="text-muted-foreground text-xs">
-						Actualizado {formatDateTimeShort(new Date(pkg.updatedAt))}
-					</p>
-				</div>
-			</section>
+			<DetailMetrics
+				columns={5}
+				items={[
+					{ label: "Líneas", value: pkg.packageLineQuantity },
+					{ label: "Asignado", value: pkg.packagedAllocationQuantity },
+					{
+						label: "Sin asignar",
+						value: pkg.unallocatedQuantity,
+						tone: Number(pkg.unallocatedQuantity) > 0 ? "warning" : "default",
+					},
+					{ label: "Sin fraccionar", value: pkg.fractionableQuantity },
+					{ label: "Clientes", value: pkg.distinctCartCount },
+				]}
+			/>
 
-			<section className="grid gap-3 rounded-2xl border p-3 md:grid-cols-5">
-				<div>
-					<p className="text-muted-foreground text-xs">Líneas</p>
-					<p className="font-medium">{pkg.packageLineQuantity}</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Asignado</p>
-					<p className="font-medium">{pkg.packagedAllocationQuantity}</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Sin asignar</p>
-					<p className="font-medium">{pkg.unallocatedQuantity}</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Sin fraccionar</p>
-					<p className="font-medium">{pkg.fractionableQuantity}</p>
-				</div>
-				<div>
-					<p className="text-muted-foreground text-xs">Clientes</p>
-					<p className="font-medium">{pkg.distinctCartCount}</p>
-				</div>
-			</section>
+			<DetailSection title="Datos del paquete">
+				<DetailGrid columns={3}>
+					<DetailField label="Código de seguimiento">
+						{pkg.trackingCode ? (
+							<span className="font-mono">{pkg.trackingCode}</span>
+						) : (
+							<span className="font-normal text-muted-foreground">
+								Sin código
+							</span>
+						)}
+					</DetailField>
+					<DetailField hint={pkg.shipment?.name} label="Envío">
+						{pkg.shipment?.internalCode ?? (
+							<span className="font-normal text-muted-foreground">
+								Sin envío
+							</span>
+						)}
+					</DetailField>
+					<DetailDatesField
+						createdAt={pkg.createdAt}
+						updatedAt={pkg.updatedAt}
+					/>
+				</DetailGrid>
+			</DetailSection>
 		</div>
 	);
 }
 
 function Lineas({ pkg }: { pkg: PackageDetail }) {
 	if (pkg.packageLines.length === 0) {
-		return (
-			<p className="text-muted-foreground text-xs">Sin líneas de paquete</p>
-		);
+		return <DetailEmpty>Sin líneas de paquete</DetailEmpty>;
 	}
 
 	return (
 		<section className="flex flex-col gap-2">
 			{pkg.packageLines.map((line) => (
-				<div className="rounded-lg border p-3" key={line.id}>
-					<div className="flex flex-wrap justify-between gap-2">
-						<div className="flex flex-col gap-1">
+				<DetailItem key={line.id}>
+					<div className="flex flex-wrap items-start justify-between gap-2">
+						<div className="flex flex-col gap-1.5">
 							<p className="font-medium">
-								{line.lotItem.code} - {line.lotItem.product.name}
+								<span className="font-mono text-muted-foreground text-xs">
+									{line.lotItem.code}
+								</span>{" "}
+								{line.lotItem.product.name}
 							</p>
 							<div className="flex flex-wrap items-center gap-2">
 								<StatusChip config={packageLotItemStatusConfig[line.status]} />
@@ -122,31 +105,38 @@ function Lineas({ pkg }: { pkg: PackageDetail }) {
 								</span>
 							</div>
 						</div>
-						<p className="text-sm">
-							{line.quantity} {line.lotItem.product.unit}
+						<p className="font-semibold text-sm tabular-nums">
+							{line.quantity}{" "}
+							<span className="font-normal text-muted-foreground">
+								{line.lotItem.product.unit}
+							</span>
 						</p>
 					</div>
-					<div className="mt-3 grid gap-2">
-						{line.packageAllocations.map((allocation) => (
-							<div
-								className="grid gap-2 border-t pt-2 text-xs md:grid-cols-[1fr_8rem_8rem]"
-								key={allocation.id}
-							>
-								<Link
-									className="font-medium underline-offset-4 hover:underline"
-									href={`/admin/tracking?cartItemId=${allocation.demandAllocation.cartItem.id}`}
+					{line.packageAllocations.length > 0 ? (
+						<ul className="mt-3 flex flex-col divide-y border-t text-xs">
+							{line.packageAllocations.map((allocation) => (
+								<li
+									className="grid items-center gap-x-3 gap-y-1 py-2 last:pb-0 md:grid-cols-[1fr_5rem_14rem]"
+									key={allocation.id}
 								>
-									{allocation.demandAllocation.cartItem.cart.code} /{" "}
-									{allocation.demandAllocation.cartItem.code}
-								</Link>
-								<span>{allocation.quantity}</span>
-								<span>
-									{allocation.demandAllocation.cartItem.cart.user.email}
-								</span>
-							</div>
-						))}
-					</div>
-				</div>
+									<Link
+										className="font-medium font-mono underline-offset-4 hover:underline"
+										href={`/admin/tracking?cartItemId=${allocation.demandAllocation.cartItem.id}`}
+									>
+										{allocation.demandAllocation.cartItem.cart.code} /{" "}
+										{allocation.demandAllocation.cartItem.code}
+									</Link>
+									<span className="tabular-nums md:text-right">
+										{allocation.quantity}
+									</span>
+									<span className="truncate text-muted-foreground">
+										{allocation.demandAllocation.cartItem.cart.user.email}
+									</span>
+								</li>
+							))}
+						</ul>
+					) : null}
+				</DetailItem>
 			))}
 		</section>
 	);
@@ -154,45 +144,14 @@ function Lineas({ pkg }: { pkg: PackageDetail }) {
 
 function Actividad({ pkg }: { pkg: PackageDetail }) {
 	return (
-		<section className="grid gap-3 md:grid-cols-2">
-			<div className="rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Últimos eventos
-				</h3>
-				<div className="mt-2 flex flex-col gap-2">
-					{pkg.trackingEvents.length > 0 ? (
-						pkg.trackingEvents.map((event) => (
-							<p className="text-xs" key={event.id}>
-								{formatDateTimeShort(new Date(event.createdAt))} - {event.label}{" "}
-								- {event.cartItemCode}
-							</p>
-						))
-					) : (
-						<p className="text-muted-foreground text-xs">Sin eventos</p>
-					)}
-				</div>
-			</div>
-			<div className="rounded-2xl border p-3">
-				<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
-					Diagnósticos
-				</h3>
-				<div className="mt-2 flex flex-col gap-2">
-					{pkg.diagnostics.length > 0 ? (
-						pkg.diagnostics.map((diagnostic) => (
-							<div className="text-xs" key={diagnostic.code}>
-								<DiagnosticDetailChip
-									code={diagnostic.code}
-									severity={diagnostic.severity}
-								/>
-								<p className="mt-1">{diagnostic.message}</p>
-							</div>
-						))
-					) : (
-						<p className="text-muted-foreground text-xs">Sin diagnósticos</p>
-					)}
-				</div>
-			</div>
-		</section>
+		<div className="grid gap-3 md:grid-cols-2">
+			<DetailSection title="Últimos eventos">
+				<DetailEventList events={pkg.trackingEvents} />
+			</DetailSection>
+			<DetailSection title="Diagnósticos">
+				<DetailDiagnosticList diagnostics={pkg.diagnostics} />
+			</DetailSection>
+		</div>
 	);
 }
 
@@ -212,61 +171,64 @@ export function PackageDetailDialog({
 	onAction: (action: PackageCommandKey) => void;
 }) {
 	return (
-		<Dialog onOpenChange={onOpenChange} open={open}>
-			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
-				<DialogHeader>
-					<DialogTitle>{pkg ? pkg.name : "Detalle de paquete"}</DialogTitle>
-					<DialogDescription>
-						Visualizacion read-only de lineas, asignaciones, envio y
-						diagnosticos.
-					</DialogDescription>
-				</DialogHeader>
-
-				{isLoading ? <CrudLoadingState rows={4} /> : null}
-				{!isLoading && errorMessage ? (
-					<CrudErrorState message={errorMessage} />
-				) : null}
-				{!isLoading && pkg ? (
-					<Tabs className="w-full" defaultValue="resumen">
-						<TabsList className="flex-wrap" variant="line">
-							<TabsTrigger value="resumen">Resumen</TabsTrigger>
-							<TabsTrigger value="lineas">
-								Lineas ({pkg.packageLines.length})
-							</TabsTrigger>
-							<TabsTrigger value="actividad">Actividad</TabsTrigger>
-						</TabsList>
-						<TabsContent value="resumen">
-							<Resumen pkg={pkg} />
-						</TabsContent>
-						<TabsContent value="lineas">
-							<Lineas pkg={pkg} />
-						</TabsContent>
-						<TabsContent value="actividad">
-							<Actividad pkg={pkg} />
-						</TabsContent>
-					</Tabs>
-				) : null}
-
-				<DialogFooter>
-					{pkg ? (
-						<Button asChild size="sm" variant="outline">
+		<CrudDetailDialogShell
+			description="Líneas, asignaciones, envío y diagnósticos del paquete."
+			errorMessage={errorMessage}
+			eyebrow="Paquete"
+			footer={
+				pkg ? (
+					<>
+						<Button asChild variant="outline">
 							<Link href={`/admin/tracking?packageId=${pkg.id}`}>
 								Ver tracking
 							</Link>
 						</Button>
-					) : null}
-					{pkg?.availableActions.map((entry) => (
-						<CrudAvailableAction
-							destructive={destructiveActions.has(entry.action)}
-							enabled={entry.enabled}
-							key={entry.action}
-							label={packageActionLabelMap[entry.action]}
-							onClick={() => onAction(entry.action)}
-							reason={entry.reason}
-						/>
-					))}
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+						{pkg.availableActions.map((entry) => (
+							<CrudAvailableAction
+								destructive={destructiveActions.has(entry.action)}
+								enabled={entry.enabled}
+								key={entry.action}
+								label={packageActionLabelMap[entry.action]}
+								onClick={() => onAction(entry.action)}
+								reason={entry.reason}
+							/>
+						))}
+					</>
+				) : null
+			}
+			isLoading={isLoading}
+			onOpenChange={onOpenChange}
+			open={open}
+			status={
+				pkg ? (
+					<>
+						<StatusChip config={packageStatusConfig[pkg.status]} />
+						<StatusChip config={packageLegConfig[pkg.leg]} />
+					</>
+				) : null
+			}
+			title={pkg ? pkg.name : "Detalle de paquete"}
+		>
+			{pkg ? (
+				<Tabs className="w-full" defaultValue="resumen">
+					<TabsList className="flex-wrap" variant="line">
+						<TabsTrigger value="resumen">Resumen</TabsTrigger>
+						<TabsTrigger value="lineas">
+							Líneas ({pkg.packageLines.length})
+						</TabsTrigger>
+						<TabsTrigger value="actividad">Actividad</TabsTrigger>
+					</TabsList>
+					<TabsContent value="resumen">
+						<Resumen pkg={pkg} />
+					</TabsContent>
+					<TabsContent value="lineas">
+						<Lineas pkg={pkg} />
+					</TabsContent>
+					<TabsContent value="actividad">
+						<Actividad pkg={pkg} />
+					</TabsContent>
+				</Tabs>
+			) : null}
+		</CrudDetailDialogShell>
 	);
 }

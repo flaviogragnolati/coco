@@ -1,14 +1,37 @@
 import { Badge } from "~/components/ui/badge";
+import {
+	DetailDisclosure,
+	DetailEmpty,
+	DetailField,
+	DetailGrid,
+	DetailItem,
+	DetailSection,
+	DetailSectionTitle,
+} from "~/features/admin/crud/_components/crud-detail";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
-import { lotStatusLabelMap } from "~/features/admin/crud/lot/lot.mappers";
+import {
+	lotItemStatusConfig,
+	lotStatusConfig,
+} from "~/features/admin/crud/lot/lot.mappers";
+import {
+	operationStatusConfig,
+	operationStrategyLabelMap,
+} from "~/features/admin/crud/operation/operation.mappers";
 import {
 	cartItemStatusConfig,
 	fulfillmentStatusConfig,
 } from "~/features/admin/crud/operations-cart/operations-cart.mappers";
-import { packageStatusLabelMap } from "~/features/admin/crud/package/package.mappers";
 import {
-	shipmentStatusLabelMap,
+	packageLotItemStatusConfig,
+	packageStatusConfig,
+} from "~/features/admin/crud/package/package.mappers";
+import {
+	rollOverStageLabelMap,
+	rollOverStatusConfig,
+} from "~/features/admin/crud/roll-over/roll-over.mappers";
+import {
+	shipmentStatusConfig,
 	shipmentTypeLabelMap,
 } from "~/features/admin/crud/shipment/shipment.mappers";
 import { TrackingTimeline } from "~/features/admin/crud/tracking/tracking-timeline.parts";
@@ -22,28 +45,61 @@ import { DiagnosticList } from "./cart-item-diagnostics";
 
 function PackagingRow({ packaging }: { packaging: CartTraceabilityPackaging }) {
 	return (
-		<div className="flex flex-wrap gap-1">
-			<Badge variant="secondary">
-				Paquete {packaging.package.name} ·{" "}
-				{packageStatusLabelMap[packaging.package.status]}
-				{packaging.package.trackingCode
-					? ` · ${packaging.package.trackingCode}`
-					: ""}
-			</Badge>
-			<Badge variant="outline">
-				Linea #{packaging.packageLine.id} · {packaging.packageLine.quantity} ·{" "}
-				{packaging.packageLine.status}
-			</Badge>
-			{packaging.shipment ? (
-				<Badge variant="secondary">
-					Envio {packaging.shipment.internalCode} ·{" "}
-					{shipmentStatusLabelMap[packaging.shipment.status]} ·{" "}
-					{shipmentTypeLabelMap[packaging.shipment.type]}
-				</Badge>
-			) : (
-				<Badge variant="outline">Sin envío</Badge>
-			)}
-		</div>
+		<li className="rounded-xl bg-muted/40 px-3 py-2.5">
+			<DetailGrid columns={3}>
+				<DetailField
+					hint={
+						packaging.package.trackingCode ? (
+							<span className="font-mono">
+								{packaging.package.trackingCode}
+							</span>
+						) : null
+					}
+					label="Paquete"
+				>
+					<span className="flex flex-wrap items-center gap-1.5">
+						{packaging.package.name}
+						<StatusChip
+							config={packageStatusConfig[packaging.package.status]}
+						/>
+					</span>
+				</DetailField>
+				<DetailField
+					hint={<span className="font-mono">#{packaging.packageLine.id}</span>}
+					label="Línea de paquete"
+				>
+					<span className="flex flex-wrap items-center gap-1.5">
+						<span className="tabular-nums">
+							{packaging.packageLine.quantity}
+						</span>
+						<StatusChip
+							config={packageLotItemStatusConfig[packaging.packageLine.status]}
+						/>
+					</span>
+				</DetailField>
+				<DetailField
+					hint={
+						packaging.shipment
+							? shipmentTypeLabelMap[packaging.shipment.type]
+							: null
+					}
+					label="Envío"
+				>
+					{packaging.shipment ? (
+						<span className="flex flex-wrap items-center gap-1.5">
+							<span className="font-mono">
+								{packaging.shipment.internalCode}
+							</span>
+							<StatusChip
+								config={shipmentStatusConfig[packaging.shipment.status]}
+							/>
+						</span>
+					) : (
+						<span className="font-normal text-muted-foreground">Sin envío</span>
+					)}
+				</DetailField>
+			</DetailGrid>
+		</li>
 	);
 }
 
@@ -56,66 +112,97 @@ function AllocationCard({
 	const { lot } = lotItem;
 
 	return (
-		<div className="flex flex-col gap-2 rounded-lg border p-2">
-			<div className="flex flex-wrap gap-1">
-				<Badge variant="outline">
-					Demanda #{allocation.id} · {allocation.quantity}
-				</Badge>
-				<Badge variant="secondary">
-					LotItem {lotItem.code} · {lotItem.status} · {lotItem.product.name}
-				</Badge>
-				<Badge variant="secondary">
-					Lote {lot.code} · {lotStatusLabelMap[lot.status]} · {lot.supplierName}
-				</Badge>
-				<Badge variant="secondary">
-					Operacion {lot.operation.code} · {lot.operation.status} ·{" "}
-					{lot.operation.strategy}
-				</Badge>
-			</div>
+		<DetailItem className="flex flex-col gap-3">
+			<DetailGrid columns={4}>
+				<DetailField
+					hint={<span className="font-mono">#{allocation.id}</span>}
+					label="Demanda asignada"
+				>
+					<span className="tabular-nums">{allocation.quantity}</span>
+				</DetailField>
+				<DetailField hint={lotItem.product.name} label="Línea de lote">
+					<span className="flex flex-wrap items-center gap-1.5">
+						<span className="font-mono">{lotItem.code}</span>
+						<StatusChip config={lotItemStatusConfig[lotItem.status]} />
+					</span>
+				</DetailField>
+				<DetailField hint={lot.supplierName} label="Lote">
+					<span className="flex flex-wrap items-center gap-1.5">
+						<span className="font-mono">{lot.code}</span>
+						<StatusChip config={lotStatusConfig[lot.status]} />
+					</span>
+				</DetailField>
+				<DetailField
+					hint={`Estrategia ${operationStrategyLabelMap[lot.operation.strategy]}`}
+					label="Operación"
+				>
+					<span className="flex flex-wrap items-center gap-1.5">
+						<span className="font-mono">{lot.operation.code}</span>
+						<StatusChip config={operationStatusConfig[lot.operation.status]} />
+					</span>
+				</DetailField>
+			</DetailGrid>
 
-			<div className="flex flex-col gap-1">
+			<div className="flex flex-col gap-2 border-t pt-3">
 				<span className="text-muted-foreground text-xs">Empaque</span>
 				{allocation.packaging.length > 0 ? (
-					<div className="flex flex-col gap-1">
+					<ul className="flex flex-col gap-2">
 						{allocation.packaging.map((packaging) => (
 							<PackagingRow key={packaging.id} packaging={packaging} />
 						))}
-					</div>
+					</ul>
 				) : (
-					<span className="text-muted-foreground text-xs">
-						Sin empaque todavia
-					</span>
+					<DetailEmpty>Sin empaque todavía</DetailEmpty>
 				)}
 			</div>
-		</div>
+		</DetailItem>
 	);
 }
 
 function RollOverRow({ rollOver }: { rollOver: CartTraceabilityRollOver }) {
 	return (
-		<div className="flex flex-wrap gap-1">
-			<Badge variant="outline">
-				Rollover #{rollOver.id} · {rollOver.stage} · {rollOver.status} ·{" "}
-				{rollOver.quantity}
-			</Badge>
-			<Badge variant="secondary">
-				Operacion {rollOver.operation.code} · {rollOver.operation.status}
-			</Badge>
-			<span className="text-muted-foreground text-xs">{rollOver.reason}</span>
-		</div>
+		<DetailItem>
+			<DetailGrid columns={4}>
+				<DetailField
+					hint={rollOverStageLabelMap[rollOver.stage]}
+					label="Rollover"
+				>
+					<span className="flex flex-wrap items-center gap-1.5">
+						<span className="font-mono">#{rollOver.id}</span>
+						<StatusChip config={rollOverStatusConfig[rollOver.status]} />
+					</span>
+				</DetailField>
+				<DetailField label="Cantidad">
+					<span className="tabular-nums">{rollOver.quantity}</span>
+				</DetailField>
+				<DetailField label="Operación">
+					<span className="flex flex-wrap items-center gap-1.5">
+						<span className="font-mono">{rollOver.operation.code}</span>
+						<StatusChip
+							config={operationStatusConfig[rollOver.operation.status]}
+						/>
+					</span>
+				</DetailField>
+				<DetailField label="Motivo">
+					<span className="font-normal">{rollOver.reason}</span>
+				</DetailField>
+			</DetailGrid>
+		</DetailItem>
 	);
 }
 
 export function CartItemTraceCard({ item }: { item: CartTraceabilityItem }) {
 	return (
-		<article className="flex flex-col gap-3 rounded-2xl border p-3">
+		<DetailSection>
 			<div className="flex flex-wrap items-start justify-between gap-2">
-				<div className="flex flex-col gap-1">
-					<span className="font-medium">{item.product.name}</span>
-					<span className="font-mono text-muted-foreground text-xs">
-						{item.code} · {item.quantity} {item.product.unit}
-					</span>
-					<div className="flex flex-wrap gap-1">
+				<div className="flex flex-col gap-1.5">
+					<p className="font-medium">
+						<span className="font-mono text-muted-foreground text-xs">
+							{item.code}
+						</span>{" "}
+						{item.product.name}
+					</p>
+					<div className="flex flex-wrap items-center gap-1.5">
 						<StatusChip config={cartItemStatusConfig[item.status]} />
 						<StatusChip
 							config={fulfillmentStatusConfig[item.fulfillmentStatus]}
@@ -125,20 +212,27 @@ export function CartItemTraceCard({ item }: { item: CartTraceabilityItem }) {
 						) : null}
 					</div>
 				</div>
-				<OperationalDiagnosticBadge
-					count={item.diagnostics.length}
-					severity={item.highestDiagnosticSeverity}
-				/>
+				<div className="flex flex-col items-end gap-1.5">
+					<p className="font-semibold text-sm tabular-nums">
+						{item.quantity}{" "}
+						<span className="font-normal text-muted-foreground">
+							{item.product.unit}
+						</span>
+					</p>
+					<OperationalDiagnosticBadge
+						count={item.diagnostics.length}
+						severity={item.highestDiagnosticSeverity}
+					/>
+				</div>
 			</div>
 
-			<details className="flex flex-col gap-3 rounded-lg border bg-background p-2">
-				<summary className="cursor-pointer font-medium text-sm">
-					Ver lineage, diagnosticos y timeline
-				</summary>
-
-				<div className="mt-3 grid gap-4">
+			<DetailDisclosure
+				className="rounded-xl p-3"
+				title="Ver linaje, diagnósticos e historial"
+			>
+				<div className="grid gap-4">
 					<div className="flex flex-col gap-2">
-						<span className="font-medium text-sm">Lineage de fulfillment</span>
+						<DetailSectionTitle>Linaje de fulfillment</DetailSectionTitle>
 						{item.allocations.length > 0 ? (
 							<div className="flex flex-col gap-2">
 								{item.allocations.map((allocation) => (
@@ -146,16 +240,16 @@ export function CartItemTraceCard({ item }: { item: CartTraceabilityItem }) {
 								))}
 							</div>
 						) : (
-							<p className="text-muted-foreground text-xs">
-								Sin lineage todavia. El item espera agregacion en una operacion.
-							</p>
+							<DetailEmpty>
+								Sin linaje todavía. El ítem espera agregación en una operación.
+							</DetailEmpty>
 						)}
 					</div>
 
 					{item.rollOvers.length > 0 ? (
 						<div className="flex flex-col gap-2">
-							<span className="font-medium text-sm">Rollovers</span>
-							<div className="flex flex-col gap-1">
+							<DetailSectionTitle>Rollovers</DetailSectionTitle>
+							<div className="flex flex-col gap-2">
 								{item.rollOvers.map((rollOver) => (
 									<RollOverRow key={rollOver.id} rollOver={rollOver} />
 								))}
@@ -164,22 +258,22 @@ export function CartItemTraceCard({ item }: { item: CartTraceabilityItem }) {
 					) : null}
 
 					<div className="flex flex-col gap-2">
-						<span className="font-medium text-sm">Diagnósticos</span>
+						<DetailSectionTitle>Diagnósticos</DetailSectionTitle>
 						<DiagnosticList
 							diagnostics={item.diagnostics}
-							emptyLabel="Sin diagnósticos para este item."
+							emptyLabel="Sin diagnósticos para este ítem."
 						/>
 					</div>
 
 					<div className="flex flex-col gap-2">
-						<span className="font-medium text-sm">Timeline del item</span>
+						<DetailSectionTitle>Historial del ítem</DetailSectionTitle>
 						<TrackingTimeline
-							emptyLabel="Este item todavia no tiene eventos de tracking."
+							emptyLabel="Este ítem todavía no tiene eventos de tracking."
 							items={item.timeline}
 						/>
 					</div>
 				</div>
-			</details>
-		</article>
+			</DetailDisclosure>
+		</DetailSection>
 	);
 }

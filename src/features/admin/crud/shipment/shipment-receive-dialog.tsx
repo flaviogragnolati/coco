@@ -124,7 +124,7 @@ function LineRow({
 	const shortfall = received === null ? null : declared - received;
 
 	return (
-		<div className="flex flex-col gap-2 rounded-lg border p-3">
+		<div className="flex flex-col gap-2 rounded-xl border p-3">
 			<div className="flex flex-wrap items-end justify-between gap-2">
 				<div className="flex flex-col gap-1">
 					<p className="font-medium text-sm">

@@ -227,15 +227,21 @@ export function TrackingClient({
 	};
 
 	const idFilters = [
-		["cart-id", "Cart ID", "Ej: 10", cartId, setCartId],
-		["cart-item-id", "Cart item ID", "Ej: 25", cartItemId, setCartItemId],
-		["order-id", "Order ID", "Ej: 5", orderId, setOrderId],
-		["operation-id", "Operation ID", "Ej: 3", operationId, setOperationId],
-		["lot-id", "Lot ID", "Ej: 4", lotId, setLotId],
-		["lot-item-id", "Lot item ID", "Ej: 8", lotItemId, setLotItemId],
-		["package-id", "Package ID", "Ej: 12", packageId, setPackageId],
-		["shipment-id", "Shipment ID", "Ej: 6", shipmentId, setShipmentId],
-		["rollover-id", "RollOver ID", "Ej: 2", rollOverId, setRollOverId],
+		["cart-id", "ID de carrito", "Ej: 10", cartId, setCartId],
+		[
+			"cart-item-id",
+			"ID de ítem de carrito",
+			"Ej: 25",
+			cartItemId,
+			setCartItemId,
+		],
+		["order-id", "ID de pedido", "Ej: 5", orderId, setOrderId],
+		["operation-id", "ID de operación", "Ej: 3", operationId, setOperationId],
+		["lot-id", "ID de lote", "Ej: 4", lotId, setLotId],
+		["lot-item-id", "ID de línea de lote", "Ej: 8", lotItemId, setLotItemId],
+		["package-id", "ID de paquete", "Ej: 12", packageId, setPackageId],
+		["shipment-id", "ID de envío", "Ej: 6", shipmentId, setShipmentId],
+		["rollover-id", "ID de rollover", "Ej: 2", rollOverId, setRollOverId],
 	] as const;
 
 	const userOptions = (usersQuery.data ?? []).map((user) => ({
@@ -245,7 +251,7 @@ export function TrackingClient({
 
 	return (
 		<CrudPageShell
-			description="Revisión read-only del historial completo de tracking por ítem de carrito."
+			description="Consulta del historial completo de tracking por ítem de carrito."
 			title="Tracking"
 		>
 			<section className="flex flex-col gap-3">

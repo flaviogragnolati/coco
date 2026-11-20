@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoCo · Variante D · Cómo funciona</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400..800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="variante-d.css">
+</head>
+<body data-variant="d">
+<main>
+	<section class="hero page-head">
+		<div class="wrap">
+			<p class="crumb"><a href="variante-d.html">Inicio</a> / Cómo funciona</p>
+			<h1>Una compra grande entre todos, paso a paso.</h1>
+			<p class="lead">CoCo junta los pedidos de los vecinos de Ushuaia, hace una sola compra al por mayor en Buenos Aires y reparte lo que llega. Acá está todo el recorrido, desde que armás tu pedido hasta que lo tenés en tu casa.</p>
+		</div>
+	</section>
+
+	<section class="sec">
+		<div class="wrap split">
+			<div class="sh" style="margin:0"><div><span class="eyebrow">La idea</span><h2>Por qué comprar juntos sale menos.</h2></div></div>
+			<div class="prose">
+				<p>Un proveedor mayorista vende más barato cuando le compran mucho de una vez. Una sola familia no llega a esas cantidades; muchas familias juntas, sí.</p>
+				<p>Por eso juntamos los pedidos de mucha gente y hacemos una sola compra grande, directo al proveedor. Así pagamos precio mayorista por productos de primera calidad.</p>
+				<p>Vos solo elegís lo que necesitás. De coordinar la compra, traerla hasta Ushuaia y repartirla nos encargamos nosotros.</p>
+			</div>
+		</div>
+	</section>
+
+	<section class="sec cal" id="calendario">
+		<div class="wrap">
+			<div class="sh" style="margin:0"><div><span class="eyebrow">El calendario</span><h2>Un pedido, día por día.</h2><p style="color:inherit">Todas las semanas se repite el mismo ciclo. El miércoles al mediodía se cierra la compra de esa semana; lo que confirmes después entra en la del miércoles siguiente.</p></div></div>
+			<div class="gantt" role="img" aria-label="Calendario de un pedido: se arma hasta el miércoles al mediodía, ese día se cierra y se compra, viaja siete días y llega entre el día siete y el diez.">
+				<div class="g-row g-head"><div class="g-label">Cada columna es un día</div><div class="g-track" id="days"></div></div>
+				<div class="g-row"><div class="g-label">1 · Armás tu pedido</div><div class="g-track"><span class="bar order" style="grid-column:1/8"></span></div></div>
+				<div class="g-row"><div class="g-label">2 · Cierre y compra</div><div class="g-track"><span class="bar shut" style="grid-column:7/8"></span></div></div>
+				<div class="g-row"><div class="g-label">3 · Viaja a Ushuaia</div><div class="g-track"><span class="bar trip" style="grid-column:8/15"></span><span class="bar window" style="grid-column:15/18"></span></div></div>
+				<div class="g-row"><div class="g-label">4 · Retiro o envío</div><div class="g-track"><span class="bar arrive" style="grid-column:14/18"></span></div></div>
+			</div>
+			<p class="legend">
+				<span><i class="bar shut"></i>Cierre: miércoles 12:00</span>
+				<span><i class="bar trip" style="border-radius:7px"></i>Viaje: 7 días como mínimo</span>
+				<span><i class="bar window" style="border-radius:7px"></i>Puede llegar entre el día 7 y el 10</span>
+			</p>
+		</div>
+	</section>
+
+	<section class="sec">
+		<div class="wrap">
+			<div class="sh"><div><span class="eyebrow">El detalle</span><h2>Qué pasa en cada paso.</h2></div></div>
+			<ol class="detail">
+				<li>
+					<span class="n">1</span><div data-scene="1"></div>
+					<div class="prose"><span class="when">Hasta el miércoles 12:00</span><h3>Armás tu pedido.</h3>
+						<p>Elegís del catálogo y sumás lo que necesitás. No hace falta registrarte para mirar; sí para confirmar.</p>
+						<p>Al confirmar elegís cómo recibirlo y pagás con Mercado Pago o por transferencia bancaria. Si pagás por transferencia, te damos los datos en ese momento y tu pago queda registrado cuando revisamos el comprobante.</p></div>
+				</li>
+				<li>
+					<span class="n">2</span><div data-scene="2"></div>
+					<div class="prose"><span class="when">Miércoles</span><h3>Cerramos el miércoles.</h3>
+						<p>Todos los miércoles a las 12, hora de Argentina, juntamos los pedidos confirmados y pagados y hacemos una sola compra al por mayor en Buenos Aires.</p>
+						<p>Lo que llegue después del cierre no se pierde: entra en la compra del miércoles siguiente.</p></div>
+				</li>
+				<li>
+					<span class="n">3</span><div data-scene="3"></div>
+					<div class="prose"><span class="when">7 a 10 días</span><h3>Viaja a Ushuaia.</h3>
+						<p>Ushuaia está en una isla. El camión cruza a Chile, atraviesa el Estrecho de Magallanes en balsa, vuelve a entrar a la Argentina y cruza la cordillera. Por eso la mercadería tarda entre 7 y 10 días desde el cierre.</p>
+						<p>En Mis pedidos ves en qué etapa está tu compra. Si algo cambia, por ejemplo una demora o una cantidad distinta, también lo vas a ver ahí.</p></div>
+				</li>
+				<li>
+					<span class="n" style="background:var(--highlight);color:var(--highlight-fg)">4</span><div data-scene="4"></div>
+					<div class="prose"><span class="when">Cuando llega</span><h3>Retirás o te lo enviamos.</h3>
+						<p>Según lo que elegiste al confirmar, te lo llevamos a la dirección que cargaste o lo retirás en el punto de retiro, en su horario. Las dos opciones cuestan lo mismo.</p></div>
+				</li>
+			</ol>
+		</div>
+	</section>
+
+	<section class="sec cta-band">
+		<div class="wrap">
+			<div><h2>El próximo cierre es en <span data-cd="text"></span>.</h2><p>¿Te quedó alguna duda? Mirá las <a href="variante-d.html#preguntas-frecuentes" style="text-decoration:underline;text-underline-offset:4px">preguntas frecuentes</a>.</p></div>
+			<a class="btn btn-highlight btn-lg" href="variante-d.html#ofertas" data-arrow>Ver el catálogo</a>
+		</div>
+	</section>
+</main>
+<script src="shared.js"></script>
+<script>
+const names = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
+// Eje: de jueves a sábado de la semana siguiente (17 días).
+document.querySelector("#days").innerHTML = Array.from({ length: 17 }, (_, i) => {
+	const d = (4 + i) % 7;
+	return `<span class="${d === 3 ? "mi" : ""}">${names[d]}</span>`;
+}).join("");
+COCO.renderScenes();
+COCO.chrome();
+</script>
+</body>
+</html>

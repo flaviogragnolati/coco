@@ -3,6 +3,9 @@ import { HashSafeLink } from "~/components/hash-safe-link";
 import { Separator } from "~/components/ui/separator";
 import { contactItems, footerColumns } from "../home-content";
 
+const columnTitle =
+	"font-bold text-brand-soft text-xs uppercase tracking-[0.12em]";
+
 export function HomeFooter() {
 	return (
 		<footer
@@ -25,7 +28,7 @@ export function HomeFooter() {
 							className="flex flex-col gap-3"
 							key={column.title}
 						>
-							<h2 className="font-semibold text-sm">{column.title}</h2>
+							<h2 className={columnTitle}>{column.title}</h2>
 							{column.links.map((link) => (
 								<HashSafeLink
 									className="text-sm underline-offset-4 hover:underline"
@@ -38,7 +41,7 @@ export function HomeFooter() {
 						</nav>
 					))}
 					<div className="flex flex-col gap-3">
-						<h2 className="font-semibold text-sm">Contacto</h2>
+						<h2 className={columnTitle}>Contacto</h2>
 						{contactItems.map(({ label, value, href, external }) => (
 							<a
 								className="text-sm underline-offset-4 hover:underline"
@@ -53,7 +56,7 @@ export function HomeFooter() {
 						))}
 					</div>
 				</div>
-				<Separator />
+				<Separator className="bg-brand-ink-muted" />
 				<p className="text-xs">
 					© {new Date().getFullYear()} CoCo. Todos los derechos reservados.
 				</p>

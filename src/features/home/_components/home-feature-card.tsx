@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { HomeFeature } from "~/shared/common/home.types";
 import { HomeComboCard } from "./home-combo-card";
 import { HomeOfferAddButton } from "./home-offer-add-button";
@@ -13,16 +14,20 @@ export function HomeFeatureCard({
 	isAuthenticated,
 	userId,
 	size = "default",
+	intro,
 }: {
 	feature: HomeFeature;
 	isAuthenticated: boolean;
 	userId: string | null;
 	size?: "default" | "hero";
+	/** Shown over the title of a `hero` card. */
+	intro?: ReactNode;
 }) {
 	if (feature.kind === "combo") {
 		return (
 			<HomeComboCard
 				card={feature.combo}
+				intro={intro}
 				isAuthenticated={isAuthenticated}
 				size={size}
 				userId={userId}
@@ -32,7 +37,7 @@ export function HomeFeatureCard({
 
 	const { offer } = feature;
 	return (
-		<HomeOfferCard offer={offer} size={size}>
+		<HomeOfferCard intro={intro} offer={offer} size={size}>
 			{size === "hero" ? (
 				<HomeOfferQuantityProvider offer={offer}>
 					<HomeOfferPurchasePanel

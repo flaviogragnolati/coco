@@ -120,7 +120,7 @@ export function CarrierFormDialog({
 							<Input
 								disabled
 								id="carrier-id"
-								value={carrier?.id ? String(carrier.id) : "Automatico"}
+								value={carrier?.id ? String(carrier.id) : "Automático"}
 							/>
 						</Field>
 						<Field orientation="horizontal">
@@ -135,7 +135,7 @@ export function CarrierFormDialog({
 								}
 							/>
 							<FieldContent>
-								<FieldLabel>Carrier activo</FieldLabel>
+								<FieldLabel>Transportista activo</FieldLabel>
 								<FieldDescription>
 									{carrier?.deleted ? (
 										<CrudStatusBadge

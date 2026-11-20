@@ -1,4 +1,11 @@
 import { Badge } from "~/components/ui/badge";
+import {
+	DetailDatesField,
+	DetailEmpty,
+	DetailField,
+	DetailGrid,
+	DetailSection,
+} from "~/features/admin/crud/_components/crud-detail";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { OperationalDiagnosticBadge } from "~/features/admin/crud/_components/operational-diagnostic-badge";
 import {
@@ -10,7 +17,6 @@ import type {
 	CartTraceabilityAggregate,
 	CartTraceabilityCart,
 } from "~/shared/common/cart-traceability.types";
-import { formatDateTimeShort } from "~/shared/common/date.helpers";
 
 export function CartSummaryHeader({
 	cart,
@@ -25,71 +31,70 @@ export function CartSummaryHeader({
 }) {
 	return (
 		<section className="flex flex-col gap-3">
-			<div className="grid gap-3 rounded-2xl border p-3 md:grid-cols-4">
-				<div className="flex flex-col items-start gap-1">
-					<span className="text-muted-foreground text-xs">Carrito</span>
-					<span className="font-mono">{cart.code}</span>
-					<span className="font-mono text-muted-foreground text-xs">
-						#{cart.id}
-					</span>
-					<StatusChip config={cartStatusConfig[cart.status]} />
-					{cart.deleted ? <Badge variant="destructive">Eliminado</Badge> : null}
-				</div>
-				<div className="flex flex-col gap-1">
-					<span className="text-muted-foreground text-xs">Usuario</span>
-					<span className="font-medium">{cart.user.name}</span>
-					<span className="text-muted-foreground text-xs">
-						{cart.user.email}
-					</span>
-					<span className="text-muted-foreground text-xs">
-						Rol: {cart.user.role}
-					</span>
-				</div>
-				<div className="flex flex-col gap-1">
-					<span className="text-muted-foreground text-xs">Fechas</span>
-					<span className="text-xs">
-						Creado: {formatDateTimeShort(new Date(cart.createdAt))}
-					</span>
-					<span className="text-xs">
-						Actualizado: {formatDateTimeShort(new Date(cart.updatedAt))}
-					</span>
-				</div>
-				<div className="flex flex-col items-start gap-1">
-					<span className="text-muted-foreground text-xs">Diagnósticos</span>
-					<OperationalDiagnosticBadge
-						count={diagnosticCount}
-						severity={highestDiagnosticSeverity}
+			<DetailSection
+				actions={
+					<div className="flex flex-wrap items-center gap-1.5">
+						<StatusChip config={cartStatusConfig[cart.status]} />
+						{cart.deleted ? (
+							<Badge variant="destructive">Eliminado</Badge>
+						) : null}
+					</div>
+				}
+				title="Datos del carrito"
+			>
+				<DetailGrid columns={4}>
+					<DetailField
+						hint={<span className="font-mono">#{cart.id}</span>}
+						label="Carrito"
+					>
+						<span className="font-mono">{cart.code}</span>
+					</DetailField>
+					<DetailField
+						hint={
+							<>
+								<span className="block">{cart.user.email}</span>
+								<span className="block">Rol: {cart.user.role}</span>
+							</>
+						}
+						label="Usuario"
+					>
+						{cart.user.name}
+					</DetailField>
+					<DetailDatesField
+						createdAt={cart.createdAt}
+						updatedAt={cart.updatedAt}
 					/>
-					<span className="text-muted-foreground text-xs">
-						{aggregate.itemCount} item{aggregate.itemCount === 1 ? "" : "s"}
-					</span>
-				</div>
-			</div>
+					<DetailField label="Diagnósticos">
+						<OperationalDiagnosticBadge
+							count={diagnosticCount}
+							severity={highestDiagnosticSeverity}
+						/>
+					</DetailField>
+				</DetailGrid>
+			</DetailSection>
 
-			<div className="flex flex-col gap-2 rounded-2xl border p-3">
-				<span className="text-muted-foreground text-xs">
-					Resumen de fulfillment
-				</span>
+			<DetailSection
+				description={`${aggregate.itemCount} ítem${aggregate.itemCount === 1 ? "" : "s"} en el carrito`}
+				title="Resumen de fulfillment"
+			>
 				{aggregate.fulfillmentSummary.length > 0 ? (
-					<div className="flex flex-wrap gap-2">
+					<div className="flex flex-wrap gap-x-3 gap-y-2">
 						{aggregate.fulfillmentSummary.map((entry) => (
 							<span
-								className="inline-flex items-center gap-1"
+								className="inline-flex items-center gap-1.5"
 								key={entry.status}
 							>
 								<StatusChip config={fulfillmentStatusConfig[entry.status]} />
-								<span className="text-muted-foreground text-xs">
+								<span className="font-medium text-xs tabular-nums">
 									{entry.count}
 								</span>
 							</span>
 						))}
 					</div>
 				) : (
-					<span className="text-muted-foreground text-xs">
-						El carrito no tiene items.
-					</span>
+					<DetailEmpty>El carrito no tiene ítems.</DetailEmpty>
 				)}
-			</div>
+			</DetailSection>
 		</section>
 	);
 }

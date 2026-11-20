@@ -93,16 +93,29 @@ function remaining(count: number, rest: string) {
 }
 
 /**
- * The part after "Cierre del pedido: ". Whole minutes only, rounded down, so the
- * text changes once a minute and never shows seconds.
+ * Whole minutes left, rounded down, so every closing text changes once a minute
+ * and never shows seconds. Zero once the closing has passed.
  */
-export function formatTimeUntilClosing(now: Date, closing: Date) {
-	const totalMinutes = Math.floor((closing.getTime() - now.getTime()) / 60_000);
-	if (totalMinutes < 1) return "falta menos de 1 min";
+export function splitTimeUntilClosing(now: Date, closing: Date) {
+	const totalMinutes = Math.max(
+		0,
+		Math.floor((closing.getTime() - now.getTime()) / 60_000),
+	);
+	return {
+		days: Math.floor(totalMinutes / (24 * 60)),
+		hours: Math.floor((totalMinutes % (24 * 60)) / 60),
+		minutes: totalMinutes % 60,
+	};
+}
 
-	const dayCount = Math.floor(totalMinutes / (24 * 60));
-	const hourCount = Math.floor((totalMinutes % (24 * 60)) / 60);
-	const minuteCount = totalMinutes % 60;
+/** The part after "Cierre del pedido: ". */
+export function formatTimeUntilClosing(now: Date, closing: Date) {
+	const {
+		days: dayCount,
+		hours: hourCount,
+		minutes: minuteCount,
+	} = splitTimeUntilClosing(now, closing);
+	if (dayCount + hourCount + minuteCount === 0) return "falta menos de 1 min";
 
 	if (dayCount > 0) {
 		const base = remaining(dayCount, dayCount === 1 ? "día" : "días");

@@ -1,7 +1,8 @@
+import { ArrowUpRightIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Button } from "~/components/ui/button";
+import { Eyebrow } from "~/components/eyebrow";
 import { adminNavGroups } from "~/features/admin/shell/admin-nav";
 import { CartTraceabilitySearchCard } from "~/features/admin/shell/cart-traceability-search-card";
 import { getSession } from "~/server/better-auth/server";
@@ -18,9 +19,7 @@ export default async function AdminPage() {
 	return (
 		<div className="flex w-full flex-col gap-6">
 			<section className="flex flex-col gap-3 rounded-2xl bg-brand-ink px-6 py-8 text-brand-ink-foreground md:px-8 md:py-10">
-				<span className="font-semibold text-highlight text-xs uppercase tracking-wide">
-					Administración
-				</span>
+				<Eyebrow>Administración</Eyebrow>
 				<h1 className="text-balance font-heading font-semibold text-2xl md:text-3xl">
 					{firstName ? `Hola, ${firstName}` : "Hola"}
 				</h1>
@@ -32,32 +31,35 @@ export default async function AdminPage() {
 
 			<CartTraceabilitySearchCard />
 
-			<section className="flex flex-col gap-3">
+			<section className="flex flex-col gap-5">
 				<h2 className="font-heading font-semibold text-lg">Accesos rápidos</h2>
 				{adminNavGroups.map((group) => (
-					<div className="flex flex-col gap-2" key={group.label}>
-						<h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+					<div className="flex flex-col gap-2.5" key={group.label}>
+						<h3 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">
 							{group.label}
 						</h3>
-						<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+						<ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
 							{group.items.map((item) => {
 								const ItemIcon = item.icon;
 
 								return (
-									<Button
-										asChild
-										className="h-auto justify-start py-3"
-										key={item.href}
-										variant="outline"
-									>
-										<Link href={item.href}>
-											<ItemIcon data-icon="inline-start" />
-											{item.title}
+									<li key={item.href}>
+										<Link
+											className="group flex items-center gap-3 rounded-2xl border bg-card p-3 outline-none transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+											href={item.href}
+										>
+											<span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand-soft-foreground">
+												<ItemIcon className="size-4" />
+											</span>
+											<span className="min-w-0 flex-1 truncate font-medium text-sm">
+												{item.title}
+											</span>
+											<ArrowUpRightIcon className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
 										</Link>
-									</Button>
+									</li>
 								);
 							})}
-						</div>
+						</ul>
 					</div>
 				))}
 			</section>

@@ -61,7 +61,7 @@ const packageColumns: CrudColumn<PackageListItem>[] = [
 		className: "min-w-52",
 		cell: (pkg) => (
 			<div className="flex flex-col gap-1 text-xs">
-				<span>Lineas: {pkg.packageLineQuantity}</span>
+				<span>Líneas: {pkg.packageLineQuantity}</span>
 				<span>Asignado: {pkg.packagedAllocationQuantity}</span>
 				<span>Sin asignar: {pkg.unallocatedQuantity}</span>
 			</div>

@@ -39,14 +39,16 @@ export function CrudFormDialogShell({
 					"max-h-[calc(100vh-2rem)] overflow-y-auto",
 				)}
 			>
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
+				<DialogHeader className="pr-10">
+					<DialogTitle className="font-semibold text-lg leading-tight">
+						{title}
+					</DialogTitle>
 					{description ? (
 						<DialogDescription>{description}</DialogDescription>
 					) : null}
 				</DialogHeader>
 				{children}
-				<DialogFooter>{footer}</DialogFooter>
+				<DialogFooter className="border-t pt-4">{footer}</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	);
