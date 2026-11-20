@@ -27,7 +27,7 @@
 | 1 | #98, alcance del cierre | **Solo informativo.** Nada de pedidos, pagos ni operaciones lee el cierre. El admin sigue lanzando la compra a mano desde Operaciones, después del cierre. |
 | 2 | #98, configuración | Pantalla nueva **"Cierre semanal"** en el admin con día, hora y plazo de entrega ("7 a 10 días"). La edita **cualquier administrador** (`adminProcedure`) y cada cambio queda en `AuditLog`. Tabla singleton nueva; la migración la aplica Flavio. |
 | 3 | #99, título | **"Comprar en grupo sale menos."** |
-| 4 | #100 y #99, composición | El diagrama **baja a "Cómo funciona"**. El título nuevo **reemplaza al "coco" gigante** del hero como `h1`. #70 pasa a Re-test. |
+| 4 | #100 y #99, composición | El diagrama **baja a "Cómo funciona"**. El título nuevo **reemplaza al "coco" gigante** del hero como `h1`. #70 pasa a Re-test. _Enmienda 2026-11-20 (variante D, D2):_ el hero vuelve a llevar un diagrama (el recorrido del camión) y un contador del cierre; el diagrama de "Cómo funciona" se partió en cuatro escenas, una por paso, y conserva la leyenda de #100. Ver `docs/plans/home-variante-d-como-funciona.md`. |
 | 5 | #98, ubicación del contador | **≥ 1024 px (`lg`):** en la barra, junto a "Ingresar". **< 1024 px:** en la franja de arriba, en lugar del texto fijo. |
 | §2 | Entrega | El paso 4 de #100 y "¿Cómo recibo mi pedido?" se adaptan al flujo actual: la entrega se elige al confirmar el pedido (ADR 0011). |
 

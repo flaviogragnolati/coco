@@ -89,7 +89,7 @@ test("the catalog header speaks of your weekly order, never of wholesale", async
 	);
 });
 
-test("the hero is text only, the illustration explains how it works and the spotlight has its own band", async ({
+test("the hero links only to the catalog, the scenes explain how it works and the spotlight has its own band", async ({
 	page,
 }) => {
 	await page.setViewportSize({ width: 1280, height: 800 });
@@ -107,9 +107,10 @@ test("the hero is text only, the illustration explains how it works and the spot
 	await expect(hero.getByRole("link")).toHaveCount(1);
 
 	const howItWorks = page.locator("#como-funciona");
+	await expect(howItWorks.getByRole("img")).toHaveCount(4);
 	await expect(
-		howItWorks.getByRole("img", { name: /CoCo junta los pedidos/ }),
-	).toBeVisible();
+		howItWorks.getByRole("link", { name: "Ver cómo funciona en detalle" }),
+	).toHaveAttribute("href", "/como-funciona");
 	await expect(
 		howItWorks.getByText(
 			"CoCo junta los pedidos de los vecinos, le compra al proveedor y reparte lo que llega.",
@@ -133,9 +134,16 @@ test("the hero is text only, the illustration explains how it works and the spot
 	await expect(
 		band.getByRole("button", { name: "Sumar al pedido", exact: true }),
 	).toBeVisible();
-	// The card keeps to about 400px so the band does not grow with the photo.
-	const cardBox = await band.locator("[data-slot='card']").boundingBox();
-	expect(cardBox?.width).toBeLessThanOrEqual(401);
+	// The photo sits beside the title, not over it.
+	const photoBox = await band
+		.getByRole("link", { name: /^Ver / })
+		.boundingBox();
+	const titleBox = await band.locator("h2").boundingBox();
+	expect(photoBox).not.toBeNull();
+	expect(titleBox).not.toBeNull();
+	if (photoBox && titleBox) {
+		expect(photoBox.x + photoBox.width).toBeLessThanOrEqual(titleBox.x);
+	}
 	// A combo card may list the same product; only a product card would repeat it.
 	await expect(
 		page.locator(`#ofertas h3 a[href='${spotlightHref}']`),

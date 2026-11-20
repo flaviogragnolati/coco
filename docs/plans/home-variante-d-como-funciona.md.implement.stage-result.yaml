@@ -1,0 +1,46 @@
+schema_version: '1.0'
+stage_result:
+  skill_id: q-code-implement
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+  - artifact_type: implementation-plan
+    path: docs/plans/home-variante-d-como-funciona.md
+    lifecycle: Working
+    change: estado, definicion de terminado y seccion 16 (resultado de la ejecucion)
+  - path: docs/plans/home-community-redesign.md
+    change: nota de enmienda 2026-11 (variante D)
+  - path: docs/plans/qa-2026-11-wpb-weekly-closing-home.md
+    change: fila 4, enmienda 2026-11-20 (D2)
+  references_added: []
+  traceability_delta:
+  - 'REQ-HOME-VARIANTE-D-20261120 -> implementado en el arbol de trabajo sobre f3bf376, sin commit'
+  decisions_added_or_updated:
+  - 'La bajada de Buenos Aires en la ruta del hero dice "Una sola compra grande" por la regla de vocabulario de wholesale-wording.test.ts.'
+  - 'smoke.spec.ts: la asercion de ancho de la tarjeta de la banda se reemplazo por la composicion horizontal (foto a la izquierda del titulo).'
+  - 'Contraste AA: --muted-foreground se redefine dentro de la banda del destacado y del FAQ.'
+  - 'T4: con mas de 24 columnas el celular muestra una abreviatura cada dos; los dias de cierre siempre se ven.'
+  risks_added_or_updated: []
+  stale_artifacts: []
+  blockers:
+  - 'e2e/home-combo.spec.ts falla porque la base local no tiene el seed de e2e (pnpm db:seed:test, que reescribe la base, no se corrio sin autorizacion).'
+  - 'docs/prototypes/ (sin versionar) rompe pnpm typecheck, pnpm check y pnpm build; hay que excluirlo antes de commitearlo.'
+  - 'Un cambio ajeno durante la ejecucion hizo que PageHeader tone=default use Eyebrow: cambia el admin, en contra de T2 y del criterio 0.4.'
+  warnings:
+  - 'Mini revision: q-review-code pass with findings (contraste corregido, enmiendas escritas); q-review-comments pass with findings (3 sugerencias aplicadas).'
+  - 'Sin revision manual con sesion de /my-orders ni /admin/products.'
+  - 'El sidecar del grill (home-variante-d-como-funciona.md.stage-result.yaml) sigue pendiente de reconciliar; este resultado va en un sidecar aparte para no pisarlo.'
+  - 'Hay cambios ajenos sin commitear en src/features/admin/crud/* y src/app/admin/page.tsx que no son parte de este trabajo.'
+  required_user_actions:
+  - 'Autorizar la rama y los commits (un commit por fase).'
+  - 'Decidir si se corre pnpm db:seed:test sobre la base local de e2e.'
+  - 'Decidir como excluir docs/prototypes de tsconfig y biome, o sacarlo del repo.'
+  - 'Confirmar si el cambio de PageHeader en el admin es intencional.'
+  - 'Resolver P1 y P2 del plan.'
+  next_recommended_action: 'Revisar a mano /my-orders y /admin/products con sesion, resolver los bloqueos y commitear por fase con autorizacion.'
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

@@ -1,0 +1,57 @@
+schema_version: '1.0'
+stage_result:
+  skill_id: q-code-grill-feature
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs:
+  - artifact_type: implementation-plan
+    path: docs/plans/home-variante-d-como-funciona.md
+    lifecycle: Working
+    source_item_id: REQ-HOME-VARIANTE-D-20261120
+  derived_outputs: []
+  updated_outputs: []
+  references_added:
+  - docs/prototypes/home-modernizacion/variante-d.html
+  - docs/prototypes/home-modernizacion/como-funciona.html
+  traceability_delta:
+  - 'REQ-HOME-VARIANTE-D-20261120 (pedido de Flavio, 20/11/2026): home variante D,
+    pagina /como-funciona y base visual compartida -> docs/plans/home-variante-d-como-funciona.md'
+  - 'qa_ticket:#100 y #70: el plan revierte la decision de dejar el hero solo con
+    texto y boton'
+  decisions_added_or_updated:
+  - 'D1 (Flavio, 20/11/2026): el alcance es home, pagina nueva y base compartida;
+    el resto del storefront va en un plan siguiente.'
+  - 'D2 (Flavio, 20/11/2026): el hero lleva la ruta y el contador; revierte la parte
+    de QA #100 que lo dejaba sin diagrama.'
+  - 'D3 (Flavio, 20/11/2026): menu movil y footer siguen apuntando a /#como-funciona;
+    a la pagina nueva se llega por un boton de la seccion y un enlace nuevo del footer.'
+  risks_added_or_updated:
+  - 'R3: el punto animado del contador puede leerse como presion de venta, contra
+    el criterio escrito en closing-countdown.tsx.'
+  - 'R4: design_system_ref es null; la base compartida se define sin contrato de sistema
+    de diseno.'
+  stale_artifacts:
+  - 'docs/plans/home-community-redesign.md: la estructura de la home cambia (hero con
+    ruta y contador, pasos con escenas, pagina /como-funciona). Cambio propuesto: nota
+    de enmienda que remita al plan nuevo.'
+  - 'docs/plans/qa-2026-11-wpb-weekly-closing-home.md, fila 4: el hero vuelve a llevar
+    un diagrama. Cambio propuesto: nota de enmienda.'
+  blockers: []
+  warnings:
+  - Tres frases de /como-funciona y el recorrido del camion son preliminares y no
+    estan validados.
+  - No se cargo un design_system_ref porque el proyecto no tiene uno; se planifico
+    contra los tokens de src/styles/globals.css y el prototipo aprobado.
+  - No hay foundation tecnica versionada; se usaron las convenciones del repositorio.
+  - El plan no autoriza ninguna operacion de Git ni escrituras en la base de tickets
+    de QA.
+  required_user_actions:
+  - Validar el plan y las tres frases preliminares.
+  - 'Decidir P1: caso de QA nuevo y notas en #70 y #100.'
+  - Autorizar la rama y los commits antes de ejecutar.
+  next_recommended_action: 'Ejecutar el plan con q-code-implement. Para estandarizar
+    el resto del storefront, abrir q-plan-design-system y despues un plan por pagina.'
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true
