@@ -24,17 +24,16 @@ stage_result:
   - 'T4: con mas de 24 columnas el celular muestra una abreviatura cada dos; los dias de cierre siempre se ven.'
   risks_added_or_updated: []
   stale_artifacts: []
-  blockers:
-  - 'e2e/home-combo.spec.ts falla porque la base local no tiene el seed de e2e (pnpm db:seed:test, que reescribe la base, no se corrio sin autorizacion).'
+  blockers: []
   warnings:
   - 'Mini revision: q-review-code pass with findings (contraste corregido, enmiendas escritas); q-review-comments pass with findings (3 sugerencias aplicadas).'
   - 'Sin revision manual con sesion de /my-orders ni /admin/products.'
+  - 'e2e: 35/35 sobre Postgres local (coco-e2e-postgres:5433) con db push y db:seed:test. .env apunta a Neon con APP_ENV=production; la primera corrida de e2e uso esa base (flujos de invitado).'
   - 'El sidecar del grill (home-variante-d-como-funciona.md.stage-result.yaml) sigue pendiente de reconciliar; este resultado va en un sidecar aparte para no pisarlo.'
   - 'Rama home-variante-d desde dev (346854f, trae Eyebrow); un commit por fase. PageHeader tone=default con Eyebrow es intencional (346854f), enmienda T2.'
   required_user_actions:
-  - 'Decidir si se corre pnpm db:seed:test sobre la base local de e2e.'
   - 'Resolver P1 y P2 del plan.'
-  next_recommended_action: 'Correr el seed de e2e y home-combo.spec, revisar a mano /my-orders y /admin/products con sesion, y resolver P1 y P2.'
+  next_recommended_action: 'Revisar a mano /my-orders y /admin/products con sesion y resolver P1 y P2.'
 orchestration:
   mode: standalone
   global_state_updated: false
