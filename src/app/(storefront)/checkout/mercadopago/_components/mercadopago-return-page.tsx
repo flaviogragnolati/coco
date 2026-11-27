@@ -1,55 +1,44 @@
 import {
 	AlertCircleIcon,
 	ClockIcon,
-	HomeIcon,
 	PackageCheckIcon,
 	ReceiptTextIcon,
+	ShoppingBagIcon,
 } from "lucide-react";
 import Link from "next/link";
-import type { ComponentProps } from "react";
 
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "~/components/ui/card";
 import { cn } from "~/lib/utils";
 
 type MercadoPagoReturnTone = "success" | "failure" | "pending";
 
+/**
+ * Only the button Mercado Pago sent the customer back with is known here, not
+ * the payment: the copy says what to expect and where to look, never that the
+ * order is confirmed. A known order never reaches this page; it lands on the
+ * order itself (ADR 0015).
+ */
 const copyByTone = {
 	success: {
-		title: "Pago enviado a confirmación",
+		title: "Volviste de Mercado Pago",
 		description:
-			"Mercado Pago informó un retorno exitoso. La orden se confirma cuando recibimos y reconciliamos el webhook del proveedor.",
+			"Si el pago se aprobó, tu pedido queda confirmado en unos minutos. Lo ves en Mis pedidos.",
 		Icon: PackageCheckIcon,
-		chipClassName: "bg-success/10 text-success",
-		badgeLabel: "Retorno exitoso",
-		badgeVariant: "success",
-	},
-	failure: {
-		title: "Pago no confirmado",
-		description:
-			"El retorno de Mercado Pago no confirma el pago. Podés revisar tus pedidos o intentar nuevamente si el intento queda fallido.",
-		Icon: AlertCircleIcon,
-		chipClassName: "bg-destructive/10 text-destructive",
-		badgeLabel: "No confirmado",
-		badgeVariant: "destructive",
+		iconClassName: "bg-brand-soft text-brand-soft-foreground",
 	},
 	pending: {
-		title: "Pago pendiente",
+		title: "Mercado Pago está procesando tu pago",
 		description:
-			"Mercado Pago dejó el pago pendiente. La orden avanza cuando el proveedor confirme la aprobación.",
+			"Puede tardar unos minutos, o hasta dos días hábiles si elegiste pagar en efectivo. Lo ves en Mis pedidos.",
 		Icon: ClockIcon,
-		chipClassName: "bg-warning/10 text-warning",
-		badgeLabel: "Pendiente",
-		badgeVariant: "warning",
+		iconClassName: "bg-highlight/20 text-foreground",
+	},
+	failure: {
+		title: "Mercado Pago no aprobó el pago",
+		description:
+			"No se cobró nada. Tu pedido quedó guardado: podés intentar de nuevo o pagar por transferencia desde Tu pedido.",
+		Icon: AlertCircleIcon,
+		iconClassName: "bg-destructive/10 text-destructive",
 	},
 } satisfies Record<
 	MercadoPagoReturnTone,
@@ -57,9 +46,7 @@ const copyByTone = {
 		title: string;
 		description: string;
 		Icon: typeof ClockIcon;
-		chipClassName: string;
-		badgeLabel: string;
-		badgeVariant: NonNullable<ComponentProps<typeof Badge>["variant"]>;
+		iconClassName: string;
 	}
 >;
 
@@ -72,53 +59,45 @@ export function MercadoPagoReturnPage({
 	const ToneIcon = copy.Icon;
 
 	return (
-		<main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 md:px-6">
-			<Card>
-				<CardHeader>
-					<div className="flex items-start justify-between gap-3">
-						<div className="flex items-start gap-3">
-							<span
-								className={cn(
-									"flex size-12 shrink-0 items-center justify-center rounded-full",
-									copy.chipClassName,
-								)}
-							>
-								<ToneIcon className="size-5" />
-							</span>
-							<div className="flex flex-col gap-1">
-								<CardTitle>{copy.title}</CardTitle>
-								<CardDescription>{copy.description}</CardDescription>
-							</div>
-						</div>
-						<Badge variant={copy.badgeVariant}>{copy.badgeLabel}</Badge>
-					</div>
-				</CardHeader>
-				<CardContent>
-					<Alert>
-						<ReceiptTextIcon />
-						<AlertTitle>Estado sujeto a reconciliación</AlertTitle>
-						<AlertDescription>
-							Esta pantalla no actualiza el estado del pago. Usamos webhooks
-							firmados y consulta al recurso de Mercado Pago como fuente de
-							verdad.
-						</AlertDescription>
-					</Alert>
-				</CardContent>
-				<CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-					<Button asChild variant="outline">
-						<Link href="/">
-							<HomeIcon data-icon="inline-start" />
-							Volver al inicio
-						</Link>
-					</Button>
+		<main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-12 md:px-6">
+			<section
+				aria-labelledby="mercadopago-return-title"
+				className="flex flex-col gap-5 rounded-[22px] border bg-card p-6"
+			>
+				<span
+					className={cn(
+						"flex size-12 items-center justify-center rounded-full",
+						copy.iconClassName,
+					)}
+				>
+					<ToneIcon aria-hidden="true" className="size-6" />
+				</span>
+				<div className="flex flex-col gap-2">
+					<h1
+						className="font-bold font-heading text-[clamp(24px,4vw,32px)] leading-tight tracking-tight"
+						id="mercadopago-return-title"
+					>
+						{copy.title}
+					</h1>
+					<p>{copy.description}</p>
+				</div>
+				<div className="flex flex-col gap-2 sm:flex-row">
 					<Button asChild variant="highlight">
 						<Link href="/my-orders">
 							<ReceiptTextIcon data-icon="inline-start" />
 							Ver mis pedidos
 						</Link>
 					</Button>
-				</CardFooter>
-			</Card>
+					{tone === "failure" ? (
+						<Button asChild variant="outline">
+							<Link href="/cart">
+								<ShoppingBagIcon data-icon="inline-start" />
+								Ir a tu pedido
+							</Link>
+						</Button>
+					) : null}
+				</div>
+			</section>
 		</main>
 	);
 }

@@ -44,3 +44,26 @@ test("a guest sees the closing, the total and how to sign in to finish", async (
 	).toHaveAttribute("href", "/login?callbackURL=/cart");
 	await expect(main).not.toContainText(/Código de armado|checkout/i);
 });
+
+test("a Mercado Pago return without a known order explains it in plain words", async ({
+	page,
+}) => {
+	const cases = [
+		["success", "Volviste de Mercado Pago"],
+		["pending", "Mercado Pago está procesando tu pago"],
+		["failure", "Mercado Pago no aprobó el pago"],
+	] as const;
+
+	for (const [route, title] of cases) {
+		// Signed out, a real-looking reference still resolves to nothing.
+		await page.goto(
+			`/checkout/mercadopago/${route}?external_reference=user_transaction:1&status=approved`,
+		);
+		const main = page.getByRole("main");
+		await expect(main.getByRole("heading", { name: title })).toBeVisible();
+		await expect(
+			main.getByRole("link", { name: "Ver mis pedidos" }),
+		).toHaveAttribute("href", "/my-orders");
+		await expect(main).not.toContainText(/webhook|reconcili/i);
+	}
+});

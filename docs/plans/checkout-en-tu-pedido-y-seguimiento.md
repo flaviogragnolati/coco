@@ -1,6 +1,6 @@
 # Plan: checkout dentro de «Tu pedido» y seguimiento en «Mis pedidos»
 
-> **Estado:** `Working`. Fases 0 a 4 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 5 a 7.
+> **Estado:** `Working`. Fases 0 a 5 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 6 y 7.
 > **Tipo:** `implementation-plan` (escrito con `feature-grill`).
 > **Origen:** pedido de Flavio del 26/11/2026 (revisar checkout y seguimiento, proponer alternativas, tres prototipos) y su decisión del 27/11/2026: variante C más el aviso de cierre.
 > **Prototipo aprobado:** `docs/prototypes/checkout-seguimiento/variante-c.html` (con `shared.css` y `shared.js`). La revisión pantalla por pantalla está en `docs/prototypes/checkout-seguimiento/index.html`.
@@ -607,3 +607,10 @@ El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-ped
 - **F4-T5.** `src/features/weekly-closing/order-closing-notice.tsx`.
 - **Glosario:** *Order journey* describe el recorrido único más la etapa de cada producto.
 - **Verificación:** suite completa en verde; typecheck y Biome limpios; e2e 61 de 63 (las mismas dos fallas previas de datos de QA). Revisión visual a 1280 y 390 px en una página temporal con los datos del tutorial: falta la transferencia (con el aviso de llegada), verificando la transferencia, preparación, en dos partes con un aviso, entregado y la lista sola en teléfono. No queda desborde horizontal. Sin login en e2e, el pedido real sigue pendiente de prueba manual.
+
+### Fase 5 — 27/11/2026
+
+- **F5-T1.** Las tres rutas de retorno leen `external_reference` (`readExternalReference`), buscan el pedido con `findReturnOrderId` y redirigen a `/my-orders/{id}?llegada=mp` (`orderReturnPath`). La búsqueda nunca lanza error, así que el `redirect` queda fuera de cualquier `try`. Sin sesión, sin referencia o con una referencia ajena, muestran el respaldo.
+- **F5-T2.** `MercadoPagoReturnPage` con un texto por ruta que no afirma que el pago se aprobó, porque la ruta solo dice qué botón trajo de vuelta al cliente. Botón «Ver mis pedidos»; en el rechazo, también «Ir a tu pedido». Se quitó el recuadro de conciliación.
+- **Tests:** `mercadopago-return.test.ts` y `find-return-order.test.ts` [NEW], y un caso nuevo en `e2e/checkout-en-tu-pedido.spec.ts` para las tres rutas sin sesión. Suite completa: 2556 aprobados, 21 omitidos; typecheck y Biome limpios; e2e del checkout y del tutorial, 14 de 14.
+- **Pendiente:** S2 sigue sin verificar. Hay que confirmar en sandbox que Mercado Pago agrega `external_reference` a la URL de retorno; si no lo hace, el cliente ve el respaldo y llega a su pedido desde «Ver mis pedidos».
