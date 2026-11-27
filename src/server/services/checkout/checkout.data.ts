@@ -111,6 +111,7 @@ const orderDetailSelect = {
 	billingAddressSnapshot: true,
 	shippingAddressSnapshot: true,
 	deliveryPreference: true,
+	pickupPointId: true,
 	pickupPointSnapshot: true,
 	termsSnapshot: true,
 	acceptedTermsAt: true,
@@ -154,6 +155,12 @@ const orderListSelect = {
 			items: true,
 		},
 	},
+	items: {
+		orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+		select: {
+			productSnapshot: true,
+		},
+	},
 	transactions: {
 		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		select: {
@@ -161,6 +168,7 @@ const orderListSelect = {
 			amount: true,
 			currency: true,
 			status: true,
+			declaredReceiptReference: true,
 		},
 	},
 } satisfies Prisma.UserOrderSelect;
@@ -758,6 +766,19 @@ export async function listOrdersByUserId(db: CheckoutDbClient, userId: string) {
 		select: orderListSelect,
 		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 	});
+}
+
+/** The order an attempt belongs to, only when that order is the user's. */
+export async function findOrderIdByTransactionId(
+	db: CheckoutDbClient,
+	userId: string,
+	transactionId: number,
+) {
+	const order = await db.userOrder.findFirst({
+		where: { userId, transactions: { some: { id: transactionId } } },
+		select: { id: true },
+	});
+	return order?.id ?? null;
 }
 
 export async function findOrderByUserId(

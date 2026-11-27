@@ -6,6 +6,7 @@ import type {
 	checkoutAddressUpdateInputSchema,
 	checkoutConfirmInputSchema,
 	checkoutDeliveryInputSchema,
+	checkoutLiveOrderSchema,
 	checkoutPaymentMethodSchema,
 	checkoutPaymentResultSchema,
 	checkoutPaymentStatusSchema,
@@ -16,6 +17,8 @@ import type {
 	orderGetInputSchema,
 	orderListItemSchema,
 	orderListOutputSchema,
+	orderPaymentReturnInputSchema,
+	orderPaymentReturnSchema,
 } from "~/schemas/checkout.schemas";
 
 export type CheckoutAddress = z.output<typeof checkoutAddressSchema>;
@@ -29,6 +32,7 @@ export type CheckoutPaymentMethod = z.output<
 	typeof checkoutPaymentMethodSchema
 >;
 export type CheckoutState = z.output<typeof checkoutStateSchema>;
+export type CheckoutLiveOrder = z.output<typeof checkoutLiveOrderSchema>;
 export type CheckoutConfirmInput = z.output<typeof checkoutConfirmInputSchema>;
 export type CheckoutDeliveryInput = z.output<
 	typeof checkoutDeliveryInputSchema
@@ -47,3 +51,7 @@ export type OrderExternalPayment = z.output<typeof orderExternalPaymentSchema>;
 export type OrderListItem = z.output<typeof orderListItemSchema>;
 export type OrderListOutput = z.output<typeof orderListOutputSchema>;
 export type OrderDetail = z.output<typeof orderDetailSchema>;
+export type OrderPaymentReturnInput = z.output<
+	typeof orderPaymentReturnInputSchema
+>;
+export type OrderPaymentReturn = z.output<typeof orderPaymentReturnSchema>;

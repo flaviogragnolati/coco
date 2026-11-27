@@ -26,6 +26,7 @@ import type {
 	CheckoutAddressCreateInput,
 	CheckoutAddressUpdateInput,
 	CheckoutConfirmInput,
+	CheckoutLiveOrder,
 	CheckoutPaymentMethod,
 	CheckoutPaymentResult,
 	CheckoutState,
@@ -33,6 +34,8 @@ import type {
 	OrderDetail,
 	OrderExternalPayment,
 	OrderListOutput,
+	OrderPaymentReturn,
+	OrderPaymentReturnInput,
 } from "~/shared/common/checkout.types";
 import { CHECKOUT_TERMS } from "~/shared/common/checkout-terms";
 import {
@@ -43,7 +46,10 @@ import {
 } from "~/shared/common/commerce.helpers";
 import { readPickupPointSnapshot } from "~/shared/common/delivery-display";
 import { selectOrderDisplayAttempt } from "~/shared/common/order-display";
-import { withSnapshotPresentation } from "~/shared/common/product-snapshot";
+import {
+	readSnapshotProduct,
+	withSnapshotPresentation,
+} from "~/shared/common/product-snapshot";
 import {
 	decideAttemptCharge,
 	moneyEquals,
@@ -60,6 +66,7 @@ import {
 	getMercadoPagoConfig,
 	preferenceMatchesConfiguredTestSeller,
 } from "../payments/mercadopago/mercadopago-config.service";
+import { parseMercadoPagoExternalReference } from "../payments/mercadopago/mercadopago-preference.decision";
 import {
 	createMercadoPagoPreference,
 	recoverMercadoPagoPreference,
@@ -84,6 +91,7 @@ import {
 	findOrCreateExternalPaymentMethod,
 	findOrCreateMercadoPagoPaymentMethod,
 	findOrderByUserId,
+	findOrderIdByTransactionId,
 	findTransactionByIdempotencyKey,
 	listCheckoutAddresses,
 	listCheckoutPickupPoints,
@@ -100,7 +108,10 @@ import {
 	resolveCheckoutDelivery,
 } from "./checkout-delivery";
 import { releaseCheckoutCart } from "./checkout-release";
-import { checkoutReleaseBlockedMessage } from "./checkout-release.decision";
+import {
+	checkoutReleaseBlockedMessage,
+	decideCheckoutRelease,
+} from "./checkout-release.decision";
 import { isSpentPaymentAttempt } from "./payment-attempt.decision";
 import { decideOpenAttemptHandling } from "./payment-charge.decision";
 
@@ -256,6 +267,20 @@ function toAttemptTransferDiscount(
 	};
 }
 
+/**
+ * Whether the attempt an order shows is a transfer the customer reported and
+ * an admin has not settled yet.
+ */
+function isReceiptDeclared(
+	attempt:
+		| { status: string; declaredReceiptReference: string | null }
+		| undefined,
+) {
+	return (
+		attempt?.status === "pending" && attempt.declaredReceiptReference !== null
+	);
+}
+
 function toOrderListItem(record: OrderListRecord) {
 	const displayAttempt = selectOrderDisplayAttempt(record.transactions);
 
@@ -266,9 +291,13 @@ function toOrderListItem(record: OrderListRecord) {
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 		itemCount: record._count.items,
+		itemNames: record.items.map(
+			(item) => readSnapshotProduct(item.productSnapshot).name,
+		),
 		totalAmount: displayAttempt?.amount.toString() ?? "0.00",
 		currency: displayAttempt?.currency ?? null,
 		latestTransactionStatus: displayAttempt?.status ?? null,
+		receiptDeclared: isReceiptDeclared(displayAttempt),
 	};
 }
 
@@ -285,9 +314,13 @@ function toOrderDetail(
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 		itemCount: record.items.length,
+		itemNames: record.items.map(
+			(item) => readSnapshotProduct(item.productSnapshot).name,
+		),
 		totalAmount: displayAttempt?.amount.toString() ?? "0.00",
 		currency: displayAttempt?.currency ?? null,
 		latestTransactionStatus: displayAttempt?.status ?? null,
+		receiptDeclared: isReceiptDeclared(displayAttempt),
 		cartCode: record.cart.code,
 		billingAddressSnapshot: record.billingAddressSnapshot,
 		shippingAddressSnapshot: record.shippingAddressSnapshot,
@@ -527,17 +560,70 @@ async function loadOrderExternalPayment(
 }
 
 /**
- * The payment methods checkout offers: one per enabled provider, never a
- * user-minted one. `enabled` on each `payment_provider_config` row is the only
- * switch (ADR 0010).
+ * The delivery an order was confirmed with, in the shape confirming sends. Null
+ * for an order paid before the customer could choose, or whose address
+ * snapshot does not carry a saved address.
+ */
+function toLiveOrderDelivery(
+	order: OrderDetailRecord,
+): CheckoutLiveOrder["delivery"] {
+	if (order.deliveryPreference === "pickupPoint") {
+		return order.pickupPointId
+			? { mode: "pickupPoint", pickupPointId: order.pickupPointId }
+			: null;
+	}
+	if (order.deliveryPreference !== "homeDelivery") return null;
+
+	const snapshot = order.shippingAddressSnapshot;
+	if (typeof snapshot !== "object" || snapshot === null) return null;
+	if (!("address" in snapshot)) return null;
+	const address = checkoutAddressSchema.safeParse(snapshot.address);
+	return address.success
+		? { mode: "homeDelivery", shippingAddressId: address.data.id }
+		: null;
+}
+
+/**
+ * The order a cart at checkout is waiting on, read inside the caller's
+ * transaction. Null for an editable cart, and for a cart an older flow left at
+ * checkout with no order, which a cart mutation still releases.
+ */
+async function loadLiveOrderState(
+	database: CheckoutDbClient,
+	cart: CheckoutCartRecord,
+): Promise<CheckoutLiveOrder | null> {
+	if (cart.status !== "atCheckout") return null;
+
+	const order = await findLiveOrderByCartId(database, cart.id);
+	if (!order) return null;
+
+	const latestAttempt = order.transactions[0] ?? null;
+	const release = decideCheckoutRelease({
+		cartStatus: cart.status,
+		latestAttempt,
+	});
+
+	return {
+		id: order.id,
+		code: order.code,
+		delivery: toLiveOrderDelivery(order),
+		paymentMethodId: latestAttempt?.paymentMethod.id ?? null,
+		provider: latestAttempt?.provider ?? null,
+		// The cart is at checkout, so the decision is never `notAtCheckout`.
+		release: release === "notAtCheckout" ? "release" : release,
+	};
+}
+
+/**
+ * Prepares what the customer chooses from before confirming. It leaves the
+ * cart as it is: only `confirmAndPay` freezes it (ADR 0015). It differs from
+ * `getState` in minting the payment methods checkout offers, one per enabled
+ * provider, never a user-minted one. `enabled` on each `payment_provider_config`
+ * row is the only switch (ADR 0010).
  */
 export async function start(userId: string): Promise<CheckoutState> {
 	return db.$transaction(async (tx) => {
 		const cart = await getRequiredCheckoutCart(tx, userId);
-		const checkoutCart =
-			cart.status === "atCheckout"
-				? cart
-				: await updateCartStatus(tx, cart.id, "atCheckout");
 		const addresses = await listCheckoutAddresses(tx, userId);
 		const mercadoPagoConfig = await getMercadoPagoConfig(tx);
 		const externalConfig = await getExternalPaymentConfig(tx);
@@ -553,9 +639,11 @@ export async function start(userId: string): Promise<CheckoutState> {
 		}
 
 		const pickupPoints = await listCheckoutPickupPoints(tx);
+		const liveOrder = await loadLiveOrderState(tx, cart);
 
 		return checkoutStateSchema.parse({
-			cart: mapCart(checkoutCart),
+			cart: mapCart(cart),
+			liveOrder,
 			addresses: addresses.map(toCheckoutAddress),
 			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
 			pickupPoints,
@@ -588,9 +676,11 @@ export async function getState(userId: string): Promise<CheckoutState> {
 		}
 
 		const pickupPoints = await listCheckoutPickupPoints(tx);
+		const liveOrder = await loadLiveOrderState(tx, cart);
 
 		return checkoutStateSchema.parse({
 			cart: mapCart(cart),
+			liveOrder,
 			addresses: addresses.map(toCheckoutAddress),
 			paymentMethods: paymentMethods.map(toCheckoutPaymentMethod),
 			pickupPoints,
@@ -901,6 +991,9 @@ async function resolveRequestedDelivery(
  * reused only for the same method and is otherwise replaced while the customer
  * may still abandon it (`decideOpenAttemptHandling`). A new attempt is created
  * only when its amount equals `expectedAmount`, the one the screen showed.
+ *
+ * The cart may arrive editable: confirming moves it to `atCheckout` in the
+ * same transaction that creates the order (ADR 0015).
  */
 export async function confirmAndPay(
 	userId: string,
@@ -995,14 +1088,6 @@ export async function confirmAndPay(
 			}
 		}
 
-		if (!liveOrder && cart.status !== "atCheckout") {
-			throw new TRPCError({
-				code: "PRECONDITION_FAILED",
-				message:
-					"El checkout no está iniciado. Volvé a la pantalla de checkout.",
-			});
-		}
-
 		// Throwing here rolls back the whole transaction, the cancellation and
 		// the delivery change included: nothing is created for a figure the
 		// customer did not see.
@@ -1011,6 +1096,13 @@ export async function confirmAndPay(
 				code: "CONFLICT",
 				message: `El total cambió: ahora pagás ${formatCurrency(charge.amount, total.currency)}. Revisalo y confirmá de nuevo.`,
 			});
+		}
+
+		// Confirming is what freezes the cart (ADR 0015): from here on the order
+		// snapshot references it. Inside the transaction, so a refusal above
+		// leaves it editable.
+		if (cart.status !== "atCheckout") {
+			await updateCartStatus(tx, cart.id, "atCheckout");
 		}
 
 		const acceptedAt = new Date();
@@ -1133,6 +1225,24 @@ export async function confirmAndPay(
 export async function listMine(userId: string): Promise<OrderListOutput> {
 	const records = await listOrdersByUserId(db, userId);
 	return orderListOutputSchema.parse(records.map(toOrderListItem));
+}
+
+/**
+ * The order a Mercado Pago return points at, read from the external reference
+ * the preference carried. Anything that is not one of the user's attempts
+ * answers null, so the page cannot tell a stranger's order from a missing one.
+ */
+export async function resolvePaymentReturn(
+	userId: string,
+	input: OrderPaymentReturnInput,
+): Promise<OrderPaymentReturn> {
+	const transactionId = parseMercadoPagoExternalReference(
+		input.externalReference,
+	);
+	if (transactionId === null) return null;
+
+	const orderId = await findOrderIdByTransactionId(db, userId, transactionId);
+	return orderId === null ? null : { orderId };
 }
 
 async function getRequiredOrder(userId: string, orderId: number) {

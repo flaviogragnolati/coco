@@ -73,6 +73,10 @@ const data = {
 	findCheckoutAddressById: tracked("findCheckoutAddressById", null),
 	findCheckoutPaymentMethodById: tracked("findCheckoutPaymentMethodById", null),
 	findTransactionByIdempotencyKey: vi.fn(async () => null),
+	findLiveOrderByCartId: tracked("findLiveOrderByCartId", null),
+	findOrCreateMercadoPagoPaymentMethod: vi.fn(),
+	findOrCreateExternalPaymentMethod: vi.fn(),
+	updateCartStatus: vi.fn(),
 };
 const getMercadoPagoConfig = tracked("getMercadoPagoConfig", {
 	enabled: false,
@@ -107,6 +111,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
+	vi.clearAllMocks();
 	inFlight = 0;
 	overlaps = [];
 });
@@ -125,6 +130,21 @@ test("start reads addresses and provider configs one at a time", async () => {
 	await checkoutService.start("user-1");
 
 	expect(overlaps).toEqual([]);
+});
+
+// ADR 0015: opening the options no longer freezes the cart.
+test("start leaves an editable cart editable", async () => {
+	data.findCheckoutCartByUserId.mockResolvedValueOnce({
+		...cart,
+		status: "pending",
+	});
+
+	const state = await checkoutService.start("user-1");
+
+	expect(data.updateCartStatus).not.toHaveBeenCalled();
+	expect(data.findLiveOrderByCartId).not.toHaveBeenCalled();
+	expect(state.cart.status).toBe("pending");
+	expect(state.liveOrder).toBeNull();
 });
 
 test("confirmAndPay refuses an address the customer does not have", async () => {

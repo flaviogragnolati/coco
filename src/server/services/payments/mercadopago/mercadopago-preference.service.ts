@@ -12,6 +12,7 @@ import {
 	buildMercadoPagoPreferenceCreateData,
 	MercadoPagoPreferenceInvariantError,
 	type MercadoPagoPreferenceLine,
+	toMercadoPagoExternalReference,
 } from "./mercadopago-preference.decision";
 
 type CreateMercadoPagoPreferenceInput = {
@@ -122,7 +123,7 @@ export async function recoverMercadoPagoPreference(transaction: {
 	expiresAt: Date | null;
 }) {
 	const client = new Preference(createMercadoPagoClient());
-	const externalReference = `user_transaction:${transaction.id}`;
+	const externalReference = toMercadoPagoExternalReference(transaction.id);
 	let preferenceId = transaction.providerPreferenceId;
 	if (!preferenceId) {
 		const search = await client.search({

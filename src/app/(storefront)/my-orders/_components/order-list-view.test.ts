@@ -11,9 +11,11 @@ function makeOrder(overrides: Partial<OrderListItem> = {}): OrderListItem {
 		createdAt: new Date("2026-01-01T10:00:00.000Z"),
 		updatedAt: new Date("2026-01-01T10:00:00.000Z"),
 		itemCount: 1,
+		itemNames: ["Almendra"],
 		totalAmount: "100.00",
 		currency: "ARS",
 		latestTransactionStatus: "pending",
+		receiptDeclared: false,
 		...overrides,
 	};
 }

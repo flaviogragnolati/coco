@@ -81,8 +81,41 @@ export const checkoutPaymentMethodSchema = z.object({
 	active: z.boolean(),
 });
 
+export const checkoutDeliveryInputSchema = z.discriminatedUnion("mode", [
+	z.object({
+		mode: z.literal("homeDelivery"),
+		shippingAddressId: checkoutAddressIdSchema,
+	}),
+	z.object({
+		mode: z.literal("pickupPoint"),
+		pickupPointId: z.number().int().positive(),
+	}),
+]);
+
+/**
+ * The order a confirmed cart is waiting on (ADR 0015), with the choices it was
+ * confirmed with so the screen can show them and confirm again.
+ */
+export const checkoutLiveOrderSchema = z.object({
+	id: z.number().int().positive(),
+	code: z.string(),
+	/** Null when the stored choice no longer maps to one checkout can send. */
+	delivery: checkoutDeliveryInputSchema.nullable(),
+	/** Method and provider of the latest attempt; null before the first one. */
+	paymentMethodId: checkoutPaymentMethodIdSchema.nullable(),
+	provider: z.string().nullable(),
+	/** Whether "Volver a editar el pedido" may release the cart, or why not. */
+	release: z.enum([
+		"release",
+		"blockedPaymentInFlight",
+		"blockedDeclaredReceipt",
+	]),
+});
+
 export const checkoutStateSchema = z.object({
 	cart: cartSnapshotSchema,
+	/** Null while the cart is editable. */
+	liveOrder: checkoutLiveOrderSchema.nullable(),
 	addresses: z.array(checkoutAddressSchema),
 	paymentMethods: z.array(checkoutPaymentMethodSchema),
 	/** Active points only; empty hides the pickup option. */
@@ -95,17 +128,6 @@ export const checkoutStateSchema = z.object({
 		.max(TRANSFER_DISCOUNT_MAX_PERCENT)
 		.nullable(),
 });
-
-export const checkoutDeliveryInputSchema = z.discriminatedUnion("mode", [
-	z.object({
-		mode: z.literal("homeDelivery"),
-		shippingAddressId: checkoutAddressIdSchema,
-	}),
-	z.object({
-		mode: z.literal("pickupPoint"),
-		pickupPointId: z.number().int().positive(),
-	}),
-]);
 
 export const checkoutConfirmInputSchema = z.object({
 	delivery: checkoutDeliveryInputSchema,
@@ -196,6 +218,8 @@ export const orderListItemSchema = z.object({
 	createdAt: z.date(),
 	updatedAt: z.date(),
 	itemCount: z.number().int().nonnegative(),
+	/** Product names in the order they were confirmed. */
+	itemNames: z.array(z.string()),
 	totalAmount: decimalOutputSchema,
 	currency: catalogCurrencySchema.nullable(),
 	latestTransactionStatus: z
@@ -209,6 +233,8 @@ export const orderListItemSchema = z.object({
 			"chargedBack",
 		])
 		.nullable(),
+	/** The customer reported a transfer the admin has not verified yet. */
+	receiptDeclared: z.boolean(),
 });
 
 export const orderListOutputSchema = z.array(orderListItemSchema);
@@ -216,6 +242,16 @@ export const orderListOutputSchema = z.array(orderListItemSchema);
 export const orderGetInputSchema = z.object({
 	id: z.number().int().positive(),
 });
+
+/** What a Mercado Pago return page reads from its query string. */
+export const orderPaymentReturnInputSchema = z.object({
+	externalReference: z.string().max(64),
+});
+
+/** Null when the reference is not one of the user's attempts. */
+export const orderPaymentReturnSchema = z
+	.object({ orderId: z.number().int().positive() })
+	.nullable();
 
 export const orderDeclareReceiptInputSchema = z.object({
 	orderId: z.number().int().positive(),

@@ -356,6 +356,7 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 	if (!total) throw new Error("Tutorial cart has no total");
 
 	const orderedAt = new Date(now.getTime() - DAY_MS);
+	const itemNames = cartItems.map((item) => item.product.name);
 
 	const orderList: OrderListOutput = [
 		{
@@ -365,9 +366,11 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 			createdAt: orderedAt,
 			updatedAt: orderedAt,
 			itemCount: cartItems.length,
+			itemNames,
 			totalAmount: total.amount,
 			currency: total.currency,
 			latestTransactionStatus: "completed",
+			receiptDeclared: false,
 		},
 	];
 
@@ -405,9 +408,11 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 			createdAt: submittedAt,
 			updatedAt: now,
 			itemCount: cartItems.length,
+			itemNames,
 			totalAmount: total.amount,
 			currency: total.currency,
 			latestTransactionStatus: "completed",
+			receiptDeclared: false,
 			status: delivered ? "completed" : "processing",
 			cartCode: CART_CODE,
 			billingAddressSnapshot: null,
@@ -465,6 +470,8 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 		cart,
 		checkoutState: {
 			cart: checkoutCart,
+			// The walk-through is still choosing: nothing confirmed yet.
+			liveOrder: null,
 			addresses: [address],
 			pickupPoints: [pickupPoint],
 			paymentMethods: [mercadoPago, externalPayment],

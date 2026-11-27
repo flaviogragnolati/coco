@@ -1,6 +1,26 @@
 import type { MercadoPagoSettings } from "~/shared/common/admin-crud/payment.types";
 import { toMoneyString } from "~/shared/common/commerce.helpers";
 
+/** Largest id a Postgres `int` column holds. */
+const MAX_INT_ID = 2_147_483_647;
+
+/** How a preference and its payments point back to their attempt. */
+export function toMercadoPagoExternalReference(transactionId: number) {
+	return `user_transaction:${transactionId}`;
+}
+
+/**
+ * The attempt id inside an external reference, or null for anything CoCo did
+ * not write, including an id no attempt can have.
+ */
+export function parseMercadoPagoExternalReference(reference: unknown) {
+	if (typeof reference !== "string") return null;
+	const match = /^user_transaction:([1-9]\d{0,9})$/.exec(reference);
+	if (!match?.[1]) return null;
+	const id = Number(match[1]);
+	return id <= MAX_INT_ID ? id : null;
+}
+
 export type MercadoPagoPreferenceLine = {
 	id: string;
 	title: string;
@@ -77,7 +97,7 @@ export function buildMercadoPagoPreferenceCreateData(
 		);
 	}
 
-	const externalReference = `user_transaction:${input.transactionId}`;
+	const externalReference = toMercadoPagoExternalReference(input.transactionId);
 	const body = {
 		items,
 		payer: {

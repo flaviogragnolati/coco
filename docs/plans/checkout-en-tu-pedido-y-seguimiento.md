@@ -1,6 +1,6 @@
 # Plan: checkout dentro de «Tu pedido» y seguimiento en «Mis pedidos»
 
-> **Estado:** `Ready`. Sin implementar.
+> **Estado:** `Working`. Fase 0 y fase 1 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 2 a 7.
 > **Tipo:** `implementation-plan` (escrito con `feature-grill`).
 > **Origen:** pedido de Flavio del 26/11/2026 (revisar checkout y seguimiento, proponer alternativas, tres prototipos) y su decisión del 27/11/2026: variante C más el aviso de cierre.
 > **Prototipo aprobado:** `docs/prototypes/checkout-seguimiento/variante-c.html` (con `shared.css` y `shared.js`). La revisión pantalla por pantalla está en `docs/prototypes/checkout-seguimiento/index.html`.
@@ -231,23 +231,23 @@ Cómo se evitan regresiones: no se toca ninguna función de decisión de pagos, 
 
 - **Archivos:** `src/server/services/checkout/checkout.data.ts`, `src/server/services/checkout/checkout.service.ts`, `src/schemas/checkout.schemas.ts`, `src/shared/common/product-snapshot.ts`.
 - **Símbolos:** `orderListSelect`, `toOrderListItem`, `orderListItemSchema`, `readSnapshotProduct`.
-- **Cambio:** `orderListSelect` suma `items: { select: { productSnapshot: true }, orderBy: { id: "asc" } }` y, en `transactions`, `declaredReceiptReference`. `orderListItemSchema` suma `itemNames: string[]` (todos los nombres, en orden) y `paymentReported: boolean` (el intento que elige `selectOrderDisplayAttempt` tiene comprobante declarado). El nombre se lee con `readSnapshotProduct(snapshot).name`, que ya existe; usarlo también en lugar del `getProductName` local de `order-detail-view.tsx`.
-- **Aceptación:** test de `toOrderListItem` (en `checkout.data.test.ts` o un test nuevo del servicio): tres productos → tres nombres en orden; intento con comprobante → `paymentReported: true`. `orderDetailSchema` extiende al de la lista: `toOrderDetail` debe llenar los dos campos nuevos.
+- **Cambio:** `orderListSelect` suma `items: { select: { productSnapshot: true }, orderBy: { id: "asc" } }` y, en `transactions`, `declaredReceiptReference`. `orderListItemSchema` suma `itemNames: string[]` (todos los nombres, en orden) y `receiptDeclared: boolean` (el intento que elige `selectOrderDisplayAttempt` está pendiente y tiene comprobante declarado). El nombre se lee con `readSnapshotProduct(snapshot).name`, que ya existe; usarlo también en lugar del `getProductName` local de `order-detail-view.tsx`.
+- **Aceptación:** test de `toOrderListItem` (en `checkout.data.test.ts` o un test nuevo del servicio): tres productos → tres nombres en orden; intento con comprobante → `receiptDeclared: true`. `orderDetailSchema` extiende al de la lista: `toOrderDetail` debe llenar los dos campos nuevos.
 - **Riesgo:** `tutorial-fixtures.ts` construye `orderList` y `orderDetail` a mano; van a fallar los tipos hasta completar los campos (hacerlo acá, no en la fase 6).
 
 ### F1-T5 — Resolver el retorno de Mercado Pago
 
 - **Archivos:** `src/server/services/checkout/checkout.data.ts`, `src/server/services/checkout/checkout.service.ts`, `src/server/api/routers/orders.router.ts`, `src/schemas/checkout.schemas.ts`.
 - **Símbolos:** `findOrderIdByTransactionId(db, userId, transactionId)` `[NEW]`; `resolvePaymentReturn(userId, externalReference)` `[NEW]`; procedimiento `orders.resolvePaymentReturn` `[NEW]` (consulta protegida); `orderPaymentReturnInputSchema` `[NEW]` (`externalReference: string`, máximo 64 caracteres).
-- **Cambio:** aceptar solo el formato `user_transaction:{entero positivo}`. Buscar la transacción y devolver `{ orderId }` únicamente si su pedido es del usuario. En cualquier otro caso devolver `null`, sin distinguir «no existe» de «no es tuyo».
+- **Cambio:** aceptar solo el formato `user_transaction:{entero positivo}`. El parser vive en `mercadopago-preference.decision.ts` (`parseMercadoPagoExternalReference`, junto a `toMercadoPagoExternalReference`) y lo comparte la conciliación. Buscar la transacción y devolver `{ orderId }` únicamente si su pedido es del usuario. En cualquier otro caso devolver `null`, sin distinguir «no existe» de «no es tuyo».
 - **Aceptación:** tests: referencia válida y propia → id; referencia de otro usuario → `null`; texto con otro formato → `null`.
 - **Riesgo:** no reutilizar `findTransactionByIdempotencyKey`. No lanzar `FORBIDDEN`: delataría la existencia del pedido.
 
 ### F2-T1 — Estados del pedido para el cliente
 
 - **Archivos:** `src/shared/common/order-display.ts`, `src/app/(storefront)/my-orders/_components/order-list-view.test.ts`.
-- **Símbolos:** `customerOrderStatusView(order)` `[NEW]`, que recibe `{ status, latestTransactionStatus, paymentReported }` y devuelve `{ key, label, variant, icon }`; `orderStatusChipConfigMap`; `orderStatusFilterGroups`.
-- **Cambio:** `pending` → «Esperando tu pago», o «Verificando tu pago» si `paymentReported` o el intento está `inProcess` (D15). `processing` → «En curso». `completed` → «Entregado». Los otros cuatro conservan su texto. El filtro «Completados» pasa a «Entregados». **No tocar `orderStatusLabelMap`**: lo usa el admin. `orderStatusChipConfigMap` queda solo si algún consumidor lo necesita; las pantallas del cliente pasan a `customerOrderStatusView`.
+- **Símbolos:** `customerOrderStatusView(order)` `[NEW]`, que recibe `{ status, latestTransactionStatus, receiptDeclared }` y devuelve `{ key, label, variant, icon }`; `orderStatusChipConfigMap`; `orderStatusFilterGroups`.
+- **Cambio:** `pending` → «Esperando tu pago», o «Verificando tu pago» si `receiptDeclared` o el intento está `inProcess` (D15). `processing` → «En curso». `completed` → «Entregado». Los otros cuatro conservan su texto. El filtro «Completados» pasa a «Entregados». **No tocar `orderStatusLabelMap`**: lo usa el admin. `orderStatusChipConfigMap` queda solo si algún consumidor lo necesita; las pantallas del cliente pasan a `customerOrderStatusView`.
 - **Aceptación:** test nuevo `src/shared/common/order-display.test.ts` `[NEW]` con los siete estados y los dos casos de «Verificando tu pago». Las tablas del admin no cambian de texto.
 
 ### F2-T2 — Etapas para el cliente
@@ -427,7 +427,7 @@ Cómo se evitan regresiones: no se toca ninguna función de decisión de pagos, 
 ### F6-T2 — Escenas y datos de ejemplo
 
 - **Archivos:** `src/features/tutorial/_components/tutorial-scene.tsx`, `scenes/cart-scene.tsx`, `scenes/my-orders-scene.tsx`, `scenes/order-detail-scene.tsx`, `scenes/checkout-scene.tsx` (se borra), `scenes/checkout-result-scene.tsx` (se borra), `tutorial-fixtures.ts`, `tutorial-fixtures.test.ts`, `tutorial-scene.test.tsx`.
-- **Cambio:** `CartScene` renderiza `CartPageView` con `FinishOrderPanel` en `finishSlot` y, según `sheet`, la hoja de entrega o de pago abierta con datos de ejemplo. `MyOrdersScene` y `OrderDetailScene` usan `MyOrdersShell`. `navbarStateFor` pierde el caso `checkout` y decide la sesión con `scene.signedIn`. En los datos de ejemplo: quitar `paymentResult`, cambiar la etiqueta «Pago externo», y completar `itemNames` y `paymentReported`.
+- **Cambio:** `CartScene` renderiza `CartPageView` con `FinishOrderPanel` en `finishSlot` y, según `sheet`, la hoja de entrega o de pago abierta con datos de ejemplo. `MyOrdersScene` y `OrderDetailScene` usan `MyOrdersShell`. `navbarStateFor` pierde el caso `checkout` y decide la sesión con `scene.signedIn`. En los datos de ejemplo: quitar `paymentResult`, cambiar la etiqueta «Pago externo», y completar `itemNames` y `receiptDeclared`.
 - **Riesgo:** las hojas usan un portal de Radix. Verificar que el recorte del tutorial (`tutorial-spotlight.tsx`) encuentra el objetivo dentro del portal; si no, renderizar el contenido de la hoja en línea dentro de la escena.
 
 ### F6-T3 — e2e del tutorial
@@ -463,6 +463,7 @@ Cómo se evitan regresiones: no se toca ninguna función de decisión de pagos, 
 - **`orderStatusLabelMap` compartido.** Cambiarlo altera el admin y su glosario. Usar la función nueva.
 - **Etiqueta del método en la base.** «Pago externo» está guardado en `payment_method.label`. No migrarlo ni mostrarlo al cliente.
 - **Carrera con el arranque del pedido.** `checkout.start` falla si el pedido del invitado todavía no llegó al servidor. Respetar `canStartCheckout`.
+- **Carrera entre editar y confirmar.** Desde la fase 1 el carrito sigue editable hasta confirmar. Si una mutación del carrito se confirma en los milisegundos entre que `confirmAndPay` lee los productos y hace su commit, el pedido guarda las cantidades viejas y el carrito congelado las nuevas. Las mutaciones del carrito no corren en transacción serializable ni bloquean la fila del carrito, así que Postgres no detecta el conflicto. La carrera ya existía con el flujo viejo, con otra forma. En la fase 3, `FinishOrder` no debe permitir confirmar mientras haya una mutación del carrito en curso (`useCartActions().isPending`). Endurecerlo en el servidor (bloquear la fila del carrito en las mutaciones y en la confirmación) queda en §15.
 - **Clave de idempotencia.** Si se renueva en cada render, se abren intentos duplicados; si no se renueva después de cambiar el medio de pago, el servidor devuelve el intento anterior.
 - **Layouts de Next.** La lista vive en el layout y no se recarga sola; usar `router.refresh()` después de mutaciones.
 - **Portales y tutorial.** Ver F6-T2.
@@ -526,6 +527,7 @@ Cómo se evitan regresiones: no se toca ninguna función de decisión de pagos, 
   3. ¿Sumar productos con un pedido esperando el pago debe seguir cancelándolo? Default: sí, con aviso (F3-T7). Es el comportamiento actual del servidor.
   4. ¿El aviso de cierre en pedidos ya pagos se muestra con la regla de F2-T6? Default: sí. La alternativa es mostrarlo solo mientras falta el pago.
   5. Verificar en sandbox que el retorno trae `external_reference` (S2).
+  6. ¿Bloquear la fila del carrito (`SELECT … FOR UPDATE`) en `confirmAndPay` y en las mutaciones de `cart.service.ts` para cerrar la carrera de §10? Default: no por ahora; la fase 3 lo evita desde la pantalla.
 - **Mejoras opcionales:** mostrar el punto de retiro en un mapa dentro de la hoja; recordar la última entrega elegida entre pedidos (hoy el borrador dura la sesión).
 
 ## 16. Definición de hecho
@@ -552,3 +554,23 @@ Cómo se evitan regresiones: no se toca ninguna función de decisión de pagos, 
 - Implementar al nivel indicado: escribir el código que describen las tareas, sin rediseñar. El prototipo manda en el aspecto; este plan manda en el comportamiento. Si chocan, gana el plan.
 - Las preguntas de §15 no bloquean: seguir con el default y dejar anotado el supuesto en el resultado.
 - Si aparece un cambio que toca las reglas de pago o el esquema, frenar y preguntar.
+
+## 18. Resultado
+
+### Fase 0 — 27/11/2026
+
+El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-pedido`, creada desde `main` en `70bf288`. Cada uno se verificó por separado: typecheck, Biome y suite completa.
+
+- `f4a0d57` fix(payments): Mercado Pago sandbox de punta a punta.
+- `65e3d15` feat(notifications): correos transaccionales con Resend.
+- `e1bf358` docs(checkout): prototipos, ADR 0015, este plan y el glosario.
+
+### Fase 1 — 27/11/2026
+
+- **F1-T1 y F1-T2.** `start` ya no congela. `confirmAndPay` pasa el carrito a `atCheckout` después de comparar el monto y antes de crear el pedido, dentro de la misma transacción. Se quitó el rechazo «El checkout no está iniciado». Congela siempre que el carrito no esté en `atCheckout`, aunque haya un pedido vivo: es más estricto que lo que decía la tarea y no cambia ningún caso real.
+- **F1-T3.** `CheckoutState.liveOrder` (`checkoutLiveOrderSchema`) con `id`, `code`, `delivery`, `paymentMethodId`, `provider` y `release`. `orderDetailSelect` suma `pickupPointId`.
+- **F1-T4.** `OrderListItem` suma `itemNames` y `receiptDeclared` (no `paymentReported`, para coincidir con *Declared receipt* del glosario). `receiptDeclared` solo es verdadero si el intento mostrado sigue pendiente.
+- **F1-T5.** `orders.resolvePaymentReturn` responde `{ orderId }` o `null`. El parser de la referencia se movió a `mercadopago-preference.decision.ts` y ahora rechaza ids fuera del rango de `int`, que antes hacían fallar la consulta de la conciliación.
+- **Tests:** `checkout.customer-reads.test.ts` [NEW] (20 casos), tres casos nuevos en `checkout.payment-switch.test.ts`, uno en `checkout.transaction-queries.test.ts` y once en `mercadopago-preference.decision.test.ts`. Suite completa: 2459 aprobados, 21 omitidos. Typecheck y Biome limpios.
+- **Compatibilidad:** la pantalla actual de `/checkout` sigue funcionando. La única diferencia visible es que abrirla ya no congela el pedido.
+- **Hallazgo:** la carrera entre editar y confirmar (§10). No bloquea.
