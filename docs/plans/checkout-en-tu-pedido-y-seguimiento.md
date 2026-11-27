@@ -646,3 +646,9 @@ El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-ped
 - **Descartado: `useSuspenseQuery` con `Suspense`.** Elimina el error y manda los productos en el HTML, pero los muestra antes de que la página sea interactiva: los clics tempranos se pierden. Dos tests e2e empezaron a fallar de forma intermitente por eso, y a un usuario con un teléfono lento le pasaría lo mismo.
 - **Elegido: sin precarga.** Servidor y cliente arrancan con el esqueleto y el cliente pide el catálogo al montarse, como cualquier otra lectura con `useQuery`. Cambia una línea (`src/app/(storefront)/products/page.tsx`). Costo: los productos aparecen un viaje de red más tarde que con la precarga.
 - **Verificación:** tres corridas completas de e2e sin errores de hidratación (antes, entre cuatro y seis por corrida); 63 de 64 en cada una, con la falla de datos de `home-combo.spec.ts`. `catalog-public-copy.spec.ts`, que fallaba de forma intermitente, pasó en las tres.
+
+### e2e sobre la base local — 27/11/2026
+
+- **Corrección de lo informado antes.** Las corridas de e2e de las fases 2 a 7 se hicieron contra la base de QA del `.env` (Neon), porque la local estaba apagada. Ahí fallaba `home-combo.spec.ts`: busca el combo «Combo desayuno (e2e)», que solo existe en el seed de pruebas. No era un problema de datos de QA ni del test.
+- **Corrida correcta:** contenedor local `coco-e2e-postgres` (puerto 5433), `prisma db push` y `pnpm db:seed:test`, con `DATABASE_URL` y `APP_ENV=development` pasados solo a esos comandos. Resultado: **64 de 64**, sin errores de hidratación.
+- **Para que no se repita:** el README tiene una sección «End-to-end tests» con el procedimiento, y `home-combo.spec.ts` dice qué falta cuando no encuentra el combo.

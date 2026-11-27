@@ -31,7 +31,10 @@ test("a guest picks the people on a combo card and adds every product as its own
 	const card = page.locator("#ofertas [data-slot='card']").filter({
 		has: page.getByRole("heading", { name: COMBO_NAME, exact: true }),
 	});
-	await expect(card).toBeVisible();
+	await expect(
+		card,
+		`"${COMBO_NAME}" comes from the e2e seed: run the suite against a database loaded with \`pnpm db:seed:test\` (README, "End-to-end tests").`,
+	).toBeVisible();
 
 	const people = card.getByRole("group", { name: "Cantidad de personas" });
 	await expect(people.getByRole("radio", { name: "1 persona" })).toBeChecked();
