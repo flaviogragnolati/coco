@@ -249,6 +249,7 @@ export function FinishOrderPanel({
 	action,
 	onLeaveCheckout,
 	leaving = false,
+	confirmTarget,
 }: {
 	total: Total;
 	itemCount: number;
@@ -267,6 +268,8 @@ export function FinishOrderPanel({
 	action: FinishAction;
 	onLeaveCheckout?: () => void;
 	leaving?: boolean;
+	/** Marks the terms and the button for an outside walkthrough. */
+	confirmTarget?: { [key: `data-${string}`]: string };
 }) {
 	const termsId = useId();
 	const delivery = deliveryRow(selection);
@@ -328,7 +331,7 @@ export function FinishOrderPanel({
 					}
 				</p>
 			) : (
-				<>
+				<div className="flex flex-col gap-4" {...confirmTarget}>
 					{liveOrder ? null : (
 						<div className="flex items-start gap-3 text-sm">
 							<Checkbox
@@ -363,7 +366,7 @@ export function FinishOrderPanel({
 							Volver a editar el pedido
 						</Button>
 					) : null}
-				</>
+				</div>
 			)}
 		</PanelShell>
 	);

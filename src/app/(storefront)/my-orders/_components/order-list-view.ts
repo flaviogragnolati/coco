@@ -3,7 +3,7 @@
  * date, entirely client-side over the full list `orders.listMine` already
  * returns. No React, no I/O — unit-tested in `order-list-view.test.ts`.
  *
- * Mirrors the pure-model shape of the checkout's `checkout-steps.ts`.
+ * Mirrors the pure-model shape of `src/features/checkout/finish-order.ts`.
  */
 
 import type { OrderListItem } from "~/shared/common/checkout.types";

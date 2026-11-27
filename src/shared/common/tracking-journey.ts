@@ -11,7 +11,7 @@
  * side in the admin modal — the chip is the column, the stepper is the history.
  * See `docs/tracking-architecture.md`.
  *
- * Mirrors the pure-helper shape of `checkout-steps.ts` and the stage-folding
+ * Mirrors the pure-helper shape of `finish-order.ts` and the stage-folding
  * algorithm of `toUserOrderItemTimeline` (tracking-event.service.ts).
  */
 

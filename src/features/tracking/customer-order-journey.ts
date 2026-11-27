@@ -7,7 +7,7 @@
  * same point of the journey the order shows ONE stepper; only genuine divergence
  * unfolds into per-item journeys. No React, no I/O — tested in
  * `customer-order-journey.test.ts`; mirrors the pure-model shape of
- * `checkout-steps.ts`.
+ * `finish-order.ts`.
  */
 
 import type { TrackingJourneyStepperStage } from "~/features/tracking/tracking-journey-stepper";

@@ -95,6 +95,9 @@ export function DeliverySheet({
 	onSelectPickupPoint,
 	onSaveAddress,
 	savingAddress,
+	modal = true,
+	inert,
+	targets,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -109,6 +112,12 @@ export function DeliverySheet({
 		input: CheckoutAddressCreateInput | CheckoutAddressUpdateInput,
 	) => Promise<CheckoutAddress>;
 	savingAddress: boolean;
+	/** The tutorial shows it open without trapping its own controls. */
+	modal?: boolean;
+	/** Set on the portaled content itself: the sheet escapes any inert ancestor. */
+	inert?: boolean;
+	/** Marks the content for an outside walkthrough; absent on the real page. */
+	targets?: { content?: { [key: `data-${string}`]: string } };
 }) {
 	// `null`: the list; `"new"`: a new address; an address: editing it.
 	const [editing, setEditing] = useState<"new" | CheckoutAddress | null>(null);
@@ -136,6 +145,7 @@ export function DeliverySheet({
 
 	return (
 		<Sheet
+			modal={modal}
 			onOpenChange={(next) => {
 				if (!next) setEditing(null);
 				onOpenChange(next);
@@ -147,7 +157,9 @@ export function DeliverySheet({
 					"gap-0",
 					side === "bottom" ? "rounded-t-4xl" : "w-full sm:max-w-lg",
 				)}
+				inert={inert}
 				side={side}
+				{...targets?.content}
 			>
 				<SheetHeader className="pr-14">
 					<SheetTitle className="font-heading text-xl">

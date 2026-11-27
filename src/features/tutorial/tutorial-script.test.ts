@@ -58,8 +58,9 @@ describe("tutorial scripts", () => {
 	});
 
 	it("the complete version visits each journey stage once, in order", () => {
+		// The arrival step lands on the order; it is not a stage of the walk.
 		const journeys = tutorialScripts.completo.flatMap((step) =>
-			step.scene.id === "orderDetail" && !step.closing
+			step.scene.id === "orderDetail" && !step.scene.arrival && !step.closing
 				? [step.scene.journey]
 				: [],
 		);

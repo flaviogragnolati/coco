@@ -12,12 +12,15 @@ import {
 import { TutorialScene } from "./tutorial-scene";
 
 /**
- * Only exist in the browser: the mini-cart portals, and the purchase block is
- * tagged after the card mounts. The e2e walk covers both.
+ * Only exist in the browser: the mini-cart and the delivery and payment sheets
+ * portal, and the purchase block is tagged after the card mounts. The e2e walk
+ * covers them.
  */
 const browserOnlyTargets = new Set<TutorialTargetId>([
 	"mini-cart",
 	"product-purchase",
+	"finish-delivery",
+	"finish-payment",
 ]);
 
 const fixtures = buildTutorialFixtures(new Date("2026-11-06T15:00:00.000Z"));
@@ -56,8 +59,9 @@ describe("tutorial scenes", () => {
 	});
 
 	it("the browser-only exceptions are real targets of their scene", () => {
+		const sceneTargets = Object.values(targetsByScene).flat();
 		for (const target of browserOnlyTargets) {
-			expect(targetsByScene.catalog).toContain(target);
+			expect(sceneTargets).toContain(target);
 		}
 	});
 });

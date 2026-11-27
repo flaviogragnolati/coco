@@ -195,7 +195,7 @@ export function OrderDetailView({
 	/** Real page only; the tutorial leaves it out. */
 	actionsSlot?: ReactNode;
 	/** Marks regions for an outside walkthrough; absent on the real page. */
-	targets?: { journey?: DataAttributes };
+	targets?: { journey?: DataAttributes; arrival?: DataAttributes };
 }) {
 	const status = customerOrderStatusView(order);
 	const StatusIcon = status.icon;
@@ -275,6 +275,7 @@ export function OrderDetailView({
 				<div
 					className="flex items-start gap-4 rounded-[22px] bg-brand-ink p-5 text-brand-ink-foreground"
 					role="status"
+					{...targets?.arrival}
 				>
 					<span
 						className={cn(

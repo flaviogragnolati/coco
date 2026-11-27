@@ -1,28 +1,118 @@
 import { CartPageView } from "~/app/(storefront)/cart/_components/cart-page-view";
-import { FinishOrderGuestPanel } from "~/features/checkout/finish-order-panel";
+import { getCheckoutCharge } from "~/features/checkout/checkout-charge";
+import { DeliverySheet } from "~/features/checkout/delivery-sheet";
+import {
+	EMPTY_FINISH_DRAFT,
+	finishBlockers,
+	resolveFinishSelection,
+} from "~/features/checkout/finish-order";
+import {
+	FinishOrderGuestPanel,
+	FinishOrderPanel,
+} from "~/features/checkout/finish-order-panel";
+import { PaymentSheet } from "~/features/checkout/payment-sheet";
 import {
 	TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
 	type TutorialFixtures,
 } from "~/features/tutorial/tutorial-fixtures";
 import { tutorialTarget } from "~/features/tutorial/tutorial-script";
+import { useIsMobile } from "~/hooks/use-mobile";
 import { noop } from "./noop";
 
-/** As a guest: the walk-through signs in at checkout, like most customers do. */
-export function CartScene({ fixtures }: { fixtures: TutorialFixtures }) {
-	const total = fixtures.cart.totals[0];
+const rejectSave = () => Promise.reject(new Error("Tutorial"));
+
+/**
+ * The order page. As a guest it shows the total and the sign-in; signed in, the
+ * "Finalizar" panel with home delivery and Mercado Pago already chosen and, on
+ * the delivery and payment steps, that sheet open. Mirror `CartClient` and
+ * `FinishOrder` when they change (ADR 0012).
+ */
+export function CartScene({
+	fixtures,
+	signedIn,
+	sheet,
+}: {
+	fixtures: TutorialFixtures;
+	signedIn: boolean;
+	sheet: "delivery" | "payment" | null;
+}) {
+	const isMobile = useIsMobile();
+	const state = fixtures.checkoutState;
+	const cart = signedIn ? state.cart : fixtures.cart;
+	const total = cart.totals[0];
+	const selection = resolveFinishSelection(state, EMPTY_FINISH_DRAFT);
+	const charge = getCheckoutCharge(
+		state.cart,
+		selection.paymentMethod,
+		state.transferDiscountPercent,
+	);
+	const side = isMobile ? "bottom" : "right";
+
+	const finishSlot = !total ? null : !signedIn ? (
+		<FinishOrderGuestPanel
+			itemCount={cart.itemCount}
+			total={total}
+			transferDiscountPercent={TUTORIAL_TRANSFER_DISCOUNT_PERCENT}
+		/>
+	) : (
+		<>
+			<FinishOrderPanel
+				acceptedTerms
+				action={{
+					label: "Pagar en Mercado Pago",
+					onClick: noop,
+					disabled: false,
+					reason: null,
+					pending: false,
+				}}
+				blockers={finishBlockers(selection, { acceptedTerms: true })}
+				charge={charge}
+				confirmTarget={tutorialTarget("finish-confirm")}
+				itemCount={cart.itemCount}
+				liveOrder={null}
+				onAcceptedTermsChange={noop}
+				onOpenDelivery={noop}
+				onOpenPayment={noop}
+				onOpenTerms={noop}
+				selection={selection}
+				total={total}
+			/>
+			<DeliverySheet
+				addresses={state.addresses}
+				inert
+				modal={false}
+				onModeChange={noop}
+				onOpenChange={noop}
+				onSaveAddress={rejectSave}
+				onSelectAddress={noop}
+				onSelectPickupPoint={noop}
+				open={sheet === "delivery"}
+				pickupPoints={state.pickupPoints}
+				savingAddress={false}
+				selection={selection}
+				side={side}
+				targets={{ content: tutorialTarget("finish-delivery") }}
+			/>
+			<PaymentSheet
+				inert
+				modal={false}
+				onOpenChange={noop}
+				onSelect={noop}
+				open={sheet === "payment"}
+				paymentMethods={state.paymentMethods}
+				selectedPaymentMethodId={selection.paymentMethod?.id ?? null}
+				side={side}
+				targets={{ content: tutorialTarget("finish-payment") }}
+				total={total}
+				transferDiscountPercent={state.transferDiscountPercent}
+			/>
+		</>
+	);
 
 	return (
 		<CartPageView
-			cart={fixtures.cart}
-			finishSlot={
-				total ? (
-					<FinishOrderGuestPanel
-						itemCount={fixtures.cart.itemCount}
-						total={total}
-						transferDiscountPercent={TUTORIAL_TRANSFER_DISCOUNT_PERCENT}
-					/>
-				) : null
-			}
+			cart={cart}
+			finishSlot={finishSlot}
 			hasHydrated
 			isPending={false}
 			locked={false}
@@ -36,7 +126,7 @@ export function CartScene({ fixtures }: { fixtures: TutorialFixtures }) {
 			onRemove={noop}
 			targets={{
 				lines: tutorialTarget("cart-lines"),
-				summary: tutorialTarget("cart-summary"),
+				summary: tutorialTarget(signedIn ? "cart-finish" : "cart-summary"),
 			}}
 		/>
 	);

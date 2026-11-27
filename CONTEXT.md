@@ -327,7 +327,7 @@ _Avoid_: Repetir compra, reorder, duplicate order, clone order
 ### Customer help
 
 **Tutorial**:
-The guided walk-through of a whole purchase along the happy path (catalog, cart, checkout, payment, my orders and order tracking), played on fixed example data in simulated screens. It never reads or writes the customer's real cart, addresses, orders or payments, so it can show stages the customer has not lived yet. It comes in an express and a complete version over the same scenes. Spanish-facing UI labels them "Tutorial rápido" and "Tutorial completo".
+The guided walk-through of a whole purchase along the happy path (catalog, the order page where the customer finishes, payment, my orders and order tracking), played on fixed example data in simulated screens. It never reads or writes the customer's real cart, addresses, orders or payments, so it can show stages the customer has not lived yet. It comes in an express and a complete version over the same scenes. Spanish-facing UI labels them "Tutorial rápido" and "Tutorial completo".
 _Avoid_: Onboarding, tour, demo, recorrido (that word belongs to order tracking)
 
 **Tutorial invitation**:

@@ -33,6 +33,9 @@ export function PaymentSheet({
 	onSelect,
 	total,
 	transferDiscountPercent,
+	modal = true,
+	inert,
+	targets,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -42,12 +45,20 @@ export function PaymentSheet({
 	onSelect: (method: CheckoutPaymentMethod) => void;
 	total: { amount: string; currency: CatalogCurrency } | undefined;
 	transferDiscountPercent: number | null;
+	/** The tutorial shows it open without trapping its own controls. */
+	modal?: boolean;
+	/** Set on the portaled content itself: the sheet escapes any inert ancestor. */
+	inert?: boolean;
+	/** Marks the content for an outside walkthrough; absent on the real page. */
+	targets?: { content?: { [key: `data-${string}`]: string } };
 }) {
 	return (
-		<Sheet onOpenChange={onOpenChange} open={open}>
+		<Sheet modal={modal} onOpenChange={onOpenChange} open={open}>
 			<SheetContent
 				className={cn("gap-0", side === "right" && "w-full sm:max-w-lg")}
+				inert={inert}
 				side={side}
+				{...targets?.content}
 			>
 				<SheetHeader className="pr-14">
 					<SheetTitle className="font-heading text-xl">¿Cómo pagás?</SheetTitle>

@@ -1,6 +1,6 @@
 # Plan: checkout dentro de «Tu pedido» y seguimiento en «Mis pedidos»
 
-> **Estado:** `Working`. Fases 0 a 5 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 6 y 7.
+> **Estado:** `Working`. Fases 0 a 6 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Falta la fase 7.
 > **Tipo:** `implementation-plan` (escrito con `feature-grill`).
 > **Origen:** pedido de Flavio del 26/11/2026 (revisar checkout y seguimiento, proponer alternativas, tres prototipos) y su decisión del 27/11/2026: variante C más el aviso de cierre.
 > **Prototipo aprobado:** `docs/prototypes/checkout-seguimiento/variante-c.html` (con `shared.css` y `shared.js`). La revisión pantalla por pantalla está en `docs/prototypes/checkout-seguimiento/index.html`.
@@ -614,3 +614,12 @@ El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-ped
 - **F5-T2.** `MercadoPagoReturnPage` con un texto por ruta que no afirma que el pago se aprobó, porque la ruta solo dice qué botón trajo de vuelta al cliente. Botón «Ver mis pedidos»; en el rechazo, también «Ir a tu pedido». Se quitó el recuadro de conciliación.
 - **Tests:** `mercadopago-return.test.ts` y `find-return-order.test.ts` [NEW], y un caso nuevo en `e2e/checkout-en-tu-pedido.spec.ts` para las tres rutas sin sesión. Suite completa: 2556 aprobados, 21 omitidos; typecheck y Biome limpios; e2e del checkout y del tutorial, 14 de 14.
 - **Pendiente:** S2 sigue sin verificar. Hay que confirmar en sandbox que Mercado Pago agrega `external_reference` a la URL de retorno; si no lo hace, el cliente ve el respaldo y llega a su pedido desde «Ver mis pedidos».
+
+### Fase 6 — 27/11/2026
+
+- **F6-T1.** La escena `cart` pasa a `{ signedIn, sheet }`; se eliminaron `checkout` y `checkoutResult`; `orderDetail` suma `arrival?: "mp"`. Objetivos nuevos: `cart-finish`, `finish-delivery`, `finish-payment`, `finish-confirm` y `order-arrival`. Pasos nuevos: «Listo para finalizar», «Finalizás en la misma pantalla», «Cómo lo recibís», «Cómo pagás», «Confirmás» (solo en la versión completa) y «Volvés a tu pedido». Las versiones siguen con 12 y 21 pasos, así que los números de paso de los e2e no cambiaron. Cambio respecto de la tarea: la llegada es la de Mercado Pago (`arrival: "mp"`), porque el recorrido de ejemplo paga con Mercado Pago.
+- **F6-T2.** `CartScene` usa `FinishOrderPanel` y las hojas reales con `modal={false}` e `inert`, como el mini-pedido, así no bloquean los controles del tutorial. `MyOrdersScene` usa `MyOrdersShell` y `OrderListPane`; `OrderDetailScene`, el aviso de llegada. Los datos de ejemplo pierden `paymentResult` y `deliverySelection`, y el carrito del panel queda `pending`. `finish-delivery` y `finish-payment` son portales: quedan con los objetivos que solo existen en el navegador.
+- **F6-T3.** `e2e/customer-tutorial.spec.ts`: el paso 8 comprueba la hoja de pago (precio con transferencia y ahorro).
+- **F6-T4.** Se borraron los doce archivos de `checkout/_components`, `my-orders-client.tsx` y `customer-order-journey-view.tsx`. Ningún import roto y ningún ciclo nuevo: los seis ciclos fuera de `generated/` son los de la base.
+- **Glosario:** *Tutorial* ya no nombra el checkout.
+- **Verificación:** suite completa 2547 aprobados; typecheck y Biome (todo el repositorio) limpios; e2e 63 de 64 con la falla previa de `home-combo.spec.ts` (`catalog-public-copy.spec.ts` es intermitente con los datos de QA). La corrida completa registra seis errores de hidratación en el navegador, los mismos seis que en el commit anterior; ningún spec los produce corrido solo.
