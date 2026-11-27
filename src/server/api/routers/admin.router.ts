@@ -10,6 +10,7 @@ import { destinationRouter } from "./admin/destination.router";
 import { glossaryProposalRouter } from "./admin/glossary-proposal.router";
 import { homeOffersRouter } from "./admin/home-offers.router";
 import { lotRouter } from "./admin/lot.router";
+import { notificationRouter } from "./admin/notification.router";
 import { operationRouter } from "./admin/operation.router";
 import { operationsCartRouter } from "./admin/operations-cart.router";
 import { packageRouter } from "./admin/package.router";
@@ -42,6 +43,7 @@ export const adminRouter = createTRPCRouter({
 	glossaryProposal: glossaryProposalRouter,
 	homeOffers: homeOffersRouter,
 	lot: lotRouter,
+	notification: notificationRouter,
 	operation: operationRouter,
 	operationsCart: operationsCartRouter,
 	package: packageRouter,

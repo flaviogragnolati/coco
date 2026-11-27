@@ -334,23 +334,46 @@ export async function createPaymentProviderEvent(
 	};
 
 	if (input.providerEventId) {
-		return db.paymentProviderEvent.upsert({
-			where: {
-				provider_providerEventId: {
-					provider: input.provider,
-					providerEventId: input.providerEventId,
+		const providerEventId = input.providerEventId;
+		const recordDelivery = async (tx: PaymentDbClient) => {
+			const event = await tx.paymentProviderEvent.upsert({
+				where: {
+					provider_providerEventId: {
+						provider: input.provider,
+						providerEventId,
+					},
 				},
-			},
-			create: data,
-			update: {
-				retryCount: { increment: 1 },
-				lastError: input.lastError,
-				headers: toPrismaInputJson(input.headers),
-				query: toPrismaInputJson(input.query),
-				payload: toPrismaInputJson(input.payload),
-			},
-			select: paymentEventDetailSelect,
-		});
+				create: data,
+				update: {
+					retryCount: { increment: 1 },
+					...(input.signatureValid
+						? {
+								signatureValid: true,
+								providerRequestId: data.providerRequestId,
+								providerResourceType: data.providerResourceType,
+								providerResourceId: data.providerResourceId,
+								eventType: data.eventType,
+								action: data.action,
+								headers: data.headers,
+								query: data.query,
+								payload: data.payload,
+							}
+						: {}),
+				},
+				select: paymentEventDetailSelect,
+			});
+			if (input.signatureValid && event.status === "rejected") {
+				return tx.paymentProviderEvent.update({
+					where: { id: event.id },
+					data: { status: input.status, lastError: null },
+					select: paymentEventDetailSelect,
+				});
+			}
+			return event;
+		};
+		return "$transaction" in db
+			? db.$transaction(recordDelivery)
+			: recordDelivery(db);
 	}
 
 	return db.paymentProviderEvent.create({

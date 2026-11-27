@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sortDirectionSchema } from "~/schemas/admin/_crud-schema-helpers";
+import { notificationIndicatorStatusSchema } from "~/schemas/admin/notification.schemas";
 import {
 	adminTrackingStageKeys,
 	trackingEventSources,
@@ -86,7 +87,17 @@ export const adminTrackingCartItemTimelineInputSchema = z.object({
 	cartItemId: z.number().int().positive(),
 });
 
+const trackingEmailSchema = z
+	.object({
+		status: notificationIndicatorStatusSchema,
+		partialQuantity: z.boolean().optional(),
+		orderId: z.number().int().positive().nullable(),
+		test: z.boolean(),
+	})
+	.optional();
+
 export const adminTrackingTimelineItemSchema = z.object({
+	email: trackingEmailSchema,
 	id: z.number().int().positive(),
 	eventKey: z.string().nullable(),
 	cartItemId: z.number().int().positive(),
@@ -214,6 +225,7 @@ const adminTrackingCartItemSummarySchema = z.object({
 });
 
 export const adminTrackingEventListItemSchema = z.object({
+	email: trackingEmailSchema,
 	id: z.number().int().positive(),
 	eventKey: z.string().nullable(),
 	eventType: trackingEventTypeSchema,

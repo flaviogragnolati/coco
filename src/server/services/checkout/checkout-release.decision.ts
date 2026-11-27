@@ -20,6 +20,7 @@ export type CheckoutReleaseInput = {
 	latestAttempt: {
 		status: PaymentAttemptStatus;
 		declaredReceiptReference: string | null;
+		providerPaymentId?: string | null;
 	} | null;
 };
 

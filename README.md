@@ -14,6 +14,11 @@ Checkout Pro uses server-only credentials. Prefer
 environments may use the compatible aliases `MP_ACCESS_TOKEN` and
 `MP_WEBHOOK_TOKEN`. Never prefix these variables with `NEXT_PUBLIC_`.
 
+Set `MP_TEST_SELLER_USER_ID` to the sandbox seller ID in the QA deployment.
+Checkout uses the provider’s `init_point` when the stored preference belongs to
+that seller. Get the webhook signing secret from the application that issued the
+preference, under Webhooks in the developer dashboard.
+
 For the shared sandbox environment, configure Mercado Pago payment Webhooks at:
 
 ```text
@@ -119,3 +124,28 @@ Then run `pnpm test` and `pnpm build` before an authorized deployment. Mocked
 replay verifies sequential behavior; concurrent deliveries still need an
 isolated persistence test. A complete sandbox purchase, signed notification,
 provider lookup, order submission and tracking remain required for acceptance.
+
+## Customer order emails
+
+CoCo records a delivery in the order transaction. The dispatcher sends confirmed orders, rejected payments, pending bank transfers, pickup availability, delivery changes and rescheduled quantities through Resend. A confirmed order includes its payment and public order number in one email.
+
+Active admins and superadmins can open **Operación → Notificaciones** to see sent mail, filter by order or status, and inspect the original recipient, subject, text and HTML. **Enviado** means Resend accepted the message. In test mode the recipient shown is the QA mailbox. The order chip opens all notices for that order and counts each notice once across retries. Tracking shows a chip for the specific event when it can be linked to its notice. Older events without evidence show **Sin registro de mail**.
+
+The history and indicators use the current email partition. To pause dispatch and keep its history visible, keep the configured mode and partition and set `CUSTOMER_EMAIL_DISPATCH=false`. Setting the mode to `off` disables the history. Template updates take effect when a new request is prepared. An existing frozen request keeps its original design across retries.
+
+1. Apply the additive `20261127000000_customer_email_delivery` migration to the target database using the project's migration process. Set `CUSTOMER_EMAIL_MODE=off` until the migration is in place. Only new events recorded while enabled generate deliveries.
+2. For QA, set `CUSTOMER_EMAIL_MODE=test`, `CUSTOMER_EMAIL_ENVIRONMENT` to a unique deployment partition (e.g. `qa`), and `CUSTOMER_EMAIL_TEST_TO` to a controlled mailbox. For live sends use `CUSTOMER_EMAIL_MODE=live` on production with `APP_ENV=production` and its own partition. Each deployment reads only its own mode and partition. Use different partitions for previews that share a database.
+3. Set `RESEND_FROM` to a plain email address on your verified sending domain. Configure `BETTER_AUTH_URL` as the public origin for that deployment, `RESEND_API_KEY` with permission to send, and `CRON_SECRET` to a random server-only secret of at least 16 characters. Set `CUSTOMER_EMAIL_DISPATCH=true` when the worker should deliver pending messages.
+4. New intents created by a checkout, Mercado Pago webhook or admin command wake the dispatcher after the HTTP response. The daily Vercel Cron in `vercel.json` calls `GET /api/internal/notifications/dispatch` at 09:00 UTC (06:00 in Argentina, subject to the Hobby scheduling window), even when nobody is using the store. Vercel sends `Authorization: Bearer <CRON_SECRET>`. Check logs for a successful scheduled call after deploying. Preview deployments can invoke the same endpoint with their own secret and partition. [Vercel Cron documentation](https://vercel.com/docs/cron-jobs/manage-cron-jobs)
+
+For QA, verify the code, buyer, amounts and login link against the order. Check the text and HTML, one shared shipment across two buyers, a partial pickup and a payment retry. With no access to an inbox, Resend's test recipients can simulate delivery outcomes. [Resend testing](https://resend.com/docs/dashboard/emails/send-test-emails)
+
+Set `CUSTOMER_EMAIL_DISPATCH=false` to pause dispatch while still recording new events. Set mode to `off` to pause both. A dispatch already in progress may finish. Retain the table during an application rollback. Rows can be inspected without reading message content:
+
+```sql
+SELECT environment, status, count(*), min("createdAt") AS oldest
+FROM customer_email_delivery
+GROUP BY environment, status;
+```
+
+Monitor the oldest pending row, expired processing leases, review rows, and scheduled HTTP failures. Look up an accepted delivery's `providerId` in Resend for delivery or bounce evidence. A review row has a sanitized `lastError`. Resolve permanent configuration errors and compare timestamps and the key `coco/email/<row id>` with provider evidence. A revision for changed quantities or an expired window after exclusively confirmed 429 responses appends `/<revision>` to the key. After an ambiguous outcome past the idempotency window, establish whether the original was accepted before authorizing another send. [Resend idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys)

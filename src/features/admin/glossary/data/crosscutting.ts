@@ -164,6 +164,84 @@ export const crosscuttingGlossaryEntries: GlossaryEntry[] = [
 		occurrences: [{ code: "DomainEventOutbox", db: "domain_event_outbox" }],
 	},
 	{
+		slug: "entidad-correo-de-pedido",
+		kind: "entity",
+		section: "crosscutting",
+		label: "Correo de pedido",
+		definition:
+			"Registra el aviso al cliente y su estado de envío para ese pedido.",
+		occurrences: [
+			{ code: "CustomerEmailDelivery", db: "customer_email_delivery" },
+		],
+	},
+	{
+		slug: "estado-correo-pending",
+		kind: "status",
+		section: "crosscutting",
+		label: "Pendiente de envío",
+		definition: "El correo espera su primer intento o un reintento.",
+		occurrences: [
+			{
+				code: "CustomerEmailStatus.pending",
+				db: "customer_email_delivery.status",
+			},
+		],
+	},
+	{
+		slug: "estado-correo-processing",
+		kind: "status",
+		section: "crosscutting",
+		label: "Envío en curso",
+		definition: "Un proceso tiene asignado temporalmente el envío.",
+		occurrences: [
+			{
+				code: "CustomerEmailStatus.processing",
+				db: "customer_email_delivery.status",
+			},
+		],
+	},
+	{
+		slug: "estado-correo-accepted",
+		kind: "status",
+		section: "crosscutting",
+		label: "Aceptado por Resend",
+		definition:
+			"Resend recibió el correo y devolvió un identificador de envío.",
+		occurrences: [
+			{
+				code: "CustomerEmailStatus.accepted",
+				db: "customer_email_delivery.status",
+			},
+		],
+	},
+	{
+		slug: "estado-correo-skipped",
+		kind: "status",
+		section: "crosscutting",
+		label: "Aviso omitido",
+		definition: "El aviso perdió vigencia o la cuenta ya no puede recibirlo.",
+		occurrences: [
+			{
+				code: "CustomerEmailStatus.skipped",
+				db: "customer_email_delivery.status",
+			},
+		],
+	},
+	{
+		slug: "estado-correo-review",
+		kind: "status",
+		section: "crosscutting",
+		label: "Requiere revisión",
+		definition:
+			"El envío requiere que un operador revise el resultado antes de reintentarlo.",
+		occurrences: [
+			{
+				code: "CustomerEmailStatus.review",
+				db: "customer_email_delivery.status",
+			},
+		],
+	},
+	{
 		slug: "entidad-canal",
 		kind: "entity",
 		section: "crosscutting",

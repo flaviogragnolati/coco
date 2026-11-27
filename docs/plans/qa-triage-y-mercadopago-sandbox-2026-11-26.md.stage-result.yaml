@@ -1,0 +1,41 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: q-code-grill-feature
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs:
+    - type: implementation-plan
+      path: docs/plans/qa-triage-y-mercadopago-sandbox-2026-11-26.md
+      lifecycle: Working
+      authority: canonical-for-planned-execution
+      source_item_id: "qa_ticket:#125"
+      artifact_id: IP-QA-MP-20261126
+  derived_outputs: []
+  updated_outputs:
+    - src/server/services/checkout/checkout.service.ts
+    - src/server/services/checkout/checkout.payment-switch.test.ts
+  references_added:
+    - https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/integration-test/test-purchases
+    - https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/payment-notifications
+  traceability_delta:
+    - "qa_ticket:#125 refina la campaña MP, con #21, #23–#27 y #36–#38. #22 figura aprobado."
+    - "qa_ticket:#27 queda ligado a la regresión reproducida y corregida localmente. Sigue en re-test."
+    - "El plan enumera los 73 abiertos y distingue las ocho entradas pendientes, los dos insumos bloqueantes y los 63 re-tests."
+  decisions_added_or_updated: []
+  risks_added_or_updated:
+    - "Un rechazo del checkout alojado puede ocurrir antes de que exista un pago o un callback a CoCo."
+    - "El historial del conector MP corresponde a una aplicación distinta de la que emitió las preferencias."
+  stale_artifacts: []
+  blockers:
+    - "La compra integral requiere un navegador con acceso al checkout de MP. Desde la conexión de diagnóstico la preferencia y las dos portadas respondieron HTTP 403 antes del login."
+    - "Para consultar los registros del proyecto y las entregas de la aplicación emisora se requiere acceso a sus contextos de Vercel y MP."
+  warnings:
+    - "La pantalla fatal después de confirmar quedó correlacionada con el intento #241. La API no encontró pagos asociados a las cuatro preferencias de CoCo estudiadas."
+    - "La corrección local de #27 solo cubre el reintento vencido. Prueba de regresión y revisión independiente aprobadas. No hay despliegue de esta corrección ni aceptación de compra sandbox."
+  required_user_actions:
+    - "Validar el orden propuesto de la campaña y facilitar la prueba #21/#23 desde la conexión habitual de QA."
+  next_recommended_action: "Ejecutar #125 → #21 → #23 y verificar #27 en el destino una vez publicada la corrección. Registrar el primer punto de fallo con hora e intento."
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

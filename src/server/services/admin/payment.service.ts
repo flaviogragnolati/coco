@@ -12,6 +12,7 @@ import {
 } from "~/schemas/admin/payment.schemas";
 import { db } from "~/server/db";
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
+import { enqueueCustomerEmail } from "~/server/services/notifications/customer-email.data";
 import type {
 	ExternalPaymentConfigUpdateInput,
 	PaymentAttemptRejectInput,
@@ -50,6 +51,7 @@ import {
 } from "../payments/payment.data";
 import type { AdminMutationActor } from "./_base/admin-audit";
 import { writeAdminAuditLog } from "./_base/admin-audit";
+import { runSerializable } from "./_base/serializable-transaction";
 
 type AdminDb = typeof db;
 
@@ -181,7 +183,7 @@ export async function settleExternalAttempt(
 	input: PaymentAttemptSettleInput,
 	actor: AdminMutationActor,
 ) {
-	const settled = await db.$transaction(async (tx) => {
+	const settled = await runSerializable(db, async (tx) => {
 		const attempt = await readSettleableExternalAttempt(tx, input.id);
 		const before = await readAttemptDetail(tx, input.id);
 
@@ -201,6 +203,7 @@ export async function settleExternalAttempt(
 
 		const { cancelledAttemptIds } = await submitOrderForCompletedPayment(tx, {
 			orderId: attempt.userOrder.id,
+			orderStatus: attempt.userOrder.status,
 			cartId: attempt.userOrder.cartId,
 			transactionId: attempt.id,
 			actor: { source: "admin", actorId: actor.id },
@@ -236,7 +239,7 @@ export async function rejectExternalAttempt(
 	input: PaymentAttemptRejectInput,
 	actor: AdminMutationActor,
 ) {
-	return db.$transaction(async (tx) => {
+	return runSerializable(db, async (tx) => {
 		const attempt = await readSettleableExternalAttempt(tx, input.id);
 		const before = await readAttemptDetail(tx, input.id);
 
@@ -248,6 +251,12 @@ export async function rejectExternalAttempt(
 		// is rejected without failing that order.
 		if (attempt.userOrder.status === "pending") {
 			await updateOrderStatus(tx, attempt.userOrder.id, "failed");
+			await enqueueCustomerEmail(
+				tx,
+				attempt.userOrder.id,
+				`rejected/${attempt.id}`,
+				{ kind: "rejected", attemptId: attempt.id },
+			);
 		}
 
 		const after = await readAttemptDetail(tx, input.id);

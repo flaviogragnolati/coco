@@ -714,6 +714,7 @@ model UserOrder {
   user         User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   cart         Cart              @relation(fields: [cartId], references: [id], onDelete: Restrict)
   pickupPoint  PickupPoint?      @relation(fields: [pickupPointId], references: [id], onDelete: Restrict)
+  emailDeliveries CustomerEmailDelivery[]
   items        UserOrderItem[]
   transactions UserTransaction[]
 
@@ -1296,6 +1297,39 @@ enum ChannelType {
   whatsapp
   push_notification
   other
+}
+
+enum CustomerEmailStatus {
+  pending
+  processing
+  accepted
+  skipped
+  review
+}
+
+model CustomerEmailDelivery {
+  id             String              @id @default(cuid())
+  orderId        Int
+  environment    String
+  eventKey       String
+  notice         Json                @db.JsonB
+  status         CustomerEmailStatus @default(pending)
+  attempts       Int                 @default(0)
+  nextAttemptAt  DateTime            @default(now())
+  leaseToken     String?
+  leaseUntil     DateTime?
+  firstAttemptAt DateTime?
+  request        Json?               @db.JsonB
+  providerId     String?
+  lastError      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  order          UserOrder           @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([environment, eventKey])
+  @@index([environment, status, nextAttemptAt])
+  @@index([orderId])
+  @@map("customer_email_delivery")
 }
 
 model DomainEventOutbox {

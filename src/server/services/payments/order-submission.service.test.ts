@@ -6,6 +6,13 @@ const data = {
 	updateOrderStatus: vi.fn(async () => ({ id: 70 })),
 };
 
+const { enqueueCustomerEmail } = vi.hoisted(() => ({
+	enqueueCustomerEmail: vi.fn(),
+}));
+vi.mock("~/server/services/notifications/customer-email.data", () => ({
+	enqueueCustomerEmail,
+}));
+
 vi.mock("server-only", () => ({}));
 vi.mock("~/server/services/checkout/checkout.data", () => data);
 vi.mock("~/server/events/domain-event-publisher", () => ({
@@ -31,6 +38,7 @@ test("a completed payment cancels the order's other pending attempts", async () 
 
 	const result = await service.submitOrderForCompletedPayment(tx as never, {
 		orderId: 70,
+		orderStatus: "pending",
 		cartId: 1,
 		transactionId: 90,
 		actor: { source: "system", actorReference: "mercadopago:webhook" },
@@ -39,6 +47,10 @@ test("a completed payment cancels the order's other pending attempts", async () 
 	expect(data.cancelOtherPendingAttempts).toHaveBeenCalledWith(tx, {
 		userOrderId: 70,
 		keepTransactionId: 90,
+	});
+	expect(enqueueCustomerEmail).toHaveBeenCalledWith(tx, 70, "confirm/70", {
+		kind: "confirmed",
+		attemptId: 90,
 	});
 	expect(result.cancelledAttemptIds).toEqual([61]);
 });
@@ -66,6 +78,7 @@ test("a sequential late approval cannot publish another submission for items alr
 	for (const transactionId of [90, 61]) {
 		await service.submitOrderForCompletedPayment(tx as never, {
 			orderId: 70,
+			orderStatus: "pending",
 			cartId: 1,
 			transactionId,
 			actor: { source: "system", actorReference: "mercadopago" },
@@ -79,4 +92,38 @@ test("a sequential late approval cannot publish another submission for items alr
 		type: "cart.item.submittedToOrder",
 		payload: { cartItemId: "10", transactionId: "90" },
 	});
+});
+
+test.each([
+	"processing",
+	"completed",
+	"refunded",
+	"chargedBack",
+] as const)("a second credited method on a %s order keeps its original confirmation", async (orderStatus) => {
+	enqueueCustomerEmail.mockClear();
+	const result = await service.submitOrderForCompletedPayment({} as never, {
+		orderId: 70,
+		orderStatus,
+		cartId: 1,
+		transactionId: 91,
+		actor: { source: "system", actorReference: "mercadopago" },
+	});
+	expect(enqueueCustomerEmail).not.toHaveBeenCalled();
+	expect(result.cancelledAttemptIds).toEqual([]);
+});
+
+test("a late approval leaves a previously paid order closed after a fulfillment cancellation", async () => {
+	const tx = {
+		userTransaction: { findFirst: vi.fn(async () => ({ id: 90 })) },
+	};
+	enqueueCustomerEmail.mockClear();
+	const result = await service.submitOrderForCompletedPayment(tx as never, {
+		orderId: 70,
+		orderStatus: "cancelled",
+		cartId: 1,
+		transactionId: 91,
+		actor: { source: "system", actorReference: "mercadopago" },
+	});
+	expect(result.cancelledAttemptIds).toEqual([]);
+	expect(enqueueCustomerEmail).not.toHaveBeenCalled();
 });

@@ -16,7 +16,13 @@ it("deduplicates deliveries by provider event id without replacing the original 
 			};
 		return row;
 	});
-	const database = { paymentProviderEvent: { upsert, create: vi.fn() } };
+	const update = vi.fn(async ({ data }) => {
+		if (!row) throw new Error("missing event");
+		row = { ...row, ...data };
+		return row;
+	});
+	const tx = { paymentProviderEvent: { upsert, update, create: vi.fn() } };
+	const database = { ...tx, $transaction: vi.fn((run) => run(tx)) };
 	const input = {
 		provider: "mercadopago",
 		providerMode: "sandbox" as const,
@@ -57,6 +63,54 @@ it("deduplicates deliveries by provider event id without replacing the original 
 			},
 		}),
 	);
+	const rejected = await createPaymentProviderEvent(database as never, {
+		...input,
+		signatureValid: false,
+		status: "rejected",
+		lastError: "invalid",
+		providerRequestId: "rejected-request",
+		payload: { delivery: 3 },
+	});
+	expect(rejected).toMatchObject({
+		id: 7,
+		signatureValid: true,
+		retryCount: 2,
+		userTransactionId: 50,
+		providerRequestId: "request-2",
+		payload: { delivery: 2 },
+	});
+
+	row = null;
+	await createPaymentProviderEvent(database as never, {
+		...input,
+		signatureValid: false,
+		status: "rejected",
+		lastError: "invalid",
+		userTransactionId: null,
+	});
+	const verified = await createPaymentProviderEvent(database as never, {
+		...input,
+		providerRequestId: "verified-request",
+	});
+	expect(verified).toMatchObject({
+		signatureValid: true,
+		providerRequestId: "verified-request",
+		status: "received",
+		lastError: null,
+		retryCount: 1,
+	});
+	expect(update).toHaveBeenCalledTimes(1);
+	for (const status of ["processed", "ignored", "failed"]) {
+		row = { ...verified, status, lastError: "previous reason" };
+		expect(
+			await createPaymentProviderEvent(database as never, input),
+		).toMatchObject({
+			status,
+			signatureValid: true,
+			lastError: "previous reason",
+		});
+	}
+	expect(update).toHaveBeenCalledTimes(1);
 	expect(database.paymentProviderEvent.create).not.toHaveBeenCalled();
 });
 

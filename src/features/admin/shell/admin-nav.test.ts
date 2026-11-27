@@ -47,6 +47,12 @@ describe("findAdminNavItem", () => {
 		expect(findAdminNavItem("/admin/tracking")?.item.title).toBe("Tracking");
 	});
 
+	it("exposes the notification history under Operación", () => {
+		const match = findAdminNavItem("/admin/notifications");
+		expect(match?.group?.label).toBe("Operación");
+		expect(match?.item.title).toBe("Notificaciones");
+	});
+
 	it("does not treat a shared prefix as a match", () => {
 		expect(findAdminNavItem("/admin/cartsomething")?.item).toBe(adminHome);
 	});

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("~/server/services/notifications/customer-email.data", () => ({
+	enqueueCustomerEmail: vi.fn(),
+}));
 vi.mock("./user-order.data", () => ({
 	countPackagesBlockingDeliveryChange: vi.fn(),
 	findOrderForDeliveryChange: vi.fn(),
@@ -25,6 +28,7 @@ vi.mock("~/server/events/domain-event-dispatcher", () => ({
 
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
+import { enqueueCustomerEmail } from "~/server/services/notifications/customer-email.data";
 import { buildPickupPointSnapshot } from "~/shared/common/pickup-point-snapshot";
 import * as checkoutData from "../checkout/checkout.data";
 import { writeAdminAuditLog } from "./_base/admin-audit";
@@ -158,6 +162,17 @@ describe("changeDeliveryPreference", () => {
 					source: "admin",
 					pickupPoint: buildPickupPointSnapshot(centro, "admin").pickupPoint,
 				}),
+			}),
+		);
+		expect(enqueueCustomerEmail).toHaveBeenCalledWith(
+			tx,
+			7,
+			expect.stringMatching(/^change\/7\//),
+			expect.objectContaining({
+				kind: "change",
+				reason,
+				change: expect.stringContaining("Centro"),
+				capturedAt: expect.any(String),
 			}),
 		);
 		expect(data.lockOrderForDeliveryChange).toHaveBeenCalledWith(tx, 7);

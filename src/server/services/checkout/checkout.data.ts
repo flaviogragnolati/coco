@@ -461,6 +461,8 @@ export async function createPendingTransaction(
 			currency: input.currency as never,
 			status: "pending",
 			provider: input.provider ?? "mock",
+			providerStatus:
+				input.provider === "external" ? "awaiting_transfer" : undefined,
 			providerMode: input.providerMode,
 			expiresAt: input.expiresAt,
 			idempotencyKey: input.idempotencyKey,
@@ -621,26 +623,6 @@ export async function findExternalPaymentMethod(
 	});
 }
 
-export async function markTransactionAsExternalPending(
-	db: CheckoutDbClient,
-	input: {
-		id: number;
-		expiresAt: Date;
-		requestSnapshot: unknown;
-	},
-) {
-	return db.userTransaction.update({
-		where: { id: input.id },
-		data: {
-			provider: "external",
-			providerStatus: "awaiting_transfer",
-			expiresAt: input.expiresAt,
-			requestSnapshot: toPrismaInputJson(input.requestSnapshot),
-		},
-		select: orderTransactionSelect,
-	});
-}
-
 /** Records what the user says they transferred. It never settles the attempt: only an admin does. */
 export async function declareTransactionReceipt(
 	db: CheckoutDbClient,
@@ -709,11 +691,12 @@ export async function cancelTransaction(db: CheckoutDbClient, id: number) {
 
 const abandonableAttemptWhere = {
 	status: "pending",
+	providerPaymentId: null,
 	declaredReceiptReference: null,
 } satisfies Prisma.UserTransactionWhereInput;
 
 /**
- * Cancels an attempt only while it is still pending with no declared receipt.
+ * Cancels an attempt only while it is pending without a provider payment or declared receipt.
  * False when it no longer is.
  */
 export async function cancelAbandonableAttempt(
@@ -729,7 +712,7 @@ export async function cancelAbandonableAttempt(
 }
 
 /**
- * Cancels the order's other pending attempts that have no declared receipt and
+ * Cancels the order's other pending attempts that have no payment or declared receipt and
  * returns their ids. One with a declared receipt is left for an admin to
  * settle or reject.
  */

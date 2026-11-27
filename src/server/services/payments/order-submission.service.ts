@@ -1,40 +1,52 @@
 import "server-only";
 
 import { TRPCError } from "@trpc/server";
-
-import type { Prisma } from "~/prisma/client";
+import type { Prisma, UserOrderStatus } from "~/prisma/client";
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
 import {
 	cancelOtherPendingAttempts,
 	updateCartStatus,
 	updateOrderStatus,
 } from "~/server/services/checkout/checkout.data";
+import { enqueueCustomerEmail } from "~/server/services/notifications/customer-email.data";
 import {
 	buildSubmittedToOrderEvents,
 	type OrderSubmissionActor,
 } from "./order-submission.decision";
 
-/**
- * The single "payment completed ⇒ submit the cart items, close the cart,
- * advance the order, cancel its other open attempts, publish the facts"
- * transition, shared by the redirect (mock gateway), webhook (Mercado Pago)
- * and admin settlement (external payment) paths. Returns the order and the ids
- * of the attempts it cancelled.
- *
- * The set it acts on is the intersection of the order snapshot and the cart
- * items still live: an item added after the order was snapshotted has no order
- * item to reference, and an item removed mid-payment must not be resurrected as
- * submitted. Both are reachable whenever the cart is not frozen.
- */
+/** Only the first credited attempt may submit the order's still-live snapshot items. */
 export async function submitOrderForCompletedPayment(
 	tx: Prisma.TransactionClient,
 	input: {
 		orderId: number;
+		orderStatus: UserOrderStatus;
 		cartId: number;
 		transactionId: number;
 		actor: OrderSubmissionActor;
 	},
 ) {
+	// Another method can still be credited after the first payment or even after delivery.
+	if (
+		input.orderStatus !== "pending" &&
+		input.orderStatus !== "failed" &&
+		input.orderStatus !== "cancelled"
+	) {
+		return { cancelledAttemptIds: [] };
+	}
+
+	// Cancellation can also be the fulfillment outcome of a previously paid order.
+	if (input.orderStatus === "cancelled") {
+		const priorPayment = await tx.userTransaction.findFirst({
+			where: {
+				userOrderId: input.orderId,
+				id: { not: input.transactionId },
+				completedAt: { not: null },
+			},
+			select: { id: true },
+		});
+		if (priorPayment) return { cancelledAttemptIds: [] };
+	}
+
 	const orderItems = await tx.userOrderItem.findMany({
 		where: { userOrderId: input.orderId },
 		select: { id: true, sourceCartItemId: true },
@@ -60,7 +72,7 @@ export async function submitOrderForCompletedPayment(
 		},
 	});
 	await updateCartStatus(tx, input.cartId, "submitted");
-	const order = await updateOrderStatus(tx, input.orderId, "processing");
+	await updateOrderStatus(tx, input.orderId, "processing");
 	// A switch of payment method can leave an older attempt payable (ADR 0013).
 	// Once one is paid the others are cancelled, except a declared transfer,
 	// which an admin decides.
@@ -96,5 +108,9 @@ export async function submitOrderForCompletedPayment(
 		}),
 	);
 
-	return { order, cancelledAttemptIds };
+	await enqueueCustomerEmail(tx, input.orderId, `confirm/${input.orderId}`, {
+		kind: "confirmed",
+		attemptId: input.transactionId,
+	});
+	return { cancelledAttemptIds };
 }

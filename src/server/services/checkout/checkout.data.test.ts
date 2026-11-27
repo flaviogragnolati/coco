@@ -78,6 +78,7 @@ test("completing a payment cancels only the order's other undeclared pending att
 	const scope = {
 		userOrderId: 70,
 		status: "pending",
+		providerPaymentId: null,
 		declaredReceiptReference: null,
 	};
 	expect(ids).toEqual([61, 62]);
@@ -100,7 +101,12 @@ test("an attempt is cancelled for a switch only while still pending and undeclar
 		cancelAbandonableAttempt({ userTransaction } as never, 61),
 	).resolves.toBe(false);
 	expect(userTransaction.updateMany).toHaveBeenCalledWith({
-		where: { id: 61, status: "pending", declaredReceiptReference: null },
+		where: {
+			id: 61,
+			status: "pending",
+			providerPaymentId: null,
+			declaredReceiptReference: null,
+		},
 		data: { status: "cancelled", cancelledAt: expect.any(Date) },
 	});
 });

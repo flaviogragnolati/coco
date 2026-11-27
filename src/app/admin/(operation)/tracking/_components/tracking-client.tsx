@@ -16,6 +16,7 @@ import {
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
 import {
+	trackingEmailRefreshInterval,
 	trackingEventTypeOptions,
 	trackingSourceOptions,
 } from "~/features/admin/crud/tracking/tracking.mappers";
@@ -166,11 +167,20 @@ export function TrackingClient({
 		(value) => value.length > 0 && value !== allValue,
 	).length;
 
-	const eventsQuery = api.admin.tracking.listEvents.useQuery(listInput);
+	const eventsQuery = api.admin.tracking.listEvents.useQuery(listInput, {
+		refetchInterval: (query) =>
+			trackingEmailRefreshInterval(query.state.data?.items),
+		refetchOnWindowFocus: true,
+	});
 	const usersQuery = api.admin.user.list.useQuery({ includeDeleted: true });
 	const detailQuery = api.admin.tracking.getCartItemTimelineDetail.useQuery(
 		{ cartItemId: selectedCartItemId ?? 0 },
-		{ enabled: selectedCartItemId !== null },
+		{
+			enabled: selectedCartItemId !== null,
+			refetchInterval: (query) =>
+				trackingEmailRefreshInterval(query.state.data?.timeline),
+			refetchOnWindowFocus: true,
+		},
 	);
 
 	const clearFilters = () => {
@@ -417,7 +427,7 @@ export function TrackingClient({
 				errorMessage={
 					detailQuery.isError ? detailQuery.error.message : undefined
 				}
-				isLoading={detailQuery.isFetching}
+				isLoading={detailQuery.isLoading}
 				onOpenChange={(open) => {
 					if (!open) setSelectedCartItemId(null);
 				}}
