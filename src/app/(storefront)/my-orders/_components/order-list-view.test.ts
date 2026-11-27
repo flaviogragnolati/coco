@@ -1,7 +1,11 @@
 import { expect, test } from "vitest";
 
 import type { OrderListItem } from "~/shared/common/checkout.types";
-import { applyOrderListView, countOrdersByFilter } from "./order-list-view";
+import {
+	applyOrderListView,
+	countOrdersByFilter,
+	formatOrderItemNames,
+} from "./order-list-view";
 
 function makeOrder(overrides: Partial<OrderListItem> = {}): OrderListItem {
 	return {
@@ -153,4 +157,14 @@ test("counts cover every group and ignore the current filter", () => {
 		cancelled: 2,
 		refunded: 2,
 	});
+});
+
+test.each([
+	[[], "Sin productos"],
+	[["Almendra"], "Almendra"],
+	[["Almendra", "Nuez"], "Almendra y Nuez"],
+	[["Almendra", "Nuez", "Dátil"], "Almendra, Nuez y Dátil"],
+	[["Almendra", "Nuez", "Dátil", "Mix"], "Almendra, Nuez y 2 más"],
+])("an order of %j is called «%s»", (names, expected) => {
+	expect(formatOrderItemNames(names)).toBe(expected);
 });

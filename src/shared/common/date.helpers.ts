@@ -41,6 +41,11 @@ const mediumFormatter = new Intl.DateTimeFormat("es-AR", {
 	timeStyle: "short",
 });
 
+const dateMediumFormatter = new Intl.DateTimeFormat("es-AR", {
+	dateStyle: "medium",
+	timeZone: BUSINESS_TZ,
+});
+
 function toDate(value: Date | string) {
 	return value instanceof Date ? value : new Date(value);
 }
@@ -55,6 +60,11 @@ export function formatDateTimeFull(value: Date | string) {
 
 export function formatDateTimeMedium(value: Date | string) {
 	return mediumFormatter.format(toDate(value));
+}
+
+/** "27 nov 2026", in Argentina time. */
+export function formatDateMedium(value: Date | string) {
+	return dateMediumFormatter.format(toDate(value));
 }
 
 export function pad2(value: number) {

@@ -1,6 +1,6 @@
 # Plan: checkout dentro de «Tu pedido» y seguimiento en «Mis pedidos»
 
-> **Estado:** `Working`. Fases 0 a 3 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 4 a 7.
+> **Estado:** `Working`. Fases 0 a 4 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 5 a 7.
 > **Tipo:** `implementation-plan` (escrito con `feature-grill`).
 > **Origen:** pedido de Flavio del 26/11/2026 (revisar checkout y seguimiento, proponer alternativas, tres prototipos) y su decisión del 27/11/2026: variante C más el aviso de cierre.
 > **Prototipo aprobado:** `docs/prototypes/checkout-seguimiento/variante-c.html` (con `shared.css` y `shared.js`). La revisión pantalla por pantalla está en `docs/prototypes/checkout-seguimiento/index.html`.
@@ -597,3 +597,13 @@ El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-ped
 - **F3-T8.** `/checkout` redirige a `/cart`. Mini-pedido: con sesión, un solo botón «Finalizar pedido»; sin sesión, ingresar (vuelve a `/cart`) y «Ver pedido completo». La invitación al tutorial no aparece en `/cart`. Los componentes del checkout viejo siguen en el repositorio porque los usa el tutorial; se borran en la fase 6.
 - **F3-T9.** `e2e/checkout-en-tu-pedido.spec.ts`, 2 de 2.
 - **Verificación:** suite completa en verde; typecheck y Biome limpios; e2e 61 de 63. Las dos fallas (`catalog-public-copy.spec.ts` y `home-combo.spec.ts`) se reproducen igual sin estos cambios: dependen de los datos de la base de QA (falta el combo «(e2e)»). El panel con sesión se revisó a 1280 y 390 px en una página temporal con los datos del tutorial (listo, transferencia, primera compra con la hoja de entrega, hoja de pago, pedido esperando el pago y transferencia informada), y se corrigió un desborde horizontal de la grilla en teléfono. No hay login en e2e, así que la confirmación real con transferencia y con Mercado Pago sigue pendiente de prueba manual (§11, pruebas 1 a 6).
+
+### Fase 4 — 27/11/2026
+
+- **F4-T1.** `my-orders/layout.tsx` con `MyOrdersRouteShell` (`my-orders-shell.tsx`), `OrderListPane` y `OrderDetailSection`. La lista se lee una vez por request con `loadMyOrders` (`cache` de React), porque el layout y la página índice la necesitan. Cada fila se nombra por sus productos (`formatOrderItemNames`) y lleva estado, total y fecha (`formatDateMedium`, nuevo). Los filtros solo aparecen con más de un estado y pasan a otra línea en vez de cortarse. `my-orders-client.tsx` queda para el tutorial hasta la fase 6.
+- **F4-T2.** `src/features/tracking/order-journey-track.tsx`. `TrackingJourneyStepper` no cambió.
+- **F4-T3.** `OrderDetailView` recibe `journeyItems` y arma adentro el recorrido, el resumen y la etapa de cada producto; `orderHeadline` da título y frase. Los datos de ejemplo del tutorial suman `journeyItems`. Se quitaron «Código de armado», «Líneas comerciales confirmadas», «Transacción #» y «Referencia: Sin ref.»; la referencia del proveedor queda como «Número de operación» solo cuando existe. Las fotos de las líneas salen del snapshot (`readSnapshotImageUrl`, nuevo) y se dibujan como fondo, igual que en el pedido. Cambio respecto de F2-T5: la leyenda de un pedido unificado es solo «Etapa N de 6», porque el título ya explica la etapa, y un recorrido con las seis etapas completas también cuenta como entregado.
+- **F4-T4.** `ExternalPaymentPanel` con «Datos para transferir», «Copiar todo» (`formatTransferFields`) y «¿Ya transferiste?». `OrderPaymentPending` para un pago de Mercado Pago pendiente o rechazado, con un botón a «Tu pedido».
+- **F4-T5.** `src/features/weekly-closing/order-closing-notice.tsx`.
+- **Glosario:** *Order journey* describe el recorrido único más la etapa de cada producto.
+- **Verificación:** suite completa en verde; typecheck y Biome limpios; e2e 61 de 63 (las mismas dos fallas previas de datos de QA). Revisión visual a 1280 y 390 px en una página temporal con los datos del tutorial: falta la transferencia (con el aviso de llegada), verificando la transferencia, preparación, en dos partes con un aviso, entregado y la lista sola en teléfono. No queda desborde horizontal. Sin login en e2e, el pedido real sigue pendiente de prueba manual.

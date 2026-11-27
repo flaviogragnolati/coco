@@ -1,26 +1,26 @@
 "use client";
 
-import { LandmarkIcon, PencilIcon, SendIcon } from "lucide-react";
+import { CopyIcon, PencilIcon, SendIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "~/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { ExternalPaymentDetails } from "~/features/checkout/external-payment-details";
+import {
+	ExternalPaymentDetails,
+	formatTransferFields,
+} from "~/features/checkout/external-payment-details";
 import type { OrderExternalPayment } from "~/shared/common/checkout.types";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
 import { api } from "~/trpc/react";
 
+/**
+ * What a customer does while the order waits for their transfer: the data to
+ * transfer to, and the receipt number once they did. Reporting it records a
+ * claim, never a payment (ADR 0010, "Declared receipt").
+ */
 export function ExternalPaymentPanel({
 	externalPayment,
 	orderId,
@@ -36,9 +36,7 @@ export function ExternalPaymentPanel({
 	const declareReceipt = api.orders.declareExternalReceipt.useMutation({
 		onSuccess() {
 			setEditing(false);
-			toast.success(
-				"Informamos tu transferencia. Queda pendiente de verificación.",
-			);
+			toast.success("Recibimos tu comprobante. Lo estamos verificando.");
 			router.refresh();
 		},
 		onError(error) {
@@ -51,52 +49,68 @@ export function ExternalPaymentPanel({
 		declareReceipt.mutate({ orderId, reference });
 	};
 
+	const copyAll = async () => {
+		try {
+			await navigator.clipboard.writeText(
+				formatTransferFields(externalPayment),
+			);
+			toast.success("Copiamos los datos para transferir");
+		} catch {
+			toast.error("No pudimos copiar. Copiá cada dato por separado.");
+		}
+	};
+
 	const showForm = declaredReference === null || editing;
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					<LandmarkIcon className="size-4" />
-					Esperando tu transferencia
-				</CardTitle>
-				<CardDescription>
-					Transferí el monto a esta cuenta. Confirmamos el pedido cuando
-					verifiquemos que el dinero llegó.
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="flex flex-col gap-4">
-				<ExternalPaymentDetails instructions={externalPayment} />
+		<section
+			aria-labelledby="transfer-data-title"
+			className="flex flex-col gap-5 rounded-[22px] border bg-card p-5"
+		>
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<h2
+					className="font-heading font-semibold text-xl"
+					id="transfer-data-title"
+				>
+					Datos para transferir
+				</h2>
+				<Button onClick={copyAll} size="sm" type="button" variant="outline">
+					<CopyIcon data-icon="inline-start" />
+					Copiar todo
+				</Button>
+			</div>
+
+			<ExternalPaymentDetails instructions={externalPayment} />
+
+			<div className="flex flex-col gap-3 border-t pt-5">
+				<h3 className="font-heading font-semibold">¿Ya transferiste?</h3>
 
 				{declaredReference === null ? null : (
-					<div className="flex flex-col gap-2 rounded-3xl border p-3 text-xs">
-						<div className="flex flex-wrap items-center justify-between gap-2">
-							<span className="text-muted-foreground">
-								Comprobante informado
-							</span>
-							<Badge variant="warning">Pendiente de verificación</Badge>
-						</div>
-						<span className="break-all font-medium font-mono">
+					<div className="flex flex-col gap-1 rounded-2xl bg-brand-soft p-4 text-brand-soft-foreground text-sm">
+						<span className="font-bold text-[11px] uppercase tracking-[0.12em]">
+							Comprobante informado
+						</span>
+						<span className="break-all font-mono font-semibold">
 							{declaredReference}
 						</span>
-						{externalPayment.declaredReceiptAt ? (
-							<span className="text-muted-foreground">
-								Informado el{" "}
-								{formatDateTimeShort(externalPayment.declaredReceiptAt)}
-							</span>
-						) : null}
+						<span>
+							Lo estamos verificando. Te avisamos acá cuando el pedido quede
+							confirmado.
+							{externalPayment.declaredReceiptAt
+								? ` Lo informaste el ${formatDateTimeShort(externalPayment.declaredReceiptAt)}.`
+								: null}
+						</span>
 						{editing ? null : (
-							<div>
-								<Button
-									onClick={() => setEditing(true)}
-									size="sm"
-									type="button"
-									variant="outline"
-								>
-									<PencilIcon data-icon="inline-start" />
-									Corregir comprobante
-								</Button>
-							</div>
+							<Button
+								className="self-start"
+								onClick={() => setEditing(true)}
+								size="sm"
+								type="button"
+								variant="outline"
+							>
+								<PencilIcon data-icon="inline-start" />
+								Corregir comprobante
+							</Button>
 						)}
 					</div>
 				)}
@@ -119,19 +133,7 @@ export function ExternalPaymentPanel({
 								transferencia.
 							</FieldDescription>
 						</Field>
-						<div className="flex flex-wrap justify-end gap-2">
-							{editing ? (
-								<Button
-									onClick={() => {
-										setEditing(false);
-										setReference(declaredReference ?? "");
-									}}
-									type="button"
-									variant="outline"
-								>
-									Cancelar
-								</Button>
-							) : null}
+						<div className="flex flex-wrap gap-2">
 							<Button
 								disabled={
 									declareReceipt.isPending || reference.trim().length < 3
@@ -143,10 +145,22 @@ export function ExternalPaymentPanel({
 									? "Informando..."
 									: "Informar transferencia"}
 							</Button>
+							{editing ? (
+								<Button
+									onClick={() => {
+										setEditing(false);
+										setReference(declaredReference ?? "");
+									}}
+									type="button"
+									variant="ghost"
+								>
+									Cancelar
+								</Button>
+							) : null}
 						</div>
 					</form>
 				) : null}
-			</CardContent>
-		</Card>
+			</div>
+		</section>
 	);
 }

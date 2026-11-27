@@ -216,6 +216,17 @@ const DELIVERY_INDEX = userTrackingStageDefinitions.findIndex(
 );
 const STAGE_COUNT = userTrackingStageDefinitions.length;
 
+/**
+ * Whether these stages say the item was handed over: the server leaves the
+ * delivery stage current, and a journey with every stage done says so too.
+ */
+function isDelivered(stages: TrackingJourneyStepperStage[]) {
+	return (
+		currentStageIndex(stages) === DELIVERY_INDEX ||
+		(stages.length > 0 && stages.every((stage) => stage.status === "completed"))
+	);
+}
+
 export type CustomerOrderLineTone =
 	| "waiting"
 	| "active"
@@ -255,7 +266,7 @@ export function buildOrderLineStages(
 		const index = currentStageIndex(view.stages);
 		const [stageLabel, tone]: [string, CustomerOrderLineTone] = view.cancelled
 			? ["Cancelado", "cancelled"]
-			: index === DELIVERY_INDEX
+			: isDelivered(view.stages)
 				? ["Entregado", "delivered"]
 				: index >= 0
 					? [view.currentStageLabel ?? "", "active"]
@@ -273,7 +284,7 @@ export function buildOrderLineStages(
 export type CustomerOrderJourneySummary = {
 	/** The one track the order page draws. */
 	stages: TrackingJourneyStepperStage[];
-	/** "Etapa 2 de 6 · …" or "En viaje · 3 de 4 productos"; null when there is nothing to add. */
+	/** "Etapa 2 de 6" or "En viaje · 3 de 4 productos"; null when there is nothing to add. */
 	caption: string | null;
 	/** Every product still in the order was handed over. */
 	delivered: boolean;
@@ -281,7 +292,7 @@ export type CustomerOrderJourneySummary = {
 
 /** A delivered track reads as finished: the delivery stage is done, not under way. */
 function finishDelivered(stages: TrackingJourneyStepperStage[]) {
-	const delivered = currentStageIndex(stages) === DELIVERY_INDEX;
+	const delivered = isDelivered(stages);
 	return {
 		delivered,
 		stages: delivered
@@ -305,16 +316,14 @@ export function summarizeOrderJourney(
 	if (view.mode === "unified") {
 		const { stages, delivered } = finishDelivered(view.stages);
 		const index = currentStageIndex(stages);
-		const current = index >= 0 ? stages[index] : undefined;
+		// The order headline already says what the stage means.
 		return {
 			stages,
 			delivered,
 			caption:
-				view.cancelled || !current
+				view.cancelled || index < 0
 					? null
-					: [`Etapa ${index + 1} de ${STAGE_COUNT}`, current.description]
-							.filter(Boolean)
-							.join(" · "),
+					: `Etapa ${index + 1} de ${STAGE_COUNT}`,
 		};
 	}
 

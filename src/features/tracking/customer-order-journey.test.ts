@@ -478,9 +478,7 @@ test("a unified order shows its stage and what it means", () => {
 		buildCustomerOrderJourneyView([at(1, "supplier"), at(2, "supplier")]),
 	);
 
-	expect(summary.caption).toBe(
-		"Etapa 3 de 6 · Le compramos al proveedor la cantidad de todos juntos.",
-	);
+	expect(summary.caption).toBe("Etapa 3 de 6");
 	expect(summary.stages.map((stage) => stage.status)).toStrictEqual([
 		"completed",
 		"completed",
@@ -560,4 +558,25 @@ test("an order is delivered only when every product still in it is", () => {
 
 	expect(summary.caption).toBe("Entregado · 2 de 3 productos");
 	expect(summary.delivered).toBe(false);
+});
+
+test("a journey with every stage done reads as delivered", () => {
+	const allDone = makeItem({
+		cartItemId: 1,
+		timeline: {
+			...makeTimeline({ cartItemId: 1, currentStage: "delivery" }),
+			stages: makeTimeline({
+				cartItemId: 1,
+				currentStage: "delivery",
+			}).stages.map((stage) => ({ ...stage, status: "completed" as const })),
+		},
+	});
+
+	expect(buildOrderLineStages([allDone])[0]).toMatchObject({
+		stageLabel: "Entregado",
+		tone: "delivered",
+	});
+	expect(
+		summarizeOrderJourney(buildCustomerOrderJourneyView([allDone])).delivered,
+	).toBe(true);
 });

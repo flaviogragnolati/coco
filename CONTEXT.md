@@ -199,7 +199,7 @@ A deviation or annotation attached to the journey stage that was current when it
 _Avoid_: Warning event, error
 
 **Order journey**:
-The customer-facing roll-up of one submitted order's item journeys. When every item shares the same current stage it collapses into a single six-stage journey; otherwise each item shows its own. Spanish-facing UI labels it "Seguimiento del pedido".
+The customer-facing roll-up of one submitted order's item journeys: a single six-stage track for the whole order, plus each product's own stage and notices. When the items are at different stages the track follows the stage most of them share and says how many are there. Spanish-facing UI labels it "Seguimiento del pedido".
 _Avoid_: Order timeline, tracking screen
 
 **Customer order status**:

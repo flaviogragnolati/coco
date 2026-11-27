@@ -5,6 +5,7 @@ import {
 	tutorialTarget,
 } from "~/features/tutorial/tutorial-script";
 
+/** Mirrors the order column of `/my-orders/[orderId]` around the real view. */
 export function OrderDetailScene({
 	journey,
 	fixtures,
@@ -12,12 +13,14 @@ export function OrderDetailScene({
 	journey: TutorialJourneyPoint;
 	fixtures: TutorialFixtures;
 }) {
-	const { order, journeyView } = fixtures.orderDetail(journey);
+	const { order, journeyItems } = fixtures.orderDetail(journey);
 	return (
-		<OrderDetailView
-			journeyView={journeyView}
-			order={order}
-			targets={{ journey: tutorialTarget("order-journey") }}
-		/>
+		<main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 md:px-6">
+			<OrderDetailView
+				journeyItems={journeyItems}
+				order={order}
+				targets={{ journey: tutorialTarget("order-journey") }}
+			/>
+		</main>
 	);
 }

@@ -11,6 +11,7 @@ import { toOrderJourneyItemInputs } from "~/app/(storefront)/my-orders/[orderId]
 import { catalogProductToCartItem } from "~/features/cart/cart-mappers";
 import {
 	buildCustomerOrderJourneyView,
+	type CustomerOrderJourneyItemInput,
 	type CustomerOrderJourneyView,
 } from "~/features/tracking/customer-order-journey";
 import { weeklyClosingScheduleSchema } from "~/schemas/weekly-closing.schemas";
@@ -259,6 +260,7 @@ const CART_CODE = "EJEMPLO-ARMADO";
 export type TutorialOrderDetail = {
 	order: OrderDetail;
 	timelines: UserOrderItemTimeline[];
+	journeyItems: CustomerOrderJourneyItemInput[];
 	journeyView: CustomerOrderJourneyView;
 };
 
@@ -454,12 +456,12 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 			],
 		};
 		const timelines = buildTimelines(cartItems, journey, now);
+		const journeyItems = toOrderJourneyItemInputs(order, timelines);
 		return {
 			order,
 			timelines,
-			journeyView: buildCustomerOrderJourneyView(
-				toOrderJourneyItemInputs(order, timelines),
-			),
+			journeyItems,
+			journeyView: buildCustomerOrderJourneyView(journeyItems),
 		};
 	};
 
