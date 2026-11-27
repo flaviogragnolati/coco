@@ -30,6 +30,10 @@ export const env = createEnv({
 			.default("development"),
 		DEV_USER_ROLE: z.enum(["superadmin", "admin", "user"]).default("user"),
 		MERCADOPAGO_ACCESS_TOKEN: z.string().optional(),
+		MP_TEST_SELLER_USER_ID: z
+			.string()
+			.regex(/^[1-9]\d*$/)
+			.optional(),
 		MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
 		MERCADOPAGO_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
 		BLOB_READ_WRITE_TOKEN: z.string().optional(),
@@ -68,6 +72,7 @@ export const env = createEnv({
 			process.env.MP_WEBHOOK_TOKEN,
 		),
 		MERCADOPAGO_TIMEOUT_MS: process.env.MERCADOPAGO_TIMEOUT_MS,
+		MP_TEST_SELLER_USER_ID: process.env.MP_TEST_SELLER_USER_ID,
 		BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
 	},
 	/**

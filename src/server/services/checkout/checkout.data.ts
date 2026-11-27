@@ -691,11 +691,12 @@ export async function cancelTransaction(db: CheckoutDbClient, id: number) {
 
 const abandonableAttemptWhere = {
 	status: "pending",
+	providerPaymentId: null,
 	declaredReceiptReference: null,
 } satisfies Prisma.UserTransactionWhereInput;
 
 /**
- * Cancels an attempt only while it is still pending with no declared receipt.
+ * Cancels an attempt only while it is pending without a provider payment or declared receipt.
  * False when it no longer is.
  */
 export async function cancelAbandonableAttempt(
@@ -711,7 +712,7 @@ export async function cancelAbandonableAttempt(
 }
 
 /**
- * Cancels the order's other pending attempts that have no declared receipt and
+ * Cancels the order's other pending attempts that have no payment or declared receipt and
  * returns their ids. One with a declared receipt is left for an admin to
  * settle or reject.
  */

@@ -4,7 +4,6 @@ import {
 	WebhookSignatureValidator,
 } from "mercadopago";
 import { type NextRequest, NextResponse } from "next/server";
-
 import { env } from "~/env";
 import { db } from "~/server/db";
 import { appLogger } from "~/server/services/logging/app-logger.service";
@@ -81,8 +80,28 @@ async function handleWebhook(request: NextRequest) {
 			xRequestId,
 			dataId,
 			secret: env.MERCADOPAGO_WEBHOOK_SECRET,
-			toleranceSeconds: 300,
 		});
+		// The signed timestamp arrives in seconds or milliseconds. SDK 3.1.0's
+		// tolerance option interprets both as milliseconds.
+		const timestamps = (xSignature ?? "")
+			.split(",")
+			.map((part) => /^\s*ts\s*=\s*(\d+)\s*$/i.exec(part)?.[1])
+			.filter((value) => value !== undefined);
+		const timestamp = timestamps.length === 1 ? timestamps[0] : undefined;
+		if (!timestamp || !/^(?:\d{10}|\d{13})$/.test(timestamp)) {
+			throw new InvalidWebhookSignatureError(
+				SignatureFailureReason.MalformedSignatureHeader,
+				xRequestId ?? undefined,
+			);
+		}
+		const signedAt = Number(timestamp) * (timestamp.length === 10 ? 1000 : 1);
+		if (Math.abs(Date.now() - signedAt) > 300_000) {
+			throw new InvalidWebhookSignatureError(
+				SignatureFailureReason.TimestampOutOfTolerance,
+				xRequestId ?? undefined,
+				timestamp,
+			);
+		}
 		signatureValid = true;
 		accepted = true;
 	} catch (error) {

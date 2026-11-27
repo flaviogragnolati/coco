@@ -51,11 +51,15 @@ import {
 } from "~/shared/common/transfer-discount";
 import { termsToClientTerms } from "../_base/client-terms.mapper";
 import { isClientTermsUsable } from "../_base/terms-validity";
+import { appLogger } from "../logging/app-logger.service";
 import {
 	EXTERNAL_PROVIDER,
 	getExternalPaymentConfig,
 } from "../payments/external/external-payment-config.service";
-import { getMercadoPagoConfig } from "../payments/mercadopago/mercadopago-config.service";
+import {
+	getMercadoPagoConfig,
+	preferenceMatchesConfiguredTestSeller,
+} from "../payments/mercadopago/mercadopago-config.service";
 import {
 	createMercadoPagoPreference,
 	recoverMercadoPagoPreference,
@@ -347,13 +351,60 @@ function mapTransactionStatusToPaymentStatus(
 	return "pending" as const;
 }
 
-function buildPaymentResult(input: {
+async function getPaymentRedirectUrl(
+	attempt: OrderDetailRecord["transactions"][number],
+) {
+	if (
+		attempt.provider !== "mercadopago" ||
+		attempt.status !== "pending" ||
+		attempt.providerPaymentId
+	)
+		return null;
+	if (attempt.providerMode !== "sandbox") {
+		return attempt.checkoutUrl ?? attempt.sandboxCheckoutUrl;
+	}
+	if (attempt.checkoutUrl && attempt.providerPreferenceId) {
+		try {
+			if (
+				await preferenceMatchesConfiguredTestSeller(
+					db,
+					attempt.id,
+					attempt.providerPreferenceId,
+				)
+			) {
+				return attempt.checkoutUrl;
+			}
+		} catch {
+			appLogger.error("mercadopagoCheckoutFailed", {
+				attemptId: attempt.id,
+				stage: "seller",
+			});
+			throw new TRPCError({
+				code: "INTERNAL_SERVER_ERROR",
+				message: `No pudimos verificar el vendedor de prueba. Volvé a confirmar tu pedido. Referencia #${attempt.id}.`,
+			});
+		}
+	}
+	if (attempt.checkoutUrl && !attempt.sandboxCheckoutUrl) {
+		appLogger.error("mercadopagoCheckoutFailed", {
+			attemptId: attempt.id,
+			stage: "redirect",
+		});
+		throw new TRPCError({
+			code: "BAD_GATEWAY",
+			message: `No hay un enlace disponible para el vendedor de prueba. Contactá a soporte. Referencia #${attempt.id}.`,
+		});
+	}
+	return attempt.sandboxCheckoutUrl;
+}
+
+async function buildPaymentResult(input: {
 	order: OrderDetailRecord;
 	transaction: OrderDetailRecord["transactions"][number];
 	paymentMethod: CheckoutPaymentMethod;
 	message?: string;
 	externalPayment?: ExternalPaymentInstructions | null;
-}): CheckoutPaymentResult {
+}): Promise<CheckoutPaymentResult> {
 	const status = mapTransactionStatusToPaymentStatus(input.transaction.status);
 	const message =
 		input.message ??
@@ -363,7 +414,7 @@ function buildPaymentResult(input: {
 				? (input.transaction.failureMessage ?? "No se pudo procesar el pago.")
 				: "El pago quedó pendiente de confirmación.");
 
-	return checkoutPaymentResultSchema.parse({
+	const result = checkoutPaymentResultSchema.parse({
 		status,
 		message,
 		order: {
@@ -384,20 +435,34 @@ function buildPaymentResult(input: {
 			sandboxCheckoutUrl: input.transaction.sandboxCheckoutUrl,
 			...toAttemptTransferDiscount(input.transaction),
 		},
-		redirectUrl:
-			input.transaction.provider === "mercadopago"
-				? input.transaction.providerMode === "sandbox"
-					? (input.transaction.sandboxCheckoutUrl ??
-						input.transaction.checkoutUrl)
-					: (input.transaction.checkoutUrl ??
-						input.transaction.sandboxCheckoutUrl)
-				: null,
+		redirectUrl: await getPaymentRedirectUrl(input.transaction),
 		externalPayment: input.externalPayment ?? null,
 		deliveryPreference: input.order.deliveryPreference,
 		shippingAddress: getAddressFromSnapshot(input.order),
 		pickupPoint: readPickupPointSnapshot(input.order.pickupPointSnapshot),
 		paymentMethod: input.paymentMethod,
 	});
+	if (result.redirectUrl) {
+		appLogger.info("mercadopagoCheckoutRedirectReady", {
+			attemptId: input.transaction.id,
+			orderId: input.order.id,
+			mode: input.transaction.providerMode,
+		});
+	} else if (
+		input.transaction.provider === "mercadopago" &&
+		input.transaction.status === "pending" &&
+		!input.transaction.providerPaymentId
+	) {
+		appLogger.error("mercadopagoCheckoutFailed", {
+			attemptId: input.transaction.id,
+			stage: "redirect",
+		});
+		throw new TRPCError({
+			code: "BAD_GATEWAY",
+			message: `Mercado Pago no devolvió el enlace de pago. Volvé a confirmar para recuperarlo. Referencia #${input.transaction.id}.`,
+		});
+	}
+	return result;
 }
 
 function buildExternalPaymentInstructions(input: {
@@ -654,7 +719,8 @@ async function resolvePaymentProviderConfig(
 function buildReusedAttemptMessage(
 	transaction: OrderDetailRecord["transactions"][number],
 ) {
-	if (transaction.status !== "pending") return undefined;
+	if (transaction.status !== "pending" || transaction.providerPaymentId)
+		return undefined;
 
 	if (transaction.provider === "mercadopago") {
 		return "Ya tenés un pago iniciado para tu pedido. Te redirigimos a Mercado Pago para completarlo.";
@@ -685,34 +751,80 @@ async function createLiveUserOrder(
 	});
 }
 
+async function loadAndSaveMercadoPagoPreference(
+	attemptId: number,
+	mode: "sandbox" | "production",
+	operation: "create" | "recover",
+	load: () => ReturnType<typeof recoverMercadoPagoPreference>,
+) {
+	let stage: typeof operation | "persist" = operation;
+	try {
+		const preference = await load();
+		stage = "persist";
+		return await updateTransactionWithMercadoPagoPreference(db, {
+			id: attemptId,
+			onlyIfPending: operation === "recover",
+			providerMode: mode,
+			...preference,
+		});
+	} catch (error) {
+		const status =
+			typeof error === "object" && error !== null && "status" in error
+				? error.status
+				: undefined;
+		appLogger.error("mercadopagoCheckoutFailed", {
+			attemptId,
+			stage,
+			httpStatus:
+				stage !== "persist" &&
+				typeof status === "number" &&
+				Number.isInteger(status) &&
+				status >= 400 &&
+				status <= 599
+					? status
+					: undefined,
+		});
+		if (error instanceof TRPCError) {
+			throw new TRPCError({
+				code: error.code,
+				message: `${error.message} Referencia #${attemptId}.`,
+			});
+		}
+		throw new TRPCError({
+			code: stage === "persist" ? "INTERNAL_SERVER_ERROR" : "BAD_GATEWAY",
+			message: `No pudimos preparar el enlace de Mercado Pago. Volvé a confirmar tu pedido. Referencia #${attemptId}.`,
+		});
+	}
+}
+
 async function buildExistingPaymentResult(
 	input: Parameters<typeof buildPaymentResult>[0],
 ) {
 	const attempt = input.transaction;
 	if (
-		attempt.provider === "mercadopago" &&
-		attempt.status === "pending" &&
-		!attempt.providerPaymentId &&
-		!attempt.checkoutUrl &&
-		!attempt.sandboxCheckoutUrl
+		attempt.provider !== "mercadopago" ||
+		attempt.status !== "pending" ||
+		attempt.providerPaymentId
 	) {
-		if (attempt.expiresAt && attempt.expiresAt <= new Date()) {
-			throw new TRPCError({
-				code: "PRECONDITION_FAILED",
-				message:
-					"El intento venció. Recargá el checkout para confirmar un nuevo intento sobre el mismo pedido.",
-			});
-		}
-		const preference = await recoverMercadoPagoPreference(attempt);
-		const transaction = await updateTransactionWithMercadoPagoPreference(db, {
-			id: attempt.id,
-			onlyIfPending: true,
-			providerMode: attempt.providerMode ?? "sandbox",
-			...preference,
-		});
-		return buildPaymentResult({ ...input, transaction });
+		return buildPaymentResult(input);
 	}
-	return buildPaymentResult(input);
+	if (isSpentPaymentAttempt(attempt, new Date())) {
+		throw new TRPCError({
+			code: "PRECONDITION_FAILED",
+			message:
+				"El intento venció. Recargá el checkout para confirmar un nuevo intento sobre el mismo pedido.",
+		});
+	}
+	if (attempt.checkoutUrl || attempt.sandboxCheckoutUrl) {
+		return buildPaymentResult(input);
+	}
+	const transaction = await loadAndSaveMercadoPagoPreference(
+		attempt.id,
+		attempt.providerMode ?? "sandbox",
+		"recover",
+		() => recoverMercadoPagoPreference(attempt),
+	);
+	return buildPaymentResult({ ...input, transaction });
 }
 
 async function getExistingPaymentResult(
@@ -975,21 +1087,22 @@ export async function confirmAndPay(
 
 	if (prepared.providerConfig.provider === "mercadopago") {
 		const mercadoPagoConfig = prepared.providerConfig.config;
-		const preference = await createMercadoPagoPreference({
-			cart: prepared.cart,
-			order: {
-				id: prepared.order.id,
-				code: prepared.order.code,
-				user: prepared.order.user,
-			},
-			transaction: prepared.transaction,
-			config: mercadoPagoConfig,
-		});
-		const transaction = await updateTransactionWithMercadoPagoPreference(db, {
-			id: prepared.transaction.id,
-			providerMode: mercadoPagoConfig.mode,
-			...preference,
-		});
+		const transaction = await loadAndSaveMercadoPagoPreference(
+			prepared.transaction.id,
+			mercadoPagoConfig.mode,
+			"create",
+			() =>
+				createMercadoPagoPreference({
+					cart: prepared.cart,
+					order: {
+						id: prepared.order.id,
+						code: prepared.order.code,
+						user: prepared.order.user,
+					},
+					transaction: prepared.transaction,
+					config: mercadoPagoConfig,
+				}),
+		);
 
 		return buildPaymentResult({
 			order: prepared.order,

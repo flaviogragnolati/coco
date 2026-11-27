@@ -8,11 +8,19 @@ import { buildMercadoPagoPreferenceCreateData } from "../payments/mercadopago/me
 // invariant must hold while a transfer carries the discount.
 
 const tx = { name: "tx" };
+const preferenceMatchesConfiguredTestSeller = vi.hoisted(() =>
+	vi.fn(async () => true),
+);
+const paymentLog = vi.hoisted(() => ({ error: vi.fn(), info: vi.fn() }));
 const { enqueueCustomerEmail } = vi.hoisted(() => ({
 	enqueueCustomerEmail: vi.fn(),
 }));
 vi.mock("~/server/services/notifications/customer-email.data", () => ({
 	enqueueCustomerEmail,
+}));
+
+vi.mock("~/server/services/logging/app-logger.service", () => ({
+	appLogger: paymentLog,
 }));
 
 const cart = {
@@ -229,14 +237,17 @@ const data = {
 	),
 };
 
-const createMercadoPagoPreference = vi.fn(async () => ({
+const preference = (
+	checkoutUrl: string | null = "https://mp.test/checkout/90",
+) => ({
 	providerPreferenceId: "pref-90",
-	checkoutUrl: "https://mp.test/checkout/90",
+	checkoutUrl,
 	sandboxCheckoutUrl: null,
 	expiresAt: new Date(Date.now() + 60 * 60 * 1000),
 	externalReference: "user_transaction:90",
 	responseSnapshot: {},
-}));
+});
+const createMercadoPagoPreference = vi.fn(async () => preference());
 
 vi.mock("server-only", () => ({}));
 vi.mock("~/server/db", () => ({
@@ -244,6 +255,7 @@ vi.mock("~/server/db", () => ({
 }));
 vi.mock("./checkout.data", () => data);
 vi.mock("../payments/mercadopago/mercadopago-config.service", () => ({
+	preferenceMatchesConfiguredTestSeller,
 	getMercadoPagoConfig: vi.fn(async () => ({
 		enabled: true,
 		mode: "sandbox",
@@ -257,14 +269,7 @@ vi.mock("../payments/external/external-payment-config.service", () => ({
 		settings: externalSettings,
 	})),
 }));
-const recoverMercadoPagoPreference = vi.fn(async () => ({
-	providerPreferenceId: "pref-90",
-	checkoutUrl: "https://mp.test/checkout/90",
-	sandboxCheckoutUrl: null,
-	expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-	externalReference: "user_transaction:90",
-	responseSnapshot: {},
-}));
+const recoverMercadoPagoPreference = vi.fn(async () => preference());
 vi.mock("../payments/mercadopago/mercadopago-preference.service", () => ({
 	createMercadoPagoPreference,
 	recoverMercadoPagoPreference,
@@ -307,6 +312,106 @@ function expectNothingCreated() {
 	expect(data.cancelAbandonableAttempt).not.toHaveBeenCalled();
 }
 
+test.each([
+	{ matches: true, expected: "https://mp.test/checkout" },
+	{ matches: false, expected: "https://mp.test/sandbox" },
+])("chooses the entry point for an existing sandbox seller match=$matches", async ({
+	matches,
+	expected,
+}) => {
+	const existing = attempt({
+		sandboxCheckoutUrl: "https://mp.test/sandbox",
+		providerMode: "sandbox",
+	});
+	data.findTransactionByIdempotencyKey.mockResolvedValueOnce({
+		...existing,
+		userOrder: order(70, [existing]),
+	});
+	preferenceMatchesConfiguredTestSeller.mockResolvedValueOnce(matches);
+	const result = await confirm(mercadoPagoMethod.id, "500.00");
+	expect(result.redirectUrl).toBe(expected);
+	expect(preferenceMatchesConfiguredTestSeller).toHaveBeenCalledWith(
+		expect.anything(),
+		existing.id,
+		existing.providerPreferenceId,
+	);
+});
+
+test("sandbox requires a matching test seller even if only init_point is available", async () => {
+	const existing = attempt();
+	data.findTransactionByIdempotencyKey.mockResolvedValueOnce({
+		...existing,
+		userOrder: order(70, [existing]),
+	});
+	preferenceMatchesConfiguredTestSeller.mockResolvedValueOnce(false);
+	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toMatchObject({
+		code: "BAD_GATEWAY",
+		message: expect.stringContaining("#50"),
+	});
+	expectNothingCreated();
+});
+
+test("seller lookup failures preserve the attempt and give the buyer a reference", async () => {
+	const existing = attempt();
+	data.findTransactionByIdempotencyKey.mockResolvedValueOnce({
+		...existing,
+		userOrder: order(70, [existing]),
+	});
+	preferenceMatchesConfiguredTestSeller.mockRejectedValueOnce(
+		new Error("database unavailable"),
+	);
+	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toMatchObject({
+		code: "INTERNAL_SERVER_ERROR",
+		message: expect.stringContaining("#50"),
+	});
+	expect(paymentLog.error).toHaveBeenCalledWith("mercadopagoCheckoutFailed", {
+		attemptId: 50,
+		stage: "seller",
+	});
+	expectNothingCreated();
+});
+
+test.each([
+	{ status: "completed", expected: "succeeded" },
+	{ status: "pending", expected: "pending" },
+])("replay of a $status attempt with a payment id returns its result without reopening MP", async ({
+	status,
+	expected,
+}) => {
+	const existing = attempt({ status, providerPaymentId: "payment-1" });
+	data.findTransactionByIdempotencyKey.mockResolvedValueOnce({
+		...existing,
+		userOrder: order(70, [existing]),
+	});
+	const result = await confirm(mercadoPagoMethod.id, "500.00");
+	expect(result).toMatchObject({ status: expected, redirectUrl: null });
+	expect(preferenceMatchesConfiguredTestSeller).not.toHaveBeenCalled();
+	expectNothingCreated();
+});
+
+test.each([
+	{ expired: false, method: mercadoPagoMethod.id },
+	{ expired: true, method: mercadoPagoMethod.id },
+	{ expired: true, method: externalMethod.id },
+])("a new key waits on a known pending payment (expired=$expired, method=$method)", async ({
+	expired,
+	method,
+}) => {
+	const existing = attempt({
+		providerPaymentId: "payment-1",
+		expiresAt: new Date(Date.now() + (expired ? -60_000 : 60_000)),
+	});
+	liveOrder = order(70, [existing]);
+	const result = await confirm(method, "500.00");
+	expect(result).toMatchObject({
+		status: "pending",
+		redirectUrl: null,
+		message: "El pago quedó pendiente de confirmación.",
+		transaction: { id: existing.id },
+	});
+	expectNothingCreated();
+});
+
 test("a repeated idempotency key answers with its attempt whatever amount the screen sends", async () => {
 	const existing = attempt({ id: 61 });
 	data.findTransactionByIdempotencyKey.mockImplementation(async () => ({
@@ -317,7 +422,32 @@ test("a repeated idempotency key answers with its attempt whatever amount the sc
 	const result = await confirm(mercadoPagoMethod.id, "1.00");
 
 	expect(result.transaction).toMatchObject({ id: 61, amount: "500" });
+	expect(paymentLog.info).toHaveBeenCalledWith(
+		"mercadopagoCheckoutRedirectReady",
+		{
+			attemptId: 61,
+			orderId: 70,
+			mode: "sandbox",
+		},
+	);
 	expectNothingCreated();
+});
+
+test("a preference without either link keeps its ID for recovery and reports the attempt to the buyer", async () => {
+	createMercadoPagoPreference.mockResolvedValueOnce(preference(null));
+	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toMatchObject({
+		code: "BAD_GATEWAY",
+		message: expect.stringContaining("#90"),
+	});
+	expect(data.updateTransactionWithMercadoPagoPreference).toHaveBeenCalledWith(
+		expect.anything(),
+		expect.objectContaining({ id: 90, providerPreferenceId: "pref-90" }),
+	);
+	expect(paymentLog.error).toHaveBeenCalledWith("mercadopagoCheckoutFailed", {
+		attemptId: 90,
+		stage: "redirect",
+	});
+	expect(paymentLog.info).not.toHaveBeenCalled();
 });
 
 test("switching to transfer replaces the Mercado Pago attempt on the same live order", async () => {
@@ -495,13 +625,26 @@ test.each([
 	"persistence",
 ])("recovers the same preference after a %s failure without another creation", async (failure) => {
 	if (failure === "provider") {
-		createMercadoPagoPreference.mockRejectedValueOnce(new Error("timeout"));
+		createMercadoPagoPreference.mockRejectedValueOnce({
+			status: 503,
+			message: "provider-private-details",
+		});
 	} else {
 		data.updateTransactionWithMercadoPagoPreference.mockRejectedValueOnce(
 			new Error("database unavailable"),
 		);
 	}
-	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toThrow();
+	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toMatchObject({
+		code: failure === "provider" ? "BAD_GATEWAY" : "INTERNAL_SERVER_ERROR",
+		message:
+			"No pudimos preparar el enlace de Mercado Pago. Volvé a confirmar tu pedido. Referencia #90.",
+	});
+	expect(paymentLog.error).toHaveBeenCalledWith("mercadopagoCheckoutFailed", {
+		attemptId: 90,
+		stage: failure === "provider" ? "create" : "persist",
+		httpStatus: failure === "provider" ? 503 : undefined,
+	});
+	expect(paymentLog.info).not.toHaveBeenCalled();
 	const stranded = created;
 	expect(stranded).not.toBeNull();
 	liveOrder = order(80, [stranded as Attempt]);
@@ -539,9 +682,15 @@ test("an uncertain preference stays pending when lookup cannot recover it", asyn
 	recoverMercadoPagoPreference.mockRejectedValueOnce(
 		new Error("lookup inconclusive"),
 	);
-	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toThrow(
-		"lookup inconclusive",
-	);
+	await expect(confirm(mercadoPagoMethod.id, "500.00")).rejects.toMatchObject({
+		code: "BAD_GATEWAY",
+		message: expect.stringContaining("#50"),
+	});
+	expect(paymentLog.error).toHaveBeenCalledWith("mercadopagoCheckoutFailed", {
+		attemptId: 50,
+		stage: "recover",
+		httpStatus: undefined,
+	});
 	expect(stranded.status).toBe("pending");
 	expectNothingCreated();
 	expect(createMercadoPagoPreference).not.toHaveBeenCalled();
@@ -571,10 +720,16 @@ test("a new key after a missing preference expires creates another attempt on th
 	expect(recoverMercadoPagoPreference).not.toHaveBeenCalled();
 });
 
-test("an expired key without a preference asks for a fresh confirmation without creating anything", async () => {
+test.each([
+	{ providerPreferenceId: null, checkoutUrl: null, sandboxCheckoutUrl: null },
+	{
+		providerPreferenceId: "pref-1",
+		checkoutUrl: "https://mp.test/checkout",
+		sandboxCheckoutUrl: "https://mp.test/sandbox/checkout",
+	},
+])("an expired pending attempt asks for a fresh confirmation with preference $providerPreferenceId", async (preference) => {
 	const stranded = attempt({
-		providerPreferenceId: null,
-		checkoutUrl: null,
+		...preference,
 		expiresAt: new Date(Date.now() - 1000),
 	});
 	data.findTransactionByIdempotencyKey.mockResolvedValueOnce({

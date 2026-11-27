@@ -14,6 +14,11 @@ Checkout Pro uses server-only credentials. Prefer
 environments may use the compatible aliases `MP_ACCESS_TOKEN` and
 `MP_WEBHOOK_TOKEN`. Never prefix these variables with `NEXT_PUBLIC_`.
 
+Set `MP_TEST_SELLER_USER_ID` to the sandbox seller ID in the QA deployment.
+Checkout uses the provider’s `init_point` when the stored preference belongs to
+that seller. Get the webhook signing secret from the application that issued the
+preference, under Webhooks in the developer dashboard.
+
 For the shared sandbox environment, configure Mercado Pago payment Webhooks at:
 
 ```text
