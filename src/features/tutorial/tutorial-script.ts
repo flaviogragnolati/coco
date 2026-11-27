@@ -232,7 +232,7 @@ const journeySteps: TutorialStep[] = [
 		id: "journey-supplier",
 		scene: { id: "orderDetail", journey: "supplier" },
 		target: "order-journey",
-		title: "Proveedor",
+		title: "Compra al proveedor",
 		body: "Le compramos al proveedor la cantidad total. El pedido sale desde origen, muchas veces desde otra provincia.",
 	},
 	{
@@ -246,7 +246,7 @@ const journeySteps: TutorialStep[] = [
 		id: "journey-shipping",
 		scene: { id: "orderDetail", journey: "shipping" },
 		target: "order-journey",
-		title: "Envío",
+		title: "En viaje",
 		body: "El camión cruza a Chile, atraviesa el Estrecho de Magallanes en balsa, vuelve a la Argentina y cruza la cordillera hasta Ushuaia.",
 	},
 	{

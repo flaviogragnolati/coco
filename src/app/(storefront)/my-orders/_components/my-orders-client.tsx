@@ -30,8 +30,8 @@ import type { OrderListOutput } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 import { formatDateTimeMedium } from "~/shared/common/date.helpers";
 import {
+	customerOrderStatusView,
 	type OrderStatusFilterKey,
-	orderStatusChipConfigMap,
 	orderStatusFilterKeys,
 	orderStatusFilterLabelMap,
 	paymentStatusLabel,
@@ -104,7 +104,7 @@ export function MyOrdersClient({ orders }: { orders: OrderListOutput }) {
 			) : (
 				<section className="grid gap-4 md:grid-cols-2">
 					{visibleOrders.map((order) => {
-						const statusChip = orderStatusChipConfigMap[order.status];
+						const statusChip = customerOrderStatusView(order);
 						const StatusIcon = statusChip.icon;
 
 						return (

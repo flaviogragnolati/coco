@@ -155,7 +155,7 @@ test("a deep link opens its step and an unsafe return path falls back home", asy
 }) => {
 	await page.goto("/tutorial?version=completo&paso=19&volver=//evil.com");
 	await expect(counter(page)).toHaveText("19 / 21");
-	await expect(page.getByRole("heading", { name: "Envío" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "En viaje" })).toBeVisible();
 	await page
 		.getByRole("button", { name: "Salir del tutorial" })
 		.first()

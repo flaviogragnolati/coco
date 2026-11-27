@@ -4,11 +4,13 @@ import { weeklyClosingScheduleSchema } from "~/schemas/weekly-closing.schemas";
 import { getNextClosing } from "./date.helpers";
 import {
 	DEFAULT_WEEKLY_CLOSING,
+	formatClosingCountdown,
 	formatClosingDate,
 	formatClosingSlot,
 	formatDeliveryLeadTime,
 	formatTimeUntilClosing,
 	heroClosingLine,
+	orderJoinsNextClosing,
 	productClosingLine,
 	splitTimeUntilClosing,
 	weekdayName,
@@ -168,5 +170,50 @@ describe("weeklyClosingScheduleSchema", () => {
 			path: ["deliveryDaysMax"],
 			message: "El máximo no puede ser menor que el mínimo",
 		});
+	});
+});
+
+describe("formatClosingCountdown", () => {
+	it.each([
+		[4 * DAY + 20 * HOUR + 59 * MINUTE, "4 d 20 h"],
+		[1 * DAY, "1 d 0 h"],
+		[3 * HOUR + 15 * MINUTE, "3 h 15 min"],
+		[12 * MINUTE + 30_000, "12 min"],
+		[30_000, "menos de 1 min"],
+		[-MINUTE, "menos de 1 min"],
+	])("%i ms before → %s", (remaining, text) => {
+		expect(formatClosingCountdown(before(remaining), closing)).toBe(text);
+	});
+});
+
+describe("orderJoinsNextClosing", () => {
+	// The closing of Wednesday 18/11 at 12 in Argentina is `closing`.
+	const ahead = (ms: number) => new Date(closing.getTime() - ms);
+	const now = ahead(2 * DAY);
+	const joins = (orderCreatedAt: Date, stageKey: string | null = "submitted") =>
+		orderJoinsNextClosing({
+			orderCreatedAt,
+			now,
+			schedule: DEFAULT_WEEKLY_CLOSING,
+			stageKey,
+		});
+
+	it("an order confirmed this week joins the next closing", () => {
+		expect(joins(ahead(3 * DAY))).toBe(true);
+		expect(joins(ahead(3 * DAY), null)).toBe(true);
+	});
+
+	it("an order confirmed at the previous closing instant joins the next one", () => {
+		// The exact closing instant already counts as closed (CONTEXT.md).
+		expect(joins(ahead(7 * DAY))).toBe(true);
+	});
+
+	it("an order confirmed before the previous closing does not", () => {
+		expect(joins(ahead(7 * DAY + MINUTE))).toBe(false);
+		expect(joins(ahead(8 * DAY))).toBe(false);
+	});
+
+	it("an order whose purchase already started does not", () => {
+		expect(joins(ahead(3 * DAY), "preparation")).toBe(false);
 	});
 });

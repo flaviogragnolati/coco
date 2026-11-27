@@ -26,6 +26,7 @@ import {
 	TransferDiscountBreakdownRows,
 	TransferTotalHint,
 } from "~/features/cart/_components/transfer-total";
+import { paymentMethodCopy } from "~/features/checkout/payment-method-copy";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
@@ -35,7 +36,6 @@ import {
 } from "~/shared/common/delivery-display";
 import { getCheckoutCharge } from "./checkout-charge";
 import type { CheckoutDeliverySelection } from "./checkout-delivery-step";
-import { paymentMethodCopy } from "./checkout-payment-step";
 import type { CheckoutStepId } from "./checkout-steps";
 
 function ReviewSection({

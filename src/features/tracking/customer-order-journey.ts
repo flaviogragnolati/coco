@@ -209,3 +209,143 @@ export function buildCustomerOrderJourneyView(
 		cancelled: itemViews[0]?.cancelled ?? false,
 	};
 }
+
+/** Index of the delivery stage: reaching it means the item was handed over. */
+const DELIVERY_INDEX = userTrackingStageDefinitions.findIndex(
+	(stage) => stage.key === "delivery",
+);
+const STAGE_COUNT = userTrackingStageDefinitions.length;
+
+export type CustomerOrderLineTone =
+	| "waiting"
+	| "active"
+	| "delivered"
+	| "cancelled";
+
+/** One product of the order with where it is and what happened to it. */
+export type CustomerOrderLineStage = {
+	cartItemId: number;
+	stageLabel: string;
+	tone: CustomerOrderLineTone;
+	/** Its own notices, without the product prefix the unified view adds. */
+	notices: CustomerJourneyNoticeView[];
+};
+
+/**
+ * The stage chip and notices of each product. Read from each item's own
+ * timeline, whatever the collapse rule decided, so every line says where it
+ * is. Before any stage, every line is waiting for the payment.
+ */
+export function buildOrderLineStages(
+	items: CustomerOrderJourneyItemInput[],
+): CustomerOrderLineStage[] {
+	const started = items.some((item) => hasReachedAnyStage(item.timeline));
+
+	return items.map((item) => {
+		if (!started) {
+			return {
+				cartItemId: item.cartItemId,
+				stageLabel: "Esperando el pago",
+				tone: "waiting",
+				notices: [],
+			};
+		}
+
+		const view = toItemView(item);
+		const index = currentStageIndex(view.stages);
+		const [stageLabel, tone]: [string, CustomerOrderLineTone] = view.cancelled
+			? ["Cancelado", "cancelled"]
+			: index === DELIVERY_INDEX
+				? ["Entregado", "delivered"]
+				: index >= 0
+					? [view.currentStageLabel ?? "", "active"]
+					: ["Sin novedades", "waiting"];
+
+		return {
+			cartItemId: item.cartItemId,
+			stageLabel,
+			tone,
+			notices: view.notices,
+		};
+	});
+}
+
+export type CustomerOrderJourneySummary = {
+	/** The one track the order page draws. */
+	stages: TrackingJourneyStepperStage[];
+	/** "Etapa 2 de 6 · …" or "En viaje · 3 de 4 productos"; null when there is nothing to add. */
+	caption: string | null;
+	/** Every product still in the order was handed over. */
+	delivered: boolean;
+};
+
+/** A delivered track reads as finished: the delivery stage is done, not under way. */
+function finishDelivered(stages: TrackingJourneyStepperStage[]) {
+	const delivered = currentStageIndex(stages) === DELIVERY_INDEX;
+	return {
+		delivered,
+		stages: delivered
+			? stages.map((stage) => ({ ...stage, status: "completed" as const }))
+			: stages,
+	};
+}
+
+/**
+ * One track for the whole order. When products are at different stages it
+ * follows the stage most of them share (on a tie, the furthest one), leaving
+ * cancelled products out, and the caption says how many are there.
+ */
+export function summarizeOrderJourney(
+	view: CustomerOrderJourneyView,
+): CustomerOrderJourneySummary {
+	if (view.mode === "empty") {
+		return { stages: pendingStages(), caption: null, delivered: false };
+	}
+
+	if (view.mode === "unified") {
+		const { stages, delivered } = finishDelivered(view.stages);
+		const index = currentStageIndex(stages);
+		const current = index >= 0 ? stages[index] : undefined;
+		return {
+			stages,
+			delivered,
+			caption:
+				view.cancelled || !current
+					? null
+					: [`Etapa ${index + 1} de ${STAGE_COUNT}`, current.description]
+							.filter(Boolean)
+							.join(" · "),
+		};
+	}
+
+	const active = view.items.filter((item) => !item.cancelled);
+	const byStage = new Map<number, CustomerItemJourneyView[]>();
+	for (const item of active) {
+		const index = currentStageIndex(item.stages);
+		if (index < 0) continue;
+		byStage.set(index, [...(byStage.get(index) ?? []), item]);
+	}
+
+	const [leadIndex, leaders] = Array.from(byStage).sort(
+		([leftIndex, left], [rightIndex, right]) =>
+			right.length - left.length || rightIndex - leftIndex,
+	)[0] ?? [-1, []];
+	const lead = leaders[0] ?? view.items[0];
+	if (!lead)
+		return { stages: pendingStages(), caption: null, delivered: false };
+
+	const { stages, delivered } = finishDelivered(lead.stages);
+	const label =
+		leadIndex === DELIVERY_INDEX
+			? "Entregado"
+			: (userTrackingStageDefinitions[leadIndex]?.label ?? null);
+
+	return {
+		stages,
+		// The whole order is delivered only when every product still in it is.
+		delivered: delivered && leaders.length === active.length,
+		caption: label
+			? `${label} · ${leaders.length} de ${view.items.length} productos`
+			: null,
+	};
+}

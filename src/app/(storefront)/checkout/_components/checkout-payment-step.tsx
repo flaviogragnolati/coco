@@ -23,36 +23,12 @@ import {
 	EmptyTitle,
 } from "~/components/ui/empty";
 import { formatTransferDiscountPercent } from "~/features/cart/_components/transfer-total";
+import { paymentMethodCopy } from "~/features/checkout/payment-method-copy";
 import type { CatalogCurrency } from "~/shared/common/catalog.types";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 import { applyTransferDiscount } from "~/shared/common/transfer-discount";
 import { SelectableTile } from "./selectable-tile";
-
-const PAYMENT_PROVIDER_COPY = {
-	mercadopago: {
-		title: "Mercado Pago",
-		description: "Pagás con tarjeta, dinero en cuenta o efectivo",
-	},
-	external: {
-		title: "Pago externo",
-		description:
-			"Transferencia bancaria. Te damos los datos al confirmar el pedido",
-	},
-} as const;
-
-/**
- * Copy comes from the provider, never from `type`: the external method is a
- * `bank_transfer` internally, and the user has no business seeing either that
- * or the raw provider slug.
- */
-export function paymentMethodCopy(paymentMethod: CheckoutPaymentMethod) {
-	return (
-		PAYMENT_PROVIDER_COPY[
-			paymentMethod.provider as keyof typeof PAYMENT_PROVIDER_COPY
-		] ?? { title: paymentMethod.label, description: paymentMethod.details }
-	);
-}
 
 export function CheckoutPaymentStep({
 	paymentMethods,

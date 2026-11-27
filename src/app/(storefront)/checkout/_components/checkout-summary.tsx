@@ -21,6 +21,7 @@ import {
 	TransferDiscountBreakdownRows,
 	TransferTotalHint,
 } from "~/features/cart/_components/transfer-total";
+import { paymentMethodCopy } from "~/features/checkout/payment-method-copy";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import {
@@ -188,7 +189,11 @@ export function CheckoutSummary({
 						icon={<CreditCardIcon className="size-3.5" />}
 						label="Pago"
 						onEditStep={onEditStep}
-						value={selectedPaymentMethod?.label ?? "Sin seleccionar"}
+						value={
+							selectedPaymentMethod
+								? paymentMethodCopy(selectedPaymentMethod).title
+								: "Sin seleccionar"
+						}
 					/>
 				</div>
 			</CardContent>

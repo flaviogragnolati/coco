@@ -19,8 +19,9 @@ import {
 } from "./product-snapshot";
 
 /**
- * Customer-facing display vocabulary for orders: labels, status chips and the
- * grouped status filter used by `/my-orders`. Single home of these strings so
+ * Display vocabulary for orders: the commercial status labels the admin reads,
+ * the customer order status, and the grouped status filter used by
+ * `/my-orders`. Single home of these strings so
  * the list and the detail page never drift (they used to keep private copies,
  * one of which silently mislabelled `chargedBack` as "Pendiente").
  *
@@ -67,46 +68,103 @@ export function paymentStatusLabel(status: OrderTransactionStatus | null) {
 	return status ? paymentStatusLabelMap[status] : "Sin pago";
 }
 
-export const orderStatusChipConfigMap: Record<
-	OrderStatus,
-	{ label: string; variant: OrderChipVariant; icon: LucideIcon }
+export type CustomerOrderStatusKey =
+	| "awaitingPayment"
+	| "verifyingPayment"
+	| "inProgress"
+	| "delivered"
+	| "cancelled"
+	| "failed"
+	| "refunded"
+	| "chargedBack";
+
+export type CustomerOrderStatusView = {
+	key: CustomerOrderStatusKey;
+	label: string;
+	variant: OrderChipVariant;
+	icon: LucideIcon;
+};
+
+const customerOrderStatusViews: Record<
+	CustomerOrderStatusKey,
+	CustomerOrderStatusView
 > = {
-	pending: {
-		label: orderStatusLabelMap.pending,
+	awaitingPayment: {
+		key: "awaitingPayment",
+		label: "Esperando tu pago",
+		variant: "warning",
+		icon: ClockIcon,
+	},
+	verifyingPayment: {
+		key: "verifyingPayment",
+		label: "Verificando tu pago",
 		variant: "info",
 		icon: ClockIcon,
 	},
-	processing: {
-		label: orderStatusLabelMap.processing,
+	inProgress: {
+		key: "inProgress",
+		label: "En curso",
 		variant: "info",
 		icon: ClockIcon,
 	},
-	completed: {
-		label: orderStatusLabelMap.completed,
+	delivered: {
+		key: "delivered",
+		label: "Entregado",
 		variant: "success",
 		icon: CheckCircle2Icon,
 	},
 	cancelled: {
+		key: "cancelled",
 		label: orderStatusLabelMap.cancelled,
 		variant: "outline",
 		icon: XCircleIcon,
 	},
 	failed: {
+		key: "failed",
 		label: orderStatusLabelMap.failed,
 		variant: "destructive",
 		icon: XCircleIcon,
 	},
 	refunded: {
+		key: "refunded",
 		label: orderStatusLabelMap.refunded,
 		variant: "warning",
 		icon: RotateCcwIcon,
 	},
 	chargedBack: {
+		key: "chargedBack",
 		label: orderStatusLabelMap.chargedBack,
 		variant: "warning",
 		icon: RotateCcwIcon,
 	},
 };
+
+/**
+ * What a customer is told about an order as a whole (CONTEXT.md, "Customer
+ * order status"). A pending order whose transfer was reported, or whose
+ * payment the provider is still processing, is being verified rather than
+ * waiting for the customer. The admin keeps `orderStatusLabelMap`.
+ */
+export function customerOrderStatusView(order: {
+	status: OrderStatus;
+	latestTransactionStatus: OrderTransactionStatus | null;
+	receiptDeclared: boolean;
+}): CustomerOrderStatusView {
+	switch (order.status) {
+		case "pending":
+			return customerOrderStatusViews[
+				order.receiptDeclared || order.latestTransactionStatus === "inProcess"
+					? "verifyingPayment"
+					: "awaitingPayment"
+			];
+		case "processing":
+			return customerOrderStatusViews.inProgress;
+		case "completed":
+			return customerOrderStatusViews.delivered;
+		default:
+			return customerOrderStatusViews[order.status];
+	}
+}
 
 export const orderStatusFilterKeys = [
 	"all",
@@ -127,7 +185,7 @@ export const orderStatusFilterGroups: Record<
 	{ label: string; statuses: OrderStatus[] }
 > = {
 	inProgress: { label: "En curso", statuses: ["pending", "processing"] },
-	completed: { label: "Completados", statuses: ["completed"] },
+	completed: { label: "Entregados", statuses: ["completed"] },
 	cancelled: { label: "Cancelados", statuses: ["cancelled", "failed"] },
 	refunded: { label: "Reintegros", statuses: ["refunded", "chargedBack"] },
 };

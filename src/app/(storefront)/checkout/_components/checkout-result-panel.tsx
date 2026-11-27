@@ -23,10 +23,11 @@ import {
 } from "~/components/ui/card";
 import { formatTransferDiscountPercent } from "~/features/cart/_components/transfer-total";
 import { ExternalPaymentDetails } from "~/features/checkout/external-payment-details";
+import { paymentMethodCopy } from "~/features/checkout/payment-method-copy";
 import { cn } from "~/lib/utils";
 import type { CheckoutPaymentResult } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
-import { orderStatusLabelMap } from "~/shared/common/order-display";
+import { customerOrderStatusView } from "~/shared/common/order-display";
 
 const toneChipClassName = {
 	succeeded: "bg-success/10 text-success",
@@ -101,7 +102,13 @@ export function CheckoutResultPanel({
 										: "destructive"
 							}
 						>
-							{orderStatusLabelMap[result.order.status]}
+							{
+								customerOrderStatusView({
+									status: result.order.status,
+									latestTransactionStatus: result.transaction.status,
+									receiptDeclared: false,
+								}).label
+							}
 						</Badge>
 					</div>
 				</CardHeader>
@@ -133,10 +140,7 @@ export function CheckoutResultPanel({
 							) : null}
 						</ResultField>
 						<ResultField label="Pago">
-							<span>{result.paymentMethod.label}</span>
-							<span className="text-muted-foreground">
-								{result.paymentMethod.details}
-							</span>
+							<span>{paymentMethodCopy(result.paymentMethod).title}</span>
 						</ResultField>
 					</div>
 					{externalPayment ? (

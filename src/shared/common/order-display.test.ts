@@ -1,9 +1,12 @@
-import { expect, test } from "vitest";
+import { describe, expect, it, test } from "vitest";
 import { formatCurrency } from "./commerce.helpers";
 import {
 	canRepeatOrder,
+	customerOrderStatusView,
 	formatOrderLineQuantityPrice,
 	type OrderStatus,
+	orderStatusFilterLabelMap,
+	orderStatusLabelMap,
 	selectOrderDisplayAttempt,
 } from "./order-display";
 
@@ -98,4 +101,58 @@ test("an order shows the attempt that paid it, even when a newer one exists", ()
 		selectOrderDisplayAttempt([leftover, { id: 4, status: "failed" as const }]),
 	).toBe(leftover);
 	expect(selectOrderDisplayAttempt([])).toBeUndefined();
+});
+
+describe("customerOrderStatusView", () => {
+	const order = (
+		status: Parameters<typeof customerOrderStatusView>[0]["status"],
+		overrides: Partial<Parameters<typeof customerOrderStatusView>[0]> = {},
+	) =>
+		customerOrderStatusView({
+			status,
+			latestTransactionStatus: "pending",
+			receiptDeclared: false,
+			...overrides,
+		});
+
+	it.each([
+		["pending", "Esperando tu pago"],
+		["processing", "En curso"],
+		["completed", "Entregado"],
+		["cancelled", "Cancelado"],
+		["failed", "Fallido"],
+		["refunded", "Reembolsado"],
+		["chargedBack", "Contracargo"],
+	] as const)("tells the customer a %s order is «%s»", (status, label) => {
+		expect(order(status).label).toBe(label);
+	});
+
+	it("says a reported transfer is being verified", () => {
+		expect(order("pending", { receiptDeclared: true })).toMatchObject({
+			key: "verifyingPayment",
+			label: "Verificando tu pago",
+		});
+	});
+
+	it("says a payment the provider is processing is being verified", () => {
+		expect(order("pending", { latestTransactionStatus: "inProcess" }).key).toBe(
+			"verifyingPayment",
+		);
+	});
+
+	it("only a pending order can be verifying its payment", () => {
+		expect(order("processing", { receiptDeclared: true }).key).toBe(
+			"inProgress",
+		);
+	});
+
+	it("leaves the admin labels as they are", () => {
+		expect(orderStatusLabelMap.pending).toBe("Pendiente");
+		expect(orderStatusLabelMap.processing).toBe("En procesamiento");
+		expect(orderStatusLabelMap.completed).toBe("Completado");
+	});
+
+	it("filters delivered orders under «Entregados»", () => {
+		expect(orderStatusFilterLabelMap.completed).toBe("Entregados");
+	});
 });

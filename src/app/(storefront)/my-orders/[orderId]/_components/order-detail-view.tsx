@@ -13,6 +13,7 @@ import {
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
 import { TransferDiscountBreakdownRows } from "~/features/cart/_components/transfer-total";
+import { paymentMethodCopy } from "~/features/checkout/payment-method-copy";
 import type {
 	CustomerOrderJourneyItemInput,
 	CustomerOrderJourneyView,
@@ -28,8 +29,8 @@ import {
 	formatOrderDelivery,
 } from "~/shared/common/delivery-display";
 import {
+	customerOrderStatusView,
 	formatOrderLineQuantityPrice,
-	orderStatusChipConfigMap,
 	paymentStatusLabelMap,
 	selectOrderDisplayAttempt,
 } from "~/shared/common/order-display";
@@ -122,7 +123,7 @@ export function OrderDetailView({
 	targets?: { journey?: DataAttributes };
 }) {
 	const displayAttempt = selectOrderDisplayAttempt(order.transactions);
-	const statusChip = orderStatusChipConfigMap[order.status];
+	const statusChip = customerOrderStatusView(order);
 	const delivery = describeOrderDelivery(order);
 	const StatusIcon = statusChip.icon;
 	const journey = <CustomerOrderJourney view={journeyView} />;
@@ -315,9 +316,8 @@ export function OrderDetailView({
 									</div>
 									<div className="flex flex-col gap-1">
 										<span className="text-muted-foreground">Método</span>
-										<span>{displayAttempt.paymentMethod.label}</span>
-										<span className="text-muted-foreground">
-											{displayAttempt.paymentMethod.details}
+										<span>
+											{paymentMethodCopy(displayAttempt.paymentMethod).title}
 										</span>
 									</div>
 								</>

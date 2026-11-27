@@ -1,6 +1,6 @@
 # Plan: checkout dentro de «Tu pedido» y seguimiento en «Mis pedidos»
 
-> **Estado:** `Working`. Fase 0 y fase 1 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 2 a 7.
+> **Estado:** `Working`. Fases 0, 1 y 2 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 3 a 7.
 > **Tipo:** `implementation-plan` (escrito con `feature-grill`).
 > **Origen:** pedido de Flavio del 26/11/2026 (revisar checkout y seguimiento, proponer alternativas, tres prototipos) y su decisión del 27/11/2026: variante C más el aviso de cierre.
 > **Prototipo aprobado:** `docs/prototypes/checkout-seguimiento/variante-c.html` (con `shared.css` y `shared.js`). La revisión pantalla por pantalla está en `docs/prototypes/checkout-seguimiento/index.html`.
@@ -269,7 +269,7 @@ Cómo se evitan regresiones: no se toca ninguna función de decisión de pagos, 
 
 - **Archivos:** `src/features/checkout/finish-order.ts` `[NEW]`, `src/features/checkout/finish-order.test.ts` `[NEW]`.
 - **Símbolos:** `resolveFinishSelection(state, draft)`, que devuelve la entrega y el pago efectivos validando los ids del borrador contra las opciones vigentes y cayendo en el primero disponible; `finishBlockers(selection, { acceptedTerms })`, que devuelve la lista ordenada de lo que falta (`"address" | "pickupPoint" | "payment" | "terms"`); `toConfirmInput(selection, charge, idempotencyKey)`.
-- **Cambio:** reemplaza a `checkout-steps.ts`. Sin React ni I/O. Si hay `state.liveOrder`, su entrega y su medio de pago ganan sobre el borrador.
+- **Cambio:** reemplaza a `checkout-steps.ts`. Sin React ni I/O. Cada elección sale del borrador, después de `state.liveOrder` y por último de la primera opción. El borrador gana para que confirmar de nuevo pueda cambiar el medio de pago (D9).
 - **Imitar:** `src/app/(storefront)/checkout/_components/checkout-steps.ts`.
 - **Aceptación:** tests: sin direcciones y modo domicilio → falta `address`; id de dirección que ya no existe → cae en la primera; solo punto de retiro disponible; `liveOrder` con entrega → se respeta.
 
@@ -574,3 +574,14 @@ El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-ped
 - **Tests:** `checkout.customer-reads.test.ts` [NEW] (20 casos), tres casos nuevos en `checkout.payment-switch.test.ts`, uno en `checkout.transaction-queries.test.ts` y once en `mercadopago-preference.decision.test.ts`. Suite completa: 2459 aprobados, 21 omitidos. Typecheck y Biome limpios.
 - **Compatibilidad:** la pantalla actual de `/checkout` sigue funcionando. La única diferencia visible es que abrirla ya no congela el pedido.
 - **Hallazgo:** la carrera entre editar y confirmar (§10). No bloquea.
+
+### Fase 2 — 27/11/2026
+
+- **F2-T1.** `customerOrderStatusView` en `order-display.ts`, con los cuatro estados del cliente («Esperando tu pago», «Verificando tu pago», «En curso», «Entregado»). Lo usan Mis pedidos, el pedido y el resultado del checkout actual. `orderStatusChipConfigMap` se eliminó: no le quedaban consumidores. El filtro dice «Entregados». `orderStatusLabelMap` (admin) no cambió.
+- **F2-T2.** Etapas «Compra al proveedor» y «En viaje», y descripciones nuevas para las seis. No mencionan Buenos Aires: el tutorial aclara que el proveedor suele estar en otra provincia. Los correos no usan estas etiquetas. Los títulos del tutorial y el e2e se actualizaron.
+- **F2-T3.** `src/features/checkout/payment-method-copy.ts`. Ninguna pantalla del cliente lee ya `paymentMethod.label`. Los datos de ejemplo del tutorial siguen guardando «Pago externo», como la base, y se muestran a través de esta función.
+- **F2-T4.** `finish-order.ts` con `resolveFinishSelection`, `finishBlockers`, `finishBlockerMessages` y `toConfirmInput`. Cambio respecto de la tarea: el borrador gana sobre el pedido vivo (ver la tarea).
+- **F2-T5.** `buildOrderLineStages` lee el recorrido de cada producto, no la vista unificada, así los avisos llegan sin el prefijo del nombre y no hizo falta sumar `cartItemId` a los avisos. `summarizeOrderJourney` marca como completa la etapa «Entrega» cuando el pedido se entregó (el servidor la deja como actual) y `delivered` exige que se hayan entregado todos los productos activos.
+- **F2-T6.** `ClosingNotice` y, en `weekly-closing.ts`, `formatClosingCountdown` y `orderJoinsNextClosing`. Cambio respecto de la tarea: la regla compara el cierre que le tocaba al pedido según su fecha con el próximo cierre, en vez de restar siete días, así sigue valiendo si el admin mueve el día. Recibe `now` y `schedule` en lugar de `nextClosing`. Un pedido confirmado en el instante exacto del cierre entra en el siguiente, como dice el glosario. El componente todavía no se muestra en ninguna pantalla: lo ubican las fases 3 y 4.
+- **F2-T7.** `order-arrival.ts` con `parseOrderArrival` y `orderArrivalBanner`, que recibe el intento que muestra el pedido y nunca anuncia un pago por el parámetro de la URL solo.
+- **Verificación:** suite completa 2521 aprobados, 21 omitidos; typecheck y Biome limpios; `e2e/customer-tutorial.spec.ts` 11 de 11, corrido contra la base de `.env` (solo lectura).
