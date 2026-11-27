@@ -22,8 +22,9 @@ export default async function AdminLayout({
 	return (
 		<SidebarProvider defaultOpen={sidebarState !== "false"}>
 			<AdminSidebar user={session.user} />
-			{/* SidebarInset already renders the page-level <main>. */}
-			<SidebarInset>
+			{/* SidebarInset already renders the page-level <main>. Without
+			    min-w-0 it grows to its widest table instead of letting it scroll. */}
+			<SidebarInset className="min-w-0">
 				<AdminHeader />
 				<div className="flex min-w-0 flex-1 flex-col p-4 md:p-6">
 					{children}
