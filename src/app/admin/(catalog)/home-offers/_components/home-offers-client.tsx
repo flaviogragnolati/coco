@@ -7,7 +7,7 @@ import {
 	TriangleAlertIcon,
 	XIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
@@ -30,18 +30,27 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { CrudPageShell } from "~/features/admin/crud/_components/crud-page-shell";
 import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
+import { featuredStatusChipConfig } from "~/features/admin/crud/home-offers/home-offers.mappers";
+import { findOverflowingFeatured } from "~/features/admin/crud/home-offers/home-offers-placement";
 import type {
 	FeaturedTargetInput,
 	HomeComboCandidate,
-	HomeFeaturedListItem,
+	HomeFeaturedPreview,
 	HomeOffersCriterion,
 } from "~/shared/common/admin-crud/home-offers.types";
 import { api } from "~/trpc/react";
+import { HomePreviewFrame } from "./home-preview-frame";
 
 const PAGE_TITLE = "Destacados";
 const PAGE_DESCRIPTION =
@@ -101,24 +110,46 @@ function comboLabel(combo: HomeComboCandidate) {
 		: combo.name;
 }
 
-function FeaturedStatus({ item }: { item: HomeFeaturedListItem }) {
-	if (item.status === "inBand") {
-		return <Badge variant="info">Se muestra en la banda</Badge>;
-	}
-	if (item.status === "noPrice") {
-		return <Badge variant="destructive">Sin precio vigente</Badge>;
-	}
-	if (item.status === "inactive") {
-		return <Badge variant="warning">Inactivo</Badge>;
-	}
-	if (item.status === "sharedCard") {
-		return (
-			<Badge variant="info">
-				Se muestra en la tarjeta de {item.sharedWithName}
-			</Badge>
-		);
-	}
-	return null;
+function previewSummary(preview: HomeFeaturedPreview) {
+	const band = preview.spotlight
+		? `Banda: ${preview.spotlight.name} (${preview.spotlight.source === "list" ? "elegida" : "del ranking"})`
+		: "Sin banda";
+	if (preview.featured.length === 0) return `${band} · La sección queda vacía`;
+
+	const fromList = preview.featured.filter(
+		(entry) => entry.source === "list",
+	).length;
+	const fromRanking = preview.featured.length - fromList;
+	return `${band} · Sección: ${fromList} de la lista y ${fromRanking} del ranking`;
+}
+
+function RowIconButton({
+	label,
+	disabled,
+	onClick,
+	children,
+}: {
+	label: string;
+	disabled: boolean;
+	onClick: () => void;
+	children: ReactNode;
+}) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					aria-label={label}
+					disabled={disabled}
+					onClick={onClick}
+					size="icon"
+					variant="ghost"
+				>
+					{children}
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>{label}</TooltipContent>
+		</Tooltip>
+	);
 }
 
 export function HomeOffersClient() {
@@ -135,6 +166,7 @@ export function HomeOffersClient() {
 		useState<HomeOffersCriterion>("marketSaving");
 	const [offersLimit, setOffersLimit] = useState("4");
 	const [fillWithRanking, setFillWithRanking] = useState(true);
+	const [previewVersion, setPreviewVersion] = useState(0);
 
 	// The fill, the criterion and the number of places are saved with one
 	// button, so they live in local state until the settings row answers again.
@@ -147,6 +179,7 @@ export function HomeOffersClient() {
 
 	const invalidateHomeOffers = async () => {
 		await utils.admin.homeOffers.invalidate();
+		setPreviewVersion((version) => version + 1);
 	};
 
 	const onMutationError = (fallback: string) => (error: { message: string }) =>
@@ -210,19 +243,24 @@ export function HomeOffersClient() {
 		[comboCandidatesQuery.data],
 	);
 
-	// Measured against the saved settings, which are what the preview reflects.
+	// Measured against the saved settings, which are what the preview reflects;
+	// the unsaved input would make "No entra" contradict the preview.
 	const placeCount = settingsQuery.data?.offersLimit ?? 4;
 	const spotlightValue = targetValue(settingsQuery.data?.spotlight ?? null);
-	const placedFromList =
-		previewQuery.data?.featured.filter((entry) => entry.source === "list")
-			.length ?? 0;
-	const showableListCount = featured.filter(
-		(item) =>
-			item.status === "shown" && targetValue(item.target) !== spotlightValue,
-	).length;
-	const hiddenByLimit = previewQuery.data
-		? Math.max(0, showableListCount - placedFromList)
-		: 0;
+	const overflowingIds = findOverflowingFeatured(featured, placeCount);
+
+	const savedSettings = settingsQuery.data;
+	const isSettingsDirty = savedSettings
+		? criterion !== savedSettings.criterion ||
+			Number(offersLimit) !== savedSettings.offersLimit ||
+			fillWithRanking !== savedSettings.fillWithRanking
+		: false;
+	const saveSettings = () =>
+		updateSettingsMutation.mutate({
+			criterion,
+			offersLimit: Number(offersLimit),
+			fillWithRanking,
+		});
 
 	const productOptions = useMemo<ComboboxOption[]>(
 		() =>
@@ -309,287 +347,289 @@ export function HomeOffersClient() {
 
 	return (
 		<CrudPageShell description={PAGE_DESCRIPTION} title={PAGE_TITLE}>
-			<Card>
-				<CardHeader>
-					<CardTitle>Banda destacada</CardTitle>
-					<CardDescription>
-						Un producto o un combo en su propia banda, arriba de los destacados.
-						No se repite en la sección.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<Field>
-						<FieldLabel htmlFor="home-offers-spotlight">
-							Qué va en la banda
-						</FieldLabel>
-						<Combobox
-							disabled={setSpotlightMutation.isPending}
-							emptyText="Sin productos ni combos para mostrar"
-							id="home-offers-spotlight"
-							onChange={(value) =>
-								setSpotlightMutation.mutate({
-									target: parseTargetValue(value),
-								})
-							}
-							options={spotlightOptions}
-							placeholder="Sin elección"
-							searchPlaceholder="Buscar producto o combo..."
-							value={targetValue(settingsQuery.data?.spotlight ?? null)}
-						/>
-						<FieldDescription>
-							Sin elección, va el primero del ranking (si el relleno está
-							prendido).
-						</FieldDescription>
-						{missingSpotlightOption ? (
+			<div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
+				<Card>
+					<CardHeader>
+						<CardTitle>Lista de destacados</CardTitle>
+						<CardDescription>
+							Los combos y productos de la sección, en este orden. Un combo
+							muestra a todo su grupo en una sola tarjeta.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="flex flex-col gap-4">
+						{overflowingIds.size > 0 ? (
 							<Alert>
 								<TriangleAlertIcon />
+								<AlertTitle>
+									Hay más destacados que lugares en la sección
+								</AlertTitle>
 								<AlertDescription>
-									La elección guardada está inactiva o no tiene precio vigente.
-									No se muestra. Elegí otra opción o quitá la elección.
+									La sección muestra{" "}
+									{placeCount === 1 ? "1 lugar" : `${placeCount} lugares`}.{" "}
+									{overflowingIds.size === 1
+										? "La última entrada de la lista no se va a ver"
+										: `Las últimas ${overflowingIds.size} entradas de la lista no se van a ver`}{" "}
+									hasta que sumes lugares o quites otras.
 								</AlertDescription>
 							</Alert>
 						) : null}
-					</Field>
-				</CardContent>
-			</Card>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>Lista de destacados</CardTitle>
-					<CardDescription>
-						Los combos y productos de la sección, en este orden. Un combo
-						muestra a todo su grupo en una sola tarjeta.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="flex flex-col gap-4">
-					{hiddenByLimit > 0 ? (
-						<Alert>
-							<TriangleAlertIcon />
-							<AlertTitle>
-								Hay más destacados que lugares en la sección
-							</AlertTitle>
-							<AlertDescription>
-								La sección muestra {placeCount} lugares. Los últimos{" "}
-								{hiddenByLimit} de la lista no se van a ver hasta que sumes
-								lugares o quites otros.
-							</AlertDescription>
-						</Alert>
-					) : null}
-
-					{featured.length === 0 ? (
-						<p className="text-muted-foreground text-sm">
-							La lista está vacía.{" "}
-							{settingsQuery.data?.fillWithRanking
-								? "La sección se arma sola con el ranking."
-								: "Con el relleno apagado, la sección queda vacía."}
-						</p>
-					) : (
-						<ul className="flex flex-col gap-2">
-							{featured.map((item, index) => (
-								<li
-									className="flex flex-wrap items-center gap-3 rounded-2xl border p-3"
-									key={item.id}
-								>
-									<span className="font-mono text-muted-foreground text-xs">
-										#{index + 1}
-									</span>
-									<Badge variant="outline">
-										{item.target.kind === "combo" ? "Combo" : "Producto"}
-									</Badge>
-									<span className="min-w-40 flex-1 font-medium text-foreground text-sm">
-										{item.name}
-									</span>
-									<FeaturedStatus item={item} />
-									<div className="flex items-center gap-1">
-										<Button
-											aria-label={`Subir ${item.name}`}
-											disabled={index === 0 || isEditingList}
-											onClick={() => moveFeatured(index, -1)}
-											size="icon"
-											variant="outline"
+						{featured.length === 0 ? (
+							<p className="text-muted-foreground text-sm">
+								La lista está vacía.{" "}
+								{settingsQuery.data?.fillWithRanking
+									? "La sección se arma sola con el ranking."
+									: "Con el relleno apagado, la sección queda vacía."}
+							</p>
+						) : (
+							<ol className="flex flex-col gap-2">
+								{featured.map((item, index) => {
+									const chip = featuredStatusChipConfig(
+										item,
+										overflowingIds.has(item.id),
+										placeCount,
+									);
+									return (
+										<li
+											className="flex items-center gap-3 rounded-2xl border p-3"
+											key={item.id}
 										>
-											<ArrowUpIcon />
-										</Button>
-										<Button
-											aria-label={`Bajar ${item.name}`}
-											disabled={index === featured.length - 1 || isEditingList}
-											onClick={() => moveFeatured(index, 1)}
-											size="icon"
-											variant="outline"
-										>
-											<ArrowDownIcon />
-										</Button>
-										<Button
-											aria-label={`Quitar ${item.name}`}
-											disabled={isEditingList}
-											onClick={() =>
-												removeFeaturedMutation.mutate({ id: item.id })
-											}
-											variant="outline"
-										>
-											<XIcon data-icon="inline-start" />
-											Quitar
-										</Button>
-									</div>
-								</li>
-							))}
-						</ul>
-					)}
+											<span className="font-mono text-muted-foreground text-xs">
+												#{index + 1}
+											</span>
+											<Badge variant="outline">
+												{item.target.kind === "combo" ? "Combo" : "Producto"}
+											</Badge>
+											<span className="min-w-0 flex-1 truncate font-medium text-foreground text-sm">
+												{item.name}
+											</span>
+											{chip ? <StatusChip config={chip} /> : null}
+											<div className="flex shrink-0 items-center">
+												<RowIconButton
+													disabled={index === 0 || isEditingList}
+													label={`Subir ${item.name}`}
+													onClick={() => moveFeatured(index, -1)}
+												>
+													<ArrowUpIcon />
+												</RowIconButton>
+												<RowIconButton
+													disabled={
+														index === featured.length - 1 || isEditingList
+													}
+													label={`Bajar ${item.name}`}
+													onClick={() => moveFeatured(index, 1)}
+												>
+													<ArrowDownIcon />
+												</RowIconButton>
+												<RowIconButton
+													disabled={isEditingList}
+													label={`Quitar ${item.name}`}
+													onClick={() =>
+														removeFeaturedMutation.mutate({ id: item.id })
+													}
+												>
+													<XIcon />
+												</RowIconButton>
+											</div>
+										</li>
+									);
+								})}
+							</ol>
+						)}
 
-					<Field className="md:w-96">
-						<FieldLabel htmlFor="home-offers-add">
-							Agregar combo o producto
-						</FieldLabel>
-						<Combobox
-							disabled={isEditingList || addOptions.length === 0}
-							emptyText="Sin combos ni productos para agregar"
-							id="home-offers-add"
-							onChange={(value) => {
-								const target = parseTargetValue(value);
-								if (target) addFeaturedMutation.mutate({ target });
-							}}
-							options={addOptions}
-							placeholder="Agregar combo o producto…"
-							searchPlaceholder="Buscar..."
-							value={null}
-						/>
-						<FieldDescription>
-							Se agrega al final. Solo aparecen combos activos y productos con
-							precio vigente.
-						</FieldDescription>
-					</Field>
-				</CardContent>
-			</Card>
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Relleno</CardTitle>
-					<CardDescription>
-						El ranking completa con productos los lugares que la lista deja
-						libres.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="flex flex-col gap-5">
-					<Field orientation="horizontal">
-						<Checkbox
-							checked={fillWithRanking}
-							id="home-offers-fill"
-							onCheckedChange={(checked) =>
-								setFillWithRanking(checked === true)
-							}
-						/>
-						<FieldContent>
-							<FieldLabel htmlFor="home-offers-fill">
-								Completar con productos del ranking
+						<Field>
+							<FieldLabel htmlFor="home-offers-add">
+								Agregar combo o producto
 							</FieldLabel>
+							<Combobox
+								disabled={isEditingList || addOptions.length === 0}
+								emptyText="Sin combos ni productos para agregar"
+								id="home-offers-add"
+								onChange={(value) => {
+									const target = parseTargetValue(value);
+									if (target) addFeaturedMutation.mutate({ target });
+								}}
+								options={addOptions}
+								placeholder="Agregar combo o producto…"
+								searchPlaceholder="Buscar..."
+								value={null}
+							/>
 							<FieldDescription>
-								Apagado, la sección muestra solo la lista y la banda solo lo que
-								elijas.
+								Se agrega al final. Solo aparecen combos activos y productos con
+								precio vigente.
 							</FieldDescription>
-						</FieldContent>
-					</Field>
+						</Field>
+					</CardContent>
+				</Card>
+				<div className="flex flex-col gap-5">
+					<Card>
+						<CardHeader>
+							<CardTitle>Banda destacada</CardTitle>
+							<CardDescription>
+								Un producto o un combo en su propia banda, arriba de los
+								destacados. No se repite en la sección.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<Field>
+								<FieldLabel htmlFor="home-offers-spotlight">
+									Qué va en la banda
+								</FieldLabel>
+								<Combobox
+									disabled={setSpotlightMutation.isPending}
+									emptyText="Sin productos ni combos para mostrar"
+									id="home-offers-spotlight"
+									onChange={(value) =>
+										setSpotlightMutation.mutate({
+											target: parseTargetValue(value),
+										})
+									}
+									options={spotlightOptions}
+									placeholder="Sin elección"
+									searchPlaceholder="Buscar producto o combo..."
+									value={targetValue(settingsQuery.data?.spotlight ?? null)}
+								/>
+								<FieldDescription>
+									Sin elección, va el primero del ranking (si el relleno está
+									prendido).
+								</FieldDescription>
+								{missingSpotlightOption ? (
+									<Alert>
+										<TriangleAlertIcon />
+										<AlertDescription>
+											La elección guardada está inactiva o no tiene precio
+											vigente. No se muestra. Elegí otra opción o quitá la
+											elección.
+										</AlertDescription>
+									</Alert>
+								) : null}
+							</Field>
+						</CardContent>
+					</Card>
+					<Card>
+						<CardHeader>
+							<CardTitle>Relleno</CardTitle>
+							<CardDescription>
+								El ranking completa con productos los lugares que la lista deja
+								libres.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="flex flex-col gap-5">
+							<Field orientation="horizontal">
+								<Checkbox
+									checked={fillWithRanking}
+									id="home-offers-fill"
+									onCheckedChange={(checked) =>
+										setFillWithRanking(checked === true)
+									}
+								/>
+								<FieldContent>
+									<FieldLabel htmlFor="home-offers-fill">
+										Completar con productos del ranking
+									</FieldLabel>
+									<FieldDescription>
+										Apagado, la sección muestra solo la lista y la banda solo lo
+										que elijas.
+									</FieldDescription>
+								</FieldContent>
+							</Field>
 
-					<Field>
-						<FieldLabel>Criterio del ranking</FieldLabel>
-						<ToggleGroup
-							disabled={!fillWithRanking}
-							onValueChange={(value) => {
-								if (value) setCriterion(value as HomeOffersCriterion);
-							}}
-							type="single"
-							value={criterion}
-							variant="outline"
-						>
-							{criterionOptions.map((option) => (
-								<ToggleGroupItem key={option.value} value={option.value}>
-									{option.label}
-								</ToggleGroupItem>
-							))}
-						</ToggleGroup>
-						<FieldDescription>
-							{
-								criterionOptions.find((option) => option.value === criterion)
-									?.description
-							}
-						</FieldDescription>
-					</Field>
+							<Field>
+								<FieldLabel>Criterio del ranking</FieldLabel>
+								<ToggleGroup
+									className="flex-wrap"
+									disabled={!fillWithRanking}
+									onValueChange={(value) => {
+										if (value) setCriterion(value as HomeOffersCriterion);
+									}}
+									type="single"
+									value={criterion}
+									variant="outline"
+								>
+									{criterionOptions.map((option) => (
+										<ToggleGroupItem key={option.value} value={option.value}>
+											{option.label}
+										</ToggleGroupItem>
+									))}
+								</ToggleGroup>
+								<FieldDescription>
+									{
+										criterionOptions.find(
+											(option) => option.value === criterion,
+										)?.description
+									}
+								</FieldDescription>
+							</Field>
 
-					<Field className="md:w-48">
-						<FieldLabel htmlFor="home-offers-limit">
-							Lugares en la sección
-						</FieldLabel>
-						<Input
-							id="home-offers-limit"
-							inputMode="numeric"
-							max={12}
-							min={1}
-							onChange={(event) => setOffersLimit(event.target.value)}
-							type="number"
-							value={offersLimit}
-						/>
-						<FieldDescription>
-							Entre 1 y 12. Un combo ocupa un lugar.
-						</FieldDescription>
-					</Field>
+							<Field className="md:w-48">
+								<FieldLabel htmlFor="home-offers-limit">
+									Lugares en la sección
+								</FieldLabel>
+								<Input
+									id="home-offers-limit"
+									inputMode="numeric"
+									max={12}
+									min={1}
+									onChange={(event) => setOffersLimit(event.target.value)}
+									type="number"
+									value={offersLimit}
+								/>
+								<FieldDescription>
+									Entre 1 y 12. Un combo ocupa un lugar.
+								</FieldDescription>
+							</Field>
 
-					<div>
-						<Button
-							disabled={updateSettingsMutation.isPending}
-							onClick={() =>
-								updateSettingsMutation.mutate({
-									criterion,
-									offersLimit: Number(offersLimit),
-									fillWithRanking,
-								})
-							}
-							variant="highlight"
-						>
-							<SaveIcon data-icon="inline-start" />
-							Guardar configuración
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
+							<div>
+								<Button
+									disabled={
+										!isSettingsDirty || updateSettingsMutation.isPending
+									}
+									onClick={saveSettings}
+									variant="highlight"
+								>
+									<SaveIcon data-icon="inline-start" />
+									Guardar configuración
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			</div>
 
 			<Card>
 				<CardHeader>
 					<CardTitle>Vista previa</CardTitle>
-					<CardDescription>
-						Lo que el home muestra ahora, calculado igual que el home.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="flex flex-col gap-3 text-sm">
-					{previewQuery.isLoading ? (
-						<p className="text-muted-foreground">Calculando…</p>
-					) : previewQuery.isError || !previewQuery.data ? (
-						<p className="text-destructive">
-							No se pudo calcular la vista previa.
+					<CardDescription>Lo que el home muestra ahora.</CardDescription>
+					{previewQuery.data ? (
+						<p className="text-muted-foreground text-sm">
+							{previewSummary(previewQuery.data)}
 						</p>
-					) : (
-						<>
-							<p>
-								<span className="font-medium">Banda: </span>
-								{previewQuery.data.spotlight
-									? `${previewQuery.data.spotlight.name} (${previewQuery.data.spotlight.kind === "combo" ? "combo" : "producto"}, ${previewQuery.data.spotlight.source === "list" ? "elegido" : "ranking"})`
-									: "sin banda"}
-							</p>
-							{previewQuery.data.featured.length === 0 ? (
-								<p className="text-muted-foreground">La sección queda vacía.</p>
-							) : (
-								<ol className="flex list-decimal flex-col gap-1 pl-5">
-									{previewQuery.data.featured.map((entry) => (
-										<li key={`${entry.kind}-${entry.id}`}>
-											{entry.name}{" "}
-											<span className="text-muted-foreground">
-												({entry.kind === "combo" ? "combo" : "producto"},{" "}
-												{entry.source === "list" ? "a mano" : "ranking"})
-											</span>
-										</li>
-									))}
-								</ol>
-							)}
-						</>
-					)}
+					) : previewQuery.isError ? (
+						<p className="text-destructive text-sm">
+							No se pudo calcular el resumen de la vista previa.
+						</p>
+					) : null}
+				</CardHeader>
+				<CardContent className="flex flex-col gap-4">
+					{isSettingsDirty ? (
+						<Alert>
+							<TriangleAlertIcon />
+							<AlertTitle>Hay cambios sin guardar en Relleno</AlertTitle>
+							<AlertDescription className="flex flex-col items-start gap-3">
+								La vista previa muestra lo que el home muestra ahora.
+								<Button
+									disabled={updateSettingsMutation.isPending}
+									onClick={saveSettings}
+									size="sm"
+									variant="highlight"
+								>
+									<SaveIcon data-icon="inline-start" />
+									Guardar cambios
+								</Button>
+							</AlertDescription>
+						</Alert>
+					) : null}
+					<HomePreviewFrame version={previewVersion} />
 				</CardContent>
 			</Card>
 		</CrudPageShell>
