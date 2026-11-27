@@ -1,6 +1,6 @@
 # The cart freezes when the customer confirms, not when checkout opens
 
-Status: accepted on 2026-11-27, not implemented yet. Plan: `docs/plans/checkout-en-tu-pedido-y-seguimiento.md`.
+Status: accepted and implemented on 2026-11-27 (server in phase 1, order page in phase 3). Plan: `docs/plans/checkout-en-tu-pedido-y-seguimiento.md`.
 
 Checkout stops being a screen. The customer chooses the delivery preference and the payment method, and accepts the terms, on the order page ("Tu pedido"), and the cart stays editable until they confirm. `checkout.start` only prepares the options: it still mints the per-provider payment methods, and it no longer moves the cart. `checkout.confirmAndPay` moves the cart to `atCheckout` in the same serializable transaction that creates the order and its payment attempt. So `atCheckout` now means "this cart has a live order waiting for its payment".
 

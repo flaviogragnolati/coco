@@ -4,8 +4,11 @@ export type TutorialInvitationUser = {
 	tutorialInvitationAnsweredAt?: Date | null;
 };
 
-/** Sign-in, checkout and the payment return pages are mid-task: the invitation waits. */
-const EXCLUDED_SECTIONS = ["/login", "/checkout"];
+/**
+ * Sign-in, the order page (where the customer finishes, ADR 0015), the old
+ * checkout path and the payment return pages are mid-task: the invitation waits.
+ */
+const EXCLUDED_SECTIONS = ["/login", "/cart", "/checkout"];
 
 export function isTutorialInvitationEligible(
 	user: TutorialInvitationUser | null | undefined,

@@ -15,6 +15,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { SelectableTile } from "~/features/checkout/selectable-tile";
 import type { CheckoutAddress } from "~/shared/common/checkout.types";
 import {
 	type DeliveryPreference,
@@ -23,7 +24,6 @@ import {
 } from "~/shared/common/delivery-display";
 import type { PickupPointData } from "~/shared/common/pickup-point-snapshot";
 import { CheckoutAddressStep } from "./checkout-address-step";
-import { SelectableTile } from "./selectable-tile";
 
 /** The delivery the customer has picked so far, resolved to its record. */
 export type CheckoutDeliverySelection =

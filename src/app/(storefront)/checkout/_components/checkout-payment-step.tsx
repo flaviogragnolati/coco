@@ -24,11 +24,11 @@ import {
 } from "~/components/ui/empty";
 import { formatTransferDiscountPercent } from "~/features/cart/_components/transfer-total";
 import { paymentMethodCopy } from "~/features/checkout/payment-method-copy";
+import { SelectableTile } from "~/features/checkout/selectable-tile";
 import type { CatalogCurrency } from "~/shared/common/catalog.types";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 import { applyTransferDiscount } from "~/shared/common/transfer-discount";
-import { SelectableTile } from "./selectable-tile";
 
 export function CheckoutPaymentStep({
 	paymentMethods,

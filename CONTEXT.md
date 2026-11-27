@@ -331,7 +331,7 @@ The guided walk-through of a whole purchase along the happy path (catalog, cart,
 _Avoid_: Onboarding, tour, demo, recorrido (that word belongs to order tracking)
 
 **Tutorial invitation**:
-The one-time, non-blocking offer to start the tutorial that a signed-in customer gets on the first storefront page that isn't sign-in, checkout or a payment return page. Either answer, picking a version or declining, settles it for that user on every device. The tutorial stays available from the help menu. Spanish-facing UI titles it "¿Primera vez en Coco?".
+The one-time, non-blocking offer to start the tutorial that a signed-in customer gets on the first storefront page that isn't sign-in, the order page where they finish, or a payment return page. Either answer, picking a version or declining, settles it for that user on every device. The tutorial stays available from the help menu. Spanish-facing UI titles it "¿Primera vez en Coco?".
 _Avoid_: Onboarding popup, welcome modal
 
 ### Legal and site content

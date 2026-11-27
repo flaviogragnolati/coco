@@ -24,8 +24,8 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "~/components/ui/empty";
+import { SelectableTile } from "~/features/checkout/selectable-tile";
 import type { CheckoutAddress } from "~/shared/common/checkout.types";
-import { SelectableTile } from "./selectable-tile";
 
 export function CheckoutAddressStep({
 	addresses,

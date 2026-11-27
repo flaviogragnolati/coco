@@ -10,11 +10,11 @@ export type CheckoutStartGateInput = {
 };
 
 /**
- * Whether `/checkout` may ask the server to start a checkout yet.
+ * Whether the order page may ask the server for the checkout options yet.
  *
  * Local hydration is not enough: a guest cart only reaches the server through
- * the cart bootstrap, which runs in the navbar, in a sibling of the checkout
- * screen. Starting before it finishes races it, and `checkout.start` answers a
+ * the cart bootstrap, which runs in the navbar, in a sibling of the order
+ * page. Starting before it finishes races it, and `checkout.start` answers a
  * cart-less server with "No encontramos tu pedido para iniciar checkout."
  *
  * `"done"` means the bootstrap finished, not that it succeeded — a failed merge

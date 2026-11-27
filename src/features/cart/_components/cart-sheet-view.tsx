@@ -165,38 +165,41 @@ export function CartSheetView({
 								<Link href="/cart">Ver productos pendientes de agregar</Link>
 							</Button>
 						) : isAuthenticated ? (
+							// Finishing happens on the order page itself (ADR 0015).
 							<Button
 								asChild
 								className="w-full"
 								onClick={onNavigate}
 								variant="highlight"
 							>
-								<Link href="/checkout">
+								<Link href="/cart">
 									<ShoppingBagIcon data-icon="inline-start" />
-									Ir a pagar
+									Finalizar pedido
 								</Link>
 							</Button>
 						) : (
-							<Button
-								asChild
-								className="w-full"
-								onClick={onNavigate}
-								variant="highlight"
-							>
-								<Link href="/login?callbackURL=/checkout">
-									<LogInIcon data-icon="inline-start" />
-									Registrarme o iniciar sesión
-								</Link>
-							</Button>
+							<>
+								<Button
+									asChild
+									className="w-full"
+									onClick={onNavigate}
+									variant="highlight"
+								>
+									<Link href="/login?callbackURL=/cart">
+										<LogInIcon data-icon="inline-start" />
+										Registrarme o iniciar sesión
+									</Link>
+								</Button>
+								<Button
+									asChild
+									className="w-full"
+									onClick={onNavigate}
+									variant="outline"
+								>
+									<Link href="/cart">Ver pedido completo</Link>
+								</Button>
+							</>
 						)}
-						<Button
-							asChild
-							className="w-full"
-							onClick={onNavigate}
-							variant="outline"
-						>
-							<Link href="/cart">Ver pedido completo</Link>
-						</Button>
 					</SheetFooter>
 				) : null}
 			</SheetContent>

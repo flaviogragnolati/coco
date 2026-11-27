@@ -33,6 +33,7 @@ import {
 import { Skeleton } from "~/components/ui/skeleton";
 import { canStartCheckout } from "~/features/cart/checkout-start-gate.decision";
 import { discardPendingGuestItems } from "~/features/cart/discard-pending-guest-items";
+import { getCheckoutCharge } from "~/features/checkout/checkout-charge";
 import type {
 	CheckoutAddress,
 	CheckoutPaymentResult,
@@ -41,7 +42,6 @@ import type {
 import type { DeliveryPreference } from "~/shared/common/delivery-display";
 import { selectCartSnapshot, useCartStore } from "~/store/cart-store";
 import { api } from "~/trpc/react";
-import { getCheckoutCharge } from "./checkout-charge";
 import {
 	type CheckoutDeliverySelection,
 	CheckoutDeliveryStep,

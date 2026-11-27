@@ -38,6 +38,13 @@ function notifyWarnings(output: CartMutationOutput) {
 	}
 }
 
+/**
+ * Since ADR 0015 a cart is at checkout only once an order waits on it, so an
+ * edit that hands it back as pending cancelled that order and its payment.
+ */
+const RELEASED_ORDER_MESSAGE =
+	"Cancelamos el pedido que esperaba el pago. Ya podés editarlo.";
+
 function notifyAddOutcome(lines: Pick<CartAddedLine, "name" | "outcome">[]) {
 	const messages = describeRepeatOutcome(lines);
 	if (messages.success) toast.success(messages.success);
@@ -194,7 +201,12 @@ export function useCartActions({
 
 	const applyOutput = useCallback(
 		(output: CartMutationOutput) => {
+			const wasWaiting =
+				useCartStore.getState().serverCartStatus === "atCheckout";
 			replaceCart(output.cart, userId ?? null);
+			if (wasWaiting && output.cart.status === "pending") {
+				toast.info(RELEASED_ORDER_MESSAGE);
+			}
 			notifyWarnings(output);
 		},
 		[replaceCart, userId],
@@ -242,7 +254,7 @@ export function useCartActions({
 		},
 		onSuccess(snapshot) {
 			replaceCart(snapshot, userId ?? null);
-			toast.success("Cerramos el checkout. Ya podés editar tu pedido.");
+			toast.success(RELEASED_ORDER_MESSAGE);
 		},
 	});
 
@@ -251,7 +263,12 @@ export function useCartActions({
 			toast.error(error.message || "No se pudo sumar el combo");
 		},
 		onSuccess(output) {
+			const wasWaiting =
+				useCartStore.getState().serverCartStatus === "atCheckout";
 			replaceCart(output.cart, userId ?? null);
+			if (wasWaiting && output.cart.status === "pending") {
+				toast.info(RELEASED_ORDER_MESSAGE);
+			}
 			notifyAddOutcome(output.lines);
 		},
 	});

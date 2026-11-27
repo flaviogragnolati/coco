@@ -1,6 +1,6 @@
 # Plan: checkout dentro de «Tu pedido» y seguimiento en «Mis pedidos»
 
-> **Estado:** `Working`. Fases 0, 1 y 2 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 3 a 7.
+> **Estado:** `Working`. Fases 0 a 3 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Faltan las fases 4 a 7.
 > **Tipo:** `implementation-plan` (escrito con `feature-grill`).
 > **Origen:** pedido de Flavio del 26/11/2026 (revisar checkout y seguimiento, proponer alternativas, tres prototipos) y su decisión del 27/11/2026: variante C más el aviso de cierre.
 > **Prototipo aprobado:** `docs/prototypes/checkout-seguimiento/variante-c.html` (con `shared.css` y `shared.js`). La revisión pantalla por pantalla está en `docs/prototypes/checkout-seguimiento/index.html`.
@@ -498,12 +498,12 @@ Cómo se evitan regresiones: no se toca ninguna función de decisión de pagos, 
 
 - `docs/plans/checkout-redesign.md` y `docs/plans/customer-funnel-order-tracking-redesign.md`: nota de enmienda al inicio, con enlace a este plan.
 - `docs/plans/customer-tutorial.md`: escenas y objetivos nuevos.
-- `docs/adr/0015-cart-freezes-when-the-customer-confirms.md`: cambiar el estado a «implemented» al cerrar la fase 3.
+- `docs/adr/0015-cart-freezes-when-the-customer-confirms.md`: marcado como implementado al cerrar la fase 3.
 - `docs/adr/0012-tutorial-runs-in-simulated-scenes.md`: revisar si nombra las escenas eliminadas.
 - `prisma/schema.prisma`: el comentario de `CartStatus.atCheckout` («The user has started checkout…») pasa a describir un carrito con un pedido esperando el pago. Es solo un comentario; no genera migración.
 - `src/features/admin/glossary/data/cart.ts`: la definición de `CartStatus.atCheckout` en el glosario del admin, con el mismo sentido. La etiqueta «En checkout» no cambia.
 - `README.md`, si describe el flujo de compra.
-- **CONTEXT.md (ya actualizado el 27/11/2026):** *External payment* (el cliente lee «Transferencia bancaria»), *Journey stage* (las seis etapas del cliente), *Customer order status* (nuevo), *Checkout* y *Leave checkout* (se congela al confirmar), *Weekly closing* (también en el pedido). **Pendiente para la fase 3:** *Tutorial invitation* debe decir que tampoco aparece en «Tu pedido».
+- **CONTEXT.md (ya actualizado el 27/11/2026):** *External payment* (el cliente lee «Transferencia bancaria»), *Journey stage* (las seis etapas del cliente), *Customer order status* (nuevo), *Checkout* y *Leave checkout* (se congela al confirmar), *Weekly closing* (también en el pedido) y, en la fase 3, *Tutorial invitation* (tampoco aparece en «Tu pedido»).
 - **ADR creados:** `docs/adr/0015-cart-freezes-when-the-customer-confirms.md`.
 
 ## 14. Riesgos y compromisos
@@ -585,3 +585,15 @@ El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-ped
 - **F2-T6.** `ClosingNotice` y, en `weekly-closing.ts`, `formatClosingCountdown` y `orderJoinsNextClosing`. Cambio respecto de la tarea: la regla compara el cierre que le tocaba al pedido según su fecha con el próximo cierre, en vez de restar siete días, así sigue valiendo si el admin mueve el día. Recibe `now` y `schedule` en lugar de `nextClosing`. Un pedido confirmado en el instante exacto del cierre entra en el siguiente, como dice el glosario. El componente todavía no se muestra en ninguna pantalla: lo ubican las fases 3 y 4.
 - **F2-T7.** `order-arrival.ts` con `parseOrderArrival` y `orderArrivalBanner`, que recibe el intento que muestra el pedido y nunca anuncia un pago por el parámetro de la URL solo.
 - **Verificación:** suite completa 2521 aprobados, 21 omitidos; typecheck y Biome limpios; `e2e/customer-tutorial.spec.ts` 11 de 11, corrido contra la base de `.env` (solo lectura).
+
+### Fase 3 — 27/11/2026
+
+- **F3-T1.** `use-checkout-options.ts` y `src/store/checkout-draft-store.ts` (borrador por usuario en `sessionStorage`, sin la aceptación de términos). Cambio respecto de la tarea: el hook lo usa `CartClient`, no el panel, porque la lista de productos también necesita saber si hay un pedido esperando el pago. Vuelve a leer con `getState` cada vez que el carrito entra o sale de `atCheckout`.
+- **F3-T2.** `finish-order-panel.tsx` con `FinishOrderPanel`, `FinishOrderMobileBar`, `FinishOrderGuestPanel`, `FinishOrderLoadingPanel`, `FinishOrderErrorPanel` y `FinishOrderNoticePanel` (productos del invitado sin agregar). `checkout-charge.ts` y `selectable-tile.tsx` se movieron a `src/features/checkout/`.
+- **F3-T3.** `delivery-sheet.tsx`, `payment-sheet.tsx`, `address-form.tsx`, `terms-dialog.tsx` y `src/shared/common/delivery-area.ts`. La hoja de entrega permite editar una dirección, como el checkout anterior.
+- **F3-T4.** `finish-order.container.tsx`. La clave de idempotencia se renueva cuando cambia la entrega o el medio de pago, y después de cada confirmación exitosa. El botón queda deshabilitado mientras hay una edición del pedido en curso (§10). Con un pedido esperando la misma transferencia, el botón lleva al pedido sin confirmar de nuevo. En un pedido que espera el pago no se vuelve a pedir la aceptación de términos: el pedido conserva la que dio al confirmar.
+- **F3-T5 y F3-T6.** «Tu pedido de la semana» con el aviso de cierre, los productos y el panel. Se borró `cart-summary.tsx`. Los productos quedan en solo lectura solo si hay un pedido esperando el pago (o mientras se carga el estado de un carrito congelado).
+- **F3-T7.** Aviso «Cancelamos el pedido que esperaba el pago. Ya podés editarlo.» cuando una edición, un combo o «Volver a editar el pedido» liberan el carrito. Un carrito que el flujo viejo dejó congelado sin pedido también dispara el aviso al liberarse; desaparece con esos carritos.
+- **F3-T8.** `/checkout` redirige a `/cart`. Mini-pedido: con sesión, un solo botón «Finalizar pedido»; sin sesión, ingresar (vuelve a `/cart`) y «Ver pedido completo». La invitación al tutorial no aparece en `/cart`. Los componentes del checkout viejo siguen en el repositorio porque los usa el tutorial; se borran en la fase 6.
+- **F3-T9.** `e2e/checkout-en-tu-pedido.spec.ts`, 2 de 2.
+- **Verificación:** suite completa en verde; typecheck y Biome limpios; e2e 61 de 63. Las dos fallas (`catalog-public-copy.spec.ts` y `home-combo.spec.ts`) se reproducen igual sin estos cambios: dependen de los datos de la base de QA (falta el combo «(e2e)»). El panel con sesión se revisó a 1280 y 390 px en una página temporal con los datos del tutorial (listo, transferencia, primera compra con la hoja de entrega, hoja de pago, pedido esperando el pago y transferencia informada), y se corrigió un desborde horizontal de la grilla en teléfono. No hay login en e2e, así que la confirmación real con transferencia y con Mercado Pago sigue pendiente de prueba manual (§11, pruebas 1 a 6).

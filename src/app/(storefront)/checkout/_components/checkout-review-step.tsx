@@ -26,6 +26,7 @@ import {
 	TransferDiscountBreakdownRows,
 	TransferTotalHint,
 } from "~/features/cart/_components/transfer-total";
+import { getCheckoutCharge } from "~/features/checkout/checkout-charge";
 import { paymentMethodCopy } from "~/features/checkout/payment-method-copy";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import type { CheckoutPaymentMethod } from "~/shared/common/checkout.types";
@@ -34,7 +35,6 @@ import {
 	deliveryPreferenceLabelMap,
 	formatAddressLine,
 } from "~/shared/common/delivery-display";
-import { getCheckoutCharge } from "./checkout-charge";
 import type { CheckoutDeliverySelection } from "./checkout-delivery-step";
 import type { CheckoutStepId } from "./checkout-steps";
 
