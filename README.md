@@ -102,8 +102,8 @@ response is lost, confirming again retrieves the known preference, or searches
 by the attempt's external reference and fetches its detail. It resumes only one
 unexpired preference whose reference, amount and currency match. An absent or
 ambiguous search leaves the attempt pending and creates no replacement
-preference. After expiry, reload checkout to confirm a new attempt on the same
-order. A legacy attempt without a saved expiry and without a recoverable
+preference. After expiry, confirm again from Tu pedido (`/cart`) to open a new
+attempt on the same order. A legacy attempt without a saved expiry and without a recoverable
 preference needs administrative investigation; this change does not invent its
 deadline. Recovery never approves a payment.
 

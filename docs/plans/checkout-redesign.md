@@ -1,5 +1,10 @@
 # Implementation Plan: Checkout Step-by-Step Redesign
 
+> **Superseded by `docs/plans/checkout-en-tu-pedido-y-seguimiento.md` (27/11/2026, ADR 0015).**
+> There is no checkout screen any more: the customer finishes on Tu pedido (`/cart`) and
+> `/checkout` redirects there. The stepper, the four steps, the summary column, the mobile
+> bar and the result panel this plan describes were deleted in that plan's phase 6.
+
 > **Superseded in part by ADR 0010 (`docs/adr/0010-external-payments-are-admin-settled.md`).**
 > The mock payment gateway and the user-managed payment methods this plan restyles are
 > gone: `createPaymentMethod`/`updatePaymentMethod` no longer exist, the "Pago" step offers

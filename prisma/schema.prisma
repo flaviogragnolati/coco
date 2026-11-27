@@ -548,7 +548,7 @@ model Cart {
 enum CartStatus {
   draft // The cart is being created and items are being added. Typically used before the cart is tied to a durable user session.
   pending // The cart is associated with a user and is still editable, but checkout has not started.
-  atCheckout // The user has started checkout and the cart is being validated and confirmed.
+  atCheckout // The customer confirmed: a live order waits for its payment and the cart is frozen against edits (ADR 0015).
   submitted // Checkout was confirmed and the cart has been converted into an order request.
   abandoned // The cart was left inactive and is no longer expected to continue through checkout.
   cancelled // The cart was cancelled before becoming an order request.

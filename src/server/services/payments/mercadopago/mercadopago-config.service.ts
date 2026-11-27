@@ -118,7 +118,8 @@ export async function getEnabledMercadoPagoConfig(database: PaymentDb) {
 	if (!config.enabled) {
 		throw new TRPCError({
 			code: "PRECONDITION_FAILED",
-			message: "Mercado Pago no está habilitado para checkout.",
+			message:
+				"Mercado Pago no está disponible ahora. Elegí otro medio de pago.",
 		});
 	}
 

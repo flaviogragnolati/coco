@@ -130,7 +130,7 @@ export const cartGlossaryEntries: GlossaryEntry[] = [
 		section: "cart",
 		label: cartStatusLabelMap.atCheckout,
 		definition:
-			"El usuario arrancó el checkout: el carrito quedó congelado contra ediciones mientras se valida y confirma.",
+			"El cliente confirmó el pedido y espera el pago: el carrito quedó congelado contra ediciones hasta que el pago se acredite o el cliente vuelva a editarlo (ADR 0015).",
 		occurrences: [{ code: "CartStatus.atCheckout", db: "cart.status" }],
 		href: "/admin/carts",
 	},

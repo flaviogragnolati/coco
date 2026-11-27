@@ -440,13 +440,14 @@ Records: `Cart`, `CartItem` (`src/server/services/cart/`).
 - quantity validity enforced against client MOQ, step, and max
 - `CartItem.productSnapshot` written at creation
 
-### 3. Checkout start and order materialization
+### 3. Confirmation and order materialization
 
 Records: `Cart`, `UserOrder`, `UserOrderItem`, `UserTransaction` (`src/server/services/checkout/`).
 
-- `Cart.status` moves `pending → atCheckout`
+- `checkout.start` only reads the options and mints the payment methods; the cart stays `pending` and editable (ADR 0015)
+- `Cart.status` moves `pending → atCheckout` when `confirmAndPay` creates the order, in the same transaction
 - `Cart.status` moves back `atCheckout → pending` on `checkout.leave` **and** automatically, when the customer mutates a cart whose checkout was abandoned — both go through `releaseCheckoutCart`, which cancels the live order and its cancellable attempt. A payment the provider still holds, or one with a declared receipt (ADR 0010), keeps the cart at `atCheckout`
-- checkout start creates `UserOrder(pending)` with billing/shipping/terms snapshots, `UserOrderItem` rows frozen from cart items, and the payment attempt
+- confirming creates `UserOrder(pending)` with billing/shipping/terms snapshots, `UserOrderItem` rows frozen from cart items, and the payment attempt
 - `confirmAndPay` creates the Mercado Pago Checkout Pro preference and redirects (ADR 0001)
 - with the external payment option, `confirmAndPay` instead leaves the attempt `pending` with `provider = "external"` and an `expiresAt`, and returns the transfer instructions — no redirect, no gateway call (ADR 0010)
 

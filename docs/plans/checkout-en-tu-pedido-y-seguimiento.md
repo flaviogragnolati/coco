@@ -1,6 +1,6 @@
 # Plan: checkout dentro de «Tu pedido» y seguimiento en «Mis pedidos»
 
-> **Estado:** `Working`. Fases 0 a 6 hechas el 27/11/2026 en la rama `checkout-en-tu-pedido` (ver §18). Falta la fase 7.
+> **Estado:** `Implemented` el 27/11/2026 en la rama `checkout-en-tu-pedido`, sin push (ver §18). Quedan las pruebas manuales con sesión de §11 y la verificación de S2 en sandbox.
 > **Tipo:** `implementation-plan` (escrito con `feature-grill`).
 > **Origen:** pedido de Flavio del 26/11/2026 (revisar checkout y seguimiento, proponer alternativas, tres prototipos) y su decisión del 27/11/2026: variante C más el aviso de cierre.
 > **Prototipo aprobado:** `docs/prototypes/checkout-seguimiento/variante-c.html` (con `shared.css` y `shared.js`). La revisión pantalla por pantalla está en `docs/prototypes/checkout-seguimiento/index.html`.
@@ -532,18 +532,18 @@ Cómo se evitan regresiones: no se toca ninguna función de decisión de pagos, 
 
 ## 16. Definición de hecho
 
-- [ ] Un carrito no pasa a `atCheckout` hasta que `confirmAndPay` crea el pedido (tests de F1-T1 y F1-T2).
-- [ ] Desde `/cart`, un cliente con dirección guardada confirma con una casilla y un botón.
-- [ ] Confirmar con transferencia lleva a `/my-orders/{id}` con el aviso y los datos para transferir.
-- [ ] Las tres rutas de retorno de Mercado Pago llevan al pedido con el resultado real.
-- [ ] `/checkout` redirige a `/cart`.
-- [ ] `/my-orders` muestra lista y pedido lado a lado desde `lg`, y lista → pedido en teléfono.
-- [ ] El cliente no ve «Pago externo», «Pendiente», «En procesamiento», «Completado», «Código de armado», «Transacción #», «Sin ref.» ni «checkout».
-- [ ] El admin no cambió ningún texto.
-- [ ] El aviso de cierre aparece en «Tu pedido» y en los pedidos que todavía entran en ese cierre.
-- [ ] El tutorial recorre el flujo nuevo y `e2e/customer-tutorial.spec.ts` pasa.
-- [ ] `pnpm test`, `pnpm check`, `pnpm typecheck`, `pnpm build` y `pnpm test:e2e` en verde.
-- [ ] Documentación de §13 hecha y ADR 0015 marcado como implementado.
+- [x] Un carrito no pasa a `atCheckout` hasta que `confirmAndPay` crea el pedido (tests de F1-T1 y F1-T2).
+- [ ] Desde `/cart`, un cliente con dirección guardada confirma con una casilla y un botón. *Verificado en la pantalla con datos de ejemplo; falta la confirmación real con sesión (§11, prueba 2).*
+- [ ] Confirmar con transferencia lleva a `/my-orders/{id}` con el aviso y los datos para transferir. *Falta prueba manual con sesión (§11, prueba 1).*
+- [ ] Las tres rutas de retorno de Mercado Pago llevan al pedido con el resultado real. *Cubierto con test unitario; falta la compra en sandbox (§11, prueba 6, y S2).*
+- [x] `/checkout` redirige a `/cart`.
+- [x] `/my-orders` muestra lista y pedido lado a lado desde `lg`, y lista → pedido en teléfono.
+- [x] El cliente no ve «Pago externo», «Pendiente», «En procesamiento», «Completado», «Código de armado», «Transacción #», «Sin ref.» ni «checkout».
+- [x] El admin no cambió ningún texto. *Salvo la definición de `CartStatus.atCheckout` en su glosario, que ahora describe lo que significa.*
+- [x] El aviso de cierre aparece en «Tu pedido» y en los pedidos que todavía entran en ese cierre.
+- [x] El tutorial recorre el flujo nuevo y `e2e/customer-tutorial.spec.ts` pasa.
+- [x] `pnpm test`, `pnpm check`, `pnpm typecheck`, `pnpm build` y `pnpm test:e2e` en verde. *e2e con la falla previa de `home-combo.spec.ts`, que depende de los datos de QA.*
+- [x] Documentación de §13 hecha y ADR 0015 marcado como implementado.
 
 ## 17. Instrucciones para quien lo ejecute
 
@@ -623,3 +623,18 @@ El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-ped
 - **F6-T4.** Se borraron los doce archivos de `checkout/_components`, `my-orders-client.tsx` y `customer-order-journey-view.tsx`. Ningún import roto y ningún ciclo nuevo: los seis ciclos fuera de `generated/` son los de la base.
 - **Glosario:** *Tutorial* ya no nombra el checkout.
 - **Verificación:** suite completa 2547 aprobados; typecheck y Biome (todo el repositorio) limpios; e2e 63 de 64 con la falla previa de `home-combo.spec.ts` (`catalog-public-copy.spec.ts` es intermitente con los datos de QA). La corrida completa registra seis errores de hidratación en el navegador, los mismos seis que en el commit anterior; ningún spec los produce corrido solo.
+
+### Fase 7 — 27/11/2026
+
+- **F7-T1.** Notas de enmienda al inicio de `checkout-redesign.md`, `customer-funnel-order-tracking-redesign.md` y `customer-tutorial.md`. ADR 0012 actualizado (escenas y vistas compartidas). `docs/schema-reference.md`: el carrito se congela al confirmar. Comentario de `CartStatus.atCheckout` en `prisma/schema.prisma` (solo comentario, sin migración) y su definición en el glosario del admin. README: tras vencer un pago, se confirma de nuevo desde Tu pedido.
+- **Textos del servidor.** Seis mensajes de error que ahora llegan al cliente en «Tu pedido» decían «checkout»; se reescribieron (por ejemplo, «El pago venció. Volvé a confirmar desde Tu pedido para generar uno nuevo.»).
+- **F7-T2.** Revisión final con el tutorial, que usa los componentes reales: finalizar, hoja de entrega, hoja de pago, llegada, Mis pedidos y una etapa del seguimiento, a 1280 y 390 px, sin desborde ni errores de página. Las demás pantallas y estados se revisaron en las fases 3 y 4.
+- **Hallazgo fuera de alcance:** en el tutorial, la barra «Modo tutorial» queda por encima del encabezado de las hojas laterales y tapa su botón de cerrar. Ya pasaba con el mini-pedido; las hojas nuevas lo heredan. Se arregla dando a las hojas del tutorial un margen superior igual al alto de la barra.
+- **Verificación final:** typecheck, Biome sobre todo el repositorio, suite completa (2547 aprobados) y `pnpm build` en verde.
+
+### Pendiente para cerrar
+
+1. Pruebas manuales con sesión de §11 (1 a 8), sobre todo confirmar con transferencia, cambiar a Mercado Pago desde «Falta el pago», informar un comprobante y «Volver a editar el pedido».
+2. Una compra en sandbox para confirmar S2: que Mercado Pago agrega `external_reference` a la URL de retorno.
+3. Revisar los seis errores de hidratación que aparecen en la corrida completa de e2e. Son previos a este trabajo.
+4. Decidir las preguntas no bloqueantes de §15 (estado «Verificando tu pago», pago preseleccionado, bloqueo de la fila del carrito).

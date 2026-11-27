@@ -166,8 +166,7 @@ function assertCartHasItems(cart: CheckoutCartRecord) {
 	if (cart.cartItems.length === 0) {
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message:
-				"Tu pedido está vacío. Agregá productos antes de iniciar checkout.",
+			message: "Tu pedido está vacío. Agregá productos para finalizarlo.",
 		});
 	}
 }
@@ -196,7 +195,7 @@ async function getRequiredCheckoutCart(
 	if (!cart) {
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message: "No encontramos tu pedido para iniciar checkout.",
+			message: "No encontramos tu pedido. Recargá la página.",
 		});
 	}
 
@@ -210,7 +209,7 @@ function assertSingleCurrency(cart: CartSnapshot) {
 		throw new TRPCError({
 			code: "CONFLICT",
 			message:
-				"El checkout de esta versión solo permite pedidos con una moneda.",
+				"Tu pedido tiene productos en más de una moneda. Por ahora solo confirmamos pedidos en una.",
 		});
 	}
 
@@ -778,7 +777,8 @@ async function resolvePaymentProviderConfig(
 		if (!config.enabled) {
 			throw new TRPCError({
 				code: "PRECONDITION_FAILED",
-				message: "Mercado Pago no está habilitado para checkout.",
+				message:
+					"Mercado Pago no está disponible ahora. Elegí otro medio de pago.",
 			});
 		}
 
@@ -791,7 +791,8 @@ async function resolvePaymentProviderConfig(
 		if (!config.enabled) {
 			throw new TRPCError({
 				code: "PRECONDITION_FAILED",
-				message: "El pago externo no está habilitado para checkout.",
+				message:
+					"La transferencia bancaria no está disponible ahora. Elegí otro medio de pago.",
 			});
 		}
 
@@ -902,7 +903,7 @@ async function buildExistingPaymentResult(
 		throw new TRPCError({
 			code: "PRECONDITION_FAILED",
 			message:
-				"El intento venció. Recargá el checkout para confirmar un nuevo intento sobre el mismo pedido.",
+				"El pago venció. Volvé a confirmar desde Tu pedido para generar uno nuevo.",
 		});
 	}
 	if (attempt.checkoutUrl || attempt.sandboxCheckoutUrl) {
