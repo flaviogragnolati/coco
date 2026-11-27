@@ -19,8 +19,8 @@ A disputed or externally reversed customer payment after a completed payment att
 _Avoid_: Refund, payment failure
 
 **External payment**:
-A payment attempt the platform never captures: the customer moves the money outside the app and an admin settles the attempt by hand. Its outcome is an administrative decision, never a provider response. Spanish-facing UI labels it "Pago externo".
-_Avoid_: Manual payment, offline payment, transfer
+A payment attempt the platform never captures: the customer moves the money outside the app and an admin settles the attempt by hand. Its outcome is an administrative decision, never a provider response. The admin UI labels it "Pago externo"; customers read it as "Transferencia bancaria", the only form it takes today.
+_Avoid_: Manual payment, offline payment, transfer (as the domain term), "Pago externo" on customer screens
 
 **Declared receipt**:
 The transfer reference a customer reports for an external payment. It records a claim, not a settlement: the attempt stays pending until an admin confirms it. Spanish-facing UI labels it "Comprobante declarado".
@@ -191,7 +191,7 @@ The staged, display-oriented progression of a customer request through fulfillme
 _Avoid_: Timeline, event log, fulfillment lineage
 
 **Journey stage**:
-One step on a journey's fixed axis. The admin journey has ten stages mapped 1:1 to happy-path fulfillment statuses; the customer journey groups them into six. Spanish-facing UI labels it "Etapa".
+One step on a journey's fixed axis. The admin journey has ten stages mapped 1:1 to happy-path fulfillment statuses; the customer journey groups them into six, which read "Pedido confirmado", "Preparación", "Compra al proveedor", "Empaque", "En viaje" and "Entrega". Spanish-facing UI labels it "Etapa".
 _Avoid_: Status, operational state
 
 **Journey notice**:
@@ -201,6 +201,10 @@ _Avoid_: Warning event, error
 **Order journey**:
 The customer-facing roll-up of one submitted order's item journeys. When every item shares the same current stage it collapses into a single six-stage journey; otherwise each item shows its own. Spanish-facing UI labels it "Seguimiento del pedido".
 _Avoid_: Order timeline, tracking screen
+
+**Customer order status**:
+What a customer is told about an order as a whole, apart from its journey: waiting for the payment, under way, or delivered. It is read from the order's commercial status, and the admin keeps its own labels for the same statuses. Spanish-facing UI labels them "Esperando tu pago", "En curso" and "Entregado".
+_Avoid_: "Pendiente", "En procesamiento", "Completado" on customer screens
 
 ### Catalog and cart (customer-facing)
 
@@ -241,7 +245,7 @@ The order in which current products that are not on the featured list compete fo
 _Avoid_: Sort, top offers, query
 
 **Weekly closing**:
-The weekday and time, in Argentina time, at which customers are told the week's orders close, and the next instant it falls on. Anything paid before it is presented as joining that week's wholesale purchase. It is informative only: nothing in ordering, payment or operations reads it, and an admin still launches each operation by hand after the closing. An admin configures it in one place; the storefront countdown, the home copy and the product detail all derive from it. The exact closing instant already counts as closed. Spanish-facing UI labels it "Cierre semanal"; the customer countdown reads "Cierre del pedido".
+The weekday and time, in Argentina time, at which customers are told the week's orders close, and the next instant it falls on. Anything paid before it is presented as joining that week's wholesale purchase. It is informative only: nothing in ordering, payment or operations reads it, and an admin still launches each operation by hand after the closing. An admin configures it in one place; the storefront countdown, the home copy, the product detail, the order page and an order still waiting for it all derive from it. The exact closing instant already counts as closed. Spanish-facing UI labels it "Cierre semanal"; the customer countdown reads "Cierre del pedido".
 _Avoid_: Deadline, cutoff, operation, ventana de compra, fecha límite
 
 **Delivery lead time**:
@@ -309,11 +313,11 @@ The slide-over cart preview opened from the navbar and when adding a product. A 
 _Avoid_: Cart drawer, cart popover
 
 **Checkout**:
-The customer-facing flow that turns an at-checkout cart into a submitted order plus a payment attempt: review the order, choose shipping address and payment method, accept terms, and pay. Single-currency, with prices and quantities snapshotted at confirmation. Confirming carries the amount the screen showed for the chosen payment method. A new payment attempt is refused if the amount changed since then, so the customer never pays a figure they did not see. The cart is the live source of truth up to the moment checkout starts; from then on it is frozen against edits, because the order snapshot references it.
-_Avoid_: Order placement, purchase flow
+The step that turns a cart into a submitted order plus a payment attempt. It has no screen of its own: on the order page ("Tu pedido") the customer chooses the delivery preference and the payment method, accepts the terms, and confirms. Single-currency, with prices and quantities snapshotted at confirmation. Confirming carries the amount the screen showed for the chosen payment method. A new payment attempt is refused if the amount changed since then, so the customer never pays a figure they did not see. The cart is the live source of truth up to the moment the customer confirms; from then on it is at checkout and frozen against edits, because the order snapshot references it (ADR 0015).
+_Avoid_: Order placement, purchase flow, checkout page
 
 **Leave checkout**:
-The explicit way back from a frozen at-checkout cart to an editable one: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why editing the cart mid-checkout is offered as leaving rather than as a direct edit. Blocked while a payment is in process. Spanish-facing UI labels it "Volver a editar el pedido".
+The explicit way back from a confirmed order that still waits for its payment to an editable cart: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why changing products after confirming is offered as leaving rather than as a direct edit. Blocked while a payment is in process or a receipt was declared. Spanish-facing UI labels it "Volver a editar el pedido".
 _Avoid_: Cancel checkout, abort checkout, unfreeze
 
 **Repeat order**:

@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoCo · Checkout y seguimiento · A · Una sola página</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400..800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* A · Una sola página: el checkout es una lista de tres secciones que se
+   pliegan en una línea; el seguimiento usa la ruta ilustrada de la home. */
+.n { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 50%; background: var(--ink); color: var(--ink-fg); font: 700 17px var(--font-h); }
+.n svg { width: 20px; height: 20px; }
+
+.acc-list { display: grid; grid-template-columns: minmax(0, 1fr); }
+.acc { position: relative; display: flex; gap: 18px; padding-bottom: 28px; }
+.acc:not(:last-child)::before { content: ""; position: absolute; top: 40px; bottom: 0; left: 19px; width: 2px; background: var(--border); }
+.acc:last-child .n { background: var(--highlight); color: var(--highlight-fg); }
+.acc.is-done .n { background: var(--soft); color: var(--soft-fg); }
+.acc-main { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 6px; }
+.acc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.acc-sum b { font-family: var(--font-h); }
+.acc-body { padding: 4px 0 6px; }
+.add { display: inline-flex; align-items: center; gap: 8px; justify-self: start; }
+.inline-form { padding: 18px; border: 1.5px dashed var(--border); border-radius: var(--r-row); }
+
+.next { display: grid; gap: 18px; }
+.next li { position: relative; display: grid; grid-template-columns: 40px 1fr; column-gap: 14px; align-items: start; }
+.next .n { grid-row: span 2; width: 32px; height: 32px; font-size: 14px; }
+.next li:last-child .n { background: var(--highlight); color: var(--highlight-fg); }
+.next li:not(:last-child)::before { content: ""; position: absolute; top: 32px; bottom: -18px; left: 15px; width: 2px; background: var(--border); }
+.next b { font: 600 16px/1.3 var(--font-h); }
+
+.res-top { display: grid; gap: 14px; justify-items: start; margin-bottom: clamp(24px, 4vw, 40px); }
+.res-top .big { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--soft); color: var(--soft-fg); }
+.res-top .big svg { width: 28px; height: 28px; }
+.res-top p { max-width: 58ch; font-size: 18px; }
+
+/* Mis pedidos: filas */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.filters button { padding: 8px 14px; border: 1.5px solid var(--border); border-radius: var(--r-btn); background: none; font: 600 14px/1 var(--font-b); }
+.filters button.is-on { border-color: var(--ink); background: var(--ink); color: var(--ink-fg); }
+.olist { padding: 0; overflow: hidden; }
+.orow { display: grid; grid-template-columns: 96px minmax(0, 1.4fr) minmax(0, 1fr) auto 150px 20px; align-items: center; gap: 18px; width: 100%; padding: 18px 22px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; }
+.orow:last-child { border-bottom: 0; }
+.orow:hover { background: color-mix(in oklch, var(--soft) 35%, var(--card)); }
+.orow .names { font: 600 16px/1.3 var(--font-h); }
+.orow .amt { font: 700 18px var(--font-h); text-align: right; }
+.orow .chip { justify-self: start; }
+.todo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 22px; border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--highlight) 16%, var(--card)); color: var(--highlight-fg); font-weight: 600; }
+.prog { display: grid; gap: 6px; }
+.prog i { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+.prog i span { height: 6px; border-radius: 3px; background: var(--border); }
+.prog i span.on { background: var(--ink); }
+.prog i span.at { background: var(--highlight); }
+@media (max-width: 760px) {
+	.orow { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px 14px; padding: 16px; }
+	.orow .prog { grid-column: 1 / -1; order: 5; }
+	.orow .chev { display: none; }
+	.orow .amt { grid-column: 2; }
+}
+
+/* Seguimiento: banda tinta con la ruta */
+.t-hero { background: var(--ink); color: var(--ink-fg); }
+.t-hero .wrap { display: grid; gap: clamp(28px, 4vw, 44px); padding-block: clamp(28px, 4vw, 48px); }
+.t-hero .head { display: grid; gap: 14px; justify-items: start; }
+.t-hero .eyebrow { color: var(--soft); }
+.t-hero p { max-width: 56ch; color: var(--soft); font-size: 18px; }
+.t-hero .back { display: inline-flex; align-items: center; gap: 8px; color: var(--soft); font-weight: 600; font-size: 14px; }
+.route { display: grid; grid-template-columns: repeat(6, 1fr); }
+.st { position: relative; display: grid; justify-items: center; gap: 4px; padding: 64px 6px 0; text-align: center; }
+.st-ico { position: absolute; z-index: 1; top: 0; left: 50%; translate: -50%; display: grid; place-items: center; width: 48px; height: 48px; border: 1.5px solid color-mix(in oklch, var(--soft) 40%, transparent); border-radius: 50%; background: var(--ink); color: color-mix(in oklch, var(--soft) 60%, transparent); }
+.st-ico svg { width: 22px; height: 22px; }
+.st:not(:last-child)::after { content: ""; position: absolute; top: 23px; left: 50%; width: 100%; height: 2px; background: repeating-linear-gradient(90deg, color-mix(in oklch, var(--soft) 40%, transparent) 0 8px, transparent 8px 15px); }
+.st.completed .st-ico { border-color: var(--soft); background: var(--soft); color: var(--soft-fg); }
+.st.completed:not(:last-child)::after { background: var(--soft); }
+.st.current .st-ico { border-color: var(--highlight); background: var(--highlight); color: var(--highlight-fg); box-shadow: 0 0 0 6px color-mix(in oklch, var(--highlight) 30%, transparent); }
+.st b { font: 600 15px/1.2 var(--font-h); }
+.st.pending b { opacity: 0.6; }
+.st small { color: var(--soft); font-size: 13px; }
+.st .desc { display: none; }
+.now { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; background: var(--ink-2); }
+.now b { font-family: var(--font-h); }
+.part { display: grid; gap: 22px; padding-top: 24px; border-top: 1px solid var(--ink-2); }
+.part-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.part-head .thumbs .thumb { border-color: var(--ink); }
+.notice { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: var(--warm); color: var(--warm-fg); }
+@media (max-width: 760px) {
+	.route { grid-template-columns: 1fr; }
+	.st { justify-items: start; min-height: 76px; padding: 2px 0 18px 64px; text-align: left; }
+	.st-ico { left: 0; translate: none; }
+	.st:not(:last-child)::after { top: 48px; left: 23px; width: 2px; height: calc(100% - 48px); background: color-mix(in oklch, var(--soft) 40%, transparent); }
+	.st.current .desc { display: block; color: var(--soft); font-size: 14px; }
+	.now { display: none; }
+}
+.side-card { display: grid; gap: 6px; }
+.side-card h3 { display: flex; align-items: center; gap: 8px; }
+</style>
+</head>
+<body data-variant="a">
+<main>
+
+<!-- 1 · Tu pedido -->
+<section class="wrap page has-mbar" data-screen="cart">
+	<header class="ph"><span class="eyebrow">Tu pedido</span><h1>Revisá tu pedido</h1></header>
+	<div class="two">
+		<ul class="card lines" data-r="linesEdit"></ul>
+		<aside class="card sum sticky">
+			<div class="between"><span>Subtotal · <span data-t="count"></span></span><b class="num" data-t="subtotal"></b></div>
+			<div class="between save"><span>Pagando por transferencia</span><span class="num" data-t="transferTotal"></span></div>
+			<p class="muted small">La entrega y el pago los elegís en el paso siguiente. Retirar o recibirlo en tu casa cuesta lo mismo.</p>
+			<div class="box-soft"><span class="lbl">Cierre del pedido</span><b data-t="closeFull"></b><p class="small">Faltan <span data-t="left"></span>. Lo que pagues antes entra en la compra de esta semana.</p></div>
+			<button class="btn btn-highlight btn-lg btn-block desk-only" data-set="screen:checkout" data-i="arrow" style="flex-direction:row-reverse">Continuar</button>
+			<button class="link small muted" style="justify-self:center">Vaciar pedido</button>
+		</aside>
+	</div>
+	<div class="mbar"><span class="tot"><b class="num" data-t="subtotal"></b><span class="xs muted" data-t="count"></span></span><button class="btn btn-highlight" data-set="screen:checkout">Continuar</button></div>
+</section>
+
+<!-- 2 · Checkout en una sola página -->
+<section class="wrap page has-mbar" data-screen="checkout">
+	<header class="ph">
+		<button class="link small muted rowx" data-set="screen:cart" style="justify-self:start;text-decoration:none"><span data-i="back"></span>Volver a editar el pedido</button>
+		<h1>Finalizá tu pedido</h1>
+		<p data-show="fresh:0">Usamos la entrega y el pago de tu último pedido. Si están bien, aceptá los términos y listo.</p>
+		<p data-show="fresh:1">Tres cosas y listo: dónde lo recibís, cómo pagás y confirmar.</p>
+	</header>
+	<div class="two">
+		<ol class="acc-list">
+			<li class="acc" data-acc="delivery">
+				<span class="n">1</span>
+				<div class="acc-main">
+					<div class="acc-head"><h2>Entrega</h2><button class="link small" data-set="open:delivery" data-show="open:!delivery fresh:0">Cambiar</button></div>
+					<p class="acc-sum" data-show="open:!delivery"><b data-t="deliveryTitle"></b> · <span data-t="deliveryLine"></span><br><span class="muted small" data-t="deliveryRest"></span></p>
+					<div class="acc-body stack" data-show="open:delivery">
+						<div class="seg" style="justify-self:start"><button data-set="mode:home"><span data-i="home"></span>A domicilio</button><button data-set="mode:pickup"><span data-i="shop"></span>Punto de retiro</button></div>
+						<p class="muted small">Las dos opciones cuestan lo mismo.</p>
+						<div class="opts" data-show="mode:home fresh:0" data-r="addresses"></div>
+						<button class="link small add" data-show="mode:home fresh:0 form:0" data-set="form:1"><span data-i="plus"></span>Agregar otra dirección</button>
+						<div class="inline-form stack" data-show="mode:home form:1">
+							<h3>Nueva dirección</h3>
+							<div data-r="addressForm"></div>
+							<div class="rowx"><button class="btn btn-ink btn-sm" data-set="form:0">Guardar dirección</button><button class="btn btn-ghost btn-sm" data-set="form:0" data-show="fresh:0">Cancelar</button></div>
+						</div>
+						<div class="opts" data-show="mode:pickup" data-r="points"></div>
+						<button class="btn btn-ink" style="justify-self:start" data-set="open:pay" data-dis="fresh:1 mode:home">Usar esta entrega</button>
+					</div>
+				</div>
+			</li>
+			<li class="acc" data-acc="pay">
+				<span class="n">2</span>
+				<div class="acc-main">
+					<div class="acc-head"><h2>Pago</h2><button class="link small" data-set="open:pay" data-show="open:!pay">Cambiar</button></div>
+					<p class="acc-sum" data-show="open:!pay"><b data-t="payTitle"></b> · <span class="num" data-t="charge"></span><span class="save small" data-show="pay:transfer"> · <span data-t="saving"></span></span></p>
+					<div class="acc-body stack" data-show="open:pay">
+						<div class="opts" data-r="pays"></div>
+						<button class="btn btn-ink" style="justify-self:start" data-set="open:confirm">Usar este pago</button>
+					</div>
+				</div>
+			</li>
+			<li class="acc" data-acc="confirm">
+				<span class="n">3</span>
+				<div class="acc-main">
+					<div class="acc-head"><h2>Confirmar</h2></div>
+					<div class="acc-body stack">
+						<label class="check"><input type="checkbox" data-bind="terms"><span>Leí y acepto los <button class="link" data-set="sheet:terms">términos del pedido</button>.</span></label>
+						<button class="btn btn-highlight btn-lg desk-only" style="justify-self:start" data-set="screen:result" data-dis="terms:0"><span data-t="cta"></span> · <span class="num" data-t="charge"></span></button>
+						<p class="muted small rowx" style="gap:8px"><span data-i="lock"></span><span data-t="ctaHint"></span></p>
+					</div>
+				</div>
+			</li>
+		</ol>
+		<aside class="card sum sticky">
+			<div class="between"><h2>Tu pedido</h2><button class="link small" data-set="screen:cart">Editar</button></div>
+			<ul class="lines" data-r="lines" style="margin-block:6px"></ul>
+			<div class="between"><span>Subtotal</span><span class="num" data-t="subtotal"></span></div>
+			<div class="between save" data-show="pay:transfer"><span>Descuento por transferencia (<span data-t="percent"></span>)</span><span class="num" data-t="discount"></span></div>
+			<div class="between total"><span data-t="totalLabel"></span><b class="num" data-t="charge"></b></div>
+			<div class="box-soft"><span class="lbl">Cierre del pedido</span><b data-t="closeFull"></b><p class="small">Llega 7 a 10 días después del cierre.</p></div>
+		</aside>
+	</div>
+	<div class="mbar"><span class="tot"><b class="num" data-t="charge"></b><span class="xs muted" data-t="payTitle"></span></span><button class="btn btn-highlight" data-set="screen:result" data-dis="terms:0" data-t="cta"></button></div>
+</section>
+
+<!-- 3 · Confirmación -->
+<section class="wrap page" data-screen="result">
+	<div class="res-top" data-show="pay:transfer">
+		<span class="big" data-i="check"></span>
+		<span class="eyebrow">Pedido <span data-t="code"></span></span>
+		<h1>Pedido registrado.<br>Falta tu transferencia.</h1>
+		<p>Transferí <b class="num" data-t="transferTotal"></b> antes del <b data-t="closeFull"></b> para entrar en la compra de esta semana.</p>
+	</div>
+	<div class="res-top" data-show="pay:mp">
+		<span data-chip="mp"></span>
+		<span class="eyebrow">Pedido <span data-t="code"></span></span>
+		<h1 data-t="mpTitle"></h1>
+		<p data-t="mpText"></p>
+		<div class="rowx" data-show="mp:fail"><button class="btn btn-highlight" data-set="screen:checkout">Intentar de nuevo</button><button class="btn btn-outline" data-set="pay:transfer">Pagar por transferencia</button></div>
+	</div>
+	<div class="two">
+		<div class="stack">
+			<div class="card stack" data-show="pay:transfer">
+				<div class="between"><h2>Datos para transferir</h2><button class="copy" data-copy><span data-i="copy"></span>Copiar todo</button></div>
+				<div data-r="bank"></div>
+				<p class="muted small">Poné la referencia en el concepto de la transferencia: así la encontramos más rápido.</p>
+			</div>
+			<div class="card stack" data-show="pay:transfer">
+				<h2>¿Ya transferiste?</h2>
+				<div data-r="receipt"></div>
+			</div>
+			<div class="card stack" data-show="pay:mp">
+				<h2>Tu pedido</h2>
+				<ul class="lines" data-r="lines"></ul>
+				<div class="sum"><div class="between total"><span>Total</span><b class="num" data-t="charge"></b></div></div>
+			</div>
+		</div>
+		<aside class="stack">
+			<div class="card stack"><h2>Qué sigue</h2><div data-r="next"></div></div>
+			<button class="btn btn-ink btn-block" data-set="screen:track">Ver mi pedido</button>
+			<button class="btn btn-ghost btn-block">Seguir comprando</button>
+		</aside>
+	</div>
+</section>
+
+<!-- 4 · Mis pedidos -->
+<section class="wrap page" data-screen="orders">
+	<header class="ph"><span class="eyebrow">Mi cuenta</span><h1>Mis pedidos</h1></header>
+	<div class="filters"><button class="is-on">Todos (4)</button><button>En curso (1)</button><button>Entregados (2)</button><button>Cancelados (1)</button></div>
+	<div class="card olist" id="a-orders"></div>
+	<p class="muted xs" style="margin-top:12px"><span class="srv">servidor</span> La barra de etapas en la lista necesita que el listado traiga la etapa actual de cada pedido.</p>
+</section>
+
+<!-- 5 · Seguimiento -->
+<div data-screen="track">
+	<section class="t-hero">
+		<div class="wrap">
+			<div class="head">
+				<button class="link back" data-set="screen:orders" style="text-decoration:none"><span data-i="back"></span>Mis pedidos</button>
+				<span data-chip="st"></span>
+				<span class="eyebrow">Pedido <span data-t="code"></span> · <span data-t="orderDate"></span></span>
+				<h1 data-t="stTitle"></h1>
+				<p data-t="stText"></p>
+			</div>
+			<div id="a-journey" class="stack" style="gap:24px"></div>
+		</div>
+	</section>
+	<section class="wrap page">
+		<div class="two">
+			<div class="stack">
+				<div class="card stack" data-show="scenario:pay pay:transfer">
+					<div class="between"><h2>Datos para transferir</h2><button class="copy" data-copy><span data-i="copy"></span>Copiar todo</button></div>
+					<div data-r="bank"></div>
+					<hr>
+					<h3>¿Ya transferiste?</h3>
+					<div data-r="receipt"></div>
+				</div>
+				<div class="card stack" data-show="scenario:pay pay:mp">
+					<h2>Terminá de pagar</h2>
+					<p class="muted">Tu pedido está guardado. Podés pagarlo con Mercado Pago o cambiar a transferencia.</p>
+					<div class="rowx"><button class="btn btn-highlight">Pagar en Mercado Pago</button><button class="btn btn-outline" data-set="pay:transfer">Pagar por transferencia</button></div>
+				</div>
+				<div class="card stack">
+					<div class="between"><h2>Productos</h2><button class="btn btn-outline btn-sm" data-show="scenario:!pay"><span data-i="repeat"></span>Repetir pedido</button></div>
+					<ul class="lines" data-r="lines"></ul>
+					<div class="sum">
+						<div class="between"><span>Subtotal</span><span class="num" data-t="subtotal"></span></div>
+						<div class="between save" data-show="pay:transfer"><span>Descuento por transferencia (<span data-t="percent"></span>)</span><span class="num" data-t="discount"></span></div>
+						<div class="between total"><span data-show="scenario:pay" data-t="totalLabel"></span><span data-show="scenario:!pay">Total pagado</span><b class="num" data-t="charge"></b></div>
+					</div>
+				</div>
+			</div>
+			<aside class="stack">
+				<div class="card side-card"><h3><span data-i="pin"></span>Entrega</h3><b data-t="deliveryTitle"></b><span data-t="deliveryLine"></span><span class="muted small" data-t="deliveryRest"></span><p class="muted small" data-show="scenario:prep|ship|mixed" style="margin-top:6px">¿Querés cambiarla? <button class="link">Escribinos</button>.</p></div>
+				<div class="card side-card"><h3><span data-i="wallet"></span>Pago</h3><b data-t="payTitle"></b><span class="num" data-t="charge"></span><span class="muted small" data-show="scenario:pay">Todavía no lo recibimos.</span><span class="muted small" data-show="scenario:!pay">Acreditado el 27/11.</span></div>
+				<div class="box-warm"><b>¿Necesitás ayuda con este pedido?</b><p class="small">Escribinos por WhatsApp con el código <span class="mono" data-t="code"></span>.</p></div>
+			</aside>
+		</div>
+	</section>
+</div>
+
+</main>
+<script src="shared.js"></script>
+<script>
+Object.assign(P.S, { open: "confirm", form: "0" });
+
+P.onSet((key, value) => {
+	if (key === "fresh") Object.assign(P.S, value === "1" ? { open: "delivery", mode: "home", form: "1" } : { open: "confirm", form: "0" });
+	if (key === "form" && value === "0" && P.S.fresh === "1") P.S.fresh = "0";
+	if (key === "mode" && value === "home" && P.S.fresh === "1") P.S.form = "1";
+	if (key === "screen" && value === "result") Object.assign(P.S, { scenario: P.S.pay === "mp" && P.S.mp === "ok" ? "prep" : "pay", declared: "0" });
+	if (key === "pay" && P.S.screen === "result") P.S.screen = "checkout";
+});
+
+const stop = (stage) =>
+	`<li class="st ${stage.status}"><span class="st-ico">${P.icon(stage.status === "completed" ? "check" : stage.icon)}</span><b>${stage.label}</b><small>${stage.date}</small><span class="desc">${stage.desc}</span></li>`;
+const rail = (stages) => `<ol class="route">${stages.map(stop).join("")}</ol>`;
+const nowBox = (stages) => {
+	const current = stages.find((stage) => stage.status === "current");
+	return current ? `<div class="now">${P.icon("info")}<span><b>Ahora: ${current.label}.</b> ${current.desc}</span></div>` : "";
+};
+
+P.onSync((S, T) => {
+	// Mis pedidos: el pedido actual depende del estado elegido en la barra.
+	const j = P.journey();
+	const bars = (cur) => `<i>${[0, 1, 2, 3, 4, 5].map((i) => `<span class="${i < cur ? "on" : i === cur ? "at" : ""}"></span>`).join("")}</i>`;
+	const row = (o) =>
+		`<button class="orow" data-set="screen:track">${P.h.thumbs(o.imgs)}<span><span class="names">${o.names}</span><br><span class="muted small">${o.date} · <span class="mono">${o.code}</span></span></span><span class="prog">${o.cur >= 0 ? `${bars(o.cur)}<span class="small">${o.stage}</span>` : ""}</span><span class="amt num">${P.money(o.total)}</span><span class="chip ${o.tone}">${o.chip}</span><span class="chev">${P.icon("chevron")}</span></button>`;
+	const current = {
+		imgs: P.items.slice(0, 3).map((item) => item.img),
+		names: "Almendra Non Pareil, Nuez mariposa y 2 más",
+		date: P.order.date,
+		code: P.order.code,
+		total: S.pay === "transfer" ? 69777 : 73450,
+		chip: T.stChip,
+		tone: T.stTone,
+		cur: j.mode === "empty" ? -1 : j.cur,
+		stage: T.stStage,
+	};
+	const todo =
+		S.scenario === "pay"
+			? `<div class="todo"><span>${P.icon("alert")}</span><span style="flex:1">${T.stText}</span><button class="btn btn-ink btn-sm" data-set="screen:track">${S.pay === "transfer" ? "Ver datos para transferir" : "Terminar de pagar"}</button></div>`
+			: "";
+	document.querySelector("#a-orders").innerHTML = todo + row(current) + P.pastOrders.map((o) => row({ ...o, stage: o.chip })).join("");
+
+	// Seguimiento
+	const el = document.querySelector("#a-journey");
+	if (j.mode === "empty") {
+		el.innerHTML = `${rail(P.stagesAt(-1))}<div class="now" style="display:flex">${P.icon("clock")}<span><b>El seguimiento empieza cuando acreditamos tu pago.</b> Después vas a ver acá cada etapa, de la compra a la entrega.</span></div>`;
+	} else if (j.mode === "unified") {
+		el.innerHTML = rail(j.stages) + nowBox(j.stages);
+	} else {
+		el.innerHTML = j.groups
+			.map(
+				(group) =>
+					`<div class="part"><div class="part-head">${P.h.thumbs(group.items.map((item) => item.img))}<b>${group.items.map((item) => item.name).join(", ")}</b><span class="chip t-go">${group.label}</span></div>${group.notices
+						.map((notice) => `<div class="notice">${P.icon("alert")}<span><b>${notice.label}.</b> ${notice.reason} <span style="opacity:.75">${notice.date}</span></span></div>`)
+						.join("")}${rail(group.stages)}</div>`,
+			)
+			.join("");
+	}
+});
+
+P.chrome({ screens: [["cart", "1 Tu pedido"], ["checkout", "2 Checkout"], ["result", "3 Confirmación"], ["orders", "4 Mis pedidos"], ["track", "5 Seguimiento"]] });
+
+// Las secciones completas muestran un tilde en vez del número.
+P.onSync((S) => {
+	for (const li of document.querySelectorAll(".acc")) {
+		const id = li.dataset.acc;
+		const done = id !== "confirm" && S.open !== id && !(id === "delivery" && S.fresh === "1" && S.mode === "home");
+		li.classList.toggle("is-done", done);
+		li.querySelector(".n").innerHTML = done ? P.icon("check") : { delivery: 1, pay: 2, confirm: 3 }[id];
+	}
+});
+P.sync();
+</script>
+</body>
+</html>
