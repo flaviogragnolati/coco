@@ -33,6 +33,13 @@ const paymentData = {
 	updatePaymentProviderEventStatus: vi.fn(),
 };
 
+const { enqueueCustomerEmail } = vi.hoisted(() => ({
+	enqueueCustomerEmail: vi.fn(),
+}));
+vi.mock("~/server/services/notifications/customer-email.data", () => ({
+	enqueueCustomerEmail,
+}));
+
 vi.mock("server-only", () => ({}));
 vi.mock("~/server/db", () => ({
 	db: { $transaction: (fn: (client: typeof tx) => unknown) => fn(tx) },
@@ -86,6 +93,10 @@ test("rejecting the only transfer of a pending order fails the order", async () 
 	await reject();
 
 	expect(checkoutData.rejectExternalTransaction).toHaveBeenCalled();
+	expect(enqueueCustomerEmail).toHaveBeenCalledWith(tx, 70, "rejected/62", {
+		kind: "rejected",
+		attemptId: 62,
+	});
 	expect(checkoutData.updateOrderStatus).toHaveBeenCalledWith(tx, 70, "failed");
 });
 
@@ -95,4 +106,5 @@ test("rejecting a leftover transfer on a paid order leaves the order as it is", 
 
 	expect(checkoutData.rejectExternalTransaction).toHaveBeenCalled();
 	expect(checkoutData.updateOrderStatus).not.toHaveBeenCalled();
+	expect(enqueueCustomerEmail).not.toHaveBeenCalled();
 });

@@ -9,6 +9,7 @@ import {
 	CrudErrorState,
 	CrudLoadingState,
 } from "~/features/admin/crud/_components/crud-state";
+import { trackingEmailRefreshInterval } from "~/features/admin/crud/tracking/tracking.mappers";
 import { TrackingTimeline } from "~/features/admin/crud/tracking/tracking-timeline.parts";
 import { api } from "~/trpc/react";
 import { DiagnosticList } from "./cart-item-diagnostics";
@@ -17,9 +18,14 @@ import { CartSummaryHeader } from "./cart-summary-header";
 import { OrderPaymentPanel } from "./order-payment-panel";
 
 export function CartTraceabilityClient({ cartId }: { cartId: number }) {
-	const detailQuery = api.admin.cartTraceability.getCartTraceability.useQuery({
-		cartId,
-	});
+	const detailQuery = api.admin.cartTraceability.getCartTraceability.useQuery(
+		{ cartId },
+		{
+			refetchInterval: (query) =>
+				trackingEmailRefreshInterval(query.state.data?.cartTimeline),
+			refetchOnWindowFocus: true,
+		},
+	);
 
 	const renderContent = () => {
 		if (detailQuery.isLoading) {

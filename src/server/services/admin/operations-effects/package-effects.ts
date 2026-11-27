@@ -1,4 +1,5 @@
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
+import { notifyRollOvers } from "~/server/services/notifications/customer-order-notices";
 import {
 	buildFractionationEvents,
 	buildPackageDeliveryEvents,
@@ -51,6 +52,7 @@ export class PackageEffects implements AdminPackageEffectHandler {
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminPackageChangeSet,
 	) {
+		await notifyRollOvers(ctx.db, "package", changeSet.createdRollOvers ?? []);
 		const events = [
 			...buildWriteOffRollOverEvents(ctx, changeSet),
 			...buildWriteOffResolvedEvents(ctx, changeSet),

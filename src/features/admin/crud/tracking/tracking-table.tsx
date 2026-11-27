@@ -17,6 +17,7 @@ import {
 	trackingEventTypeConfig,
 	trackingSourceOptions,
 } from "./tracking.mappers";
+import { TrackingEmailChip } from "./tracking-email-chip";
 
 const sourceLabelMap = Object.fromEntries(
 	trackingSourceOptions.map((option) => [option.value, option.label]),
@@ -36,6 +37,7 @@ const trackingColumns: CrudColumn<AdminTrackingEventListItem>[] = [
 		cell: (event) => (
 			<div className="flex flex-col items-start gap-1">
 				<StatusChip config={trackingEventTypeConfig[event.eventType]} />
+				<TrackingEmailChip email={event.email} />
 				<IdTooltip id={event.id} label="Evento" />
 			</div>
 		),

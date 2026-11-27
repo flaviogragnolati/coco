@@ -33,6 +33,7 @@ export const TRANSACTIONAL_DELETE_ORDER = [
 	"PaymentProviderEvent",
 	"UserTransaction",
 	"UserOrderItem",
+	"CustomerEmailDelivery",
 	"UserOrder",
 	"CartItem",
 	"Cart",

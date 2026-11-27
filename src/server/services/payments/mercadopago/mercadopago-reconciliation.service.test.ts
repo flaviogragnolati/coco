@@ -10,6 +10,13 @@ const mocks = vi.hoisted(() => ({
 	submit: vi.fn(),
 	wake: vi.fn(),
 }));
+const { enqueueCustomerEmail } = vi.hoisted(() => ({
+	enqueueCustomerEmail: vi.fn(),
+}));
+vi.mock("~/server/services/notifications/customer-email.data", () => ({
+	enqueueCustomerEmail,
+}));
+
 vi.mock("server-only", () => ({}));
 vi.mock("mercadopago", () => ({
 	Payment: class {
@@ -151,6 +158,35 @@ describe("Mercado Pago reconciliation service", () => {
 		expect(attempt.status).toBe(localStatus);
 		expect(mocks.submit).not.toHaveBeenCalled();
 		expect(mocks.wake).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		"pending",
+		"cancelled",
+		"in_process",
+		"unknown",
+	])("never emails a rejection for %s", async (status) => {
+		mocks.get.mockResolvedValue(payment({ status }));
+		await reconcileMercadoPagoPayment({ paymentId: "123" });
+		expect(enqueueCustomerEmail).not.toHaveBeenCalled();
+	});
+
+	it("queues only the first authoritative rejection", async () => {
+		mocks.get.mockResolvedValue(payment({ status: "rejected" }));
+		await reconcileMercadoPagoPayment({ paymentId: "123" });
+		await reconcileMercadoPagoPayment({ paymentId: "123" });
+		expect(enqueueCustomerEmail).toHaveBeenCalledTimes(1);
+		expect(enqueueCustomerEmail).toHaveBeenCalledWith(tx, 70, "rejected/50", {
+			kind: "rejected",
+			attemptId: 50,
+		});
+	});
+
+	it("does not notify a leftover failed attempt after the order was paid", async () => {
+		attempt.userOrder.status = "processing";
+		mocks.get.mockResolvedValue(payment({ status: "rejected" }));
+		await reconcileMercadoPagoPayment({ paymentId: "123" });
+		expect(enqueueCustomerEmail).not.toHaveBeenCalled();
 	});
 
 	it.each([

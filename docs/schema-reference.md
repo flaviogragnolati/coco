@@ -265,6 +265,7 @@ The `user_order_delivery_preference_check` constraint keeps them consistent: all
 
 | Model | Role | Key relationships | Notes |
 | --- | --- | --- | --- |
+| `CustomerEmailDelivery` | Transactional customer email | Belongs to one `UserOrder` | One intent per environment and event key. The worker records its request, lease, retry schedule and Resend reference. |
 | `DomainEventOutbox` | Durable domain event log | Standalone (`cuid` string PK) | The transactional outbox behind all tracking writes; unique `eventKey`, status `pending \| processing \| processed \| failed` |
 | `CartItemTrackingEvent` | Fulfillment history event | Must belong to `CartItem`; may point to actor, operation, lot lineage, package, shipment, or roll over | Canonical event stream; runtime writes only through `TrackingEventService`; unique nullable `eventKey` |
 | `AuditLog` | Generic audit trail | Optional relation to `User`; generic entity references | Records actor and before/after context beyond fulfillment events |
@@ -325,6 +326,7 @@ Supporting relationships that shape behavior around that chain are:
 | `PackageLeg` | Package | Direction of physical travel: `inbound \| outbound` | Classification value | Set at creation; flipped only by promotion (ADR 0004) |
 | `DeliveryMode` | Shipment | `homeDelivery \| pickupPoint`; null on internal transfers | Classification value | Set at end-user shipment creation; depot pickup is deliberately not a value |
 | `HomeOffersCriterion` | Home offer settings | How the automatic offers ranking sorts: `marketSaving \| discountPercent \| orderVolume`; also picks the home grid's title | Configuration value, not a lifecycle | Admin, through the home offers section |
+| `CustomerEmailStatus` | Order email | Pending, processing, accepted by Resend, skipped or awaiting review | Infrastructure state | Customer email dispatcher |
 | `DomainEventOutboxStatus` | Outbox row | Dispatch lifecycle of a durable domain event | Infrastructure state | `DomainEventDispatcher` |
 | `QaTicketStatus` | QA ticket | Where one manual test case stands in the current pass: `pending \| inProgress \| passed \| failed \| blocked \| skipped \| needsClarification \| retest` | Detailed single-live-state | `qa-ticket.service.ts`; the tester writes results and claims, an admin corrects tracking from the form. No ladder — the next pass overwrites the value and the history lives in `AuditLog` |
 | `QaTicketEvidenceKind` | QA evidence | Which artifact a row holds: `image \| consoleLog \| networkLog` | Classification value | Set at creation, never moved |

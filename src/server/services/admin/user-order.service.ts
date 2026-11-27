@@ -7,6 +7,7 @@ import { checkoutAddressSchema } from "~/schemas/checkout.schemas";
 import type { db } from "~/server/db";
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
+import { enqueueCustomerEmail } from "~/server/services/notifications/customer-email.data";
 import type {
 	UserOrderDelivery,
 	UserOrderDeliveryChangeInput,
@@ -19,6 +20,7 @@ import {
 	readPickupPointSnapshot,
 } from "~/shared/common/delivery-display";
 import { buildPickupPointSnapshot } from "~/shared/common/pickup-point-snapshot";
+import { customerNoticeDetail } from "~/shared/common/tracking-display";
 import {
 	findCheckoutAddressById,
 	listCheckoutAddresses,
@@ -226,6 +228,24 @@ export async function changeDeliveryPreference(
 		const after = deliveryOf(
 			await updateOrderDeliveryPreference(tx, order.id, target.update),
 		);
+
+		const change = customerNoticeDetail("deliveryPreferenceChanged", {
+			before: currentChoice(order),
+			after: target.choice,
+		});
+		if (change) {
+			await enqueueCustomerEmail(
+				tx,
+				order.id,
+				`change/${order.id}/${changedAt.toISOString()}`,
+				{
+					kind: "change",
+					capturedAt: changedAt.toISOString(),
+					change,
+					reason: input.reason,
+				},
+			);
+		}
 
 		if (cartItemIds.length > 0) {
 			await DomainEventPublisher.publish(tx, {

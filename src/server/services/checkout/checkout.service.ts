@@ -15,6 +15,7 @@ import {
 } from "~/schemas/checkout.schemas";
 import { db } from "~/server/db";
 import { runSerializable } from "~/server/services/admin/_base/serializable-transaction";
+import { enqueueCustomerEmail } from "~/server/services/notifications/customer-email.data";
 import type {
 	ExternalPaymentInstructions,
 	ExternalPaymentSettings,
@@ -1063,6 +1064,13 @@ export async function confirmAndPay(
 					: null,
 			transferDiscount: charge.transferDiscount,
 		});
+
+		if (providerConfig.provider === "external") {
+			await enqueueCustomerEmail(tx, order.id, `transfer/${transaction.id}`, {
+				kind: "transfer",
+				attemptId: transaction.id,
+			});
+		}
 
 		return {
 			kind: "created" as const,

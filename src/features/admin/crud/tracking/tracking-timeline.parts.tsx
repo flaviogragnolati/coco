@@ -11,6 +11,7 @@ import {
 	trackingEventTypeConfig,
 	trackingSourceOptions,
 } from "./tracking.mappers";
+import { TrackingEmailChip } from "./tracking-email-chip";
 
 const sourceLabelMap = Object.fromEntries(
 	trackingSourceOptions.map((option) => [option.value, option.label]),
@@ -43,6 +44,7 @@ export function TrackingTimelineItemCard({
 			<div className="flex min-w-0 flex-col gap-3">
 				<div className="flex flex-col gap-1">
 					<StatusChip config={trackingEventTypeConfig[item.eventType]} />
+					<TrackingEmailChip email={item.email} />
 					<span className="font-mono text-[11px] text-muted-foreground">
 						{item.eventKey ?? "Sin eventKey"}
 					</span>

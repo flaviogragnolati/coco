@@ -130,6 +130,11 @@ const transactional: Record<
 		count: (tx) => tx.userTransaction.count(),
 		purge: (tx) => tx.userTransaction.deleteMany(),
 	},
+	CustomerEmailDelivery: {
+		label: "Correos de pedidos",
+		count: (tx) => tx.customerEmailDelivery.count(),
+		purge: (tx) => tx.customerEmailDelivery.deleteMany(),
+	},
 	UserOrderItem: {
 		label: "Ítems de pedido",
 		count: (tx) => tx.userOrderItem.count(),

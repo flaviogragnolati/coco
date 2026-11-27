@@ -12,6 +12,13 @@ const preferenceMatchesConfiguredTestSeller = vi.hoisted(() =>
 	vi.fn(async () => true),
 );
 const paymentLog = vi.hoisted(() => ({ error: vi.fn(), info: vi.fn() }));
+const { enqueueCustomerEmail } = vi.hoisted(() => ({
+	enqueueCustomerEmail: vi.fn(),
+}));
+vi.mock("~/server/services/notifications/customer-email.data", () => ({
+	enqueueCustomerEmail,
+}));
+
 vi.mock("~/server/services/logging/app-logger.service", () => ({
 	appLogger: paymentLog,
 }));
@@ -299,6 +306,7 @@ function confirm(paymentMethodId: number, expectedAmount: string) {
 }
 
 function expectNothingCreated() {
+	expect(enqueueCustomerEmail).not.toHaveBeenCalled();
 	expect(data.createUserOrder).not.toHaveBeenCalled();
 	expect(data.createPendingTransaction).not.toHaveBeenCalled();
 	expect(data.cancelAbandonableAttempt).not.toHaveBeenCalled();
@@ -511,6 +519,10 @@ test("a transfer charges the discounted total and hands out that amount", async 
 			},
 		}),
 	);
+	expect(enqueueCustomerEmail).toHaveBeenCalledWith(tx, 80, "transfer/90", {
+		kind: "transfer",
+		attemptId: 90,
+	});
 	expect(result.externalPayment?.expiresAt).toBeTruthy();
 	expect(result.externalPayment?.amount).toBe("450");
 	expect(result.transaction).toMatchObject({

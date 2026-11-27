@@ -8,6 +8,7 @@ import {
 	updateCartStatus,
 	updateOrderStatus,
 } from "~/server/services/checkout/checkout.data";
+import { enqueueCustomerEmail } from "~/server/services/notifications/customer-email.data";
 import {
 	buildSubmittedToOrderEvents,
 	type OrderSubmissionActor,
@@ -107,5 +108,9 @@ export async function submitOrderForCompletedPayment(
 		}),
 	);
 
+	await enqueueCustomerEmail(tx, input.orderId, `confirm/${input.orderId}`, {
+		kind: "confirmed",
+		attemptId: input.transactionId,
+	});
 	return { cancelledAttemptIds };
 }

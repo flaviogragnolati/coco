@@ -1,0 +1,40 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: q-code-implement
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_id: IP-COCO-NOTIF-20261127
+      artifact_type: implementation-plan
+      lifecycle: Working
+      path: docs/plans/notificaciones-transaccionales-resend.md
+      source_item_id: REQ-COCO-NOTIF-20261127
+      change: Implementación y evidencia de verificación
+  references_added:
+    - prisma/migrations/20261127000000_customer_email_delivery/migration.sql
+    - src/server/services/notifications/customer-email-dispatcher.ts
+    - src/app/api/internal/notifications/dispatch/route.ts
+    - vercel.json
+    - README.md
+  traceability_delta:
+    - "REQ-COCO-NOTIF-20261127 → pagos, transferencias y logística implementados. Avance parcial en QA #111."
+  decisions_added_or_updated:
+    - "Recepción verificada por Flavio en la casilla autorizada de QA con el remitente de prueba de Resend."
+    - "El equipo Vercel usa Hobby. Flavio eligió despacho tras la operación y recuperación diaria con Vercel Cron."
+  risks_added_or_updated:
+    - "Una aceptación de resultado ambiguo requiere conciliación antes de otro envío si expira la ventana de idempotencia."
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "q-review-code identificó dos casos de avisos obsoletos y ambos tienen regresiones cubiertas."
+    - "q-review-comments corrigió el conteo de llamadores que quedó obsoleto."
+    - "La prueba de correo usó datos ficticios. La validación integrada de Mercado Pago en el alias de QA depende de su webhook firmado."
+  required_user_actions:
+    - "Configurar el remitente de un dominio verificado y los secretos en el entorno de publicación."
+  next_recommended_action: "Desplegar la migración y la aplicación en QA, activar el despachador en esa partición y observar el recorrido de un pedido de punta a punta."
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

@@ -12,6 +12,7 @@ import {
 } from "~/schemas/admin/payment.schemas";
 import { db } from "~/server/db";
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
+import { enqueueCustomerEmail } from "~/server/services/notifications/customer-email.data";
 import type {
 	ExternalPaymentConfigUpdateInput,
 	PaymentAttemptRejectInput,
@@ -250,6 +251,12 @@ export async function rejectExternalAttempt(
 		// is rejected without failing that order.
 		if (attempt.userOrder.status === "pending") {
 			await updateOrderStatus(tx, attempt.userOrder.id, "failed");
+			await enqueueCustomerEmail(
+				tx,
+				attempt.userOrder.id,
+				`rejected/${attempt.id}`,
+				{ kind: "rejected", attemptId: attempt.id },
+			);
 		}
 
 		const after = await readAttemptDetail(tx, input.id);
