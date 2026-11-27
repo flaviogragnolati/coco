@@ -16,6 +16,7 @@ export function decideOpenAttemptHandling(input: {
 		provider: string;
 		status: PaymentAttemptStatus;
 		declaredReceiptReference: string | null;
+		providerPaymentId?: string | null;
 	};
 	requestedProvider: string;
 }): "reuse" | "replace" {

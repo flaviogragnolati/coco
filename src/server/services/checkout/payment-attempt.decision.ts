@@ -9,19 +9,23 @@ export type PaymentAttemptStatus =
 
 /**
  * Whether confirming again should mint a new attempt on the live order. Only a
- * dead attempt qualifies — failed, cancelled, or a pending one whose provider
+ * dead attempt qualifies — failed, cancelled, or an unpaid pending one whose provider
  * window has closed. Every other state (completed, in process, still-payable
  * pending, refunded, charged back) is answered with the attempt that exists,
  * which is what makes a browser-back re-confirm idempotent.
  */
 export function isSpentPaymentAttempt(
-	attempt: { status: PaymentAttemptStatus; expiresAt: Date | null },
+	attempt: {
+		status: PaymentAttemptStatus;
+		expiresAt: Date | null;
+		providerPaymentId?: string | null;
+	},
 	now: Date,
 ) {
 	if (attempt.status === "failed" || attempt.status === "cancelled") {
 		return true;
 	}
-	if (attempt.status !== "pending") return false;
+	if (attempt.status !== "pending" || attempt.providerPaymentId) return false;
 	return attempt.expiresAt !== null && attempt.expiresAt <= now;
 }
 
@@ -35,9 +39,12 @@ export function isSpentPaymentAttempt(
 export function isCancellablePaymentAttempt(attempt: {
 	status: PaymentAttemptStatus;
 	declaredReceiptReference: string | null;
+	providerPaymentId?: string | null;
 }) {
 	if (attempt.status === "pending") {
-		return attempt.declaredReceiptReference === null;
+		return (
+			attempt.declaredReceiptReference === null && !attempt.providerPaymentId
+		);
 	}
 
 	return attempt.status === "failed" || attempt.status === "cancelled";

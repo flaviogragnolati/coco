@@ -1,0 +1,57 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: q-code-debug
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - docs/plans/qa-mercadopago-pending.md
+    - docs/plans/qa-triage-y-mercadopago-sandbox-2026-11-26.md
+    - src/server/services/checkout/checkout.service.ts
+    - src/server/services/checkout/checkout.payment-switch.test.ts
+    - .env.example
+    - README.md
+    - src/env.js
+    - src/server/services/payments/mercadopago/mercadopago-config.service.ts
+    - src/app/api/mercadopago/webhook/route.ts
+    - src/app/api/mercadopago/webhook/route.test.ts
+    - src/server/services/payments/payment.data.ts
+    - src/server/services/payments/payment.data.test.ts
+    - src/server/services/checkout/checkout.data.ts
+    - src/server/services/checkout/checkout.data.test.ts
+    - src/server/services/checkout/checkout-release.decision.ts
+    - src/server/services/checkout/payment-attempt.decision.ts
+    - src/server/services/checkout/payment-charge.decision.ts
+  references_added:
+    - https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/payment-notifications
+    - https://www.mercadopago.com.ar/developers/es/news/2023/11/16/Questions-on-how-to-test-your-integration--
+    - https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/integration-test/test-purchases
+    - https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/overview
+    - https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/additional-settings/mp-wallet
+    - https://www.mercadopago.com.ar/developers/es/docs/checkout-pro-preferences/test-accounts
+    - https://www.mercadopago.com.ar/developers/es/support/center
+  traceability_delta:
+    - "QA #23 y #25. El comprador completó #242 mediante init_point. MP aprobó ARS 32.700. QA rechazó los eventos #4, #5 y #6 del pago. El alias actualizado solo en el entorno local verificó las tres firmas originales. A las 11:36 el pedido #223 seguía pendiente en QA y sus dos ítems carecían de seguimiento."
+    - "QA #23. Dos conciliaciones consecutivas del pago acreditado en un PostgreSQL local descartable completaron el intento y dejaron el pedido en procesamiento con un seguimiento por ítem, dos en total."
+    - "QA #26. El registro de un reenvío válido conserva la verificación cuando una entrega anterior del mismo evento quedó rechazada."
+    - "QA #23. Usuario comprador verificado por ID y nombre exacto en MP. El acceso del comprador muestra el error de la captura después de enviar la contraseña. La preferencia de la excepción coincide por ID e importe con el intento #242 del pedido #223. El retorno del login apunta al mismo checkout sandbox. A las 10:58 de Argentina seguía sin pago. Los cuatro datos aportados del comprador coinciden con QA."
+    - "QA #21 y #23. Intento #241 del pedido #222. La preferencia de la pantalla fatal coincide por ID. El comprador confirmó como invitado con una tarjeta de prueba de MP. La preferencia permitía invitados y tarjetas de crédito. La cuenta vendedora registró cero pagos en la ventana del incidente."
+    - "QA #27. Reuso y recuperación comprobados con el servicio de checkout, PostgreSQL descartable y una preferencia del vendedor de prueba."
+  decisions_added_or_updated: []
+  risks_added_or_updated:
+    - "La preferencia obtenida por ID puede tardar en aparecer en la búsqueda por referencia. El intento conserva su vencimiento e identidad."
+  stale_artifacts: []
+  blockers:
+    - "El pago se acreditó en MP. Para completar #23 falta configurar el secreto verificado en el deployment de QA, publicar la corrección y reconciliar el pedido #223 con una entrega firmada. El flujo invitado sigue abierto."
+  warnings:
+    - "El nuevo diagnóstico y el tratamiento de la respuesta sin enlace están verificados localmente y pendientes de publicación."
+    - "Revisión independiente final aprobada en estándares y especificación. Revisión de comentarios aprobada, incluida la nota de unidades del SDK y la vigencia de un intento con pago identificado."
+    - "Fundación técnica sin versión registrada. La verificación se hizo sobre el repositorio y el SDK instalado 3.1.0."
+  required_user_actions:
+    - "Configurar en el deployment de QA el secreto ya validado localmente y el ID del vendedor de prueba. Un valor canónico definido precede a su alias."
+  next_recommended_action: "Publicar y recibir el reenvío legítimo del pago ya acreditado. Comprobar firma, pedido y un seguimiento por ítem antes de cerrar #23."
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

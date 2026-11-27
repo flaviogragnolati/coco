@@ -36,6 +36,7 @@ function request(
 	input: {
 		signature?: "valid" | "invalid" | "missing" | "stale";
 		type?: string;
+		seconds?: boolean;
 		queryId?: string;
 		bodyId?: string;
 	} = {},
@@ -46,7 +47,8 @@ function request(
 		queryId = "123",
 		bodyId = "999",
 	} = input;
-	const ts = String(Date.now() - (signature === "stale" ? 600_000 : 0));
+	const time = Date.now() - (signature === "stale" ? 600_000 : 0);
+	const ts = String(input.seconds ? Math.floor(time / 1000) : time);
 	const digest = createHmac("sha256", "test-webhook-secret")
 		.update(`id:${queryId};request-id:request-1;ts:${ts};`)
 		.digest("hex");
@@ -102,6 +104,16 @@ describe("Mercado Pago webhook POST", () => {
 			}),
 		);
 		expect(mocks.reconcile).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		["valid", 200],
+		["invalid", 401],
+		["stale", 401],
+	] as const)("handles a %s signature with the provider timestamp in seconds", async (signature, expected) => {
+		const response = await POST(request({ signature, seconds: true }));
+		expect(response.status).toBe(expected);
+		expect(mocks.reconcile).toHaveBeenCalledTimes(expected === 200 ? 1 : 0);
 	});
 
 	it("rejects when the deployment has no webhook secret", async () => {

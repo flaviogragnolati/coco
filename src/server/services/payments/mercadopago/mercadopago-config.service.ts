@@ -73,6 +73,24 @@ export function parseMercadoPagoSettings(input: unknown) {
 	return settings;
 }
 
+export async function preferenceMatchesConfiguredTestSeller(
+	db: PaymentDb,
+	attemptId: number,
+	preferenceId: string,
+) {
+	const sellerId = env.MP_TEST_SELLER_USER_ID;
+	if (!sellerId) return false;
+	const [result] = await db.$queryRaw<{ matches: boolean }[]>`
+		SELECT EXISTS (
+			SELECT 1 FROM user_transaction
+			WHERE id = ${attemptId}
+				AND "responseSnapshot"->>'id' = ${preferenceId}
+				AND "responseSnapshot"->>'collector_id' = ${sellerId}
+		) AS matches
+	`;
+	return result?.matches === true;
+}
+
 export async function getMercadoPagoConfig(database: PaymentDb) {
 	const config = await database.paymentProviderConfig.findUnique({
 		where: { provider: MERCADOPAGO_PROVIDER },

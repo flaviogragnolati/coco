@@ -31,6 +31,7 @@ test("a completed payment cancels the order's other pending attempts", async () 
 
 	const result = await service.submitOrderForCompletedPayment(tx as never, {
 		orderId: 70,
+		orderStatus: "pending",
 		cartId: 1,
 		transactionId: 90,
 		actor: { source: "system", actorReference: "mercadopago:webhook" },
@@ -66,6 +67,7 @@ test("a sequential late approval cannot publish another submission for items alr
 	for (const transactionId of [90, 61]) {
 		await service.submitOrderForCompletedPayment(tx as never, {
 			orderId: 70,
+			orderStatus: "pending",
 			cartId: 1,
 			transactionId,
 			actor: { source: "system", actorReference: "mercadopago" },
@@ -79,4 +81,34 @@ test("a sequential late approval cannot publish another submission for items alr
 		type: "cart.item.submittedToOrder",
 		payload: { cartItemId: "10", transactionId: "90" },
 	});
+});
+
+test.each([
+	"processing",
+	"completed",
+	"refunded",
+	"chargedBack",
+] as const)("a second credited method on a %s order submits nothing again", async (orderStatus) => {
+	const result = await service.submitOrderForCompletedPayment({} as never, {
+		orderId: 70,
+		orderStatus,
+		cartId: 1,
+		transactionId: 91,
+		actor: { source: "system", actorReference: "mercadopago" },
+	});
+	expect(result.cancelledAttemptIds).toEqual([]);
+});
+
+test("a late approval leaves a previously paid order closed after a fulfillment cancellation", async () => {
+	const tx = {
+		userTransaction: { findFirst: vi.fn(async () => ({ id: 90 })) },
+	};
+	const result = await service.submitOrderForCompletedPayment(tx as never, {
+		orderId: 70,
+		orderStatus: "cancelled",
+		cartId: 1,
+		transactionId: 91,
+		actor: { source: "system", actorReference: "mercadopago" },
+	});
+	expect(result.cancelledAttemptIds).toEqual([]);
 });

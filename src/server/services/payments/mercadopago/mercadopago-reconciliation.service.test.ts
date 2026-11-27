@@ -48,7 +48,7 @@ function initialAttempt() {
 	return {
 		id: 50,
 		userOrderId: 70,
-		userOrder: { id: 70, cartId: 1 },
+		userOrder: { id: 70, cartId: 1, status: "pending" },
 		amount: "500.00",
 		currency: "ARS",
 		status: "pending",
@@ -123,6 +123,7 @@ describe("Mercado Pago reconciliation service", () => {
 		});
 		expect(mocks.submit).toHaveBeenCalledWith(tx, {
 			orderId: 70,
+			orderStatus: "pending",
 			cartId: 1,
 			transactionId: 50,
 			actor: { source: "system", actorReference: "mercadopago" },

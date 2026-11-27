@@ -8,6 +8,7 @@ import type { Prisma } from "~/prisma/client";
 import { db } from "~/server/db";
 import { DomainEventDispatcher } from "~/server/events/domain-event-dispatcher";
 import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
+import { runSerializable } from "~/server/services/admin/_base/serializable-transaction";
 import {
 	findPaymentAttemptById,
 	findPaymentEventById,
@@ -140,6 +141,7 @@ async function updateAttemptFromPayment(
 	) {
 		await submitOrderForCompletedPayment(tx, {
 			orderId: attempt.userOrderId,
+			orderStatus: attempt.userOrder.status,
 			cartId: attempt.userOrder.cartId,
 			transactionId: attempt.id,
 			actor: { source: "system", actorReference: MERCADOPAGO_PROVIDER },
@@ -175,7 +177,7 @@ export async function reconcileMercadoPagoPayment(input: {
 		const paymentClient = new Payment(createMercadoPagoClient());
 		const payment = await paymentClient.get({ id: input.paymentId });
 
-		result = await db.$transaction(async (tx) => {
+		result = await runSerializable(db, async (tx) => {
 			const attempt = await findAttemptForPayment(tx, payment);
 
 			if (!attempt) {
