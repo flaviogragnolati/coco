@@ -101,3 +101,11 @@ Flavio eligió despacho después de la respuesta de cada operación y cron diari
 Verificación final de la suite general: 2.407 pruebas aprobadas. Las 19 pruebas opcionales se omiten sin sus variables de integración. Las siete suites focalizadas ejecutadas con PostgreSQL descartable y transporte simulado aprobaron sus 40 pruebas. La recuperación procesó un lote de 28 avisos sin tráfico de compra y distinguió los límites de frecuencia de los resultados ambiguos.
 
 Pasaron la validación de Prisma, TypeScript, Biome y el build de producción. En el servidor compilado se comprobó el acceso al login y la autenticación del cron sobre localhost con el envío apagado.
+
+## Envío desde la cuenta de Gmail de CoCo
+
+Flavio eligió Gmail como remitente de producción mientras la tienda use su subdominio de Vercel. Se incorporó el transporte SMTP con TLS, una contraseña de aplicación y los mismos avisos y particiones. Cada intento conserva su proveedor. Una respuesta temporal de rechazo o un fallo previo al envío admite reintento. Un resultado SMTP ambiguo pasa a revisión, incluso tras vencer una concesión.
+
+La suite aprobó 2.429 pruebas, incluidas las de la cola con PostgreSQL y transporte simulado. Se omitieron siete casos opcionales. Pasaron TypeScript y Biome para los archivos afectados. La revisión de código incorporó casos de conexión anterior al envío y la reconstrucción del Message-ID. La revisión de comentarios corrigió la descripción de los reintentos seguros.
+
+La migración aditiva se aplicó en una transacción desde Vercel Production. Se verificaron las columnas de la cola y el índice único por evento. El proyecto tiene el remitente y el origen público esperados. La activación y la comprobación de recepción dependen de la contraseña de aplicación de la cuenta.

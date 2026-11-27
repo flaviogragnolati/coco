@@ -87,7 +87,7 @@ export function NotificationDetail({
 						</DetailField>
 						<DetailField label="Intentos">{detail.attempts}</DetailField>
 						{detail.status === "accepted" ? (
-							<DetailField label="Aceptado por Resend">
+							<DetailField label="Aceptado por el proveedor">
 								{detail.providerId ?? "Sin identificador registrado"}
 							</DetailField>
 						) : null}

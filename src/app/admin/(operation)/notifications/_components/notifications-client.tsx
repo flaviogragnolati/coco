@@ -186,7 +186,7 @@ export function NotificationsClient({
 			description={
 				data?.mode === "test"
 					? "Historial de mails de prueba. El destinatario es la casilla de pruebas del entorno."
-					: "Historial de mails de pedido. Enviado indica que Resend aceptó el mail."
+					: "Historial de mails de pedido. Enviado indica que el proveedor de correo aceptó el mail."
 			}
 			title="Notificaciones"
 		>

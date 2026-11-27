@@ -204,9 +204,8 @@ export const crosscuttingGlossaryEntries: GlossaryEntry[] = [
 		slug: "estado-correo-accepted",
 		kind: "status",
 		section: "crosscutting",
-		label: "Aceptado por Resend",
-		definition:
-			"Resend recibió el correo y devolvió un identificador de envío.",
+		label: "Aceptado por el proveedor",
+		definition: "El proveedor aceptó el correo y CoCo guardó su identificador.",
 		occurrences: [
 			{
 				code: "CustomerEmailStatus.accepted",
