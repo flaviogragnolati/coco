@@ -636,5 +636,13 @@ El trabajo pendiente se separó en dos commits sobre la rama `checkout-en-tu-ped
 
 1. Pruebas manuales con sesión de §11 (1 a 8), sobre todo confirmar con transferencia, cambiar a Mercado Pago desde «Falta el pago», informar un comprobante y «Volver a editar el pedido».
 2. Una compra en sandbox para confirmar S2: que Mercado Pago agrega `external_reference` a la URL de retorno.
-3. Revisar los seis errores de hidratación que aparecen en la corrida completa de e2e. Son previos a este trabajo.
+3. ~~Revisar los errores de hidratación de la corrida completa de e2e.~~ Resuelto el 27/11/2026: venían de `/products`, que precargaba el catálogo sin esperarlo y lo leía con `useQuery`. Ver la nota siguiente.
 4. Decidir las preguntas no bloqueantes de §15 (estado «Verificando tu pago», pago preseleccionado, bloqueo de la fila del carrito).
+
+### Errores de hidratación del e2e — 27/11/2026
+
+- **Causa.** `/products` precargaba el catálogo sin esperar (`void api.catalog.list.prefetch()`), el cliente de consultas manda al navegador también las consultas pendientes, y `ProductsClient` lo lee con `useQuery`, que no suspende. El servidor renderizaba «0 productos»; si la respuesta llegaba al navegador antes de que React hidratara, el cliente renderizaba la lista entera. Solo se veía con el servidor cargado (la suite completa en paralelo), pero puede pasar en producción según la latencia. No lo trajo este plan.
+- **Descartado: esperar la precarga.** Abrir un producto, cambiar un filtro o una página es un `router.push` que vuelve a ejecutar la página, así que cada una de esas acciones quedaba esperando a la base. `catalog-public-copy` pasó a fallar siempre por tiempo.
+- **Descartado: `useSuspenseQuery` con `Suspense`.** Elimina el error y manda los productos en el HTML, pero los muestra antes de que la página sea interactiva: los clics tempranos se pierden. Dos tests e2e empezaron a fallar de forma intermitente por eso, y a un usuario con un teléfono lento le pasaría lo mismo.
+- **Elegido: sin precarga.** Servidor y cliente arrancan con el esqueleto y el cliente pide el catálogo al montarse, como cualquier otra lectura con `useQuery`. Cambia una línea (`src/app/(storefront)/products/page.tsx`). Costo: los productos aparecen un viaje de red más tarde que con la precarga.
+- **Verificación:** tres corridas completas de e2e sin errores de hidratación (antes, entre cuatro y seis por corrida); 63 de 64 en cada una, con la falla de datos de `home-combo.spec.ts`. `catalog-public-copy.spec.ts`, que fallaba de forma intermitente, pasó en las tres.
