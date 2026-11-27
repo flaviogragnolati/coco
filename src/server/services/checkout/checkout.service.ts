@@ -14,6 +14,8 @@ import {
 	orderListOutputSchema,
 } from "~/schemas/checkout.schemas";
 import { db } from "~/server/db";
+import { runSerializable } from "~/server/services/admin/_base/serializable-transaction";
+import { enqueueCustomerEmail } from "~/server/services/notifications/customer-email.data";
 import type {
 	ExternalPaymentInstructions,
 	ExternalPaymentSettings,
@@ -82,7 +84,6 @@ import {
 	listCheckoutAddresses,
 	listCheckoutPickupPoints,
 	listOrdersByUserId,
-	markTransactionAsExternalPending,
 	type OrderDetailRecord,
 	type OrderListRecord,
 	updateCartStatus,
@@ -799,7 +800,7 @@ export async function confirmAndPay(
 	);
 	if (existingResult) return existingResult;
 
-	const prepared = await db.$transaction(async (tx) => {
+	const prepared = await runSerializable(db, async (tx) => {
 		const now = new Date();
 		const cart = await getRequiredCheckoutCart(tx, userId);
 		const cartSnapshot = mapCart(cart);
@@ -939,14 +940,12 @@ export async function confirmAndPay(
 				provider: providerConfig.provider,
 			},
 			provider: providerConfig.provider,
-			expiresAt:
-				providerConfig.provider === "mercadopago"
-					? new Date(
-							now.getTime() +
-								providerConfig.config.settings.preferenceExpiresInMinutes *
-									60_000,
-						)
-					: undefined,
+			expiresAt: new Date(
+				now.getTime() +
+					(providerConfig.provider === "mercadopago"
+						? providerConfig.config.settings.preferenceExpiresInMinutes * 60_000
+						: providerConfig.config.settings.expiresInHours * HOUR_IN_MS),
+			),
 			providerMode:
 				providerConfig.provider === "mercadopago"
 					? providerConfig.config.mode
@@ -954,14 +953,19 @@ export async function confirmAndPay(
 			transferDiscount: charge.transferDiscount,
 		});
 
+		if (providerConfig.provider === "external") {
+			await enqueueCustomerEmail(tx, order.id, `transfer/${transaction.id}`, {
+				kind: "transfer",
+				attemptId: transaction.id,
+			});
+		}
+
 		return {
 			kind: "created" as const,
 			cart,
-			charge,
 			order,
 			paymentMethod,
 			providerConfig,
-			subtotal: total.amount,
 			transaction,
 		};
 	});
@@ -997,26 +1001,7 @@ export async function confirmAndPay(
 	}
 
 	const externalSettings = prepared.providerConfig.config.settings;
-	// No provider will ever call back for a transfer, so the attempt is left
-	// pending and no domain event is dispatched: only an admin settling it in
-	// `/admin/payments` submits the order (ADR 0010).
-	const transaction = await markTransactionAsExternalPending(db, {
-		id: prepared.transaction.id,
-		expiresAt: new Date(
-			Date.now() + externalSettings.expiresInHours * HOUR_IN_MS,
-		),
-		requestSnapshot: {
-			idempotencyKey: input.idempotencyKey,
-			cart: { id: prepared.cart.id, code: prepared.cart.code },
-			order: { id: prepared.order.id, code: prepared.order.code },
-			amount: prepared.transaction.amount.toString(),
-			subtotal: prepared.subtotal,
-			transferDiscount: prepared.charge.transferDiscount,
-			currency: prepared.transaction.currency,
-			paymentMethod: prepared.paymentMethod,
-			provider: EXTERNAL_PROVIDER,
-		},
-	});
+	const transaction = prepared.transaction;
 
 	return buildPaymentResult({
 		order: prepared.order,

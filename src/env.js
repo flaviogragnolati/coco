@@ -13,6 +13,7 @@ export const env = createEnv({
 	 * isn't built with invalid env vars.
 	 */
 	server: {
+		CRON_SECRET: z.string().min(16).optional(),
 		BETTER_AUTH_SECRET:
 			process.env.NODE_ENV === "production"
 				? z.string()
@@ -48,6 +49,7 @@ export const env = createEnv({
 	 * middlewares) or client-side so we need to destruct manually.
 	 */
 	runtimeEnv: {
+		CRON_SECRET: process.env.CRON_SECRET,
 		BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
 		BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
 		BETTER_AUTH_GOOGLE_CLIENT_ID: process.env.BETTER_AUTH_GOOGLE_CLIENT_ID,

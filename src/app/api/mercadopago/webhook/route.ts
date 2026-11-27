@@ -8,6 +8,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { env } from "~/env";
 import { db } from "~/server/db";
 import { appLogger } from "~/server/services/logging/app-logger.service";
+import { withEmailAfterResponse } from "~/server/services/notifications/after-response";
 import {
 	canProcessUnsignedMercadoPagoWebhook,
 	getMercadoPagoConfig,
@@ -44,7 +45,11 @@ async function parseJson(request: NextRequest) {
 	return request.json().catch(() => null);
 }
 
-export async function POST(request: NextRequest) {
+export function POST(request: NextRequest) {
+	return withEmailAfterResponse(() => handleWebhook(request));
+}
+
+async function handleWebhook(request: NextRequest) {
 	const url = new URL(request.url);
 	const query = searchParamsToObject(url.searchParams);
 	const headers = headersToObject(request.headers);

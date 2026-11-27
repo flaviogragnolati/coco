@@ -17,7 +17,7 @@ type Database = { $transaction: typeof db.$transaction };
  * to the operator as a raw Prisma error under contention — the risk the
  * architecture doc has carried since Phase 1.
  *
- * **The callback must be idempotent under retry.** All twelve call sites read
+ * **The callback must be idempotent under retry.** Callers read
  * their state inside the transaction, so a retry re-reads and re-plans from the
  * committed world. Anything with an effect *outside* the transaction would break
  * this; `DomainEventDispatcher.wake()` is always called after commit, never

@@ -461,6 +461,8 @@ export async function createPendingTransaction(
 			currency: input.currency as never,
 			status: "pending",
 			provider: input.provider ?? "mock",
+			providerStatus:
+				input.provider === "external" ? "awaiting_transfer" : undefined,
 			providerMode: input.providerMode,
 			expiresAt: input.expiresAt,
 			idempotencyKey: input.idempotencyKey,
@@ -618,26 +620,6 @@ export async function findExternalPaymentMethod(
 		},
 		select: checkoutPaymentMethodSelect,
 		orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-	});
-}
-
-export async function markTransactionAsExternalPending(
-	db: CheckoutDbClient,
-	input: {
-		id: number;
-		expiresAt: Date;
-		requestSnapshot: unknown;
-	},
-) {
-	return db.userTransaction.update({
-		where: { id: input.id },
-		data: {
-			provider: "external",
-			providerStatus: "awaiting_transfer",
-			expiresAt: input.expiresAt,
-			requestSnapshot: toPrismaInputJson(input.requestSnapshot),
-		},
-		select: orderTransactionSelect,
 	});
 }
 

@@ -1,4 +1,5 @@
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
+import { notifyRollOvers } from "~/server/services/notifications/customer-order-notices";
 import type { DomainEventInput } from "~/shared/common/domain-events.types";
 import type {
 	AdminOperationsEffectContext,
@@ -67,6 +68,11 @@ export class SupplierOrderEffects implements AdminSupplierOrderEffectHandler {
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminSupplierOrderChangeSet,
 	) {
+		await notifyRollOvers(
+			ctx.db,
+			"supplierOrder",
+			changeSet.createdRollOvers ?? [],
+		);
 		return publishEvents(ctx, "supplierOrder.confirmed", [
 			...buildConfirmedEvents(ctx, changeSet),
 			...buildSupplierOrderRollOverEvents(ctx, changeSet),
@@ -77,6 +83,11 @@ export class SupplierOrderEffects implements AdminSupplierOrderEffectHandler {
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminSupplierOrderChangeSet,
 	) {
+		await notifyRollOvers(
+			ctx.db,
+			"supplierOrder",
+			changeSet.createdRollOvers ?? [],
+		);
 		return publishEvents(
 			ctx,
 			"supplierOrder.cancelled",
@@ -88,6 +99,11 @@ export class SupplierOrderEffects implements AdminSupplierOrderEffectHandler {
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminSupplierOrderChangeSet,
 	) {
+		await notifyRollOvers(
+			ctx.db,
+			"supplierOrder",
+			changeSet.createdRollOvers ?? [],
+		);
 		return publishEvents(
 			ctx,
 			"supplierOrder.lineCancelled",

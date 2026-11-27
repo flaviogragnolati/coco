@@ -81,6 +81,7 @@ const requiredTables = [
 	"cart",
 	"cart_item",
 	"user_order",
+	"customer_email_delivery",
 	"user_order_item",
 	"user_transaction",
 	"operation",
@@ -729,6 +730,13 @@ async function resetDemoTransactionalData(tx: Tx) {
 				{ userOrderId: { in: orderIds } },
 				{ sourceCartItemId: { in: cartItemIds } },
 			],
+		},
+	});
+	await tx.customerEmailDelivery.deleteMany({
+		where: {
+			order: {
+				OR: [{ id: { in: orderIds } }, { code: { startsWith: "ORD-SEED-" } }],
+			},
 		},
 	});
 	await tx.userOrder.deleteMany({

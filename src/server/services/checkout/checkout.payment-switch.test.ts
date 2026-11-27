@@ -8,6 +8,12 @@ import { buildMercadoPagoPreferenceCreateData } from "../payments/mercadopago/me
 // invariant must hold while a transfer carries the discount.
 
 const tx = { name: "tx" };
+const { enqueueCustomerEmail } = vi.hoisted(() => ({
+	enqueueCustomerEmail: vi.fn(),
+}));
+vi.mock("~/server/services/notifications/customer-email.data", () => ({
+	enqueueCustomerEmail,
+}));
 
 const cart = {
 	id: 1,
@@ -217,7 +223,6 @@ const data = {
 			return created;
 		},
 	),
-	markTransactionAsExternalPending: vi.fn(async () => created),
 	updateTransactionWithMercadoPagoPreference: vi.fn(
 		async (_db: unknown, input: Record<string, unknown>) =>
 			attempt({ ...created, ...input }),
@@ -296,6 +301,7 @@ function confirm(paymentMethodId: number, expectedAmount: string) {
 }
 
 function expectNothingCreated() {
+	expect(enqueueCustomerEmail).not.toHaveBeenCalled();
 	expect(data.createUserOrder).not.toHaveBeenCalled();
 	expect(data.createPendingTransaction).not.toHaveBeenCalled();
 	expect(data.cancelAbandonableAttempt).not.toHaveBeenCalled();
@@ -383,16 +389,11 @@ test("a transfer charges the discounted total and hands out that amount", async 
 			},
 		}),
 	);
-	expect(data.markTransactionAsExternalPending).toHaveBeenCalledWith(
-		expect.anything(),
-		expect.objectContaining({
-			id: 90,
-			requestSnapshot: expect.objectContaining({
-				amount: "450",
-				subtotal: "500.00",
-			}),
-		}),
-	);
+	expect(enqueueCustomerEmail).toHaveBeenCalledWith(tx, 80, "transfer/90", {
+		kind: "transfer",
+		attemptId: 90,
+	});
+	expect(result.externalPayment?.expiresAt).toBeTruthy();
 	expect(result.externalPayment?.amount).toBe("450");
 	expect(result.transaction).toMatchObject({
 		amount: "450",

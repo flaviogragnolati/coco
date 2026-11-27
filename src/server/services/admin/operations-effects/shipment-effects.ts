@@ -1,4 +1,8 @@
 import { DomainEventPublisher } from "~/server/events/domain-event-publisher";
+import {
+	notifyPickupArrival,
+	notifyRollOvers,
+} from "~/server/services/notifications/customer-order-notices";
 import type { DomainEventInput } from "~/shared/common/domain-events.types";
 import {
 	buildExceptionEvents,
@@ -109,6 +113,11 @@ export class ShipmentEffects implements AdminShipmentEffectHandler {
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminShipmentChangeSet,
 	) {
+		await notifyPickupArrival(
+			ctx.db,
+			changeSet.shipmentId,
+			changeSet.movedLines ?? [],
+		);
 		return publishEvents(ctx, "shipment.pickupPointArrived", [
 			...buildPickupArrivalEvents(ctx, changeSet),
 			...(changeSet.resolvesException
@@ -121,6 +130,7 @@ export class ShipmentEffects implements AdminShipmentEffectHandler {
 		ctx: AdminOperationsEffectContext,
 		changeSet: AdminShipmentChangeSet,
 	) {
+		await notifyRollOvers(ctx.db, "shipment", changeSet.createdRollOvers ?? []);
 		return publishEvents(ctx, "shipment.received", [
 			...buildMovementEvents(ctx, changeSet, "received"),
 			...buildRollOverEvents(ctx, changeSet),

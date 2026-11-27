@@ -4,6 +4,7 @@ import type { AdminMutationActor } from "~/server/services/admin/_base/admin-aud
 import { toPrismaInputJson } from "~/server/services/admin/_base/prisma-json";
 import { runSerializable } from "~/server/services/admin/_base/serializable-transaction";
 import { buildOperationExecutionEvents } from "~/server/services/admin/operations-effects/operation-event-builders";
+import { notifyRollOvers } from "~/server/services/notifications/customer-order-notices";
 import {
 	calculateAssignableQuantity,
 	type OperationSupplierTermCandidate,
@@ -873,6 +874,14 @@ async function publishEvents(
 		rollOvers: MaterializedRollOver[];
 	},
 ) {
+	await notifyRollOvers(
+		db,
+		"operation",
+		input.rollOvers.map((r) => ({
+			rollOverId: r.id,
+			cartItemId: r.cartItemId,
+		})),
+	);
 	await DomainEventPublisher.publishMany(
 		db,
 		buildOperationExecutionEvents({

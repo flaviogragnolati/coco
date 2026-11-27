@@ -1,0 +1,56 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: q-code-grill-feature
+  mode: standalone
+  outcome: completed
+  authored_outputs:
+    - artifact_id: IP-COCO-NOTIF-20261127
+      artifact_type: implementation-plan
+      version: "0.1"
+      path: docs/plans/notificaciones-transaccionales-resend.md
+      lifecycle: Working
+      creation_mode: authored
+      semantic_authority: canonical
+      authority_scope: planned-execution
+      source_item_id: REQ-COCO-NOTIF-20261127
+  derived_outputs: []
+  updated_outputs: []
+  references_added:
+    - docs/plans/qa-open-tickets-2026-11-report.md
+    - docs/plans/qa-open-tickets-2026-11-orchestration.md
+    - docs/qa/qa-ciclo-de-vida.md
+    - docs/adr/0001-mercadopago-checkout-pro-reconciliation.md
+    - docs/adr/0005-demand-conservation-and-rollover-reaggregation.md
+    - docs/adr/0010-external-payments-are-admin-settled.md
+    - docs/adr/0011-delivery-preference-lives-on-the-order.md
+    - docs/adr/0013-transfer-discount-is-an-attribute-of-the-payment-attempt.md
+    - https://resend.com/docs/dashboard/emails/idempotency-keys
+  traceability_delta:
+    - "REQ-COCO-NOTIF-20261127 → IP-COCO-NOTIF-20261127 v0.1. Flavio validó el plan el 27/11/2026."
+    - "QA #111 recibe cobertura parcial planificada para correo. La elección de canal, la bandeja y WhatsApp siguen diferidos. QA #105 conserva su alcance independiente."
+    - "QA #16, #18, #22–#27, #29 y #33 aportan recorridos de prueba existentes. La aceptación agrega evidencia del correo recibido y su cantidad."
+  decisions_added_or_updated:
+    - "Flavio eligió un solo correo por pedido acreditado y confirmado, con su número de pedido."
+    - "Primera versión con rechazo de pago, transferencia pendiente, retiro disponible, cambio de entrega y productos reprogramados además de la confirmación."
+    - "La transferencia pendiente comunica importe, vencimiento y enlace a los datos bancarios en Mis pedidos."
+    - "Flavio validó un aviso por pedido y cambio cuando varios productos están afectados."
+  risks_added_or_updated:
+    - "Una acreditación tardía o un cambio de medio puede dejar obsoleto un rechazo o un pedido de transferencia pendiente de despacho."
+    - "Una caída tras la aceptación por Resend deja un resultado ambiguo. La clave del proveedor tiene una ventana de 24 horas."
+    - "Un envío a punto de retiro puede abarcar productos de varios compradores. Agrupar cantidades y resolver titulares por pedido."
+    - "El barrido necesita ejecutarse con la tienda inactiva. Capacidad y frecuencia del programador del entorno por verificar."
+  stale_artifacts:
+    - path: docs/plans/qa-open-tickets-2026-11-report.md
+      proposed_change: "Anotar en la propuesta de secuencia de #111 que el nuevo requisito adelanta el correo transaccional y conserva la bandeja, WhatsApp y las preferencias como trabajo futuro."
+    - path: docs/plans/qa-open-tickets-2026-11-orchestration.md
+      proposed_change: "Conservar la decisión histórica del 13/11 y vincular el nuevo plan al aplazamiento conjunto de #105 y #111 como avance parcial posterior de #111."
+  blockers: []
+  warnings:
+    - "El perfil de PostgreSQL 17.11 proviene del último registro del proyecto. La migración y su comportamiento operativo se verifican durante la ejecución."
+    - "La comprobación integral de pago aprobado en QA depende de la conciliación firmada de Mercado Pago en ese entorno."
+  required_user_actions: []
+  next_recommended_action: "Ejecutar el plan validado con q-code-implement. Si el alojamiento no dispone de la cadencia requerida, llevar la elección de un nuevo programador a q-plan-tech-foundation antes de activar el despacho real."
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true
