@@ -1,0 +1,46 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: q-code-implement
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+    - artifact_id: IP-COCO-ADMIN-NOTIF-20261127
+      artifact_type: implementation-plan
+      source_item_id: REQ-COCO-ADMIN-NOTIF-20261127
+      path: docs/plans/admin-notificaciones-y-correos-coco.md
+      lifecycle: Working
+      version: "0.2"
+      change: Implementación local verificada y evidencia de aceptación
+  references_added:
+    - src/server/api/routers/admin/notification.router.ts
+    - src/server/services/admin/notification.data.ts
+    - src/features/admin/notifications/order-notification-chip.tsx
+    - src/server/services/tracking/tracking-email.ts
+    - src/app/admin/(operation)/notifications/page.tsx
+    - src/server/services/notifications/customer-email.templates.ts
+    - src/server/api/routers/admin/notification.router.test.ts
+    - src/server/services/tracking/tracking-email.test.ts
+    - e2e/admin-notification-preview.spec.ts
+    - README.md
+  traceability_delta:
+    - "REQ-COCO-ADMIN-NOTIF-20261127 implementado: historial administrativo de mail, indicadores por pedido y evento, y plantilla Coco para seis avisos."
+  decisions_added_or_updated:
+    - "La solicitud de implementación adopta el alcance propuesto de consulta administrativa, detalle original y resumen por pedido."
+    - "Una lectura de correo fallida conserva la cronología del pedido y muestra un estado de consulta no disponible."
+  risks_added_or_updated:
+    - "La aceptación por Resend acredita el envío al proveedor. La recepción y la presentación en cada cliente de correo requieren el ensayo del entorno."
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "q-review-code concluyó conforme tras corregir la lectura auxiliar de tracking, la conservación del foco y la identificación por código público."
+    - "q-review-comments concluyó conforme. Se conservaron dos aclaraciones de invariantes."
+    - "La comprobación visual de los seis avisos se hizo en Chromium. Se simuló la aceptación de Resend y la base de producción no se consultó."
+    - "El proyecto carece de design_system_ref y technical_foundation_ref versionados. Se verificaron los contratos y tokens presentes en el repositorio."
+  required_user_actions: []
+  next_recommended_action: "Desplegar con la migración de notificaciones existente y comprobar la recepción del primer mail en la casilla de QA."
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

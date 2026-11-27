@@ -10,6 +10,7 @@ import {
 	HistoryIcon,
 	LayoutDashboardIcon,
 	type LucideIcon,
+	MailIcon,
 	MapPinIcon,
 	MapPinnedIcon,
 	PackageIcon,
@@ -70,6 +71,7 @@ export const adminNavGroups: AdminNavGroup[] = [
 			},
 			{ title: "Rollovers", href: "/admin/roll-overs", icon: RotateCcwIcon },
 			{ title: "Tracking", href: "/admin/tracking", icon: HistoryIcon },
+			{ title: "Notificaciones", href: "/admin/notifications", icon: MailIcon },
 		],
 	},
 	{

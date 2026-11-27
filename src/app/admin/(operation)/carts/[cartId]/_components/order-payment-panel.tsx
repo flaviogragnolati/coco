@@ -1,7 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState } from "react";
-
 import { Button } from "~/components/ui/button";
 import {
 	DetailEmpty,
@@ -15,6 +15,10 @@ import {
 	transactionStatusConfig,
 } from "~/features/admin/crud/operations-cart/operations-cart.mappers";
 import { OrderDeliveryChangeDialog } from "~/features/admin/crud/user-order/order-delivery-change-dialog";
+import {
+	OrderNotificationChip,
+	useOrderMailSummaries,
+} from "~/features/admin/notifications/order-notification-chip";
 import type {
 	CartTraceabilityOrder,
 	CartTraceabilityPayment,
@@ -85,6 +89,7 @@ function OrderDeliveryBlock({ order }: { order: CartTraceabilityOrder }) {
 				onChanged={() =>
 					Promise.all([
 						utils.admin.cartTraceability.invalidate(),
+						utils.admin.notification.invalidate(),
 						utils.admin.userOrder.deliveryOptions.invalidate({
 							orderId: order.id,
 						}),
@@ -98,12 +103,19 @@ function OrderDeliveryBlock({ order }: { order: CartTraceabilityOrder }) {
 	);
 }
 
-function OrderCard({ order }: { order: CartTraceabilityOrder }) {
+function OrderCard({
+	order,
+	mailChip,
+}: {
+	order: CartTraceabilityOrder;
+	mailChip: ReactNode;
+}) {
 	return (
 		<DetailSection>
 			<div className="flex flex-wrap items-start justify-between gap-2">
 				<div className="flex flex-col gap-1">
 					<span className="font-medium font-mono">{order.code}</span>
+					{mailChip}
 					<span className="text-muted-foreground text-xs">
 						<span className="font-mono">#{order.id}</span> ·{" "}
 						{formatDateTimeShort(new Date(order.createdAt))}
@@ -135,13 +147,23 @@ export function OrderPaymentPanel({
 }: {
 	orders: CartTraceabilityOrder[];
 }) {
+	const mailSummaries = useOrderMailSummaries(orders);
 	return (
 		<section className="flex flex-col gap-2">
 			<h2 className="font-heading font-semibold text-lg">Órdenes y pagos</h2>
 			{orders.length > 0 ? (
 				<div className="grid gap-3 md:grid-cols-2">
 					{orders.map((order) => (
-						<OrderCard key={order.id} order={order} />
+						<OrderCard
+							key={order.id}
+							mailChip={
+								<OrderNotificationChip
+									orderId={order.id}
+									summary={mailSummaries.get(order.id)}
+								/>
+							}
+							order={order}
+						/>
 					))}
 				</div>
 			) : (

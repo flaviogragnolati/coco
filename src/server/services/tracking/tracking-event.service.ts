@@ -26,6 +26,7 @@ import {
 } from "~/shared/common/tracking-display";
 import { buildAdminTrackingJourney } from "~/shared/common/tracking-journey";
 import { toPrismaInputJson } from "../admin/_base/prisma-json";
+import { trackingEmailIndicators } from "./tracking-email";
 import type { TrackingCommand } from "./tracking-event-mapper";
 import { TrackingStatusProjector } from "./tracking-status-projector";
 import { findUserOrderIdsForCartItems } from "./user-order-closure.data";
@@ -799,7 +800,11 @@ export class TrackingEventService {
 			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 		});
 
-		return records.map(toAdminTimelineItem);
+		const indicators = await trackingEmailIndicators(db, records);
+		return records.map((record) => ({
+			...toAdminTimelineItem(record),
+			email: indicators.get(record.id),
+		}));
 	}
 
 	static async getAdminCartItemTimeline(
@@ -811,7 +816,11 @@ export class TrackingEventService {
 			orderBy: [{ createdAt: "asc" }, { id: "asc" }],
 		});
 
-		return records.map(toAdminTimelineItem);
+		const indicators = await trackingEmailIndicators(db, records);
+		return records.map((record) => ({
+			...toAdminTimelineItem(record),
+			email: indicators.get(record.id),
+		}));
 	}
 
 	static async listAdminEvents(
@@ -833,8 +842,12 @@ export class TrackingEventService {
 			}),
 		]);
 
+		const indicators = await trackingEmailIndicators(db, records);
 		return {
-			items: records.map(toAdminTrackingListItem),
+			items: records.map((record) => ({
+				...toAdminTrackingListItem(record),
+				email: indicators.get(record.id),
+			})),
 			page,
 			pageSize,
 			total,
@@ -857,9 +870,13 @@ export class TrackingEventService {
 			});
 		}
 
+		const indicators = await trackingEmailIndicators(db, record.trackingEvents);
 		return {
 			cartItem: toCartItemSummary(record),
-			timeline: record.trackingEvents.map(toAdminTrackingTimelineDetailItem),
+			timeline: record.trackingEvents.map((event) => ({
+				...toAdminTrackingTimelineDetailItem(event),
+				email: indicators.get(event.id),
+			})),
 			journey: buildAdminTrackingJourney({
 				status: record.status,
 				fulfillmentStatus: record.fulfillmentStatus,

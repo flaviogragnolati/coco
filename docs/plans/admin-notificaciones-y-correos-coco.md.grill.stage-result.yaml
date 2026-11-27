@@ -1,0 +1,43 @@
+schema_version: "1.0"
+stage_result:
+  skill_id: q-code-grill-feature
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs:
+    - artifact_id: IP-COCO-ADMIN-NOTIF-20261127
+      artifact_type: implementation-plan
+      version: "0.1"
+      lifecycle: Working
+      canonical_for: planned-execution
+      source_item_id: REQ-COCO-ADMIN-NOTIF-20261127
+      path: docs/plans/admin-notificaciones-y-correos-coco.md
+  derived_outputs: []
+  updated_outputs: []
+  references_added:
+    - docs/plans/notificaciones-transaccionales-resend.md
+    - docs/plans/notificaciones-transaccionales-resend.md.implement.stage-result.yaml
+    - prisma/migrations/20261127000000_customer_email_delivery/migration.sql
+    - src/server/services/notifications/customer-email-dispatcher.ts
+    - src/server/services/notifications/customer-email.templates.ts
+    - src/server/services/tracking/tracking-event-mapper.ts
+    - src/styles/globals.css
+  traceability_delta:
+    - source_item_id: REQ-COCO-ADMIN-NOTIF-20261127
+      target_artifact_id: IP-COCO-ADMIN-NOTIF-20261127
+      change: "Nuevo requisito local para historial admin, chips y presentación de los correos existentes. Amplía IP-COCO-NOTIF-20261127."
+  decisions_added_or_updated: []
+  risks_added_or_updated:
+    - "Un mail agrupado puede incluir solo parte de los ítems que originaron el aviso. La marca por evento exige evidencia de esa ocurrencia."
+    - "Una aceptación de prueba corresponde a la casilla configurada de QA."
+  stale_artifacts: []
+  blockers: []
+  warnings:
+    - "El plan se presenta para validación. Las opciones de audiencia, indicadores y detalle figuran como propuestas."
+    - "La base de correo está presente en el árbol de trabajo. Su disponibilidad en el entorno de despliegue queda por verificar durante la ejecución."
+  required_user_actions:
+    - "Validar el alcance del plan Working, en particular audiencia, indicador por pedido y evento, y consulta del contenido histórico."
+  next_recommended_action: "Incorporar la validación de producto al plan y ejecutar el alcance acordado con q-code-implement."
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

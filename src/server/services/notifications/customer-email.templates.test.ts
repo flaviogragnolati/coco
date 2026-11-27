@@ -69,6 +69,7 @@ describe("correos de pago", () => {
 		expect(email?.text).toContain("A & B <C>");
 		expect(email?.text).toContain("ARS");
 		expect(email?.text).toMatch(/1\.?234,50/);
+		expect(email?.html).toContain(">coco</p>");
 		expect(email?.html).toContain("/login?callbackURL=%2Fmy-orders%2F33");
 	});
 	it("lleva a Mis pedidos para la transferencia y fuerza destinatario en QA", async () => {
@@ -81,6 +82,8 @@ describe("correos de pago", () => {
 		expect(email?.to).toBe("qa@example.org");
 		expect(email?.text).toContain("12:00");
 		expect(email?.text).toContain("Ver datos para transferir");
+		expect(email?.html).toContain(">coco</p>");
+		expect(email?.html).toContain(">Ver datos para transferir</a>");
 		expect(email?.text).not.toMatch(/CBU|alias|buyer@example/);
 	});
 	it("rechazo de transferencia sin exponer notas del operador", async () => {
@@ -89,6 +92,8 @@ describe("correos de pago", () => {
 		]);
 		expect(email?.text).toContain("Transferencia");
 		expect(email?.text).not.toContain("nota privada");
+		expect(email?.html).toContain(">coco</p>");
+		expect(email?.html).not.toContain("nota privada");
 	});
 	it("omite el rechazo externo cuando ya se abrió otro pedido sobre el mismo carrito", async () => {
 		expect(

@@ -152,6 +152,50 @@ function escapeHtml(value: string) {
 		.replaceAll("'", "&#39;");
 }
 
+function renderOrderEmailHtml(
+	content: { title: string; lines: string[] },
+	action: string,
+	link: URL,
+) {
+	const paragraphs = content.lines.map(
+		(line) =>
+			`<p style="margin:0 0 12px;font-size:16px;line-height:24px;">${escapeHtml(line)}</p>`,
+	);
+	return `<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(content.title)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#FBF1DF;color:#0F2A30;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#FBF1DF;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <!--[if mso]><table role="presentation" width="560" cellspacing="0" cellpadding="0"><tr><td><![endif]-->
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;table-layout:fixed;text-align:left;background-color:#FFFFFF;border-radius:16px;">
+        <tr>
+          <td style="padding:20px 24px;background-color:#0F2A30;color:#C9F0E6;border-radius:16px 16px 0 0;">
+            <p style="margin:0;font-size:34px;font-weight:800;line-height:36px;letter-spacing:-2px;">coco</p>
+            <p style="margin:4px 0 0;font-size:14px;line-height:20px;">Compras comunitarias</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 24px 32px;color:#0F2A30;overflow-wrap:anywhere;word-wrap:break-word;">
+            <h1 style="margin:0 0 20px;font-size:28px;font-weight:700;line-height:34px;letter-spacing:-0.8px;text-wrap:balance;">${escapeHtml(content.title)}</h1>
+            ${paragraphs.join("\n            ")}
+            <p style="margin:24px 0 0;">
+              <a href="${escapeHtml(link.href)}" style="display:inline-block;background-color:#F5833E;color:#341507;border:solid #F5833E;border-width:12px 18px;border-radius:24px;font-size:16px;font-weight:700;line-height:20px;text-decoration:none;">${escapeHtml(action)}</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+      <!--[if mso]></td></tr></table><![endif]-->
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 export async function buildEmailRequest(
 	tx: Prisma.TransactionClient,
 	orderId: number,
@@ -192,6 +236,6 @@ export async function buildEmailRequest(
 			`${action}: ${link.href}`,
 			"CoCo",
 		].join("\n\n"),
-		html: `<!doctype html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:Arial,sans-serif;color:#18251e;line-height:1.5"><main style="max-width:560px;margin:auto;padding:24px;overflow-wrap:anywhere"><p>CoCo</p><h1>${escapeHtml(content.title)}</h1>${content.lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}<p><a href="${escapeHtml(link.href)}">${action}</a></p></main></body></html>`,
+		html: renderOrderEmailHtml(content, action, link),
 	};
 }

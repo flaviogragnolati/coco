@@ -161,6 +161,15 @@ describe.skipIf(!url)("customer email dispatch on PostgreSQL", () => {
 
 	it("replays exactly the frozen body and key when an expired lease follows an ambiguous send", async () => {
 		await enqueue();
+		const buildCurrent = templates.buildEmailRequest;
+		const oldHtml =
+			"<html><body><p>CoCo</p><p>Tu transferencia</p></body></html>";
+		vi.spyOn(templates, "buildEmailRequest").mockImplementationOnce(
+			async (...args) => {
+				const email = await buildCurrent(...args);
+				return email && { ...email, html: oldHtml };
+			},
+		);
 		fetchMock.mockRejectedValueOnce(
 			new Error("connection lost after acceptance"),
 		);
@@ -192,6 +201,7 @@ describe.skipIf(!url)("customer email dispatch on PostgreSQL", () => {
 		}));
 		expect(requests).toHaveLength(2);
 		expect(requests[1]).toEqual(requests[0]);
+		expect(JSON.parse(String(requests[1]?.body)).html).toBe(oldHtml);
 		expect(requests[0]?.key).toBe(`coco/email/${row.id}`);
 		expect(
 			await database.customerEmailDelivery.findUnique({

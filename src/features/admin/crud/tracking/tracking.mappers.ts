@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { StatusConfig } from "~/shared/common/admin-crud/status-config";
 import { statusPresets } from "~/shared/common/admin-crud/status-presets";
+import type { AdminTrackingTimelineItem } from "~/shared/common/tracking.types";
 import {
 	type TrackingEventSource,
 	type TrackingEventType,
@@ -27,6 +28,19 @@ import {
 	trackingEventTypes,
 	trackingSourceLabelMap,
 } from "~/shared/common/tracking-display";
+
+export function trackingEmailRefreshInterval(
+	events?: Pick<AdminTrackingTimelineItem, "email">[],
+) {
+	return events?.some(
+		({ email }) =>
+			email?.status === "pending" ||
+			email?.status === "processing" ||
+			email?.status === "unavailable",
+	)
+		? 30_000
+		: false;
+}
 
 export const trackingEventTypeOptions: Array<{
 	value: TrackingEventType;

@@ -4,6 +4,7 @@ import {
 	enqueueCustomerEmail,
 	isCustomerEmailEnabled,
 } from "./customer-email.data";
+import { buildEmailRequest } from "./customer-email.templates";
 import { notifyPickupArrival, notifyRollOvers } from "./customer-order-notices";
 import { renderLogisticsNotice } from "./logistics-content";
 
@@ -32,7 +33,12 @@ function fixture() {
 				{ sourceCartItemId: 2, userOrderId: 20 },
 			]),
 		},
-		userOrder: { findFirst: vi.fn(async () => order) },
+		userOrder: {
+			findFirst: vi.fn(async () => order),
+			findUniqueOrThrow: vi.fn(async () => ({
+				user: { email: "buyer@example.org", active: true, deleted: false },
+			})),
+		},
 		shipment: {
 			findFirst: vi.fn(async () => ({
 				packages: [{ id: 50 }],
@@ -209,6 +215,60 @@ test("a superseded change of delivery cannot send an outdated location", async (
 		title: "Cambió la entrega de tu pedido ORD-10",
 		lines: [notice.change, notice.reason],
 	});
+});
+
+test.each([
+	{
+		notice: {
+			kind: "change",
+			capturedAt: "now",
+			change: "Retiro en el centro",
+			reason: "Pedido de A & B",
+		},
+		title: "Cambió la entrega de tu pedido ORD-10",
+		text: "Pedido de A & B",
+		html: "Pedido de A &amp; B",
+	},
+	{
+		notice: {
+			kind: "pickup",
+			shipmentId: 81,
+			allocations: [{ packageId: 50, cartItemId: 1, quantity: "2" }],
+		},
+		title: "Ya podés retirar parte de tu pedido ORD-10",
+		text: "Punto Centro",
+		html: "Nueces · 2 kg",
+	},
+	{
+		notice: { kind: "rollover", ids: [10], cause: "shipment" },
+		title: "Productos reprogramados de tu pedido ORD-10",
+		text: "Estas cantidades pasan a una próxima compra agrupada.",
+		html: "Nueces · 1 kg",
+	},
+])("el correo de $notice.kind conserva el aviso en HTML y texto", async ({
+	notice,
+	title,
+	text,
+	html,
+}) => {
+	const { tx } = fixture();
+	const message = await buildEmailRequest(
+		tx,
+		10,
+		{ ...notice, version: 1 },
+		{
+			origin: "https://coco.example.org",
+			environment: "test/example",
+			dispatch: false,
+			from: "pedidos@example.org",
+		},
+	);
+	expect(message?.subject).toBe(title);
+	expect(message?.html).toContain(">coco</p>");
+	expect(message?.html).toContain(html);
+	expect(message?.html).toContain(">Ver mi pedido</a>");
+	expect(message?.text).toContain(text);
+	expect(message?.text).toContain("/login?callbackURL=%2Fmy-orders%2F10");
 });
 
 test("disabled email leaves logistics commands independent of queue reads", async () => {

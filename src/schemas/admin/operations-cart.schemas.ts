@@ -223,6 +223,7 @@ const operationsUserOrderItemSchema = z.object({
 
 const operationsUserOrderSchema = z.object({
 	id: z.number().int().positive(),
+	code: z.string(),
 	status: operationsUserOrderStatusSchema,
 	billingAddressSnapshot: z.unknown().nullable(),
 	shippingAddressSnapshot: z.unknown().nullable(),

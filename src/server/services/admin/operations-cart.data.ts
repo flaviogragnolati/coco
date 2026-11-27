@@ -115,6 +115,7 @@ const operationsCartDetailSelect = {
 		orderBy: [{ createdAt: "desc" }, { id: "desc" }],
 		select: {
 			id: true,
+			code: true,
 			status: true,
 			billingAddressSnapshot: true,
 			shippingAddressSnapshot: true,

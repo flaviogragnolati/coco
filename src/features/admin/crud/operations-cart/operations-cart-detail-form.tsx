@@ -30,6 +30,10 @@ import {
 import { CrudDetailDialogShell } from "~/features/admin/crud/_components/crud-detail-dialog-shell";
 import { JsonPreview } from "~/features/admin/crud/_components/crud-json-preview";
 import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
+import {
+	OrderNotificationChip,
+	useOrderMailSummaries,
+} from "~/features/admin/notifications/order-notification-chip";
 import { operationsCartUpdateInputSchema } from "~/schemas/admin/operations-cart.schemas";
 import type {
 	OperationsCartDetail,
@@ -120,6 +124,9 @@ export function OperationsCartDetailForm({
 		name: "items",
 	});
 	const errors = form.formState.errors;
+	const mailSummaries = useOrderMailSummaries(
+		open ? (cart?.userOrders ?? []) : [],
+	);
 	const availableProductClientTerms = productClientTerms.filter(
 		(terms) => terms.active && !terms.deleted && !terms.product.deleted,
 	);
@@ -444,10 +451,14 @@ export function OperationsCartDetailForm({
 										<div className="flex flex-wrap items-start justify-between gap-2">
 											<div className="flex flex-col gap-1">
 												<span className="font-medium">
-													Orden <span className="font-mono">#{order.id}</span>
+													Pedido <span className="font-mono">{order.code}</span>
 												</span>
+												<OrderNotificationChip
+													orderId={order.id}
+													summary={mailSummaries.get(order.id)}
+												/>
 												<span className="text-muted-foreground text-xs">
-													{formatDateTimeShort(order.createdAt)}
+													#{order.id} · {formatDateTimeShort(order.createdAt)}
 												</span>
 											</div>
 											<StatusChip config={orderStatusConfig[order.status]} />
