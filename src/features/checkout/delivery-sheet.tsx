@@ -98,6 +98,7 @@ export function DeliverySheet({
 	modal = true,
 	inert,
 	targets,
+	className,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -118,6 +119,8 @@ export function DeliverySheet({
 	inert?: boolean;
 	/** Marks the content for an outside walkthrough; absent on the real page. */
 	targets?: { content?: { [key: `data-${string}`]: string } };
+	/** Extra classes for the sheet content, such as the tutorial's offset. */
+	className?: string;
 }) {
 	// `null`: the list; `"new"`: a new address; an address: editing it.
 	const [editing, setEditing] = useState<"new" | CheckoutAddress | null>(null);
@@ -156,6 +159,7 @@ export function DeliverySheet({
 				className={cn(
 					"gap-0",
 					side === "bottom" ? "rounded-t-4xl" : "w-full sm:max-w-lg",
+					className,
 				)}
 				inert={inert}
 				side={side}

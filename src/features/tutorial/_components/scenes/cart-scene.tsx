@@ -17,6 +17,7 @@ import {
 } from "~/features/tutorial/tutorial-fixtures";
 import { tutorialTarget } from "~/features/tutorial/tutorial-script";
 import { useIsMobile } from "~/hooks/use-mobile";
+import { BELOW_TUTORIAL_BAR } from "../tutorial-mode-bar";
 import { noop } from "./noop";
 
 const rejectSave = () => Promise.reject(new Error("Tutorial"));
@@ -47,6 +48,8 @@ export function CartScene({
 		state.transferDiscountPercent,
 	);
 	const side = isMobile ? "bottom" : "right";
+	// A side sheet starts below the tutorial bar; a bottom sheet never reaches it.
+	const sheetClassName = side === "right" ? BELOW_TUTORIAL_BAR : undefined;
 
 	const finishSlot = !total ? null : !signedIn ? (
 		<FinishOrderGuestPanel
@@ -79,6 +82,7 @@ export function CartScene({
 			/>
 			<DeliverySheet
 				addresses={state.addresses}
+				className={sheetClassName}
 				inert
 				modal={false}
 				onModeChange={noop}
@@ -94,6 +98,7 @@ export function CartScene({
 				targets={{ content: tutorialTarget("finish-delivery") }}
 			/>
 			<PaymentSheet
+				className={sheetClassName}
 				inert
 				modal={false}
 				onOpenChange={noop}

@@ -22,6 +22,7 @@ import {
 	TUTORIAL_TARGET_ATTRIBUTE,
 	tutorialTarget,
 } from "~/features/tutorial/tutorial-script";
+import { BELOW_TUTORIAL_BAR } from "../tutorial-mode-bar";
 import { noop } from "./noop";
 
 /**
@@ -136,6 +137,7 @@ export function CatalogScene({
 			{added ? (
 				<CartSheetView
 					cart={fixtures.cartAfterFirstAdd}
+					className={BELOW_TUTORIAL_BAR}
 					hasHydrated
 					inert
 					isAuthenticated={false}

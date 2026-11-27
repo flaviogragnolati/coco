@@ -36,6 +36,7 @@ export function PaymentSheet({
 	modal = true,
 	inert,
 	targets,
+	className,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -51,11 +52,17 @@ export function PaymentSheet({
 	inert?: boolean;
 	/** Marks the content for an outside walkthrough; absent on the real page. */
 	targets?: { content?: { [key: `data-${string}`]: string } };
+	/** Extra classes for the sheet content, such as the tutorial's offset. */
+	className?: string;
 }) {
 	return (
 		<Sheet modal={modal} onOpenChange={onOpenChange} open={open}>
 			<SheetContent
-				className={cn("gap-0", side === "right" && "w-full sm:max-w-lg")}
+				className={cn(
+					"gap-0",
+					side === "right" && "w-full sm:max-w-lg",
+					className,
+				)}
 				inert={inert}
 				side={side}
 				{...targets?.content}
