@@ -14,6 +14,7 @@ import { PrismaClient } from "~/prisma/client";
 import { enqueueCustomerEmail } from "./customer-email.data";
 import * as templates from "./customer-email.templates";
 import { dispatchCustomerEmails } from "./customer-email-dispatcher";
+import * as gmail from "./gmail-email.service";
 
 vi.mock("server-only", () => ({}));
 vi.mock("~/server/db", () => ({
@@ -213,6 +214,61 @@ describe.skipIf(!url)("customer email dispatch on PostgreSQL", () => {
 			attempts: 2,
 			leaseToken: null,
 		});
+	});
+
+	it.each([
+		"expired lease",
+		"provider switch",
+		"temporary rejection",
+	] as const)("recovers Gmail after %s", async (scenario) => {
+		vi.stubEnv("CUSTOMER_EMAIL_PROVIDER", "gmail");
+		vi.stubEnv("GMAIL_USER", "coco@example.org");
+		vi.stubEnv("GMAIL_APP_PASSWORD", "aaaa bbbb cccc dddd");
+		const send = vi
+			.spyOn(gmail, "sendGmail")
+			.mockResolvedValueOnce({
+				status: "retry",
+				reason: "gmail_temporary_rejection",
+			})
+			.mockResolvedValueOnce({ status: "accepted", providerId: "smtp-id" });
+		await enqueue();
+		await dispatchCustomerEmails();
+		expect(send).toHaveBeenCalledWith(
+			"coco@example.org",
+			"aaaabbbbccccdddd",
+			expect.any(String),
+			expect.objectContaining({
+				from: "CoCo <coco@example.org>",
+				to: "delivered@resend.dev",
+			}),
+		);
+		if (scenario === "provider switch")
+			vi.stubEnv("CUSTOMER_EMAIL_PROVIDER", "resend");
+		await database.customerEmailDelivery.updateMany({
+			where: { orderId },
+			data:
+				scenario === "expired lease"
+					? { status: "processing", leaseUntil: new Date(0) }
+					: { nextAttemptAt: new Date(0) },
+		});
+		await dispatchCustomerEmails();
+		const row = await database.customerEmailDelivery.findFirstOrThrow({
+			where: { orderId },
+		});
+		if (scenario === "temporary rejection") {
+			expect(send).toHaveBeenCalledTimes(2);
+			expect(row).toMatchObject({ status: "accepted", providerId: "smtp-id" });
+		} else {
+			expect(send).toHaveBeenCalledTimes(1);
+			expect(row).toMatchObject({
+				status: "review",
+				lastError:
+					scenario === "expired lease"
+						? "gmail_unknown_result"
+						: "email_provider_changed",
+			});
+		}
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("refuses to finalize a send after its lease has been reclaimed", async () => {
