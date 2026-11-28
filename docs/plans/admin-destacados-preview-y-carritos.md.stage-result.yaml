@@ -1,0 +1,36 @@
+schema_version: '1.0'
+stage_result:
+  skill_id: q-code-implement
+  mode: standalone
+  outcome: completed_with_warnings
+  authored_outputs: []
+  derived_outputs: []
+  updated_outputs:
+  - artifact_type: implementation-plan
+    path: docs/plans/admin-destacados-preview-y-carritos.md
+    lifecycle: Working
+    change: definicion de terminado y registro de ejecucion (seccion 16)
+  - path: docs/plans/home-variante-d-como-funciona.md
+    change: nota de que el desborde de /admin/products a 1280 px quedo resuelto por T0.1
+  references_added: []
+  traceability_delta:
+  - 'admin-destacados-preview-y-carritos T0.1-T2.5 -> rama admin-destacados-carritos: 71f8bd6 (Fase 0), e808c0b (Fase 1), a25f995 (Fase 2)'
+  decisions_added_or_updated:
+  - 'PreviewHeightReporter mide el contenedor [data-storefront] en lugar de documentElement.scrollHeight, porque el body con min-h-screen impide que el iframe se achique.'
+  - 'Contrato de la vista previa (ruta, tipo de mensaje, guard) en src/features/admin/crud/home-offers/home-offers-preview.ts.'
+  - 'Carritos: Cobrado y Pendiente en dos lineas e Items max-w-52 para que la tabla entre a 1280 px (974 de 974 px).'
+  - 'La vista previa muestra un estado de error si el iframe carga y no reporta en 4 s.'
+  risks_added_or_updated: []
+  stale_artifacts: []
+  blockers: []
+  warnings:
+  - 'Mini revision: q-review-code estandares pass with findings (3 sugerencias aplicadas, quickUpdateStatus diferido); especificacion pass with findings (desvios registrados); q-review-comments pass with findings (1 reescritura aplicada).'
+  - 'Riesgo residual: las cards de la vista previa leen el carrito local del admin (aceptado en la seccion 14); confirmar el iframe detras del proxy de Vercel despues del deploy.'
+  - 'Verificacion con sesion solo en la base local coco-e2e-postgres:5433; .env apunta a Neon (produccion) y no se uso.'
+  required_user_actions:
+  - 'Autorizar push de admin-destacados-carritos y apertura del PR.'
+  next_recommended_action: 'Push y PR de admin-destacados-carritos; despues del deploy, abrir /admin/home-offers en produccion una vez.'
+orchestration:
+  mode: standalone
+  global_state_updated: false
+  reconciliation_required: true

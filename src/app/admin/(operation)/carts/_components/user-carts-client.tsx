@@ -241,17 +241,6 @@ export function UserCartsClient() {
 		},
 	});
 
-	const quickStatusMutation =
-		api.admin.operationsCart.quickUpdateStatus.useMutation({
-			onSuccess: async () => {
-				toast.success("Estado actualizado");
-				await invalidateCartQueries();
-			},
-			onError: (error) => {
-				toast.error(error.message || "No se pudo actualizar el estado");
-			},
-		});
-
 	const softDeleteMutation = api.admin.operationsCart.softDelete.useMutation({
 		onSuccess: async () => {
 			toast.warning("Carrito enviado a papelera");
@@ -304,7 +293,7 @@ export function UserCartsClient() {
 		if (carts.length === 0) {
 			return (
 				<CrudEmptyState
-					description="Ajusta los filtros para revisar otros carritos."
+					description="Ajustá los filtros para revisar otros carritos."
 					title="No hay carritos para mostrar"
 				/>
 			);
@@ -313,13 +302,8 @@ export function UserCartsClient() {
 		return (
 			<OperationsCartTable
 				carts={carts}
-				isQuickStatusPending={quickStatusMutation.isPending}
 				onEdit={(cart) => setSelectedCartId(cart.id)}
 				onHardDelete={setHardDeleteTarget}
-				onQuickStatusChange={(cart, status) => {
-					if (cart.status === status) return;
-					quickStatusMutation.mutate({ id: cart.id, status });
-				}}
 				onSoftDelete={setSoftDeleteTarget}
 				onTrace={(cart) => router.push(`/admin/carts/${cart.id}`)}
 			/>
@@ -353,7 +337,7 @@ export function UserCartsClient() {
 							value: statsQuery.data.open,
 							icon: ClockIcon,
 							accent: "info",
-							description: "Draft, pendientes o checkout",
+							description: "Borrador, pendientes o en checkout",
 						},
 						{
 							label: "Enviados",
@@ -374,7 +358,7 @@ export function UserCartsClient() {
 							value: statsQuery.data.deleted,
 							icon: Trash2Icon,
 							accent: "destructive",
-							description: "Baja logica aplicada",
+							description: "Baja lógica aplicada",
 						},
 					]}
 				/>
@@ -427,7 +411,7 @@ export function UserCartsClient() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor="operations-cart-item-status-filter">
-									Estado item
+									Estado del ítem
 								</FieldLabel>
 								<Select
 									id="operations-cart-item-status-filter"
@@ -622,7 +606,7 @@ export function UserCartsClient() {
 				confirmLabel="Enviar a papelera"
 				description={
 					softDeleteTarget
-						? `El carrito "${softDeleteTarget.code}" quedara eliminado logicamente.`
+						? `El carrito "${softDeleteTarget.code}" quedará eliminado lógicamente.`
 						: ""
 				}
 				isPending={softDeleteMutation.isPending}
@@ -635,13 +619,13 @@ export function UserCartsClient() {
 					if (!open) setSoftDeleteTarget(null);
 				}}
 				open={Boolean(softDeleteTarget)}
-				title="Confirmar baja logica"
+				title="Confirmar baja lógica"
 			/>
 
 			<CrudDeleteDialog
 				confirmationLabel={
 					hardDeleteTarget
-						? `Escribi "${hardDeleteTarget.code}" para confirmar`
+						? `Escribí "${hardDeleteTarget.code}" para confirmar`
 						: "Confirmación"
 				}
 				confirmationValue={hardDeleteTarget?.code}

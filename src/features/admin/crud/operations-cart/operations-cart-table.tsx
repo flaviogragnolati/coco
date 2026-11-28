@@ -3,60 +3,57 @@
 import { ArchiveXIcon, EyeIcon, RouteIcon, Trash2Icon } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
-import { Select } from "~/components/ui/select";
 import { CrudRowActions } from "~/features/admin/crud/_components/crud-row-actions";
+import { StatusChip } from "~/features/admin/crud/_components/crud-status-chip";
 import { CrudTable } from "~/features/admin/crud/_components/crud-table";
 import type {
 	CrudColumn,
 	CrudRowAction,
 } from "~/shared/common/admin-crud/crud.types";
-import type {
-	OperationsCartListItem,
-	OperationsCartStatus,
-} from "~/shared/common/admin-crud/operations-cart.types";
+import type { OperationsCartListItem } from "~/shared/common/admin-crud/operations-cart.types";
+import { formatCurrency } from "~/shared/common/commerce.helpers";
 import { formatDateTimeShort } from "~/shared/common/date.helpers";
-import {
-	cartStatusLabelMap,
-	cartStatusOptions,
-	orderStatusLabelMap,
-} from "./operations-cart.mappers";
+import { cartStatusConfig, orderStatusConfig } from "./operations-cart.mappers";
 
-function CartLifecycleBadge({ status }: { status: OperationsCartStatus }) {
-	const variant =
-		status === "cancelled" || status === "aborted"
-			? "destructive"
-			: status === "submitted"
-				? "default"
-				: "outline";
-
-	return <Badge variant={variant}>{cartStatusLabelMap[status]}</Badge>;
+function plural(count: number, singular: string, pluralForm: string) {
+	return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-function PaymentSummary({ cart }: { cart: OperationsCartListItem }) {
+function PaymentAmounts({ cart }: { cart: OperationsCartListItem }) {
 	const summary = cart.paymentSummary;
-	const hasTransactions = summary.transactionCount > 0;
+	const [currency] = summary.currencies;
+
+	// Amounts across currencies cannot be added up, so only a single-currency
+	// cart gets formatted totals.
+	const format = (amount: string) =>
+		summary.currencies.length === 1 && currency
+			? formatCurrency(amount, currency)
+			: amount;
 
 	return (
-		<div className="flex flex-col gap-0.5 text-xs">
+		<span className="flex flex-col whitespace-nowrap text-muted-foreground">
+			<span>Cobrado {format(summary.completedAmount)}</span>
+			<span>Pendiente {format(summary.pendingAmount)}</span>
+		</span>
+	);
+}
+
+function OrderAndPayments({ cart }: { cart: OperationsCartListItem }) {
+	const transactionCount = cart.paymentSummary.transactionCount;
+
+	return (
+		<div className="flex flex-col items-start gap-1 text-xs">
+			{cart.latestOrderStatus ? (
+				<StatusChip config={orderStatusConfig[cart.latestOrderStatus]} />
+			) : (
+				<span className="text-muted-foreground">Sin orden</span>
+			)}
 			<span className="font-medium text-foreground">
-				{hasTransactions
-					? `${summary.transactionCount} pago${summary.transactionCount === 1 ? "" : "s"}`
+				{transactionCount > 0
+					? plural(transactionCount, "pago", "pagos")
 					: "Sin pagos"}
 			</span>
-			<span className="text-muted-foreground">
-				{cart.orderCount > 0
-					? `${cart.orderCount} orden${cart.orderCount === 1 ? "" : "es"}${
-							cart.latestOrderStatus
-								? `, ${orderStatusLabelMap[cart.latestOrderStatus]}`
-								: ""
-						}`
-					: "Sin orden"}
-			</span>
-			{hasTransactions ? (
-				<span className="text-muted-foreground">
-					OK {summary.completedAmount} / Pend. {summary.pendingAmount}
-				</span>
-			) : null}
+			{transactionCount > 0 ? <PaymentAmounts cart={cart} /> : null}
 		</div>
 	);
 }
@@ -65,24 +62,15 @@ const operationsCartColumns: CrudColumn<OperationsCartListItem>[] = [
 	{
 		key: "cart",
 		header: "Carrito",
-		className: "min-w-36",
 		cell: (cart) => (
-			<div className="flex flex-col gap-0.5">
+			<div className="flex max-w-56 flex-col gap-0.5">
 				<span className="font-medium text-foreground">{cart.code}</span>
-				<span className="font-mono text-muted-foreground text-xs">
-					#{cart.id}
+				<span className="truncate text-muted-foreground text-xs">
+					{cart.user.name}
 				</span>
-			</div>
-		),
-	},
-	{
-		key: "user",
-		header: "Usuario",
-		className: "min-w-48",
-		cell: (cart) => (
-			<div className="flex flex-col gap-0.5">
-				<span className="font-medium text-foreground">{cart.user.name}</span>
-				<span className="text-muted-foreground text-xs">{cart.user.email}</span>
+				<span className="truncate text-muted-foreground text-xs">
+					{cart.user.email}
+				</span>
 				{cart.user.deleted ? (
 					<span className="text-destructive text-xs">Usuario eliminado</span>
 				) : null}
@@ -93,66 +81,63 @@ const operationsCartColumns: CrudColumn<OperationsCartListItem>[] = [
 		key: "status",
 		header: "Estado",
 		cell: (cart) => (
-			<div className="flex flex-col gap-1">
-				<CartLifecycleBadge status={cart.status} />
+			<div className="flex flex-col items-start gap-1">
+				<StatusChip config={cartStatusConfig[cart.status]} />
 				{cart.deleted ? <Badge variant="destructive">Eliminado</Badge> : null}
 			</div>
 		),
 	},
 	{
 		key: "items",
-		header: "Items",
-		className: "min-w-56",
-		cell: (cart) => (
-			<div className="flex flex-col gap-0.5">
-				<span className="font-medium text-foreground">
-					{cart.itemCount} item{cart.itemCount === 1 ? "" : "s"} /{" "}
-					{cart.totalQuantity}
-				</span>
-				<span className="text-muted-foreground text-xs">
-					{cart.products.length > 0
-						? cart.products
-								.slice(0, 3)
-								.map((product) => `${product.name} (${product.quantity})`)
-								.join(", ")
-						: "Sin productos activos"}
-					{cart.products.length > 3 ? "..." : ""}
-				</span>
-			</div>
-		),
+		header: "Ítems",
+		cell: (cart) => {
+			const productNames = cart.products
+				.map((product) => product.name)
+				.join(", ");
+
+			return (
+				<div className="flex max-w-52 flex-col gap-0.5">
+					<span className="font-medium text-foreground">
+						{plural(cart.itemCount, "ítem", "ítems")} · {cart.totalQuantity}
+					</span>
+					<span
+						className="line-clamp-1 text-muted-foreground text-xs"
+						title={productNames || undefined}
+					>
+						{productNames || "Sin productos activos"}
+					</span>
+				</div>
+			);
+		},
 	},
 	{
 		key: "orders",
-		header: "Orden/Pagos",
-		cell: (cart) => <PaymentSummary cart={cart} />,
+		header: "Orden / Pago",
+		cell: (cart) => <OrderAndPayments cart={cart} />,
 	},
 	{
 		key: "updatedAt",
 		header: "Actualizado",
-		className: "w-40",
-		cell: (cart) => formatDateTimeShort(cart.updatedAt),
+		cell: (cart) => (
+			<span className="whitespace-nowrap">
+				{formatDateTimeShort(cart.updatedAt)}
+			</span>
+		),
 	},
 ];
 
 export function OperationsCartTable({
 	carts,
-	isQuickStatusPending,
 	onEdit,
 	onTrace,
 	onSoftDelete,
 	onHardDelete,
-	onQuickStatusChange,
 }: {
 	carts: OperationsCartListItem[];
-	isQuickStatusPending?: boolean;
 	onEdit: (cart: OperationsCartListItem) => void;
 	onTrace: (cart: OperationsCartListItem) => void;
 	onSoftDelete: (cart: OperationsCartListItem) => void;
 	onHardDelete: (cart: OperationsCartListItem) => void;
-	onQuickStatusChange: (
-		cart: OperationsCartListItem,
-		status: OperationsCartStatus,
-	) => void;
 }) {
 	const actions: CrudRowAction<OperationsCartListItem>[] = [
 		{
@@ -182,29 +167,7 @@ export function OperationsCartTable({
 
 	return (
 		<CrudTable
-			actions={(cart) => (
-				<div className="flex items-center justify-end gap-2">
-					<Select
-						aria-label={`Cambiar estado de ${cart.code}`}
-						className="w-36"
-						disabled={cart.deleted || isQuickStatusPending}
-						onChange={(event) =>
-							onQuickStatusChange(
-								cart,
-								event.target.value as OperationsCartStatus,
-							)
-						}
-						value={cart.status}
-					>
-						{cartStatusOptions.map((option) => (
-							<option key={option.value} value={option.value}>
-								{option.label}
-							</option>
-						))}
-					</Select>
-					<CrudRowActions actions={actions} item={cart} />
-				</div>
-			)}
+			actions={(cart) => <CrudRowActions actions={actions} item={cart} />}
 			columns={operationsCartColumns}
 			getRowAriaLabel={(cart) => `Ver y editar carrito ${cart.code}`}
 			getRowClassName={(cart) =>
