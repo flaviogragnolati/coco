@@ -24,6 +24,7 @@ import {
 import { Skeleton } from "~/components/ui/skeleton";
 import { CartLineRow } from "~/features/cart/_components/cart-line-row";
 import { TransferTotalHint } from "~/features/cart/_components/transfer-total";
+import { cn } from "~/lib/utils";
 import type { CartSnapshot } from "~/shared/common/cart.types";
 import { formatCurrency } from "~/shared/common/commerce.helpers";
 
@@ -41,6 +42,7 @@ export function CartSheetView({
 	onOpenChange,
 	modal = true,
 	inert,
+	className,
 	hasHydrated,
 	cart,
 	isAuthenticated,
@@ -59,6 +61,8 @@ export function CartSheetView({
 	modal?: boolean;
 	/** Set on the portaled content itself: the sheet escapes any inert ancestor. */
 	inert?: boolean;
+	/** Extra classes for the sheet content, such as the tutorial's offset. */
+	className?: string;
 	hasHydrated: boolean;
 	cart: CartSnapshot;
 	isAuthenticated: boolean;
@@ -75,7 +79,7 @@ export function CartSheetView({
 	return (
 		<Sheet modal={modal} onOpenChange={onOpenChange} open={open}>
 			<SheetContent
-				className="gap-0"
+				className={cn("gap-0", className)}
 				inert={inert}
 				side="right"
 				{...targets?.content}
@@ -165,38 +169,41 @@ export function CartSheetView({
 								<Link href="/cart">Ver productos pendientes de agregar</Link>
 							</Button>
 						) : isAuthenticated ? (
+							// Finishing happens on the order page itself (ADR 0015).
 							<Button
 								asChild
 								className="w-full"
 								onClick={onNavigate}
 								variant="highlight"
 							>
-								<Link href="/checkout">
+								<Link href="/cart">
 									<ShoppingBagIcon data-icon="inline-start" />
-									Ir a pagar
+									Finalizar pedido
 								</Link>
 							</Button>
 						) : (
-							<Button
-								asChild
-								className="w-full"
-								onClick={onNavigate}
-								variant="highlight"
-							>
-								<Link href="/login?callbackURL=/checkout">
-									<LogInIcon data-icon="inline-start" />
-									Registrarme o iniciar sesión
-								</Link>
-							</Button>
+							<>
+								<Button
+									asChild
+									className="w-full"
+									onClick={onNavigate}
+									variant="highlight"
+								>
+									<Link href="/login?callbackURL=/cart">
+										<LogInIcon data-icon="inline-start" />
+										Registrarme o iniciar sesión
+									</Link>
+								</Button>
+								<Button
+									asChild
+									className="w-full"
+									onClick={onNavigate}
+									variant="outline"
+								>
+									<Link href="/cart">Ver pedido completo</Link>
+								</Button>
+							</>
 						)}
-						<Button
-							asChild
-							className="w-full"
-							onClick={onNavigate}
-							variant="outline"
-						>
-							<Link href="/cart">Ver pedido completo</Link>
-						</Button>
 					</SheetFooter>
 				) : null}
 			</SheetContent>

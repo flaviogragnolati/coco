@@ -193,6 +193,7 @@ const data = {
 			id === mercadoPagoMethod.id ? mercadoPagoMethod : externalMethod,
 	),
 	findLiveOrderByCartId: vi.fn(async () => liveOrder),
+	updateCartStatus: vi.fn(async () => cart),
 	updateOrderDelivery: vi.fn(async () => liveOrder),
 	createUserOrder: vi.fn(async () => order(80, [])),
 	cancelAbandonableAttempt: vi.fn(async () => true),
@@ -531,6 +532,45 @@ test("a transfer charges the discounted total and hands out that amount", async 
 		transferDiscountPercent: "10",
 		transferDiscountAmount: "50",
 	});
+});
+
+// ADR 0015: the cart stays editable until the customer confirms.
+test("confirming an editable cart freezes it in the transaction that creates the order", async () => {
+	data.findCheckoutCartByUserId.mockResolvedValueOnce({
+		...cart,
+		status: "pending",
+	});
+
+	await confirm(externalMethod.id, "450.00");
+
+	expect(data.updateCartStatus).toHaveBeenCalledTimes(1);
+	expect(data.updateCartStatus).toHaveBeenCalledWith(tx, cart.id, "atCheckout");
+	expect(data.createUserOrder).toHaveBeenCalledTimes(1);
+	expect(data.updateCartStatus.mock.invocationCallOrder[0]).toBeLessThan(
+		data.createUserOrder.mock.invocationCallOrder[0] ?? 0,
+	);
+});
+
+test("an editable cart whose amount moved stays editable", async () => {
+	data.findCheckoutCartByUserId.mockResolvedValueOnce({
+		...cart,
+		status: "pending",
+	});
+
+	await expect(confirm(externalMethod.id, "500.00")).rejects.toMatchObject({
+		code: "CONFLICT",
+	});
+	expect(data.updateCartStatus).not.toHaveBeenCalled();
+	expectNothingCreated();
+});
+
+test("confirming again on a frozen cart does not freeze it twice", async () => {
+	liveOrder = order(70, [attempt({ id: 61 })]);
+
+	await confirm(externalMethod.id, "450.00");
+
+	expect(data.createPendingTransaction).toHaveBeenCalledTimes(1);
+	expect(data.updateCartStatus).not.toHaveBeenCalled();
 });
 
 test("an amount other than the one the server computes stops before creating anything", async () => {

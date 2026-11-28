@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoCo · Checkout y seguimiento · B · Paso a paso</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400..800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* B · Paso a paso enfocado: se conserva el asistente, pero con tres pasos, sin
+   el menú del sitio y una decisión por pantalla. El seguimiento es una línea
+   de tiempo vertical con fechas y avisos en la etapa donde ocurrieron. */
+.fnav { border-bottom: 1px solid var(--border); background: var(--bg); }
+.fnav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
+.fnav .safe { display: inline-flex; align-items: center; gap: 6px; color: var(--muted-fg); font-size: 14px; }
+.fnav .btn { white-space: nowrap; }
+@media (max-width: 560px) { .fnav .safe { display: none; } }
+.fcol { width: 100%; max-width: 620px; margin-inline: auto; padding: clamp(24px, 4vw, 40px) 16px 96px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.fcol h1 { font-size: clamp(28px, 4vw, 38px); }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.steps button { display: grid; gap: 8px; padding: 0; border: 0; background: none; text-align: left; font: 700 13px/1 var(--font-b); color: var(--muted-fg); }
+.steps button::before { content: ""; height: 6px; border-radius: 3px; background: var(--border); }
+.steps button.done::before { background: var(--ink); }
+.steps button.now { color: var(--fg); }
+.steps button.now::before { background: var(--highlight); }
+.steps button[disabled] { cursor: default; }
+
+.peek { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); font-weight: 600; }
+.peek b { margin-left: auto; font: 700 17px var(--font-h); }
+.peek svg:last-child { transition: rotate 0.15s; }
+.peek.is-on svg:last-child { rotate: 180deg; }
+
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tile { display: grid; gap: 6px; justify-items: start; padding: 18px; border: 1.5px solid var(--border); border-radius: var(--r-card); background: var(--card); text-align: left; }
+.tile .ic { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 4px; border-radius: 50%; background: var(--warm); color: var(--warm-fg); }
+.tile b { font: 600 18px/1.2 var(--font-h); }
+.tile.is-on { border-color: var(--ink); background: color-mix(in oklch, var(--soft) 45%, var(--card)); }
+.tile.is-on .ic { background: var(--ink); color: var(--ink-fg); }
+@media (max-width: 460px) { .tiles { grid-template-columns: 1fr; } .tile { grid-template-columns: auto 1fr; column-gap: 14px; align-items: center; } .tile .ic { grid-row: span 2; margin: 0; } }
+
+.review { padding: 0; }
+.review > div { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.review > div:last-child { border-bottom: 0; }
+.review .k { display: block; color: var(--muted-fg); font: 700 11px/1 var(--font-b); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+.review b { font-family: var(--font-h); }
+.nav-row { display: flex; gap: 10px; }
+.nav-row .btn-highlight, .nav-row .btn-ink { flex: 1; }
+
+.tasks { padding: 0; }
+.tasks > li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 6px 14px; padding: 20px; border-bottom: 1px solid var(--border); }
+.tasks > li:last-child { border-bottom: 0; }
+.tasks .n { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--ink); color: var(--ink-fg); font: 700 14px var(--font-h); }
+.tasks .body { grid-column: 2; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.tasks h3 { align-self: center; }
+.big-ok { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; background: var(--soft); color: var(--soft-fg); }
+.big-ok svg { width: 30px; height: 30px; }
+
+/* Mis pedidos */
+.feat { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 28px; align-items: center; background: var(--soft); color: var(--soft-fg); border: 0; }
+.feat h2 { font-size: 26px; }
+.feat .bar { height: 8px; border-radius: 4px; background: color-mix(in oklch, var(--soft-fg) 15%, transparent); overflow: hidden; }
+.feat .bar i { display: block; height: 100%; border-radius: 4px; background: var(--ink); }
+.feat .thumbs .thumb { border-color: var(--soft); }
+.feat.warn { background: color-mix(in oklch, var(--highlight) 20%, var(--card)); color: var(--highlight-fg); }
+@media (max-width: 700px) { .feat { grid-template-columns: minmax(0, 1fr); } }
+.past { padding: 0; }
+.past button { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; width: 100%; padding: 14px 20px; border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; }
+.past button:last-child { border-bottom: 0; }
+.past button:hover { background: var(--muted); }
+.past .amt { font: 600 16px var(--font-h); }
+@media (max-width: 600px) { .past button { grid-template-columns: minmax(0, 1fr) auto; } .past .date, .past .chip { grid-column: 1; } .past .amt { grid-row: 1; grid-column: 2; } }
+.sec-t { display: flex; align-items: baseline; justify-content: space-between; margin: 28px 0 12px; }
+
+/* Seguimiento: línea de tiempo vertical */
+.feed { display: grid; grid-template-columns: minmax(0, 1fr); }
+.ev { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; column-gap: 14px; padding-bottom: 22px; }
+.ev:last-child { padding-bottom: 0; }
+.ev:not(:last-child)::before { content: ""; position: absolute; top: 40px; bottom: 0; left: 19px; width: 2px; background: var(--border); }
+.ev.completed:not(:last-child)::before { background: var(--ink); }
+.ev .dot { display: grid; place-items: center; width: 40px; height: 40px; border: 1.5px solid var(--border); border-radius: 50%; background: var(--card); color: var(--muted-fg); }
+.ev.completed .dot { border-color: var(--ink); background: var(--ink); color: var(--ink-fg); }
+.ev.current .dot { border-color: var(--highlight); background: var(--highlight); color: var(--highlight-fg); box-shadow: 0 0 0 5px color-mix(in oklch, var(--highlight) 25%, transparent); }
+.ev .txt { display: grid; gap: 2px; padding-top: 7px; }
+.ev b { font: 600 17px/1.3 var(--font-h); }
+.ev.pending b { color: var(--muted-fg); font-weight: 500; }
+.ev .when { padding-top: 9px; color: var(--muted-fg); font-size: 14px; white-space: nowrap; }
+.ev.current .txt p { color: var(--fg); }
+.ev .aviso { margin-top: 8px; padding: 10px 14px; border-radius: 12px; background: var(--warm); color: var(--warm-fg); font-size: 14px; }
+.grp-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
+.do { background: color-mix(in oklch, var(--highlight) 16%, var(--card)); border-color: color-mix(in oklch, var(--highlight) 45%, var(--border)); }
+.mini { display: grid; gap: 4px; }
+</style>
+</head>
+<body data-variant="b">
+
+<header class="fnav" data-screen="checkout result"><div class="wrap">
+	<a class="logo" href="#">coco</a>
+	<span class="safe"><span data-i="lock"></span>Pago protegido</span>
+	<button class="btn btn-ghost btn-sm" data-set="screen:cart" data-show="screen:checkout"><span data-i="back"></span>Volver a tu pedido</button>
+</div></header>
+
+<main>
+
+<!-- 1 · Tu pedido -->
+<section class="wrap page has-mbar" data-screen="cart">
+	<header class="ph"><span class="eyebrow">Tu pedido</span><h1>Tu pedido de la semana</h1></header>
+	<div class="two">
+		<ul class="card lines" data-r="linesEdit"></ul>
+		<aside class="card sum sticky">
+			<div class="between total" style="border:0;padding:0"><span>Total · <span data-t="count"></span></span><b class="num" data-t="subtotal"></b></div>
+			<div class="box-soft"><b class="num" data-t="transferTotal"></b> pagando por transferencia<p class="small" data-t="saving"></p></div>
+			<button class="btn btn-highlight btn-lg btn-block desk-only" data-set="screen:checkout">Elegir entrega y pago</button>
+			<p class="muted small" style="text-align:center">Cierra el <span data-t="closeFull"></span></p>
+			<button class="link small muted" style="justify-self:center">Vaciar pedido</button>
+		</aside>
+	</div>
+	<div class="mbar"><span class="tot"><b class="num" data-t="subtotal"></b><span class="xs muted" data-t="count"></span></span><button class="btn btn-highlight" data-set="screen:checkout">Elegir entrega y pago</button></div>
+</section>
+
+<!-- 2 · Checkout: tres pasos, una decisión por pantalla -->
+<section data-screen="checkout">
+	<div class="fcol">
+		<nav class="steps" id="b-steps" aria-label="Pasos"></nav>
+		<div class="stack" style="gap:8px">
+			<button class="peek" id="b-peek"><span data-i="bag"></span><span>Tu pedido · <span data-t="count"></span></span><b class="num" data-t="charge"></b><span data-i="down"></span></button>
+			<div class="card sum" data-show="peek:1">
+				<ul class="lines" data-r="lines"></ul>
+				<div class="between"><span>Subtotal</span><span class="num" data-t="subtotal"></span></div>
+				<div class="between save" data-show="pay:transfer"><span>Descuento por transferencia (<span data-t="percent"></span>)</span><span class="num" data-t="discount"></span></div>
+				<div class="between total"><span data-t="totalLabel"></span><b class="num" data-t="charge"></b></div>
+				<button class="link small" style="justify-self:start" data-set="screen:cart">Editar el pedido</button>
+			</div>
+		</div>
+
+		<div class="stack" data-show="step:delivery" style="gap:18px">
+			<div class="stack" style="gap:8px"><h1>¿Cómo lo recibís?</h1><p class="muted">Las dos opciones cuestan lo mismo.</p></div>
+			<div class="tiles">
+				<button class="tile" data-set="mode:home"><span class="ic" data-i="home"></span><b>A domicilio</b><span class="muted small">Te lo llevamos a tu dirección.</span></button>
+				<button class="tile" data-set="mode:pickup"><span class="ic" data-i="shop"></span><b>Punto de retiro</b><span class="muted small">Lo pasás a buscar, en su horario.</span></button>
+			</div>
+			<h3 data-show="mode:home fresh:0">¿A qué dirección?</h3>
+			<div class="opts" data-show="mode:home fresh:0" data-r="addresses"></div>
+			<button class="link small rowx" style="justify-self:start" data-show="mode:home fresh:0 form:0" data-set="form:1"><span data-i="plus"></span>Agregar otra dirección</button>
+			<div class="card stack" data-show="mode:home form:1">
+				<h3>¿A qué dirección?</h3>
+				<div data-r="addressForm"></div>
+				<div class="rowx"><button class="btn btn-ink btn-sm" data-set="form:0">Guardar dirección</button><button class="btn btn-ghost btn-sm" data-set="form:0" data-show="fresh:0">Cancelar</button></div>
+			</div>
+			<h3 data-show="mode:pickup">¿En qué punto?</h3>
+			<div class="opts" data-show="mode:pickup" data-r="points"></div>
+			<button class="btn btn-ink btn-lg desk-only" data-set="step:pay" data-dis="fresh:1 mode:home">Continuar al pago</button>
+		</div>
+
+		<div class="stack" data-show="step:pay" style="gap:18px">
+			<div class="stack" style="gap:8px"><h1>¿Cómo pagás?</h1><p class="muted">Por transferencia tenés <span data-t="percent"></span> de descuento.</p></div>
+			<div class="opts" data-r="pays"></div>
+			<div class="nav-row desk-only"><button class="btn btn-ghost btn-lg" data-set="step:delivery"><span data-i="back"></span>Atrás</button><button class="btn btn-ink btn-lg" data-set="step:confirm">Revisar el pedido</button></div>
+		</div>
+
+		<div class="stack" data-show="step:confirm" style="gap:18px">
+			<h1>Revisá y confirmá</h1>
+			<div class="card review">
+				<div><span><span class="k">Entrega</span><b data-t="deliveryTitle"></b> · <span data-t="deliveryLine"></span><br><span class="muted small" data-t="deliveryRest"></span></span><button class="link small" data-set="step:delivery">Cambiar</button></div>
+				<div><span><span class="k">Pago</span><b data-t="payTitle"></b><br><span class="save small" data-show="pay:transfer" data-t="saving"></span><span class="muted small" data-show="pay:mp">Tarjeta, dinero en cuenta o efectivo</span></span><button class="link small" data-set="step:pay">Cambiar</button></div>
+				<div><span><span class="k" data-t="totalLabel"></span><b class="num" style="font-size:26px" data-t="charge"></b><br><span class="muted small">Cierra el <span data-t="closeFull"></span> · llega 7 a 10 días después</span></span></div>
+			</div>
+			<label class="check"><input type="checkbox" data-bind="terms"><span>Leí y acepto los <button class="link" data-set="sheet:terms">términos del pedido</button>.</span></label>
+			<div class="nav-row desk-only"><button class="btn btn-ghost btn-lg" data-set="step:pay"><span data-i="back"></span>Atrás</button><button class="btn btn-highlight btn-lg" data-set="screen:result" data-dis="terms:0"><span data-t="cta"></span></button></div>
+			<p class="muted small rowx" style="gap:8px"><span data-i="lock"></span><span data-t="ctaHint"></span></p>
+		</div>
+	</div>
+	<div class="mbar" id="b-mbar"></div>
+</section>
+
+<!-- 3 · Confirmación como lista de tareas -->
+<section data-screen="result">
+	<div class="fcol">
+		<div class="stack" data-show="pay:transfer" style="gap:12px;justify-items:start">
+			<span class="big-ok" data-i="check"></span>
+			<h1>Listo, tu pedido está registrado</h1>
+			<p class="muted">Pedido <span class="mono" data-t="code"></span>. Te faltan dos cosas para que entre en la compra de esta semana.</p>
+		</div>
+		<ol class="card tasks" data-show="pay:transfer">
+			<li><span class="n">1</span><h3>Transferí <span class="num" data-t="transferTotal"></span></h3><div class="body"><div data-r="bank"></div><button class="copy" style="justify-self:start" data-copy><span data-i="copy"></span>Copiar todos los datos</button></div></li>
+			<li><span class="n">2</span><h3>Avisanos que transferiste</h3><div class="body" data-r="receipt"></div></li>
+			<li><span class="n" style="background:var(--highlight);color:var(--highlight-fg)">3</span><h3>Nosotros lo verificamos</h3><div class="body"><p class="muted small">Tenés tiempo hasta el <b data-t="closeFull"></b>. Cuando lo verificamos, tu pedido queda confirmado y lo ves en Mis pedidos.</p></div></li>
+		</ol>
+		<div class="stack" data-show="pay:mp" style="gap:12px;justify-items:start">
+			<span data-chip="mp"></span>
+			<h1 data-t="mpTitle"></h1>
+			<p class="muted" data-t="mpText"></p>
+			<p class="muted small">Pedido <span class="mono" data-t="code"></span> · <span class="num" data-t="charge"></span></p>
+		</div>
+		<div class="nav-row" data-show="pay:mp mp:fail"><button class="btn btn-highlight btn-lg" data-set="screen:checkout">Intentar de nuevo</button><button class="btn btn-outline btn-lg" data-set="pay:transfer">Pagar por transferencia</button></div>
+		<div class="nav-row" data-show="mp:!fail"><button class="btn btn-ink btn-lg" data-set="screen:track">Ver mi pedido</button><button class="btn btn-ghost btn-lg">Seguir comprando</button></div>
+		<div class="nav-row" data-show="pay:transfer mp:fail"><button class="btn btn-ink btn-lg" data-set="screen:track">Ver mi pedido</button><button class="btn btn-ghost btn-lg">Seguir comprando</button></div>
+	</div>
+</section>
+
+<!-- 4 · Mis pedidos: lo que está en curso primero -->
+<section class="wrap page" data-screen="orders" style="max-width:920px">
+	<header class="ph"><span class="eyebrow">Mi cuenta</span><h1>Mis pedidos</h1></header>
+	<div id="b-feat"></div>
+	<div class="sec-t"><h2>Anteriores</h2><span class="muted small">Más recientes primero</span></div>
+	<div class="card past" id="b-past"></div>
+</section>
+
+<!-- 5 · Seguimiento -->
+<section class="wrap page" data-screen="track">
+	<header class="ph">
+		<button class="link small muted rowx" data-set="screen:orders" style="justify-self:start;text-decoration:none"><span data-i="back"></span>Mis pedidos</button>
+		<div class="rowx"><span class="eyebrow">Pedido <span data-t="code"></span></span><span data-chip="st"></span></div>
+		<h1 data-t="stTitle"></h1>
+		<p data-t="stText" style="color:var(--fg);font-size:18px"></p>
+	</header>
+	<div class="two">
+		<div class="stack" id="b-journey"></div>
+		<aside class="stack sticky">
+			<div class="card stack do" data-show="scenario:pay pay:transfer">
+				<h2>Lo que falta de tu parte</h2>
+				<div data-r="bank"></div>
+				<hr>
+				<div data-r="receipt"></div>
+			</div>
+			<div class="card stack do" data-show="scenario:pay pay:mp">
+				<h2>Lo que falta de tu parte</h2>
+				<p>Terminá el pago para que tu pedido entre en la compra de esta semana.</p>
+				<button class="btn btn-highlight">Pagar en Mercado Pago</button>
+				<button class="link small" data-set="pay:transfer">Prefiero transferir</button>
+			</div>
+			<div class="card stack">
+				<div class="mini"><span class="eyebrow">Entrega</span><b data-t="deliveryTitle"></b><span data-t="deliveryLine"></span><span class="muted small" data-t="deliveryRest"></span><span class="muted small" data-show="scenario:prep|ship|mixed">¿Querés cambiarla? <button class="link">Escribinos</button>.</span></div>
+				<hr>
+				<div class="mini"><span class="eyebrow">Pago</span><b data-t="payTitle"></b><span class="num"><span data-t="charge"></span><span class="muted small" data-show="scenario:!pay"> · acreditado el 27/11</span><span class="muted small" data-show="scenario:pay"> · todavía no lo recibimos</span></span></div>
+				<hr>
+				<details><summary class="between" style="cursor:pointer"><span class="eyebrow">Productos</span><span class="small" data-t="count"></span></summary><ul class="lines" data-r="lines" style="margin-top:14px"></ul></details>
+			</div>
+			<button class="btn btn-outline btn-block" data-show="scenario:!pay"><span data-i="repeat"></span>Repetir pedido</button>
+		</aside>
+	</div>
+</section>
+
+</main>
+<script src="shared.js"></script>
+<script>
+Object.assign(P.S, { step: "delivery", form: "0", peek: "0" });
+
+P.onSet((key, value) => {
+	if (key === "fresh") Object.assign(P.S, value === "1" ? { step: "delivery", mode: "home", form: "1" } : { form: "0" });
+	if (key === "form" && value === "0" && P.S.fresh === "1") P.S.fresh = "0";
+	if (key === "mode" && value === "home" && P.S.fresh === "1") P.S.form = "1";
+	if (key === "screen" && value === "result") Object.assign(P.S, { scenario: P.S.pay === "mp" && P.S.mp === "ok" ? "prep" : "pay", declared: "0" });
+	if (key === "screen" && value === "checkout") P.S.peek = "0";
+	if (key === "pay" && P.S.screen === "result") Object.assign(P.S, { screen: "checkout", step: "confirm" });
+});
+document.querySelector("#b-peek").addEventListener("click", () => P.set("peek", P.S.peek === "1" ? "0" : "1"));
+
+const ORDER = ["delivery", "pay", "confirm"];
+const LABEL = { delivery: "Entrega", pay: "Pago", confirm: "Confirmar" };
+
+const event = (stage, notices = []) =>
+	`<li class="ev ${stage.status}"><span class="dot">${P.icon(stage.status === "completed" ? "check" : stage.icon)}</span><span class="txt"><b>${stage.label}</b>${stage.status === "pending" ? "" : `<p class="muted small">${stage.desc}</p>`}${notices
+		.map((notice) => `<p class="aviso"><b style="font:inherit;font-weight:700">${notice.label}.</b> ${notice.reason} <span style="opacity:.7">${notice.date}</span></p>`)
+		.join("")}</span><span class="when">${stage.date}</span></li>`;
+const feed = (stages, notices = []) => `<ol class="feed">${stages.map((stage, index) => event(stage, notices.filter((notice) => notice.stage === index))).join("")}</ol>`;
+
+P.onSync((S, T) => {
+	// Pasos
+	const at = ORDER.indexOf(S.step);
+	document.querySelector("#b-steps").innerHTML = ORDER.map(
+		(id, index) => `<button data-set="step:${id}" class="${index < at ? "done" : index === at ? "now" : ""}"${index > at ? " disabled" : ""}>${index + 1} · ${LABEL[id]}</button>`,
+	).join("");
+	document.querySelector("#b-peek").classList.toggle("is-on", S.peek === "1");
+	const primary = {
+		delivery: `<button class="btn btn-ink" data-set="step:pay"${S.fresh === "1" && S.mode === "home" ? " disabled" : ""}>Continuar al pago</button>`,
+		pay: `<button class="btn btn-ink" data-set="step:confirm">Revisar el pedido</button>`,
+		confirm: `<button class="btn btn-highlight" data-set="screen:result"${S.terms === "0" ? " disabled" : ""}>${T.cta}</button>`,
+	}[S.step];
+	document.querySelector("#b-mbar").innerHTML = `<span class="tot"><b class="num">${T.charge}</b><span class="xs muted">Paso ${at + 1} de 3</span></span>${primary}`;
+
+	// Mis pedidos
+	const j = P.journey();
+	const imgs = P.items.slice(0, 3).map((item) => item.img);
+	const names = "Almendra Non Pareil, Nuez mariposa y 2 más";
+	const total = P.money(S.pay === "transfer" ? 69777 : 73450);
+	const past = (o) =>
+		`<button data-set="screen:track"><span class="muted small date">${o.date}</span><span><b style="font-family:var(--font-h)">${o.names}</b></span><span class="chip ${o.tone}">${o.chip}</span><span class="amt num">${P.money(o.total)}</span></button>`;
+	const done = S.scenario === "done";
+	document.querySelector("#b-feat").innerHTML = done
+		? `<div class="box-warm"><b>No tenés pedidos en curso.</b><p class="small">Cuando confirmes uno, lo vas a seguir desde acá.</p></div>`
+		: `<div class="card feat ${S.scenario === "pay" ? "warn" : ""}">
+				<div class="stack" style="gap:10px">
+					<div class="rowx">${P.h.thumbs(imgs, "")}<span class="chip ${T.stTone}" style="background:var(--card)">${T.stChip}</span></div>
+					<h2>${T.stTitle}</h2>
+					<p>${T.stText}</p>
+					${j.mode === "empty" ? "" : `<div class="stack" style="gap:6px"><div class="bar"><i style="width:${((j.cur + 1) / 6) * 100}%"></i></div><span class="small"><b>Etapa ${j.cur + 1} de 6</b> · ${T.stStage}</span></div>`}
+				</div>
+				<div class="stack" style="gap:8px;justify-items:end"><b class="num" style="font:800 26px var(--font-h)">${total}</b><button class="btn btn-ink" data-set="screen:track">${S.scenario === "pay" ? (S.pay === "transfer" ? "Ver datos para transferir" : "Terminar de pagar") : "Ver seguimiento"}</button></div>
+			</div>`;
+	document.querySelector("#b-past").innerHTML =
+		(done ? past({ date: P.order.date, names, tone: "t-ok", chip: "Entregado", total: S.pay === "transfer" ? 69777 : 73450 }) : "") + P.pastOrders.map(past).join("");
+
+	// Seguimiento
+	const el = document.querySelector("#b-journey");
+	if (j.mode === "empty") {
+		el.innerHTML = `<div class="card stack"><h2>Seguimiento del pedido</h2><p class="muted">Empieza cuando acreditamos tu pago. Estas son las etapas que vas a ver:</p>${feed(P.stagesAt(-1))}</div>`;
+	} else if (j.mode === "unified") {
+		el.innerHTML = `<div class="card stack"><h2>Seguimiento del pedido</h2>${feed(j.stages, j.notices)}</div>`;
+	} else {
+		el.innerHTML = j.groups
+			.map(
+				(group) =>
+					`<div class="card"><div class="grp-head">${P.h.thumbs(group.items.map((item) => item.img))}<h3>${group.items.map((item) => item.name).join(", ")}</h3><span class="chip t-go">${group.label}</span></div>${feed(group.stages, group.notices)}</div>`,
+			)
+			.join("");
+	}
+});
+
+P.chrome({
+	screens: [["cart", "1 Tu pedido"], ["checkout", "2 Checkout"], ["result", "3 Confirmación"], ["orders", "4 Mis pedidos"], ["track", "5 Seguimiento"]],
+	focus: ["checkout", "result"],
+});
+// La barra del prototipo va arriba de la cabecera enfocada.
+document.body.prepend(document.querySelector(".proto"));
+</script>
+</body>
+</html>

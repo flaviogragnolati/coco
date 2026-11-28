@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { BUSINESS_TZ, pad2 } from "./date.helpers";
+import { BUSINESS_TZ, getNextClosing, pad2 } from "./date.helpers";
 
 export type WeeklyClosingSchedule = {
 	/** 0 = domingo … 6 = sábado, the `Date#getDay` convention. */
@@ -126,6 +126,38 @@ export function formatTimeUntilClosing(now: Date, closing: Date) {
 		return minuteCount > 0 ? `${base} ${minuteCount} min` : base;
 	}
 	return remaining(minuteCount, "min");
+}
+
+/**
+ * "4 d 20 h", "3 h 15 min", "12 min": the countdown the order page shows in
+ * large type, always the two largest units. "menos de 1 min" at the end.
+ */
+export function formatClosingCountdown(now: Date, closing: Date) {
+	const { days: d, hours: h, minutes: m } = splitTimeUntilClosing(now, closing);
+	if (d > 0) return `${d} d ${h} h`;
+	if (h > 0) return `${h} h ${m} min`;
+	return m > 0 ? `${m} min` : "menos de 1 min";
+}
+
+/**
+ * Whether an order still belongs to the closing that comes next: it was
+ * confirmed after the previous one and has not moved past "Pedido confirmado"
+ * (a later stage means its purchase already started). Read from the order's
+ * own date, so it holds when an admin moves the closing. Informative only, like
+ * the weekly closing itself: whether a transfer verified after the closing
+ * still joins is an Operations decision (QA #127), so callers never promise it.
+ */
+export function orderJoinsNextClosing(input: {
+	orderCreatedAt: Date;
+	now: Date;
+	schedule: WeeklyClosingSchedule;
+	stageKey: string | null;
+}) {
+	if (input.stageKey !== null && input.stageKey !== "submitted") return false;
+	const joins = getNextClosing(input.orderCreatedAt, input.schedule);
+	return (
+		joins.getTime() === getNextClosing(input.now, input.schedule).getTime()
+	);
 }
 
 /** "Los pedidos cierran los miércoles al mediodía y llegan en 7 a 10 días."; any time but 12:00 reads "a las 18:30". */

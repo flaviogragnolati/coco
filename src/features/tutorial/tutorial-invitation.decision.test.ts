@@ -56,7 +56,7 @@ describe("shouldShowTutorialInvitation", () => {
 		"/products",
 		"/my-orders",
 		"/my-orders/3",
-		"/cart",
+		"/cartx",
 		"/checkoutx",
 		"/loginx",
 	])("shows on %s", (pathname) => {
@@ -66,6 +66,7 @@ describe("shouldShowTutorialInvitation", () => {
 	it.each([
 		"/login",
 		"/login/callback",
+		"/cart",
 		"/checkout",
 		"/checkout/mercadopago/success",
 		"/checkout/mercadopago/failure",

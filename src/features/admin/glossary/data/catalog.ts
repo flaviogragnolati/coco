@@ -24,7 +24,7 @@ export const catalogGlossaryEntries: GlossaryEntry[] = [
 		label: "Destacado",
 		term: "Featured item",
 		definition:
-			"Una entrada de la sección Destacados de la home: un producto vigente o un combo. El administrador arma la lista en el orden que quiere, y el ranking de ofertas completa con productos los lugares libres, salvo que se apague. Un combo destacado trae a todo su grupo en una sola tarjeta. Lo que no tiene precio no se muestra: un producto sin términos vigentes o un combo sin ningún producto disponible se saltean. El título de la sección es fijo.",
+			"Una entrada de la sección Destacados de la home: un producto vigente o un combo. El administrador arma la lista en el orden que quiere, y el ranking de ofertas completa con productos los lugares libres, salvo que se apague. Un combo destacado trae a todo su grupo en una sola tarjeta. Lo que no tiene precio no se muestra: un producto sin términos vigentes o un combo sin ningún producto disponible se saltean. La sección tiene tantos lugares como fija el administrador; las entradas de la lista que pasan ese número no se muestran hasta que se sumen lugares o se quiten otras de arriba, y el admin las marca «No entra». El título de la sección es fijo.",
 		aliases: [
 			"Oferta destacada",
 			"Oferta fijada",

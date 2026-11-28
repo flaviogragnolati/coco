@@ -13,7 +13,7 @@ type TransferField = {
 	mono?: boolean;
 };
 
-function buildTransferFields(
+export function buildTransferFields(
 	instructions: ExternalPaymentInstructions,
 ): TransferField[] {
 	const accountFields: {
@@ -103,4 +103,13 @@ export function ExternalPaymentDetails({
 			) : null}
 		</div>
 	);
+}
+
+/** Every transfer field as "Label: value" lines, for "Copiar todo". */
+export function formatTransferFields(
+	instructions: ExternalPaymentInstructions,
+) {
+	return buildTransferFields(instructions)
+		.map((field) => `${field.label}: ${field.copyValue}`)
+		.join("\n");
 }

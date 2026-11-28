@@ -5,7 +5,6 @@
  * whole scene state and going back is just a lower index. No React, no I/O.
  */
 
-import type { CheckoutStepId } from "~/app/(storefront)/checkout/_components/checkout-steps";
 import type { UserTrackingStageKey } from "~/shared/common/tracking-display";
 
 export type TutorialVersion = "rapido" | "completo";
@@ -28,11 +27,11 @@ export const TUTORIAL_TARGETS = [
 	"mini-cart",
 	"cart-lines",
 	"cart-summary",
-	"checkout-stepper",
-	"checkout-delivery",
-	"checkout-payment",
-	"checkout-review",
-	"checkout-result",
+	"cart-finish",
+	"finish-delivery",
+	"finish-payment",
+	"finish-confirm",
+	"order-arrival",
 	"my-orders-list",
 	"order-journey",
 ] as const;
@@ -56,11 +55,14 @@ export type TutorialScene =
 	| { id: "home" }
 	/** `added`: the first product is in the order and the mini-cart is open. */
 	| { id: "catalog"; added: boolean }
-	| { id: "cart" }
-	| { id: "checkout"; step: CheckoutStepId }
-	| { id: "checkoutResult" }
+	/**
+	 * The order page (ADR 0015): as a guest, or signed in with the "Finalizar"
+	 * panel and, when `sheet` is set, its delivery or payment sheet open.
+	 */
+	| { id: "cart"; signedIn: boolean; sheet: "delivery" | "payment" | null }
 	| { id: "myOrders" }
-	| { id: "orderDetail"; journey: TutorialJourneyPoint };
+	/** `arrival`: back from Mercado Pago, with the arrival banner. */
+	| { id: "orderDetail"; journey: TutorialJourneyPoint; arrival?: "mp" };
 
 export type TutorialSceneId = TutorialScene["id"];
 
@@ -76,16 +78,16 @@ export const targetsByScene: Record<
 		"product-purchase",
 		"mini-cart",
 	],
-	cart: ["cart-lines", "cart-summary"],
-	checkout: [
-		"checkout-stepper",
-		"checkout-delivery",
-		"checkout-payment",
-		"checkout-review",
+	cart: [
+		"cart-lines",
+		"cart-summary",
+		"cart-finish",
+		"finish-delivery",
+		"finish-payment",
+		"finish-confirm",
 	],
-	checkoutResult: ["checkout-result"],
 	myOrders: ["my-orders-list"],
-	orderDetail: ["order-journey"],
+	orderDetail: ["order-journey", "order-arrival"],
 };
 
 export type TutorialStep = {
@@ -102,7 +104,8 @@ export type TutorialStep = {
 const home = { id: "home" } as const;
 const catalog = { id: "catalog", added: false } as const;
 const catalogAdded = { id: "catalog", added: true } as const;
-const cart = { id: "cart" } as const;
+const cart = { id: "cart", signedIn: false, sheet: null } as const;
+const finish = { id: "cart", signedIn: true, sheet: null } as const;
 
 const steps = {
 	intro: {
@@ -158,50 +161,50 @@ const steps = {
 		id: "cart-summary",
 		scene: cart,
 		target: "cart-summary",
-		title: "Listo para pagar",
-		body: "Acá ves el total estimado y, debajo, cuánto pagás si elegís transferencia. Para pagar te pedimos ingresar con tu cuenta de Google.",
+		title: "Listo para finalizar",
+		body: "Acá ves el total y, debajo, cuánto pagás si elegís transferencia. Para finalizar te pedimos ingresar con tu cuenta de Google.",
 	},
-	checkoutSteps: {
-		id: "checkout-steps",
-		scene: { id: "checkout", step: "order" },
-		target: "checkout-stepper",
-		title: "Cuatro pasos",
-		body: "Pedido, Entrega, Pago y Confirmar. Podés volver a cualquier paso antes de confirmar.",
+	finish: {
+		id: "finish",
+		scene: finish,
+		target: "cart-finish",
+		title: "Finalizás en la misma pantalla",
+		body: "Con tu cuenta, al lado de tus productos elegís la entrega y el pago. Hasta que confirmás, podés seguir cambiando cantidades.",
 	},
-	checkoutDelivery: {
-		id: "checkout-delivery",
-		scene: { id: "checkout", step: "delivery" },
-		target: "checkout-delivery",
+	finishDelivery: {
+		id: "finish-delivery",
+		scene: { id: "cart", signedIn: true, sheet: "delivery" },
+		target: "finish-delivery",
 		title: "Cómo lo recibís",
 		body: "Te lo llevamos a tu dirección o lo retirás en un punto de retiro. Las dos opciones cuestan lo mismo.",
 	},
-	checkoutPayment: {
-		id: "checkout-payment",
-		scene: { id: "checkout", step: "payment" },
-		target: "checkout-payment",
+	finishPayment: {
+		id: "finish-payment",
+		scene: { id: "cart", signedIn: true, sheet: "payment" },
+		target: "finish-payment",
 		title: "Cómo pagás",
-		body: "Con Mercado Pago pagás con tarjeta, dinero en cuenta o efectivo. Si preferís transferir, elegí pago externo: ves el total con el descuento y te damos los datos al confirmar.",
+		body: "Con Mercado Pago pagás con tarjeta, dinero en cuenta o efectivo. Por transferencia ves el total con el descuento y te damos los datos al confirmar.",
 	},
-	checkoutReview: {
-		id: "checkout-review",
-		scene: { id: "checkout", step: "review" },
-		target: "checkout-review",
-		title: "Confirmás y pagás",
-		body: "Revisás todo, aceptás los términos y pagás. Al confirmar, los precios y las cantidades quedan fijos.",
+	finishConfirm: {
+		id: "finish-confirm",
+		scene: finish,
+		target: "finish-confirm",
+		title: "Confirmás",
+		body: "Aceptás los términos y confirmás. Desde ese momento los precios y las cantidades quedan fijos.",
 	},
-	paymentApproved: {
-		id: "payment-approved",
-		scene: { id: "checkoutResult" },
-		target: "checkout-result",
-		title: "Pago aprobado",
-		body: "Tu pedido quedó confirmado. Desde ahora lo seguís en Mis pedidos.",
+	orderArrival: {
+		id: "order-arrival",
+		scene: { id: "orderDetail", journey: "submitted", arrival: "mp" },
+		target: "order-arrival",
+		title: "Volvés a tu pedido",
+		body: "Después de pagar caés en tu pedido, ya confirmado. Si elegiste transferencia, ahí mismo ves los datos para transferir.",
 	},
 	myOrders: {
 		id: "my-orders",
 		scene: { id: "myOrders" },
 		target: "my-orders-list",
 		title: "Mis pedidos",
-		body: "Acá están todos tus pedidos con su estado.",
+		body: "Acá están todos tus pedidos con su estado. Al lado ves el que abriste.",
 	},
 	journeyOverview: {
 		id: "journey-overview",
@@ -232,7 +235,7 @@ const journeySteps: TutorialStep[] = [
 		id: "journey-supplier",
 		scene: { id: "orderDetail", journey: "supplier" },
 		target: "order-journey",
-		title: "Proveedor",
+		title: "Compra al proveedor",
 		body: "Le compramos al proveedor la cantidad total. El pedido sale desde origen, muchas veces desde otra provincia.",
 	},
 	{
@@ -246,7 +249,7 @@ const journeySteps: TutorialStep[] = [
 		id: "journey-shipping",
 		scene: { id: "orderDetail", journey: "shipping" },
 		target: "order-journey",
-		title: "Envío",
+		title: "En viaje",
 		body: "El camión cruza a Chile, atraviesa el Estrecho de Magallanes en balsa, vuelve a la Argentina y cruza la cordillera hasta Ushuaia.",
 	},
 	{
@@ -267,10 +270,10 @@ export const tutorialScripts: Record<TutorialVersion, TutorialStep[]> = {
 		steps.stepPrice,
 		steps.miniCart,
 		steps.cartSummary,
-		steps.checkoutSteps,
-		steps.checkoutDelivery,
-		steps.checkoutPayment,
-		steps.paymentApproved,
+		steps.finish,
+		steps.finishDelivery,
+		steps.finishPayment,
+		steps.orderArrival,
 		steps.myOrders,
 		steps.journeyOverview,
 		{
@@ -291,11 +294,11 @@ export const tutorialScripts: Record<TutorialVersion, TutorialStep[]> = {
 		steps.miniCart,
 		steps.cartEdit,
 		steps.cartSummary,
-		steps.checkoutSteps,
-		steps.checkoutDelivery,
-		steps.checkoutPayment,
-		steps.checkoutReview,
-		steps.paymentApproved,
+		steps.finish,
+		steps.finishDelivery,
+		steps.finishPayment,
+		steps.finishConfirm,
+		steps.orderArrival,
 		steps.myOrders,
 		...journeySteps,
 		{

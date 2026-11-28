@@ -1,27 +1,10 @@
-import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { CheckoutClient } from "~/app/(storefront)/checkout/_components/checkout-client";
-import { assertActiveUser } from "~/server/auth/auth.utils";
-import { getSession } from "~/server/better-auth/server";
-
-export const metadata: Metadata = {
-	title: "Checkout | CoCo",
-	description: "Confirmá dirección, pago y resumen de tu pedido.",
-};
-
-export default async function CheckoutPage() {
-	const session = await getSession();
-
-	if (!session?.user) {
-		redirect("/login?callbackURL=/checkout");
-	}
-
-	try {
-		assertActiveUser(session.user);
-	} catch {
-		redirect("/?auth=inactive");
-	}
-
-	return <CheckoutClient />;
+/**
+ * There is no checkout screen any more: the customer finishes on the order
+ * page (ADR 0015). Old links and bookmarks land there. The Mercado Pago return
+ * pages under `/checkout/mercadopago` are separate routes and stay.
+ */
+export default function CheckoutPage() {
+	redirect("/cart");
 }

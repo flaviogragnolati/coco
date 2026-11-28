@@ -455,3 +455,5 @@ Revisión manual, a 390 px y 1280 px: home, `/como-funciona`, `/my-orders`, `/ca
 **Revisión con sesión (base local, usuarios del seed):** `/my-orders` muestra el rótulo con punto y el título de storefront, sin scroll horizontal a 390 ni a 1280 px. `/admin/products` muestra el rótulo y el título del admin. A 1280 px desborda 146 px, pero lo causa la tabla del CRUD y no `PageHeader` (ocultando la tabla el desborde desaparece); `crud-table.tsx` cambió por última vez en `346854f`, fuera de este plan. Las sesiones de prueba se borraron.
 
 **Pendientes:** P1 y P2 de §11 (siguen abiertas). Fuera de alcance: el desborde de la tabla en `/admin/products` a 1280 px.
+
+**Actualización (27/11/2026):** el desborde de `/admin/products` a 1280 px quedó resuelto por T0.1 de `docs/plans/admin-destacados-preview-y-carritos.md`. La causa era que `SidebarInset`, el `<main>` del shell, no tenía `min-w-0`. Verificado con sesión en la base local: `scrollWidth` = 1280. Commit `71f8bd6`.

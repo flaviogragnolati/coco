@@ -55,6 +55,12 @@ export function readSnapshotProduct(snapshot: unknown): {
 	};
 }
 
+/** The photo the cart showed for this product, if the snapshot kept one. */
+export function readSnapshotImageUrl(snapshot: unknown): string | null {
+	const imageUrl = asRecord(asRecord(snapshot)?.product)?.imageUrl;
+	return typeof imageUrl === "string" && imageUrl.length > 0 ? imageUrl : null;
+}
+
 function asDecimalString(value: unknown): string | null {
 	if (typeof value === "string") return value;
 	if (typeof value === "number") return String(value);

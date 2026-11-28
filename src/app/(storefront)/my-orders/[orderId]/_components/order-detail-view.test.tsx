@@ -5,7 +5,7 @@ import { buildTutorialFixtures } from "~/features/tutorial/tutorial-fixtures";
 import { OrderDetailView } from "./order-detail-view";
 
 it("shows the payment that paid the order after an older Mercado Pago attempt is approved", () => {
-	const { order } = buildTutorialFixtures(
+	const { order, journeyItems } = buildTutorialFixtures(
 		new Date("2026-11-13T12:00:00.000Z"),
 	).orderDetail("delivered");
 	const paid = order.transactions[0];
@@ -27,7 +27,7 @@ it("shows the payment that paid the order after an older Mercado Pago attempt is
 	};
 	const html = renderToStaticMarkup(
 		<OrderDetailView
-			journeyView={{ mode: "empty" }}
+			journeyItems={journeyItems}
 			order={{ ...order, transactions: [cancelledTransfer, paid] }}
 		/>,
 	);

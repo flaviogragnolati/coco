@@ -155,7 +155,7 @@ test("a deep link opens its step and an unsafe return path falls back home", asy
 }) => {
 	await page.goto("/tutorial?version=completo&paso=19&volver=//evil.com");
 	await expect(counter(page)).toHaveText("19 / 21");
-	await expect(page.getByRole("heading", { name: "Envío" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "En viaje" })).toBeVisible();
 	await page
 		.getByRole("button", { name: "Salir del tutorial" })
 		.first()
@@ -187,11 +187,12 @@ test("the order and the payment step show what paying by transfer would cost", a
 		page.getByText(/Con transferencia: \$\s?31\.410/).first(),
 	).toBeVisible();
 
+	// The payment sheet compares what each method charges.
 	await page.goto("/tutorial?version=rapido&paso=8");
 	await expect(counter(page)).toHaveText("8 / 12");
-	await expect(
-		page.getByText(/\$\s?31\.410 con 10 % de descuento/).first(),
-	).toBeVisible();
+	const sheet = page.locator('[data-tutorial-target="finish-payment"]');
+	await expect(sheet.getByText(/^\$\s?31\.410$/)).toBeVisible();
+	await expect(sheet.getByText(/Ahorrás \$\s?3\.490/)).toBeVisible();
 });
 
 test("the order detail shows the price paid per unit and no repeat button", async ({

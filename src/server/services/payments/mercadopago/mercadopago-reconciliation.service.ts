@@ -17,6 +17,7 @@ import {
 } from "~/server/services/payments/payment.data";
 import { submitOrderForCompletedPayment } from "../order-submission.service";
 import { MERCADOPAGO_PROVIDER } from "./mercadopago-config.service";
+import { parseMercadoPagoExternalReference } from "./mercadopago-preference.decision";
 import {
 	assessMercadoPagoPaymentAmounts,
 	isMercadoPagoAmountFailureCode,
@@ -37,18 +38,11 @@ function formatReconciliationError(error: unknown) {
 	return "Error desconocido al reconciliar el pago de Mercado Pago.";
 }
 
-function extractTransactionIdFromReference(reference: unknown) {
-	if (typeof reference !== "string") return null;
-	const match = /^user_transaction:(\d+)$/.exec(reference);
-	if (!match?.[1]) return null;
-	return Number(match[1]);
-}
-
 async function findAttemptForPayment(
 	tx: Prisma.TransactionClient,
 	payment: Awaited<ReturnType<Payment["get"]>>,
 ) {
-	const fromReference = extractTransactionIdFromReference(
+	const fromReference = parseMercadoPagoExternalReference(
 		payment.external_reference,
 	);
 

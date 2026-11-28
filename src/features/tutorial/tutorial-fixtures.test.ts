@@ -2,11 +2,14 @@ import { existsSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 import { toOfferPricing } from "~/features/catalog/purchase-panel";
+import {
+	EMPTY_FINISH_DRAFT,
+	resolveFinishSelection,
+} from "~/features/checkout/finish-order";
 import { getOfferHeadlinePrice } from "~/features/home/home-formatters";
 import { cartSnapshotSchema } from "~/schemas/cart.schemas";
 import { catalogProductListOutputSchema } from "~/schemas/catalog.schemas";
 import {
-	checkoutPaymentResultSchema,
 	checkoutStateSchema,
 	orderDetailSchema,
 	orderListOutputSchema,
@@ -61,9 +64,6 @@ describe("tutorial fixtures match the real output schemas", () => {
 		expect(() =>
 			checkoutStateSchema.parse(fixtures.checkoutState),
 		).not.toThrow();
-		expect(() =>
-			checkoutPaymentResultSchema.parse(fixtures.paymentResult),
-		).not.toThrow();
 		expect(() => orderListOutputSchema.parse(fixtures.orderList)).not.toThrow();
 	});
 
@@ -102,7 +102,9 @@ describe("tutorial fixture amounts", () => {
 		expect(total).toEqual({ currency: "ARS", amount: "34900.00" });
 		expect(plain(formatCurrency(total?.amount ?? "", "ARS"))).toBe("$ 34.900");
 		expect(fixtures.checkoutState.cart.totals).toEqual(fixtures.cart.totals);
-		expect(fixtures.paymentResult.transaction.amount).toBe("34900.00");
+		expect(
+			fixtures.orderDetail("submitted").order.transactions[0]?.amount,
+		).toBe("34900.00");
 		expect(fixtures.orderList[0]?.totalAmount).toBe("34900.00");
 		expect(fixtures.orderDetail("shipping").order.totalAmount).toBe("34900.00");
 	});
@@ -119,8 +121,11 @@ describe("tutorial fixture amounts", () => {
 		expect(fixtures.checkoutState.transferDiscountPercent).toBe(
 			TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
 		);
-		expect(fixtures.paymentResult.transaction).toMatchObject({
+		expect(
+			fixtures.orderDetail("submitted").order.transactions[0],
+		).toMatchObject({
 			amount: "34900.00",
+			provider: "mercadopago",
 			transferDiscountAmount: null,
 		});
 	});
@@ -142,9 +147,15 @@ describe("tutorial fixture amounts", () => {
 		).toEqual(["Almendra Non Pareil"]);
 	});
 
-	it("checkout picks home delivery and Mercado Pago, the only path shown", () => {
-		expect(fixtures.deliverySelection.mode).toBe("homeDelivery");
+	it("the order page starts on home delivery and Mercado Pago, the path shown", () => {
+		const selection = resolveFinishSelection(
+			fixtures.checkoutState,
+			EMPTY_FINISH_DRAFT,
+		);
+		expect(selection.deliveryMode).toBe("homeDelivery");
+		expect(selection.paymentMethod).toEqual(fixtures.paymentMethod);
 		expect(fixtures.paymentMethod.provider).toBe("mercadopago");
+		expect(fixtures.checkoutState.cart.status).toBe("pending");
 		expect(
 			fixtures.checkoutState.paymentMethods.map((method) => method.provider),
 		).toEqual(["mercadopago", "external"]);

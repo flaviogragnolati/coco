@@ -2,6 +2,15 @@
 
 > **Status:** Implemented 2026-11-06 (see Execution record), commit `550a414` on `main`; migration applied. Feature grill 2026-11-06. Decisions confirmed by Flavio.
 
+> **Amended by `docs/plans/checkout-en-tu-pedido-y-seguimiento.md` (27/11/2026, phase 6).** The
+> checkout scenes are gone. The walk-through finishes on Tu pedido: scene `cart` is
+> `{ signedIn, sheet }` (guest total, the signed-in "Finalizar" panel, its delivery and payment
+> sheets), and `orderDetail` takes `arrival: "mp"` for the return from Mercado Pago. Targets
+> `checkout-stepper`, `checkout-delivery`, `checkout-payment`, `checkout-review` and
+> `checkout-result` became `cart-finish`, `finish-delivery`, `finish-payment`, `finish-confirm`
+> and `order-arrival`. Both versions keep 12 and 21 steps. The invitation also waits on `/cart`.
+> The task details below describe the original build.
+
 ## 1. Objective & outcome
 
 - **Done means:**

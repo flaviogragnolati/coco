@@ -2,8 +2,6 @@ import type { TutorialFixtures } from "~/features/tutorial/tutorial-fixtures";
 import type { TutorialScene as TutorialSceneState } from "~/features/tutorial/tutorial-script";
 import { CartScene } from "./scenes/cart-scene";
 import { CatalogScene } from "./scenes/catalog-scene";
-import { CheckoutResultScene } from "./scenes/checkout-result-scene";
-import { CheckoutScene } from "./scenes/checkout-scene";
 import { HomeScene } from "./scenes/home-scene";
 import { MyOrdersScene } from "./scenes/my-orders-scene";
 import { OrderDetailScene } from "./scenes/order-detail-scene";
@@ -21,19 +19,27 @@ export function TutorialScene({
 		case "catalog":
 			return <CatalogScene added={scene.added} fixtures={fixtures} />;
 		case "cart":
-			return <CartScene fixtures={fixtures} />;
-		case "checkout":
-			return <CheckoutScene fixtures={fixtures} step={scene.step} />;
-		case "checkoutResult":
-			return <CheckoutResultScene fixtures={fixtures} />;
+			return (
+				<CartScene
+					fixtures={fixtures}
+					sheet={scene.sheet}
+					signedIn={scene.signedIn}
+				/>
+			);
 		case "myOrders":
 			return <MyOrdersScene fixtures={fixtures} />;
 		case "orderDetail":
-			return <OrderDetailScene fixtures={fixtures} journey={scene.journey} />;
+			return (
+				<OrderDetailScene
+					arrival={scene.arrival}
+					fixtures={fixtures}
+					journey={scene.journey}
+				/>
+			);
 	}
 }
 
-/** What the simulated navbar shows: a guest until checkout, an empty order after paying. */
+/** What the simulated navbar shows: a guest until finishing, an empty order after paying. */
 export function navbarStateFor(
 	scene: TutorialSceneState,
 	fixtures: TutorialFixtures,
@@ -47,12 +53,7 @@ export function navbarStateFor(
 				signedIn: false,
 			};
 		case "cart":
-			return { cartCount: fixtures.cart.itemCount, signedIn: false };
-		case "checkout":
-			return {
-				cartCount: fixtures.checkoutState.cart.itemCount,
-				signedIn: true,
-			};
+			return { cartCount: fixtures.cart.itemCount, signedIn: scene.signedIn };
 		default:
 			return { cartCount: 0, signedIn: true };
 	}

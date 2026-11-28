@@ -6,11 +6,11 @@
  * derive from `now` only, so the server and the browser render the same text.
  */
 
-import type { CheckoutDeliverySelection } from "~/app/(storefront)/checkout/_components/checkout-delivery-step";
 import { toOrderJourneyItemInputs } from "~/app/(storefront)/my-orders/[orderId]/_components/order-detail-view";
 import { catalogProductToCartItem } from "~/features/cart/cart-mappers";
 import {
 	buildCustomerOrderJourneyView,
+	type CustomerOrderJourneyItemInput,
 	type CustomerOrderJourneyView,
 } from "~/features/tracking/customer-order-journey";
 import { weeklyClosingScheduleSchema } from "~/schemas/weekly-closing.schemas";
@@ -22,7 +22,6 @@ import type {
 import type {
 	CheckoutAddress,
 	CheckoutPaymentMethod,
-	CheckoutPaymentResult,
 	CheckoutState,
 	OrderDetail,
 	OrderListOutput,
@@ -259,6 +258,7 @@ const CART_CODE = "EJEMPLO-ARMADO";
 export type TutorialOrderDetail = {
 	order: OrderDetail;
 	timelines: UserOrderItemTimeline[];
+	journeyItems: CustomerOrderJourneyItemInput[];
 	journeyView: CustomerOrderJourneyView;
 };
 
@@ -268,10 +268,10 @@ export type TutorialFixtures = {
 	featuredProduct: CatalogProductListItem;
 	cartAfterFirstAdd: CartSnapshot;
 	cart: CartSnapshot;
+	/** What the signed-in order page chooses from, before confirming. */
 	checkoutState: CheckoutState;
-	deliverySelection: CheckoutDeliverySelection;
+	/** The method the walk-through pays with: the first one offered. */
 	paymentMethod: CheckoutPaymentMethod;
-	paymentResult: CheckoutPaymentResult;
 	orderList: OrderListOutput;
 	orderDetail: (journey: TutorialJourneyPoint) => TutorialOrderDetail;
 };
@@ -347,15 +347,17 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 	const guestCart = { id: null, code: null, status: null };
 	const cartAfterFirstAdd = buildCartSnapshot([firstItem], guestCart);
 	const cart = buildCartSnapshot(cartItems, guestCart);
+	// Signed in and still editable: the cart freezes only on confirming (ADR 0015).
 	const checkoutCart = buildCartSnapshot(cartItems, {
 		id: ids.cart,
 		code: CART_CODE,
-		status: "atCheckout",
+		status: "pending",
 	});
 	const total = checkoutCart.totals[0];
 	if (!total) throw new Error("Tutorial cart has no total");
 
 	const orderedAt = new Date(now.getTime() - DAY_MS);
+	const itemNames = cartItems.map((item) => item.product.name);
 
 	const orderList: OrderListOutput = [
 		{
@@ -365,36 +367,13 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 			createdAt: orderedAt,
 			updatedAt: orderedAt,
 			itemCount: cartItems.length,
+			itemNames,
 			totalAmount: total.amount,
 			currency: total.currency,
 			latestTransactionStatus: "completed",
+			receiptDeclared: false,
 		},
 	];
-
-	const paymentResult: CheckoutPaymentResult = {
-		status: "succeeded",
-		message: "Mercado Pago aprobó el pago y tu pedido quedó confirmado.",
-		order: { id: ids.order, code: ORDER_CODE, status: "processing" },
-		transaction: {
-			id: ids.transaction,
-			status: "completed",
-			amount: total.amount,
-			currency: total.currency,
-			provider: "mercadopago",
-			externalTransactionId: "MP-EJEMPLO",
-			failureCode: null,
-			failureMessage: null,
-			subtotalAmount: null,
-			transferDiscountPercent: null,
-			transferDiscountAmount: null,
-		},
-		redirectUrl: null,
-		externalPayment: null,
-		deliveryPreference: "homeDelivery",
-		shippingAddress: address,
-		pickupPoint: null,
-		paymentMethod: mercadoPago,
-	};
 
 	const orderDetail = (journey: TutorialJourneyPoint): TutorialOrderDetail => {
 		const delivered = journey === "delivered";
@@ -405,9 +384,11 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 			createdAt: submittedAt,
 			updatedAt: now,
 			itemCount: cartItems.length,
+			itemNames,
 			totalAmount: total.amount,
 			currency: total.currency,
 			latestTransactionStatus: "completed",
+			receiptDeclared: false,
 			status: delivered ? "completed" : "processing",
 			cartCode: CART_CODE,
 			billingAddressSnapshot: null,
@@ -449,12 +430,12 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 			],
 		};
 		const timelines = buildTimelines(cartItems, journey, now);
+		const journeyItems = toOrderJourneyItemInputs(order, timelines);
 		return {
 			order,
 			timelines,
-			journeyView: buildCustomerOrderJourneyView(
-				toOrderJourneyItemInputs(order, timelines),
-			),
+			journeyItems,
+			journeyView: buildCustomerOrderJourneyView(journeyItems),
 		};
 	};
 
@@ -465,15 +446,15 @@ export function buildTutorialFixtures(now: Date): TutorialFixtures {
 		cart,
 		checkoutState: {
 			cart: checkoutCart,
+			// The walk-through is still choosing: nothing confirmed yet.
+			liveOrder: null,
 			addresses: [address],
 			pickupPoints: [pickupPoint],
 			paymentMethods: [mercadoPago, externalPayment],
 			termsText: TERMS_TEXT,
 			transferDiscountPercent: TUTORIAL_TRANSFER_DISCOUNT_PERCENT,
 		},
-		deliverySelection: { mode: "homeDelivery", address },
 		paymentMethod: mercadoPago,
-		paymentResult,
 		orderList,
 		orderDetail,
 	};

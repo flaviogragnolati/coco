@@ -7,6 +7,25 @@ This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3
 - [Schema foundation reference](docs/schema-reference.md) - canonical domain and workflow reference derived from `prisma/schema.prisma`
 - [Mercado Pago sandbox enablement](docs/plans/mercadopago-checkout-pro-sandbox-enablement.md) - Checkout Pro configuration and validation plan
 
+## End-to-end tests
+
+The Playwright suite (`pnpm test:e2e`) expects a database loaded with the e2e
+seed: `e2e/home-combo.spec.ts`, for one, looks for the seed's
+"Combo desayuno (e2e)". Run it against a disposable local Postgres, never the
+shared QA database, passing the connection only to these commands so `.env`
+stays untouched:
+
+```bash
+export DATABASE_URL="postgresql://postgres:<password>@localhost:5433/coco_e2e"
+export APP_ENV=development
+pnpm exec prisma db push   # bring the local schema up to date
+pnpm db:seed:test          # reset and seed it
+pnpm test:e2e
+```
+
+Stop any dev server on port 3000 first: Playwright reuses a running one, which
+would still point at the database from `.env`.
+
 ## Mercado Pago Checkout Pro
 
 Checkout Pro uses server-only credentials. Prefer
@@ -102,8 +121,8 @@ response is lost, confirming again retrieves the known preference, or searches
 by the attempt's external reference and fetches its detail. It resumes only one
 unexpired preference whose reference, amount and currency match. An absent or
 ambiguous search leaves the attempt pending and creates no replacement
-preference. After expiry, reload checkout to confirm a new attempt on the same
-order. A legacy attempt without a saved expiry and without a recoverable
+preference. After expiry, confirm again from Tu pedido (`/cart`) to open a new
+attempt on the same order. A legacy attempt without a saved expiry and without a recoverable
 preference needs administrative investigation; this change does not invent its
 deadline. Recovery never approves a payment.
 

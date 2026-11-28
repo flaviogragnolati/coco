@@ -3,7 +3,7 @@
  * date, entirely client-side over the full list `orders.listMine` already
  * returns. No React, no I/O — unit-tested in `order-list-view.test.ts`.
  *
- * Mirrors the pure-model shape of the checkout's `checkout-steps.ts`.
+ * Mirrors the pure-model shape of `src/features/checkout/finish-order.ts`.
  */
 
 import type { OrderListItem } from "~/shared/common/checkout.types";
@@ -62,4 +62,17 @@ export function countOrdersByFilter(
 	}
 
 	return counts;
+}
+
+/**
+ * What an order row is called: its products, not its code. "Almendra",
+ * "Almendra y Nuez", "Almendra, Nuez y Dátil", "Almendra, Nuez y 2 más".
+ */
+export function formatOrderItemNames(names: readonly string[]) {
+	const [first, second, third] = names;
+	if (!first) return "Sin productos";
+	if (!second) return first;
+	if (names.length === 2) return `${first} y ${second}`;
+	if (names.length === 3) return `${first}, ${second} y ${third}`;
+	return `${first}, ${second} y ${names.length - 2} más`;
 }

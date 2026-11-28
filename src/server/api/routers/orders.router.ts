@@ -4,6 +4,8 @@ import {
 	orderDetailSchema,
 	orderGetInputSchema,
 	orderListOutputSchema,
+	orderPaymentReturnInputSchema,
+	orderPaymentReturnSchema,
 } from "~/schemas/checkout.schemas";
 import {
 	repeatOrderInputSchema,
@@ -26,6 +28,14 @@ export const ordersRouter = createTRPCRouter({
 		.output(orderDetailSchema)
 		.query(({ ctx, input }) => {
 			return checkoutService.getMine(ctx.session.user.id, input.id);
+		}),
+
+	/** Where a Mercado Pago return page sends the customer (ADR 0015). */
+	resolvePaymentReturn: protectedProcedure
+		.input(orderPaymentReturnInputSchema)
+		.output(orderPaymentReturnSchema)
+		.query(({ ctx, input }) => {
+			return checkoutService.resolvePaymentReturn(ctx.session.user.id, input);
 		}),
 
 	declareExternalReceipt: protectedProcedure

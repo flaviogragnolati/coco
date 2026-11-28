@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoCo · Checkout y seguimiento · Revisión y variantes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400..800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+.proto a[aria-current] { background: #fff; border-color: #fff; color: #111; }
+section { margin-top: clamp(40px, 6vw, 72px); }
+section > h2 { margin-bottom: 8px; font-size: 28px; }
+section > p { max-width: 70ch; color: var(--muted-fg); margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { font: 700 12px/1.2 var(--font-b); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-fg); }
+td:first-child { font: 600 15px/1.35 var(--font-h); white-space: nowrap; }
+td code { font: 500 12px var(--font-m); color: var(--muted-fg); }
+.tbl { overflow-x: auto; padding: 0; }
+.vars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.var { display: grid; gap: 12px; align-content: start; }
+.var .tag { justify-self: start; padding: 4px 10px; border-radius: 999px; background: var(--ink); color: var(--ink-fg); font: 700 12px/1.2 var(--font-b); }
+.var ul { display: grid; gap: 8px; font-size: 15px; }
+.var li { padding-left: 16px; position: relative; }
+.var li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--highlight); }
+.var .cost { padding-top: 12px; border-top: 1px solid var(--border); font-size: 14px; }
+@media (max-width: 900px) { .vars { grid-template-columns: minmax(0, 1fr); } td:first-child { white-space: normal; } }
+.list { display: grid; gap: 10px; max-width: 80ch; }
+.list li { padding-left: 16px; position: relative; }
+.list li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--ink); }
+</style>
+</head>
+<body>
+<div class="proto"><a href="index.html" aria-current="page">Revisión</a><a href="variante-a.html">A · Una sola página</a><a href="variante-b.html">B · Paso a paso</a><a href="variante-c.html">C · Todo en Tu pedido</a></div>
+<main class="wrap page">
+	<header class="ph">
+		<span class="eyebrow">Prototipo · 27/11/2026</span>
+		<h1>Checkout y seguimiento del pedido</h1>
+		<p>Revisión de las pantallas desde Tu pedido hasta la entrega, y tres formas de resolverlas. Cada variante es navegable: en la barra negra se cambia de pantalla, de tipo de cliente y de estado del pedido. Precios, direcciones y datos bancarios son de ejemplo.</p>
+	</header>
+
+	<section>
+		<h2>Qué encontré en las pantallas de hoy</h2>
+		<p>Recorrido revisado: Tu pedido → checkout (4 pasos) → resultado o retorno de Mercado Pago → Mis pedidos → detalle con seguimiento.</p>
+		<div class="card tbl"><table>
+			<thead><tr><th>Pantalla</th><th>Qué pasa hoy</th><th>Dónde</th></tr></thead>
+			<tbody>
+				<tr><td>Tu pedido</td><td>El resumen muestra datos internos: estado «Borrador / Pendiente / En checkout», «Código de armado», «Líneas» y «Total estimado». Hay un cartel «Listo para checkout» que no informa nada y tres botones apilados con el mismo peso.</td><td><code>cart-summary.tsx</code></td></tr>
+				<tr><td>Checkout · estructura</td><td>Cuatro pasos para dos decisiones. El paso 1 «Pedido» repite, en solo lectura, la pantalla de la que el cliente viene. El paso 4 vuelve a listar todo. Un cliente con dirección guardada hace tres clics en «Continuar» sin elegir nada.</td><td><code>checkout-steps.ts</code>, <code>checkout-order-step.tsx</code></td></tr>
+				<tr><td>Checkout · pedido congelado</td><td>Entrar a <code>/checkout</code> congela el pedido. Para cambiar una cantidad hay que «Volver a editar», que cancela el checkout.</td><td><code>checkout.service.ts</code> (<code>start</code>)</td></tr>
+				<tr><td>Checkout · jerarquía</td><td>Antes del primer control hay cuatro niveles de título: rótulo «Checkout», «Confirmá tu pedido compartido», el stepper y el título de la tarjeta. Las opciones son tarjetas dentro de tarjetas, y la selección se marca tres veces (borde, tilde y pastilla «Seleccionado»).</td><td><code>checkout-client.tsx</code>, <code>selectable-tile.tsx</code></td></tr>
+				<tr><td>Checkout · dirección</td><td>Se carga en un diálogo que pide tipo, país, provincia y ciudad para un servicio que solo entrega en Ushuaia. En la primera compra el camino es: estado vacío → botón → diálogo.</td><td><code>address-form-dialog.tsx</code></td></tr>
+				<tr><td>Checkout · pago</td><td>Textos internos: «Elegí cómo iniciar el intento de pago», «Pago externo». El descuento por transferencia, que es el incentivo principal, aparece como una línea de texto dentro de la opción y no se compara con el otro precio.</td><td><code>checkout-payment-step.tsx</code></td></tr>
+				<tr><td>Checkout · términos</td><td>El texto completo va en una caja con scroll de 14 rem y se acepta con un interruptor, que se lee como preferencia y no como aceptación.</td><td><code>checkout-review-step.tsx</code></td></tr>
+				<tr><td>Retorno de Mercado Pago</td><td>Texto para desarrolladores: «webhooks firmados», «reconciliamos», «Estado sujeto a reconciliación». No dice de qué pedido se trata, no enlaza al pedido y no se actualiza.</td><td><code>mercadopago-return-page.tsx</code></td></tr>
+				<tr><td>Resultado · transferencia</td><td>Muestra «Transacción #241 · Sin ref.» y estado «Pendiente». Los datos bancarios van en siete cajitas. No dice hasta cuándo hay tiempo ni permite informar el comprobante: para eso hay que ir al detalle.</td><td><code>checkout-result-panel.tsx</code></td></tr>
+				<tr><td>Mis pedidos</td><td>Cada tarjeta se titula con el monto y un código. No nombra productos ni etapa («4 ítems · Pago: Pendiente»). Un pedido que espera la transferencia no se distingue de los demás.</td><td><code>my-orders-client.tsx</code></td></tr>
+				<tr><td>Seguimiento · orden</td><td>Con el pago pendiente, lo primero es una tarjeta de seguimiento vacía y la acción (transferir) queda debajo. Falta una frase que diga qué está pasando y qué sigue.</td><td><code>order-detail-view.tsx</code></td></tr>
+				<tr><td>Seguimiento · etapas</td><td>Etiquetas de 11 px. La explicación de cada etapa está en un tooltip, que en el teléfono no existe. «Proveedor» y «Empaque» no dicen qué pasa. Los avisos son pastillas de varias líneas.</td><td><code>tracking-journey-stepper.tsx</code>, <code>customer-order-journey-view.tsx</code></td></tr>
+				<tr><td>Seguimiento · datos</td><td>Productos sin foto, «Líneas comerciales confirmadas», «Código de armado», «Transacción #», «Referencia: Sin ref.».</td><td><code>order-detail-view.tsx</code></td></tr>
+				<tr><td>Estilo</td><td>Estas pantallas siguen con tarjetas de sombra y radio grande. La home nueva usa borde fino sin sombra, bandas tinta / menta / cálida, íconos de trazo y el rótulo con punto naranja.</td><td>home variante D</td></tr>
+			</tbody>
+		</table></div>
+	</section>
+
+	<section>
+		<h2>Las tres variantes</h2>
+		<p>Difieren en la superficie, no solo en el estilo.</p>
+		<div class="vars">
+			<div class="card var">
+				<span class="tag">A · Una sola página</span>
+				<h3>El checkout es una lista de tres secciones</h3>
+				<ul>
+					<li>Entrega, Pago y Confirmar en la misma página. Cada sección se pliega en una línea con «Cambiar».</li>
+					<li>Con dirección guardada, el cliente llega con todo elegido: acepta los términos y confirma.</li>
+					<li>Confirmación con los datos de transferencia, el aviso de comprobante y «Qué sigue».</li>
+					<li>Mis pedidos en filas, con productos y barra de etapas.</li>
+					<li>Seguimiento con banda tinta y la ruta ilustrada de la home.</li>
+				</ul>
+				<p class="cost"><b>Costo:</b> solo frontend, salvo la barra de etapas en la lista.</p>
+				<a class="btn btn-ink" href="variante-a.html">Abrir A</a>
+			</div>
+			<div class="card var">
+				<span class="tag">B · Paso a paso enfocado</span>
+				<h3>Se conserva el asistente, con tres pasos</h3>
+				<ul>
+					<li>Sin el menú del sitio: logo, «Pago protegido» y volver. Una pregunta por pantalla, en una columna angosta.</li>
+					<li>El pedido es una fila desplegable arriba, no un panel lateral.</li>
+					<li>Confirmación como lista de tres tareas.</li>
+					<li>Mis pedidos: el pedido en curso primero, grande; los anteriores en lista compacta.</li>
+					<li>Seguimiento como línea de tiempo vertical, con fechas y el aviso en la etapa donde ocurrió.</li>
+				</ul>
+				<p class="cost"><b>Costo:</b> solo frontend. Es el cambio más chico sobre el código actual.</p>
+				<a class="btn btn-ink" href="variante-b.html">Abrir B</a>
+			</div>
+			<div class="card var">
+				<span class="tag">C · Todo en Tu pedido</span>
+				<h3>No hay pantalla de checkout</h3>
+				<ul>
+					<li>Entrega y pago se eligen en hojas laterales desde Tu pedido. El pedido se sigue pudiendo editar hasta confirmar.</li>
+					<li>Al confirmar se cae directo en el pedido: la misma pantalla sirve de confirmación, pago pendiente y seguimiento.</li>
+					<li>Mis pedidos con la lista a la izquierda y el pedido a la derecha.</li>
+					<li>Cada producto lleva su etapa: no hay dos modos (unificado o por producto).</li>
+				</ul>
+				<p class="cost"><b>Costo:</b> toca el servidor. Cambia cuándo se congela el pedido, y eso hoy está escrito en el glosario.</p>
+				<a class="btn btn-ink" href="variante-c.html">Abrir C</a>
+			</div>
+		</div>
+	</section>
+
+	<section>
+		<h2>Comparación</h2>
+		<div class="card tbl"><table>
+			<thead><tr><th></th><th>A · Una sola página</th><th>B · Paso a paso</th><th>C · Todo en Tu pedido</th></tr></thead>
+			<tbody>
+				<tr><td>Pantallas hasta confirmar</td><td>2 (Tu pedido, checkout)</td><td>4 (Tu pedido + 3 pasos)</td><td>1</td></tr>
+				<tr><td>Cliente con dirección guardada</td><td>1 casilla + 1 botón</td><td>2 «Continuar» + 1 casilla + 1 botón</td><td>1 casilla + 1 botón</td></tr>
+				<tr><td>Primera compra</td><td>Formulario en la misma página</td><td>Formulario en el paso 1</td><td>Formulario en una hoja</td></tr>
+				<tr><td>Editar cantidades</td><td>Salir del checkout, como hoy</td><td>Salir del checkout, como hoy</td><td>Sin salir</td></tr>
+				<tr><td>Servidor</td><td>No</td><td>No</td><td>Sí: opciones sin congelar y congelar al confirmar</td></tr>
+				<tr><td>Tutorial (ADR 0012)</td><td>Rehacer la escena de checkout</td><td>Ajustar la escena (3 pasos)</td><td>Rehacer escenas de pedido, checkout y detalle</td></tr>
+				<tr><td>Riesgo</td><td>Medio</td><td>Bajo</td><td>Alto</td></tr>
+			</tbody>
+		</table></div>
+	</section>
+
+	<section>
+		<h2>Lo que proponen las tres por igual</h2>
+		<ul class="list">
+			<li>Sin el paso «Pedido»: el pedido se ve en el resumen y se edita en Tu pedido.</li>
+			<li>Opciones como filas con un solo indicador de selección, sin tarjeta dentro de tarjeta.</li>
+			<li>Pago con los dos precios lado a lado: «Transferencia bancaria $ 69.777 · Ahorrás $ 3.673 (5 %)» frente a «Mercado Pago $ 73.450».</li>
+			<li>Botón final según el medio: «Confirmar pedido» para transferencia, «Pagar en Mercado Pago» para Mercado Pago.</li>
+			<li>Términos con casilla y enlace que abre el texto en un diálogo.</li>
+			<li>Dirección con tres campos (calle y número, piso o depto, código postal) y Ushuaia fija.</li>
+			<li>Cierre y plazo de entrega visibles al momento de pagar.</li>
+			<li>Retorno de Mercado Pago en lenguaje de cliente, con sus tres estados, y camino para reintentar o pasar a transferencia.</li>
+			<li>Con el pago pendiente, la acción va primero: datos para transferir y comprobante.</li>
+			<li>Una frase de estado en el pedido («Tu pedido está viajando a Ushuaia») y la explicación de la etapa actual a la vista.</li>
+			<li>Productos con foto. Fuera «Código de armado», «Transacción #» y «Sin ref.».</li>
+			<li>Cuando el pedido se parte, se agrupa por etapa en vez de repetir un recorrido por producto.</li>
+		</ul>
+	</section>
+
+	<section>
+		<h2>Lo que es propuesta de texto, no solo de diseño</h2>
+		<ul class="list">
+			<li>Estados del pedido para el cliente: «Esperando tu pago», «En curso», «Entregado» en lugar de «Pendiente», «En procesamiento», «Completado».</li>
+			<li>«Transferencia bancaria» en lugar de «Pago externo». El glosario hoy fija «Pago externo» como etiqueta.</li>
+			<li>Etapas: «Compra al proveedor» por «Proveedor» y «En viaje» por «Envío», con descripciones nuevas.</li>
+		</ul>
+	</section>
+
+	<section>
+		<h2>Lo que necesita servidor</h2>
+		<ul class="list">
+			<li><b>Etapa en la lista de Mis pedidos</b> (A y B): hoy <code>orders.listMine</code> no trae la etapa de cada pedido.</li>
+			<li><b>Retorno de Mercado Pago con el pedido real</b> (las tres): la página tiene que saber a qué pedido volvió y cómo quedó el pago.</li>
+			<li><b>Congelar al confirmar</b> (solo C): una consulta de direcciones, puntos y medios de pago que no congele el pedido.</li>
+		</ul>
+	</section>
+</main>
+</body>
+</html>

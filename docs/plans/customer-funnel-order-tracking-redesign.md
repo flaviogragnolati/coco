@@ -1,5 +1,11 @@
 # Implementation Plan: Rediseño cliente — carrito, checkout y mis pedidos (paleta + seguimiento)
 
+> **Enmendado por `docs/plans/checkout-en-tu-pedido-y-seguimiento.md` (27/11/2026, ADR 0015).**
+> `/checkout` ya no existe como pantalla: se finaliza en Tu pedido. «Mis pedidos» muestra la lista
+> y el pedido lado a lado, y el seguimiento es un solo recorrido con la etapa de cada producto;
+> la tarjeta `CustomerOrderJourney` y `MyOrdersClient` se borraron. Sigue en pie que
+> `/my-orders/[orderId]` es la dirección de cada pedido, sin modales ni rutas nuevas.
+
 ## 1. Objective & outcome
 
 - **Done means:** (a) `/cart`, `/checkout` y `/my-orders` adoptan la guía visual del home

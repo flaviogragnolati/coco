@@ -19,8 +19,8 @@ A disputed or externally reversed customer payment after a completed payment att
 _Avoid_: Refund, payment failure
 
 **External payment**:
-A payment attempt the platform never captures: the customer moves the money outside the app and an admin settles the attempt by hand. Its outcome is an administrative decision, never a provider response. Spanish-facing UI labels it "Pago externo".
-_Avoid_: Manual payment, offline payment, transfer
+A payment attempt the platform never captures: the customer moves the money outside the app and an admin settles the attempt by hand. Its outcome is an administrative decision, never a provider response. The admin UI labels it "Pago externo"; customers read it as "Transferencia bancaria", the only form it takes today.
+_Avoid_: Manual payment, offline payment, transfer (as the domain term), "Pago externo" on customer screens
 
 **Declared receipt**:
 The transfer reference a customer reports for an external payment. It records a claim, not a settlement: the attempt stays pending until an admin confirms it. Spanish-facing UI labels it "Comprobante declarado".
@@ -191,7 +191,7 @@ The staged, display-oriented progression of a customer request through fulfillme
 _Avoid_: Timeline, event log, fulfillment lineage
 
 **Journey stage**:
-One step on a journey's fixed axis. The admin journey has ten stages mapped 1:1 to happy-path fulfillment statuses; the customer journey groups them into six. Spanish-facing UI labels it "Etapa".
+One step on a journey's fixed axis. The admin journey has ten stages mapped 1:1 to happy-path fulfillment statuses; the customer journey groups them into six, which read "Pedido confirmado", "Preparación", "Compra al proveedor", "Empaque", "En viaje" and "Entrega". Spanish-facing UI labels it "Etapa".
 _Avoid_: Status, operational state
 
 **Journey notice**:
@@ -199,8 +199,12 @@ A deviation or annotation attached to the journey stage that was current when it
 _Avoid_: Warning event, error
 
 **Order journey**:
-The customer-facing roll-up of one submitted order's item journeys. When every item shares the same current stage it collapses into a single six-stage journey; otherwise each item shows its own. Spanish-facing UI labels it "Seguimiento del pedido".
+The customer-facing roll-up of one submitted order's item journeys: a single six-stage track for the whole order, plus each product's own stage and notices. When the items are at different stages the track follows the stage most of them share and says how many are there. Spanish-facing UI labels it "Seguimiento del pedido".
 _Avoid_: Order timeline, tracking screen
+
+**Customer order status**:
+What a customer is told about an order as a whole, apart from its journey: waiting for the payment, under way, or delivered. It is read from the order's commercial status, and the admin keeps its own labels for the same statuses. Spanish-facing UI labels them "Esperando tu pago", "En curso" and "Entregado".
+_Avoid_: "Pendiente", "En procesamiento", "Completado" on customer screens
 
 ### Catalog and cart (customer-facing)
 
@@ -221,7 +225,7 @@ The "Imagen ilustrativa" caption the storefront draws over large product photos 
 _Avoid_: Watermark, marca de agua, stamped image
 
 **Featured item**:
-One entry of the home's featured section: a current catalog product or a combo. An admin puts it on the featured list, in the order they choose. Only products can also come from the offers ranking, which fills the places the list leaves free unless the admin turns the fill off. A featured combo brings its whole combo group onto one card, and two combos of the same group never take two cards. Nothing on the list is shown without a price: a product without current terms, or a combo with none of its products available, is skipped. The section title is fixed, whatever the ranking criterion. Spanish-facing UI labels it "Destacado" and the section "Destacados".
+One entry of the home's featured section: a current catalog product or a combo. An admin puts it on the featured list, in the order they choose. Only products can also come from the offers ranking, which fills the places the list leaves free unless the admin turns the fill off. A featured combo brings its whole combo group onto one card, and two combos of the same group never take two cards. Nothing on the list is shown without a price: a product without current terms, or a combo with none of its products available, is skipped. The section has as many places as the admin sets, and list entries past them are not shown until places are added or entries above are removed; the admin marks them "No entra". The section title is fixed, whatever the ranking criterion. Spanish-facing UI labels it "Destacado" and the section "Destacados".
 _Avoid_: Featured offer, oferta destacada, pinned offer, promotion, operation, oferta protagonista, pedido abierto
 
 **Combo**:
@@ -241,7 +245,7 @@ The order in which current products that are not on the featured list compete fo
 _Avoid_: Sort, top offers, query
 
 **Weekly closing**:
-The weekday and time, in Argentina time, at which customers are told the week's orders close, and the next instant it falls on. Anything paid before it is presented as joining that week's wholesale purchase. It is informative only: nothing in ordering, payment or operations reads it, and an admin still launches each operation by hand after the closing. An admin configures it in one place; the storefront countdown, the home copy and the product detail all derive from it. The exact closing instant already counts as closed. Spanish-facing UI labels it "Cierre semanal"; the customer countdown reads "Cierre del pedido".
+The weekday and time, in Argentina time, at which customers are told the week's orders close, and the next instant it falls on. Anything paid before it is presented as joining that week's wholesale purchase. It is informative only: nothing in ordering, payment or operations reads it, and an admin still launches each operation by hand after the closing. An admin configures it in one place; the storefront countdown, the home copy, the product detail, the order page and an order still waiting for it all derive from it. The exact closing instant already counts as closed. Spanish-facing UI labels it "Cierre semanal"; the customer countdown reads "Cierre del pedido".
 _Avoid_: Deadline, cutoff, operation, ventana de compra, fecha límite
 
 **Delivery lead time**:
@@ -309,11 +313,11 @@ The slide-over cart preview opened from the navbar and when adding a product. A 
 _Avoid_: Cart drawer, cart popover
 
 **Checkout**:
-The customer-facing flow that turns an at-checkout cart into a submitted order plus a payment attempt: review the order, choose shipping address and payment method, accept terms, and pay. Single-currency, with prices and quantities snapshotted at confirmation. Confirming carries the amount the screen showed for the chosen payment method. A new payment attempt is refused if the amount changed since then, so the customer never pays a figure they did not see. The cart is the live source of truth up to the moment checkout starts; from then on it is frozen against edits, because the order snapshot references it.
-_Avoid_: Order placement, purchase flow
+The step that turns a cart into a submitted order plus a payment attempt. It has no screen of its own: on the order page ("Tu pedido") the customer chooses the delivery preference and the payment method, accepts the terms, and confirms. Single-currency, with prices and quantities snapshotted at confirmation. Confirming carries the amount the screen showed for the chosen payment method. A new payment attempt is refused if the amount changed since then, so the customer never pays a figure they did not see. The cart is the live source of truth up to the moment the customer confirms; from then on it is at checkout and frozen against edits, because the order snapshot references it (ADR 0015).
+_Avoid_: Order placement, purchase flow, checkout page
 
 **Leave checkout**:
-The explicit way back from a frozen at-checkout cart to an editable one: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why editing the cart mid-checkout is offered as leaving rather than as a direct edit. Blocked while a payment is in process. Spanish-facing UI labels it "Volver a editar el pedido".
+The explicit way back from a confirmed order that still waits for its payment to an editable cart: it cancels the live order and its pending payment attempt and returns the cart to pending. It is the only exit from at-checkout other than a completed payment, which is why changing products after confirming is offered as leaving rather than as a direct edit. Blocked while a payment is in process or a receipt was declared. Spanish-facing UI labels it "Volver a editar el pedido".
 _Avoid_: Cancel checkout, abort checkout, unfreeze
 
 **Repeat order**:
@@ -323,11 +327,11 @@ _Avoid_: Repetir compra, reorder, duplicate order, clone order
 ### Customer help
 
 **Tutorial**:
-The guided walk-through of a whole purchase along the happy path (catalog, cart, checkout, payment, my orders and order tracking), played on fixed example data in simulated screens. It never reads or writes the customer's real cart, addresses, orders or payments, so it can show stages the customer has not lived yet. It comes in an express and a complete version over the same scenes. Spanish-facing UI labels them "Tutorial rápido" and "Tutorial completo".
+The guided walk-through of a whole purchase along the happy path (catalog, the order page where the customer finishes, payment, my orders and order tracking), played on fixed example data in simulated screens. It never reads or writes the customer's real cart, addresses, orders or payments, so it can show stages the customer has not lived yet. It comes in an express and a complete version over the same scenes. Spanish-facing UI labels them "Tutorial rápido" and "Tutorial completo".
 _Avoid_: Onboarding, tour, demo, recorrido (that word belongs to order tracking)
 
 **Tutorial invitation**:
-The one-time, non-blocking offer to start the tutorial that a signed-in customer gets on the first storefront page that isn't sign-in, checkout or a payment return page. Either answer, picking a version or declining, settles it for that user on every device. The tutorial stays available from the help menu. Spanish-facing UI titles it "¿Primera vez en Coco?".
+The one-time, non-blocking offer to start the tutorial that a signed-in customer gets on the first storefront page that isn't sign-in, the order page where they finish, or a payment return page. Either answer, picking a version or declining, settles it for that user on every device. The tutorial stays available from the help menu. Spanish-facing UI titles it "¿Primera vez en Coco?".
 _Avoid_: Onboarding popup, welcome modal
 
 ### Legal and site content

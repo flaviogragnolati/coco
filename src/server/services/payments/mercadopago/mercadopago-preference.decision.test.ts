@@ -5,6 +5,8 @@ import {
 	buildMercadoPagoPreferenceItems,
 	calculateMercadoPagoPreferenceTotal,
 	MercadoPagoPreferenceInvariantError,
+	parseMercadoPagoExternalReference,
+	toMercadoPagoExternalReference,
 	toMercadoPagoWebhookUrl,
 } from "./mercadopago-preference.decision";
 
@@ -162,4 +164,28 @@ test("notification URLs preserve existing query parameters", () => {
 			"https://example.com/webhook?tenant=coco&source_news=ipn",
 		),
 	).toBe("https://example.com/webhook?tenant=coco&source_news=webhooks");
+});
+
+test("an external reference round-trips to its attempt id", () => {
+	expect(
+		parseMercadoPagoExternalReference(toMercadoPagoExternalReference(241)),
+	).toBe(241);
+	expect(parseMercadoPagoExternalReference("user_transaction:2147483647")).toBe(
+		2_147_483_647,
+	);
+});
+
+test.each([
+	undefined,
+	null,
+	241,
+	"user_transaction:",
+	"user_transaction:0",
+	"user_transaction:007",
+	"user_transaction:-1",
+	"user_transaction:2147483648",
+	" user_transaction:241",
+	"order:241",
+])("an external reference CoCo did not write reads as no attempt: %j", (reference) => {
+	expect(parseMercadoPagoExternalReference(reference)).toBeNull();
 });
