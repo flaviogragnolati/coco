@@ -73,7 +73,7 @@ El alcance de canal acordado para estos avisos es email mediante Resend. Bandeja
 | Transferencia | Verificar descuento congelado, moneda, hora argentina, enlace y ausencia de datos bancarios. Reusar el intento da un correo. Vencimiento, comprobante o cambio de medio antes del primer despacho suprimen el pendiente. Un rollback de la creación deja cero envíos. |
 | Logística y privacidad | Un envío compartido por dos clientes produce dos mensajes con productos propios. Un pedido en dos llegadas recibe un aviso parcial en cada una. Llegada a depósito interno, salida hacia el punto y retiro ya efectuado producen cero avisos de disponibilidad. Ejercitar cambio repetido de punto, dos recortes distintos, cantidades parciales y compensación. Extender `user-order.service.test.ts`, `operations-effects/fulfillment-effects.test.ts` y añadir pruebas colocadas del agrupador. |
 | Despacho y fallos | En PostgreSQL descartable, simular commit seguido de caída, concesión expirada, doble consumidor, respuesta aceptada seguida de caída antes de guardar el ID, misma clave tras despliegue, credencial inválida y ventana de 24 h agotada. Un fallo de Resend no altera pagos ni tracking. Probar que una instancia de preview jamás despacha filas de producción. |
-| Experiencia y QA | Con receptor controlado, revisar HTML y texto en móvil, asunto y CTA. Probar el enlace con el titular, con otra cuenta y sin sesión. Complementar casos existentes #16, #18, #22–#27, #29 y #33 de la guía QA con evidencia de cantidad de envíos y snapshots sanitizados. Las pruebas aisladas de MP pueden avanzar mientras se valida el webhook firmado de sandbox. [Guía de QA](../qa/qa-ciclo-de-vida.md) · [Situación de sandbox al elaborar el plan](qa-triage-y-mercadopago-sandbox-2026-11-26.md) |
+| Experiencia y QA | Con receptor controlado, revisar HTML y texto en móvil, asunto y CTA. Probar el enlace con el titular, con otra cuenta y sin sesión. Complementar casos existentes #16, #18, #22–#27, #29 y #33 de la guía QA con evidencia de cantidad de envíos y snapshots sanitizados. Las pruebas aisladas de MP pueden avanzar mientras se valida el webhook firmado de sandbox. [Guía de QA](../qa/qa-ciclo-de-vida.md) · [Seguimiento de QA de Mercado Pago](qa-mercadopago-pending.md) |
 
 ## Despliegue, vuelta atrás y entrega al ejecutor
 
@@ -101,3 +101,11 @@ Flavio eligió despacho después de la respuesta de cada operación y cron diari
 Verificación final de la suite general: 2.407 pruebas aprobadas. Las 19 pruebas opcionales se omiten sin sus variables de integración. Las siete suites focalizadas ejecutadas con PostgreSQL descartable y transporte simulado aprobaron sus 40 pruebas. La recuperación procesó un lote de 28 avisos sin tráfico de compra y distinguió los límites de frecuencia de los resultados ambiguos.
 
 Pasaron la validación de Prisma, TypeScript, Biome y el build de producción. En el servidor compilado se comprobó el acceso al login y la autenticación del cron sobre localhost con el envío apagado.
+
+## Envío desde la cuenta de Gmail de CoCo
+
+Flavio eligió Gmail como remitente de producción mientras la tienda use su subdominio de Vercel. Se incorporó el transporte SMTP con TLS, una contraseña de aplicación y los mismos avisos y particiones. Cada intento conserva su proveedor. Una respuesta temporal de rechazo o un fallo previo al envío admite reintento. Un resultado SMTP ambiguo pasa a revisión, incluso tras vencer una concesión.
+
+La suite aprobó 2.429 pruebas, incluidas las de la cola con PostgreSQL y transporte simulado. Se omitieron siete casos opcionales. Pasaron TypeScript y Biome para los archivos afectados. La revisión de código incorporó casos de conexión anterior al envío y la reconstrucción del Message-ID. La revisión de comentarios corrigió la descripción de los reintentos seguros.
+
+La migración aditiva se aplicó en una transacción desde Vercel Production. Se verificaron las columnas de la cola y el índice único por evento. El proyecto tiene el remitente y el origen público esperados. La activación y la comprobación de recepción dependen de la contraseña de aplicación de la cuenta.

@@ -1,20 +1,7 @@
 import "server-only";
 
 import { Resend } from "resend";
-import { z } from "zod";
-
-export const emailRequestSchema = z.object({
-	from: z.string().min(1),
-	to: z.string().email(),
-	subject: z.string().min(1),
-	text: z.string().min(1),
-	html: z.string().min(1),
-});
-
-type SendResult =
-	| { status: "accepted"; providerId: string }
-	| { status: "retry"; reason: string; retryAfterMs?: number }
-	| { status: "review"; reason: string };
+import type { EmailRequest, SendResult } from "./email-transport";
 
 function retryAfterMs(value: string | undefined): number | undefined {
 	if (!value) return undefined;
@@ -27,7 +14,7 @@ function retryAfterMs(value: string | undefined): number | undefined {
 export async function sendCustomerEmail(
 	apiKey: string,
 	id: string,
-	request: z.infer<typeof emailRequestSchema>,
+	request: EmailRequest,
 ): Promise<SendResult> {
 	try {
 		const options = {

@@ -6,15 +6,27 @@ import type { CustomerEmailStatus, Prisma } from "~/prisma/client";
 import { db } from "~/server/db";
 import { appLogger } from "~/server/services/logging/app-logger.service";
 import { buildEmailRequest } from "./customer-email.templates";
-import { getEmailConfig } from "./email-config";
-import { emailRequestSchema, sendCustomerEmail } from "./resend-email.service";
+import { emailProviderSchema, getEmailConfig } from "./email-config";
+import { emailRequestSchema } from "./email-transport";
+import { sendGmail } from "./gmail-email.service";
+import { sendCustomerEmail } from "./resend-email.service";
 
 const MINUTE = 60_000;
 const BATCH_SIZE = 25;
 // Resend forgets idempotency keys after 24 hours. Leave room for network and clock skew.
 const RETRY_WINDOW = (24 * 60 - 5) * MINUTE;
 const RATE_LIMITED = "resend_http_429";
+
+function knownUnsent(reason: string | null) {
+	return (
+		reason === RATE_LIMITED ||
+		reason === "gmail_temporary_rejection" ||
+		reason === "gmail_connection_before_send"
+	);
+}
+
 const storedRequestSchema = emailRequestSchema.extend({
+	provider: emailProviderSchema.default("resend"),
 	quantityKey: z.string().optional(),
 	revision: z.number().int().nonnegative().default(0),
 });
@@ -71,7 +83,7 @@ async function prepare(
 	});
 	const priorSendUncertain =
 		row.firstAttemptAt !== null &&
-		(priorStatus === "processing" || row.lastError !== RATE_LIMITED);
+		(priorStatus === "processing" || !knownUnsent(row.lastError));
 
 	try {
 		const current = await buildEmailRequest(
@@ -82,6 +94,21 @@ async function prepare(
 		);
 		const frozen =
 			row.request === null ? null : storedRequestSchema.parse(row.request);
+		if (frozen && frozen.provider !== config.provider) {
+			return closeBeforeSend(tx, id, "review", "email_provider_changed");
+		}
+		// SMTP has no idempotency key. An expired lease can hide an accepted send.
+		if (config.provider === "gmail" && priorSendUncertain) {
+			return closeBeforeSend(tx, id, "review", "gmail_unknown_result");
+		}
+		if (
+			config.provider === "gmail" &&
+			frozen &&
+			current &&
+			frozen.from !== current.from
+		) {
+			return closeBeforeSend(tx, id, "review", "sender_changed");
+		}
 		if (!current || (frozen && frozen.to !== current.to)) {
 			return closeBeforeSend(
 				tx,
@@ -101,7 +128,7 @@ async function prepare(
 		if (windowExpired && priorSendUncertain) {
 			return closeBeforeSend(tx, id, "review", "idempotency_window");
 		}
-		// A history of explicit throttling allows a new key, even if the daily sweep missed the window.
+		// Confirmed non-acceptance allows a fresh key after the retry window.
 		const rotateKey = changed || windowExpired;
 		const revision = (frozen?.revision ?? 0) + (rotateKey ? 1 : 0);
 		const firstAttemptAt = rotateKey ? now : (row.firstAttemptAt ?? now);
@@ -115,6 +142,7 @@ async function prepare(
 				firstAttemptAt,
 				request: {
 					...request,
+					provider: config.provider,
 					revision,
 					...(current.quantityKey ? { quantityKey: current.quantityKey } : {}),
 				},
@@ -141,7 +169,7 @@ async function dispatchOne(
 	id: string,
 	priorStatus: CustomerEmailStatus,
 	config: EmailConfig,
-	apiKey: string,
+	credential: string,
 ) {
 	const item = await db.$transaction((tx) =>
 		prepare(tx, id, priorStatus, config),
@@ -151,7 +179,9 @@ async function dispatchOne(
 	const result =
 		Date.now() >= item.firstAttemptAt.getTime() + RETRY_WINDOW
 			? { status: "review" as const, reason: "idempotency_window" }
-			: await sendCustomerEmail(apiKey, item.requestId, item.body);
+			: config.provider === "gmail"
+				? await sendGmail(config.from, credential, item.requestId, item.body)
+				: await sendCustomerEmail(credential, item.requestId, item.body);
 	let update: Prisma.CustomerEmailDeliveryUpdateManyMutationInput;
 	if (result.status === "accepted") {
 		update = { status: "accepted", providerId: result.providerId };
@@ -160,7 +190,7 @@ async function dispatchOne(
 	} else {
 		const backoff = Math.min(60, 2 ** Math.min(6, item.attempts - 1)) * MINUTE;
 		const next = Date.now() + Math.max(backoff, result.retryAfterMs ?? 0);
-		const uncertain = item.priorSendUncertain || result.reason !== RATE_LIMITED;
+		const uncertain = item.priorSendUncertain || !knownUnsent(result.reason);
 		update =
 			uncertain && next >= item.firstAttemptAt.getTime() + RETRY_WINDOW
 				? { status: "review", lastError: "idempotency_window" }
@@ -191,7 +221,7 @@ async function dispatchOne(
 export async function dispatchCustomerEmails() {
 	const config = getEmailConfig();
 	if (!config?.dispatch) return { enabled: false, processed: 0 };
-	if (!config.apiKey) throw new Error("Missing Resend API key");
+	if (!config.credential) throw new Error("Missing email provider credential");
 	const deadline = Date.now() + 45_000;
 	let processed = 0;
 	while (Date.now() < deadline) {
@@ -208,7 +238,7 @@ export async function dispatchCustomerEmails() {
 				row.id,
 				row.status,
 				config,
-				config.apiKey,
+				config.credential,
 			);
 			if (status === "busy") continue;
 			processed++;

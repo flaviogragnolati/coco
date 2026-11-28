@@ -23,17 +23,20 @@ stage_result:
   decisions_added_or_updated:
     - "Recepción verificada por Flavio en la casilla autorizada de QA con el remitente de prueba de Resend."
     - "El equipo Vercel usa Hobby. Flavio eligió despacho tras la operación y recuperación diaria con Vercel Cron."
+    - "Gmail SMTP con contraseña de aplicación para producción en vercel.app. Resend sigue disponible por configuración."
   risks_added_or_updated:
     - "Una aceptación de resultado ambiguo requiere conciliación antes de otro envío si expira la ventana de idempotencia."
   stale_artifacts: []
-  blockers: []
+  blockers:
+    - "Falta la contraseña de aplicación de Gmail en Production para verificar la autenticación y activar el envío."
   warnings:
     - "q-review-code identificó dos casos de avisos obsoletos y ambos tienen regresiones cubiertas."
     - "q-review-comments corrigió el conteo de llamadores que quedó obsoleto."
     - "La prueba de correo usó datos ficticios. La validación integrada de Mercado Pago en el alias de QA depende de su webhook firmado."
+    - "Revisión de Gmail: se cubrieron conexión previa al envío, concesiones vencidas y reconciliación del Message-ID."
   required_user_actions:
-    - "Configurar el remitente de un dominio verificado y los secretos en el entorno de publicación."
-  next_recommended_action: "Desplegar la migración y la aplicación en QA, activar el despachador en esa partición y observar el recorrido de un pedido de punta a punta."
+    - "Guardar GMAIL_APP_PASSWORD en Vercel Production."
+  next_recommended_action: "Verificar SMTP con la credencial de Production y activar el modo live y el despacho."
 orchestration:
   mode: standalone
   global_state_updated: false
