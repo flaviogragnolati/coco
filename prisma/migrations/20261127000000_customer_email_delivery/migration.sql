@@ -34,4 +34,3 @@ CREATE UNIQUE INDEX "customer_email_delivery_environment_eventKey_key" ON "custo
 
 -- AddForeignKey
 ALTER TABLE "customer_email_delivery" ADD CONSTRAINT "customer_email_delivery_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "user_order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-

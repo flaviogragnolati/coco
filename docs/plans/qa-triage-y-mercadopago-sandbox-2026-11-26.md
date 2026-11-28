@@ -1,6 +1,6 @@
 # QA pendiente y diagnóstico de Mercado Pago sandbox
 
-**IP-QA-MP-20261126 · v0.1 · Working · 26 de noviembre de 2026**  
+**IP-QA-MP-20261126 · v0.1 · Working · 26 de noviembre de 2026**
 Plan de ejecución para la guía QA #125 y sus casos #21, #23–#27 y #36–#38. Incluye el inventario de QA del mismo corte. Base de código inspeccionada `70bf288`.
 
 ## Qué queda abierto

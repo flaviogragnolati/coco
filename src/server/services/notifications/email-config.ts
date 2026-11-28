@@ -5,7 +5,6 @@ export type EmailConfig = {
 	dispatch: boolean;
 	from: string;
 	origin: string;
-	apiKey?: string;
 	testRecipient?: string;
 };
 
@@ -32,9 +31,15 @@ export function getEmailEnvironment(
 	return `${mode}/${partition}`;
 }
 
+export const emailProviderSchema = z.enum(["resend", "gmail"]);
+type DispatchConfig = EmailConfig & {
+	provider: z.infer<typeof emailProviderSchema>;
+	credential?: string;
+};
+
 export function getEmailConfig(
 	source: Readonly<Record<string, string | undefined>> = process.env,
-): EmailConfig | null {
+): DispatchConfig | null {
 	const environment = getEmailEnvironment(source);
 	if (!environment) return null;
 	const mode = source.CUSTOMER_EMAIL_MODE;
@@ -46,13 +51,24 @@ export function getEmailConfig(
 	const origin = z.httpUrl().parse(source.BETTER_AUTH_URL);
 	if (mode === "live" && !origin.startsWith("https://"))
 		throw new Error("El enlace de producción requiere HTTPS.");
+	const provider = emailProviderSchema
+		.default("resend")
+		.parse(source.CUSTOMER_EMAIL_PROVIDER);
+	const gmail = provider === "gmail";
 	return {
+		provider,
 		environment,
 		dispatch,
-		from: z.email().parse(source.RESEND_FROM),
+		from: z.email().parse(gmail ? source.GMAIL_USER : source.RESEND_FROM),
 		origin: new URL(origin).origin,
-		apiKey: dispatch
-			? z.string().min(1).parse(source.RESEND_API_KEY)
+		credential: dispatch
+			? gmail
+				? z
+						.string()
+						.transform((v) => v.replace(/\s/g, ""))
+						.pipe(z.string().length(16))
+						.parse(source.GMAIL_APP_PASSWORD)
+				: z.string().min(1).parse(source.RESEND_API_KEY)
 			: undefined,
 		testRecipient:
 			mode === "test"
